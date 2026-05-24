@@ -1,0 +1,8 @@
+ffmpeg-python>=0.2.0
+ebooklib>=0.18
+beautifulsoup4>=4.12
+lxml>=4.9
+tqdm>=4.66
+Pillow>=10.0
+stable-ts>=2.16.1
+faster-whisper>=1.0.0

@@ -1,0 +1,16 @@
+# Ignore generated files
+output/
+temp/
+
+# Ignore source files for obvious copyright reasons
+sources/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# macOS
+.DS_Store
+

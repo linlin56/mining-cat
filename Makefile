@@ -1,4 +1,4 @@
-.PHONY: help gui install audio epub align export chapter1 chapter run clean
+.PHONY: help gui install test audio epub align export chapter1 chapter run clean
 
 # Defaults
 CHAPTER  ?= 1
@@ -20,6 +20,7 @@ help:
 	@echo ""
 	@echo "Usage:"
 	@echo "  make install                    Install dependencies"
+	@echo "  make test                       Run tests"
 	@echo "  make audio                      Step 1: prepare audio chapters"
 	@echo "  make epub [RANGE=4-9]           Step 2: extract epub text"
 	@echo "  make align [CHAPTER=1|all]      Step 3: align chapter(s)"
@@ -37,6 +38,9 @@ help:
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
+
+test:
+	$(PYTHON) -m pytest
 
 audio:
 	$(MAIN) audio

@@ -3,7 +3,7 @@
 ## Description
 
 This project is meant to create _mineable_ videos, out of audiobooks, so that you can use it for language learning (with tools like Migaku or asbplayer).  
-**This is only for Taiwanese mandarin for now!**  
+**This is only for Taiwanese mandarin for now! Upcoming languages later on.**  
 I will make it more polyvalent in the future.
 Contributions and issues are very appreciated!
 
@@ -19,7 +19,3 @@ The simplest way to use :
 1. Run `make install`
 2. Run `make gui`
 3. Follow the instructions.
-
-### Roadmap
-
-- []

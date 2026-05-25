@@ -9,6 +9,7 @@ import stable_whisper
 from tqdm import tqdm
 
 from config import DIR_CHAPTERS_AUDIO, DIR_CHAPTERS_TEXT, DIR_SRT
+from language import Language
 
 
 @dataclass
@@ -29,10 +30,6 @@ class Segment:
         return f"{self.index}\n{self._fmt(self.start)} --> {self._fmt(self.end)}\n{self.text}\n"
 
 
-# Closing punctuation that should be moved to the end of the previous segment if it appears at the start of a segment.
-_CLOSING_PUNCT = set('。？！」')
-
-
 # save segments to SRT file
 def save_srt(segs: list[Segment], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -41,13 +38,13 @@ def save_srt(segs: list[Segment], path: Path) -> None:
     path.write_text("\n".join(s.to_srt() for s in segs), encoding="utf-8")
 
 # Move leading closing punctuation to the end of the previous segment.
-def fix_leading_punct(segs: list[Segment]) -> list[Segment]:
-    # Move leading closing punctuation to the end of the previous segment.
+def fix_leading_punct(segs: list[Segment], lang: Language = Language.MANDARIN_TW) -> list[Segment]:
+    closing_punct = lang.value.closing_punct
     result: list[Segment] = []
     for seg in segs:
         text = seg.text
         i = 0
-        while i < len(text) and text[i] in _CLOSING_PUNCT:
+        while i < len(text) and text[i] in closing_punct:
             i += 1
         leading = text[:i]
         remainder = text[i:].lstrip()
@@ -64,9 +61,8 @@ def fix_leading_punct(segs: list[Segment]) -> list[Segment]:
 
 
 # This is the main alignment function, which takes an audio file and a text file, and returns a list of aligned segments.
-def prepare_text(raw: str) -> str:
-    # Strip [N] vocabulary annotations and blank lines left behind.
-    text = re.sub(r'\[\d+\]', '', raw)
+def prepare_text(raw: str, lang: Language = Language.MANDARIN_TW) -> str:
+    text = re.sub(lang.value.vocab_annotation_pattern, '', raw)
     lines = [l for l in text.splitlines() if l.strip()]
     return '\n'.join(lines).strip()
 
@@ -75,14 +71,14 @@ def align_chapter(
     model,
     audio_file: Path,
     text_file: Path,
-    language: str = "zh",
+    lang: Language = Language.MANDARIN_TW,
 ) -> list[Segment]:
     # Load and prepare text, then run alignment.
-    chapter_text = prepare_text(text_file.read_text(encoding="utf-8").strip())
+    chapter_text = prepare_text(text_file.read_text(encoding="utf-8").strip(), lang)
     result = model.align(
         str(audio_file),
         chapter_text,
-        language=language,
+        language=lang.value.whisper_code,
         verbose=False,
     )
     # The result may have segments in result.segments or result["segments"] depending on the model version, so we check both.
@@ -95,12 +91,12 @@ def align_chapter(
         text  = (seg.text if hasattr(seg, "text")  else seg["text"]).strip()
         if text:
             segs.append(Segment(0, start, end, text))
-    return fix_leading_punct(segs)
+    return fix_leading_punct(segs, lang)
 
 # Run alignment for all chapters, with options to start from a specific chapter or only process one chapter.
 def run(
     model_name: str = "tiny",
-    language: str = "zh",
+    language: Language = Language.MANDARIN_TW,
     from_ch: int | None = None,
     only_ch: int | None = None,
 ) -> None:
@@ -153,11 +149,11 @@ def run(
             continue
 
         t0 = time.time()
-        segs = align_chapter(model, audio_file, text_file, language=language)
+        segs = align_chapter(model, audio_file, text_file, lang=language)
         save_srt(segs, srt_out)
         elapsed = time.time() - t0
 
-        text_len = len(prepare_text(text_file.read_text(encoding="utf-8").strip()))
+        text_len = len(prepare_text(text_file.read_text(encoding="utf-8").strip(), language))
         tqdm.write(
             f"  Ch.{ch_num:03d}  {len(segs)} seg  {elapsed:.0f}s  "
             f"ebook={text_len:,}c"

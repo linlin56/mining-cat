@@ -35,9 +35,10 @@ def cmd_epub(args: argparse.Namespace) -> None:
 
 def cmd_align(args: argparse.Namespace) -> None:
     import align
+    from language import Language
     align.run(
         model_name=args.model,
-        language=args.language,
+        language=Language.from_id(args.language),
         from_ch=args.from_ch,
         only_ch=args.only_ch,
     )
@@ -98,7 +99,8 @@ def main() -> None:
     p_align = sub.add_parser("align", help="Forced alignment of chapter text to audio")
     p_align.add_argument("--model", default="tiny",
                          choices=["tiny", "base", "small", "medium", "large"])
-    p_align.add_argument("--language", default="zh")
+    p_align.add_argument("--language", default="mandarin_tw",
+                         choices=["mandarin_tw", "mandarin_cn"])
     p_align.add_argument("--from", dest="from_ch", type=int, default=None,
                          help="Start from chapter N")
     p_align.add_argument("--only", dest="only_ch", type=int, default=None,

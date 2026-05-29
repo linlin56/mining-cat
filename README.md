@@ -3,8 +3,11 @@
 ## Description
 
 This project is meant to create _mineable_ videos, out of audiobooks, so that you can use it for language learning (with tools like Migaku or asbplayer).  
-**This is only for Taiwanese mandarin for now! Upcoming languages later on.**  
-I will make it more polyvalent in the future.
+**This is only for mandarin for now! Upcoming languages later on.**  
+Supports both Chinese Mandarin and Taiwanese mandarin.
+The GUI lets you convert characters if needed.
+
+I will make it more polyvalent in the future and support more languages.
 Contributions and issues are very appreciated!
 
 ### How to use it

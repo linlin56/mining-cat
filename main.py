@@ -53,6 +53,11 @@ def cmd_export(args: argparse.Namespace) -> None:
     )
 
 
+def cmd_convert(args: argparse.Namespace) -> None:
+    import chinese_converter
+    chinese_converter.convert_srt_dir(args.source, args.target)
+
+
 def cmd_run(args: argparse.Namespace) -> None:
     import audio
     import epub
@@ -114,6 +119,13 @@ def main() -> None:
                           choices=["ultrafast", "superfast", "veryfast",
                                    "faster", "fast", "medium"])
 
+    # convert
+    p_convert = sub.add_parser("convert", help="Convert SRT character script with OpenCC")
+    p_convert.add_argument("--source", required=True, choices=["s", "tw"],
+                           help="Source script (s=Simplified, tw=Traditional Taiwan)")
+    p_convert.add_argument("--target", required=True, choices=["s", "tw", "t", "hk"],
+                           help="Target script")
+
     # run
     p_run = sub.add_parser("run", help="Run all steps in sequence")
     p_run.add_argument("--range", dest="range_str", metavar="A-B",
@@ -122,11 +134,12 @@ def main() -> None:
     args = parser.parse_args()
 
     dispatch = {
-        "audio":  cmd_audio,
-        "epub":   cmd_epub,
-        "align":  cmd_align,
-        "export": cmd_export,
-        "run":    cmd_run,
+        "audio":   cmd_audio,
+        "epub":    cmd_epub,
+        "align":   cmd_align,
+        "convert": cmd_convert,
+        "export":  cmd_export,
+        "run":     cmd_run,
     }
     dispatch[args.command](args)
 

@@ -4,13 +4,37 @@ import shutil
 import subprocess
 import sys
 import threading
+import webbrowser
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from gui_config import COLORS, WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT
 from gui_config import FONT_DEFAULT, FONT_LABEL, FONT_SMALL, FONT_MONO, FONT_BUTTON_LARGE, FONT_LISTBOX
+import chinese_converter
 from language import Language
+
+# Conversion target options per source script.
+# s can go to tw / t ; tw can only go to s
+_CONVERT_OPTIONS_FOR_SCRIPT: dict[str, list[tuple[str, str | None]]] = {
+    "s": [
+        ("No conversion", None),
+        ("Traditional — Taiwan", "tw"),
+        ("Traditional — Chinese", "t"),
+    ],
+    "tw": [
+        ("No conversion", None),
+        ("Simplified — China", "s"),
+    ],
+}
+# Flat label ： code lookup used when reading the combo value at pipeline time
+_CONVERT_BY_LABEL: dict[str, str | None] = {
+    label: code
+    for options in _CONVERT_OPTIONS_FOR_SCRIPT.values()
+    for label, code in options
+}
+
+_GITHUB_URL = "https://github.com/linlin56/audiobook-miner"
 
 # Dirs
 ROOT = Path(__file__).parent
@@ -121,9 +145,19 @@ class App(tk.Tk):
         self._lang_combo = ttk.Combobox(
             lang_row, textvariable=self._lang_var,
             values=Language.all_labels(),
-            state="readonly", width=42,
+            state="readonly", width=34,
         )
         self._lang_combo.pack(side="left")
+        self._lang_combo.bind("<<ComboboxSelected>>", self._on_lang_change)
+
+        ttk.Label(lang_row, text="Convert to :").pack(side="left", padx=(16, 8))
+        self._convert_var = tk.StringVar(value="No conversion")
+        self._convert_combo = ttk.Combobox(
+            lang_row, textvariable=self._convert_var,
+            values=self._convert_labels_for(Language.MANDARIN_TW),
+            state="readonly", width=30,
+        )
+        self._convert_combo.pack(side="left")
 
         audio_lf = ttk.LabelFrame(outer, text="  Audio files  (MP3 or M4B)", padding=10)
         audio_lf.pack(fill="x", pady=(0, 10))
@@ -184,6 +218,13 @@ class App(tk.Tk):
         )
         self._status_lbl.pack(anchor="w", pady=(3, 0))
 
+        footer = tk.Frame(outer, bg=c["BG"])
+        footer.pack(side="bottom", fill="x")
+        gh_lbl = tk.Label(footer, text="Project repository", cursor="hand2",
+                          bg=c["BG"], fg=c["ACCENT"], font=FONT_SMALL)
+        gh_lbl.pack(side="right", padx=4, pady=(2, 4))
+        gh_lbl.bind("<Button-1>", lambda _: webbrowser.open(_GITHUB_URL))
+
         log_lf = ttk.LabelFrame(outer, text="  Log", padding=6)
         log_lf.pack(fill="both", expand=True)
 
@@ -240,6 +281,15 @@ class App(tk.Tk):
                 style="Epub.TLabel",
             )
 
+    def _convert_labels_for(self, lang: Language) -> list[str]:
+        script = chinese_converter.SCRIPT_FOR_LANGUAGE.get(lang, "s")
+        return [label for label, _ in _CONVERT_OPTIONS_FOR_SCRIPT[script]]
+
+    def _on_lang_change(self, *_) -> None:
+        lang = Language.from_label(self._lang_var.get())
+        self._convert_combo["values"] = self._convert_labels_for(lang)
+        self._convert_var.set("No conversion")
+
     def _start(self) -> None:
         if not self._audio_files:
             messagebox.showwarning(
@@ -254,12 +304,14 @@ class App(tk.Tk):
 
         self._start_btn.config(state="disabled")
         self._lang_combo.config(state="disabled")
+        self._convert_combo.config(state="disabled")
         self._log_clear()
         self._set_status("Preparing…", 0)
         threading.Thread(target=self._pipeline, daemon=True).start()
 
     def _pipeline(self) -> None:
         lang = Language.from_label(self._lang_var.get())
+        convert_target = _CONVERT_BY_LABEL.get(self._convert_var.get())
         try:
             self._copy_sources()
             for label, pct_start, cmd, extra in STEPS:
@@ -270,6 +322,12 @@ class App(tk.Tk):
                 rc = self._run_cmd([PYTHON, str(ROOT / "main.py"), cmd] + extra)
                 if rc != 0:
                     raise RuntimeError(f"Command '{cmd}' failed (code {rc})")
+                if cmd == "align" and convert_target is not None:
+                    source = chinese_converter.SCRIPT_FOR_LANGUAGE[lang]
+                    self.after(0, self._set_status, "Step 3.5 — Character conversion…", 45)
+                    self.after(0, self._log_write, "\nStep 3.5 — Character conversion\n")
+                    chinese_converter.convert_srt_dir(source, convert_target)
+                    self.after(0, self._log_write, "  Done.\n")
             self.after(0, self._set_status, "Done", 100)
             self.after(0, self._log_write, "\nPipeline complete.\n")
             self.after(0, self._on_done)
@@ -279,6 +337,7 @@ class App(tk.Tk):
         finally:
             self.after(0, self._start_btn.config, {"state": "normal"})
             self.after(0, self._lang_combo.config, {"state": "readonly"})
+            self.after(0, self._convert_combo.config, {"state": "readonly"})
 
     def _copy_sources(self) -> None:
         self.after(0, self._log_write, "Copying source files\n")

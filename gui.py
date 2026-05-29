@@ -10,6 +10,7 @@ from tkinter import filedialog, messagebox, ttk
 
 from gui_config import COLORS, WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT
 from gui_config import FONT_DEFAULT, FONT_LABEL, FONT_SMALL, FONT_MONO, FONT_BUTTON_LARGE, FONT_LISTBOX
+from language import Language
 
 # Dirs
 ROOT = Path(__file__).parent
@@ -95,6 +96,14 @@ class App(tk.Tk):
                         troughcolor=COLORS["BTN_BG"], background=COLORS["ACCENT"],
                         thickness=8)
 
+        style.configure("TCombobox",
+                        fieldbackground=COLORS["BTN_BG"], background=COLORS["BTN_BG"],
+                        foreground=COLORS["FG"], arrowcolor=COLORS["FG"],
+                        selectbackground=COLORS["ACCENT"], selectforeground=COLORS["BG"])
+        style.map("TCombobox",
+                  fieldbackground=[("readonly", COLORS["BTN_BG"])],
+                  foreground=[("readonly", COLORS["FG"])])
+
         self._colors = dict(
             BG=COLORS["BG"], PANEL=COLORS["PANEL"], ACCENT=COLORS["ACCENT"], FG=COLORS["FG"],
             FG_DIM=COLORS["FG_DIM"], BTN_BG=COLORS["BTN_BG"], START=COLORS["START"],
@@ -104,6 +113,17 @@ class App(tk.Tk):
         c = self._colors
         outer = ttk.Frame(self, padding=16)
         outer.pack(fill="both", expand=True)
+
+        lang_row = tk.Frame(outer, bg=c["BG"])
+        lang_row.pack(fill="x", pady=(0, 12))
+        ttk.Label(lang_row, text="Language :").pack(side="left", padx=(0, 8))
+        self._lang_var = tk.StringVar(value=Language.MANDARIN_TW.value.label)
+        self._lang_combo = ttk.Combobox(
+            lang_row, textvariable=self._lang_var,
+            values=Language.all_labels(),
+            state="readonly", width=42,
+        )
+        self._lang_combo.pack(side="left")
 
         audio_lf = ttk.LabelFrame(outer, text="  Audio files  (MP3 or M4B)", padding=10)
         audio_lf.pack(fill="x", pady=(0, 10))
@@ -233,14 +253,18 @@ class App(tk.Tk):
             return
 
         self._start_btn.config(state="disabled")
+        self._lang_combo.config(state="disabled")
         self._log_clear()
         self._set_status("Preparing…", 0)
         threading.Thread(target=self._pipeline, daemon=True).start()
 
     def _pipeline(self) -> None:
+        lang = Language.from_label(self._lang_var.get())
         try:
             self._copy_sources()
             for label, pct_start, cmd, extra in STEPS:
+                if cmd == "align":
+                    extra = extra + ["--language", lang.name.lower()]
                 self.after(0, self._set_status, label + "…", pct_start)
                 self.after(0, self._log_write, f"\n{label}\n")
                 rc = self._run_cmd([PYTHON, str(ROOT / "main.py"), cmd] + extra)
@@ -254,6 +278,7 @@ class App(tk.Tk):
             self.after(0, self._set_status, "Error — check the log.", 0)
         finally:
             self.after(0, self._start_btn.config, {"state": "normal"})
+            self.after(0, self._lang_combo.config, {"state": "readonly"})
 
     def _copy_sources(self) -> None:
         self.after(0, self._log_write, "Copying source files\n")

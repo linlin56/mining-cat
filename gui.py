@@ -139,7 +139,7 @@ class App(tk.Tk):
         outer.pack(fill="both", expand=True)
 
         lang_row = tk.Frame(outer, bg=c["BG"])
-        lang_row.pack(fill="x", pady=(0, 12))
+        lang_row.pack(fill="x", pady=(0, 8))
         ttk.Label(lang_row, text="Language :").pack(side="left", padx=(0, 8))
         self._lang_var = tk.StringVar(value=Language.MANDARIN_TW.value.label)
         self._lang_combo = ttk.Combobox(
@@ -158,6 +158,17 @@ class App(tk.Tk):
             state="readonly", width=30,
         )
         self._convert_combo.pack(side="left")
+
+        precision_row = tk.Frame(outer, bg=c["BG"])
+        precision_row.pack(fill="x", pady=(0, 12))
+        ttk.Label(precision_row, text="Precision :").pack(side="left", padx=(0, 8))
+        self._precision_var = tk.StringVar(value="Base (default)")
+        self._precision_combo = ttk.Combobox(
+            precision_row, textvariable=self._precision_var,
+            values=["Tiny", "Base (default)", "Small", "Medium", "Large"],
+            state="readonly", width=18,
+        )
+        self._precision_combo.pack(side="left")
 
         audio_lf = ttk.LabelFrame(outer, text="  Audio files  (MP3 or M4B)", padding=10)
         audio_lf.pack(fill="x", pady=(0, 10))
@@ -305,6 +316,7 @@ class App(tk.Tk):
         self._start_btn.config(state="disabled")
         self._lang_combo.config(state="disabled")
         self._convert_combo.config(state="disabled")
+        self._precision_combo.config(state="disabled")
         self._log_clear()
         self._set_status("Preparing…", 0)
         threading.Thread(target=self._pipeline, daemon=True).start()
@@ -312,11 +324,12 @@ class App(tk.Tk):
     def _pipeline(self) -> None:
         lang = Language.from_label(self._lang_var.get())
         convert_target = _CONVERT_BY_LABEL.get(self._convert_var.get())
+        model = self._precision_var.get().split()[0].lower()
         try:
             self._copy_sources()
             for label, pct_start, cmd, extra in STEPS:
                 if cmd == "align":
-                    extra = extra + ["--language", lang.name.lower()]
+                    extra = extra + ["--language", lang.name.lower(), "--model", model]
                 self.after(0, self._set_status, label + "…", pct_start)
                 self.after(0, self._log_write, f"\n{label}\n")
                 rc = self._run_cmd([PYTHON, str(ROOT / "main.py"), cmd] + extra)
@@ -338,6 +351,7 @@ class App(tk.Tk):
             self.after(0, self._start_btn.config, {"state": "normal"})
             self.after(0, self._lang_combo.config, {"state": "readonly"})
             self.after(0, self._convert_combo.config, {"state": "readonly"})
+            self.after(0, self._precision_combo.config, {"state": "readonly"})
 
     def _copy_sources(self) -> None:
         self.after(0, self._log_write, "Copying source files\n")

@@ -21,7 +21,7 @@ class Language(Enum):
         vocab_annotation_pattern=r'\[\d+\]',
     )
     MANDARIN_CN = LangConfig(
-        label="Mandarin — Chine (Simplified)",
+        label="Mandarin — China (Simplified)",
         whisper_code="zh",
         closing_punct=frozenset('。？！」”'),
         vocab_annotation_pattern=r'\[\d+\]',

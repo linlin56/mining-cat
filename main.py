@@ -44,6 +44,24 @@ def cmd_align(args: argparse.Namespace) -> None:
     )
 
 
+# Used if no ebook is provided, will generate segments based on audio alone (no alignment, just transcription).
+# It's not as accurate but great if you don't have the ebook.
+def cmd_transcribe(args: argparse.Namespace) -> None:
+    import align
+    from language import Language
+    align.run_transcribe(
+        model_name=args.model,
+        language=Language.from_id(args.language),
+        from_ch=args.from_ch,
+        only_ch=args.only_ch,
+    )
+
+
+def cmd_tts(args: argparse.Namespace) -> None:
+    import tts
+    tts.run(voice=args.voice)
+
+
 def cmd_export(args: argparse.Namespace) -> None:
     import export
     export.run(
@@ -111,6 +129,21 @@ def main() -> None:
     p_align.add_argument("--only", dest="only_ch", type=int, default=None,
                          help="Process only chapter N")
 
+    # transcribe
+    p_transcribe = sub.add_parser("transcribe", help="Whisper transcription (no epub alignment)")
+    p_transcribe.add_argument("--model", default="tiny",
+                              choices=["tiny", "base", "small", "medium", "large"])
+    p_transcribe.add_argument("--language", default="mandarin_tw",
+                              choices=["mandarin_tw", "mandarin_cn"])
+    p_transcribe.add_argument("--from", dest="from_ch", type=int, default=None,
+                              help="Start from chapter N")
+    p_transcribe.add_argument("--only", dest="only_ch", type=int, default=None,
+                              help="Process only chapter N")
+
+    # tts
+    p_tts = sub.add_parser("tts", help="Generate audio from EPUB text using edge-tts")
+    p_tts.add_argument("--voice", required=True, help="Edge-TTS voice name (e.g. zh-TW-HsiaoChenNeural)")
+
     # export
     p_export = sub.add_parser("export", help="Render final MP4 files")
     p_export.add_argument("--chapter", type=int, default=None)
@@ -134,12 +167,14 @@ def main() -> None:
     args = parser.parse_args()
 
     dispatch = {
-        "audio":   cmd_audio,
-        "epub":    cmd_epub,
-        "align":   cmd_align,
-        "convert": cmd_convert,
-        "export":  cmd_export,
-        "run":     cmd_run,
+        "audio":      cmd_audio,
+        "epub":       cmd_epub,
+        "align":      cmd_align,
+        "transcribe": cmd_transcribe,
+        "tts":        cmd_tts,
+        "convert":    cmd_convert,
+        "export":     cmd_export,
+        "run":        cmd_run,
     }
     dispatch[args.command](args)
 

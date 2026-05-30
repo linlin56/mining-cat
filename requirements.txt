@@ -7,4 +7,5 @@ Pillow>=10.0
 stable-ts>=2.16.1
 faster-whisper>=1.0.0
 opencc-python-reimplemented>=0.1.7
+edge-tts>=7.0
 pytest>=8.0

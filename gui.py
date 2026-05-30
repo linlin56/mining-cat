@@ -47,11 +47,52 @@ _VENV_PYTHON = ROOT / ".venv" / "bin" / "python"
 PYTHON = str(_VENV_PYTHON) if _VENV_PYTHON.exists() else sys.executable
 
 STEPS = [
-    ("Step 1/4 — Audio preparation",  10,  "audio",  []),
-    ("Step 2/4 — EPUB extraction",    25,  "epub",   []),
-    ("Step 3/4 — Alignment",          40,  "align",  []),
-    ("Step 4/4 — MP4 export",         80,  "export", ["--all"]),
+    ("Step 1/4 — Audio preparation",  10,  "audio",     []),
+    ("Step 2/4 — EPUB extraction",    25,  "epub",      []),
+    ("Step 3/4 — Alignment",          40,  "align",     []),
+    ("Step 4/4 — MP4 export",         80,  "export",    ["--all"]),
 ]
+
+# Whisper-only pipeline: no epub, transcribe directly then export.
+STEPS_WHISPER = [
+    ("Step 1/3 — Audio preparation",  10,  "audio",      []),
+    ("Step 2/3 — Transcription",      40,  "transcribe", []),
+    ("Step 3/3 — MP4 export",         80,  "export",     ["--all"]),
+]
+
+# TTS pipeline: epub → tts (audio + SRT from sentence boundaries) → export.
+# No Whisper alignment needed — edge-tts provides timing directly.
+STEPS_TTS = [
+    ("Step 1/3 — EPUB extraction",   10,  "epub",   []),
+    ("Step 2/3 — Audio + subtitles", 40,  "tts",    []),
+    ("Step 3/3 — MP4 export",        80,  "export", ["--all"]),
+]
+
+# edge-tts voices per language (no HK/Cantonese, no dialect voices)
+_VOICES_FOR_LANGUAGE: dict[Language, list[tuple[str, str]]] = {
+    Language.MANDARIN_TW: [
+        ("HsiaoChen — Mandarin (Taiwan), female", "zh-TW-HsiaoChenNeural"),
+        ("HsiaoYu — Mandarin (Taiwan), female",   "zh-TW-HsiaoYuNeural"),
+        ("YunJhe — Mandarin (Taiwan), male",       "zh-TW-YunJheNeural"),
+    ],
+    Language.MANDARIN_CN: [
+        ("Xiaoxiao — Mandarin (China), female",   "zh-CN-XiaoxiaoNeural"),
+        ("Xiaoyi — Mandarin (China), female",     "zh-CN-XiaoyiNeural"),
+        ("Yunxi — Mandarin (China), male",        "zh-CN-YunxiNeural"),
+        ("Yunjian — Mandarin (China), male",      "zh-CN-YunjianNeural"),
+        ("Yunxia — Mandarin (China), male",       "zh-CN-YunxiaNeural"),
+        ("Yunyang — Mandarin (China), male",      "zh-CN-YunyangNeural"),
+    ],
+}
+_DEFAULT_VOICE_FOR_LANGUAGE: dict[Language, str] = {
+    Language.MANDARIN_TW: "HsiaoChen — Mandarin (Taiwan), female",
+    Language.MANDARIN_CN: "Xiaoxiao — Mandarin (China), female",
+}
+_VOICE_ID_BY_LABEL: dict[str, str] = {
+    label: voice_id
+    for voices in _VOICES_FOR_LANGUAGE.values()
+    for label, voice_id in voices
+}
 
 
 def _clear_dir(path: Path) -> None:
@@ -161,7 +202,19 @@ class App(tk.Tk):
 
         precision_row = tk.Frame(outer, bg=c["BG"])
         precision_row.pack(fill="x", pady=(0, 12))
-        ttk.Label(precision_row, text="Precision :").pack(side="left", padx=(0, 8))
+
+        ttk.Label(precision_row, text="Mode :").pack(side="left", padx=(0, 8))
+        self._mode_var = tk.StringVar(value="Standard")
+        self._mode_combo = ttk.Combobox(
+            precision_row, textvariable=self._mode_var,
+            values=["Standard", "Generate subtitles", "Generate audio"],
+            state="readonly", width=22,
+        )
+        self._mode_combo.pack(side="left")
+        self._mode_combo.bind("<<ComboboxSelected>>", self._on_mode_change)
+
+        self._precision_lbl = ttk.Label(precision_row, text="Precision :")
+        self._precision_lbl.pack(side="left", padx=(16, 8))
         self._precision_var = tk.StringVar(value="Base (default)")
         self._precision_combo = ttk.Combobox(
             precision_row, textvariable=self._precision_var,
@@ -170,8 +223,9 @@ class App(tk.Tk):
         )
         self._precision_combo.pack(side="left")
 
-        audio_lf = ttk.LabelFrame(outer, text="  Audio files  (MP3 or M4B)", padding=10)
-        audio_lf.pack(fill="x", pady=(0, 10))
+        self._audio_lf = ttk.LabelFrame(outer, text="  Audio files  (MP3 or M4B)", padding=10)
+        self._audio_lf.pack(fill="x", pady=(0, 10))
+        audio_lf = self._audio_lf
 
         list_frame = tk.Frame(audio_lf, bg=c["PANEL"])
         list_frame.pack(fill="x")
@@ -195,8 +249,22 @@ class App(tk.Tk):
         ttk.Button(btn_row, text="− Remove selection",
                    command=self._remove_audio).pack(side="left")
 
-        epub_lf = ttk.LabelFrame(outer, text="  Book  (EPUB)", padding=10)
-        epub_lf.pack(fill="x", pady=(0, 14))
+        # Voice selector — only shown in "Generate audio" mode (not packed initially)
+        self._voice_lf = ttk.LabelFrame(outer, text="  Voice", padding=10)
+        voice_row = tk.Frame(self._voice_lf, bg=c["PANEL"])
+        voice_row.pack(fill="x")
+        _init_lang = Language.MANDARIN_TW
+        self._voice_var = tk.StringVar(value=_DEFAULT_VOICE_FOR_LANGUAGE[_init_lang])
+        self._voice_combo = ttk.Combobox(
+            voice_row, textvariable=self._voice_var,
+            values=[lbl for lbl, _ in _VOICES_FOR_LANGUAGE[_init_lang]],
+            state="readonly", width=42,
+        )
+        self._voice_combo.pack(side="left")
+
+        self._epub_lf = ttk.LabelFrame(outer, text="  Book  (EPUB)", padding=10)
+        self._epub_lf.pack(fill="x", pady=(0, 14))
+        epub_lf = self._epub_lf
 
         epub_row = tk.Frame(epub_lf, bg=c["PANEL"])
         epub_row.pack(fill="x")
@@ -300,14 +368,47 @@ class App(tk.Tk):
         lang = Language.from_label(self._lang_var.get())
         self._convert_combo["values"] = self._convert_labels_for(lang)
         self._convert_var.set("No conversion")
+        self._update_voice_options(lang)
+
+    def _update_voice_options(self, lang: Language) -> None:
+        voices = _VOICES_FOR_LANGUAGE.get(lang, [])
+        self._voice_combo["values"] = [lbl for lbl, _ in voices]
+        self._voice_var.set(_DEFAULT_VOICE_FOR_LANGUAGE.get(lang, voices[0][0] if voices else ""))
+
+    def _on_mode_change(self, *_) -> None:
+        mode = self._mode_var.get()
+
+        # Precision is only relevant for Whisper modes
+        if mode == "Generate audio":
+            self._precision_lbl.pack_forget()
+            self._precision_combo.pack_forget()
+        else:
+            if not self._precision_lbl.winfo_ismapped():
+                self._precision_lbl.pack(side="left", padx=(16, 8))
+                self._precision_combo.pack(side="left")
+
+        # Always reset the three section frames, then re-pack in the right order.
+        # Using before=self._start_btn guarantees correct insertion point.
+        self._audio_lf.pack_forget()
+        self._voice_lf.pack_forget()
+        self._epub_lf.pack_forget()
+        if mode == "Standard":
+            self._audio_lf.pack(fill="x", pady=(0, 10), before=self._start_btn)
+            self._epub_lf.pack(fill="x", pady=(0, 14), before=self._start_btn)
+        elif mode == "Generate subtitles":
+            self._audio_lf.pack(fill="x", pady=(0, 10), before=self._start_btn)
+        elif mode == "Generate audio":
+            self._voice_lf.pack(fill="x", pady=(0, 10), before=self._start_btn)
+            self._epub_lf.pack(fill="x", pady=(0, 14), before=self._start_btn)
 
     def _start(self) -> None:
-        if not self._audio_files:
+        mode = self._mode_var.get()
+        if mode != "Generate audio" and not self._audio_files:
             messagebox.showwarning(
                 "Missing files", "Add at least one audio file (MP3 or M4B)."
             )
             return
-        if self._epub_file is None:
+        if mode != "Generate subtitles" and self._epub_file is None:
             messagebox.showwarning(
                 "Missing file", "Select an EPUB file."
             )
@@ -317,6 +418,8 @@ class App(tk.Tk):
         self._lang_combo.config(state="disabled")
         self._convert_combo.config(state="disabled")
         self._precision_combo.config(state="disabled")
+        self._mode_combo.config(state="disabled")
+        self._voice_combo.config(state="disabled")
         self._log_clear()
         self._set_status("Preparing…", 0)
         threading.Thread(target=self._pipeline, daemon=True).start()
@@ -325,17 +428,29 @@ class App(tk.Tk):
         lang = Language.from_label(self._lang_var.get())
         convert_target = _CONVERT_BY_LABEL.get(self._convert_var.get())
         model = self._precision_var.get().split()[0].lower()
+        mode = self._mode_var.get()
+
+        if mode == "Standard":
+            steps = STEPS
+        elif mode == "Generate subtitles":
+            steps = STEPS_WHISPER
+        else:
+            steps = STEPS_TTS
+
         try:
             self._copy_sources()
-            for label, pct_start, cmd, extra in STEPS:
-                if cmd == "align":
+            for label, pct_start, cmd, extra in steps:
+                if cmd in ("align", "transcribe"):
                     extra = extra + ["--language", lang.name.lower(), "--model", model]
+                elif cmd == "tts":
+                    voice_id = _VOICE_ID_BY_LABEL[self._voice_var.get()]
+                    extra = extra + ["--voice", voice_id]
                 self.after(0, self._set_status, label + "…", pct_start)
                 self.after(0, self._log_write, f"\n{label}\n")
                 rc = self._run_cmd([PYTHON, str(ROOT / "main.py"), cmd] + extra)
                 if rc != 0:
                     raise RuntimeError(f"Command '{cmd}' failed (code {rc})")
-                if cmd == "align" and convert_target is not None:
+                if cmd in ("align", "tts") and convert_target is not None:
                     source = chinese_converter.SCRIPT_FOR_LANGUAGE[lang]
                     self.after(0, self._set_status, "Step 3.5 — Character conversion…", 45)
                     self.after(0, self._log_write, "\nStep 3.5 — Character conversion\n")
@@ -352,26 +467,31 @@ class App(tk.Tk):
             self.after(0, self._lang_combo.config, {"state": "readonly"})
             self.after(0, self._convert_combo.config, {"state": "readonly"})
             self.after(0, self._precision_combo.config, {"state": "readonly"})
+            self.after(0, self._mode_combo.config, {"state": "readonly"})
+            self.after(0, self._voice_combo.config, {"state": "readonly"})
 
     def _copy_sources(self) -> None:
+        mode = self._mode_var.get()
         self.after(0, self._log_write, "Copying source files\n")
 
-        audio_outside = [f for f in self._audio_files if f.parent != DIR_AUDIOBOOK]
-        if audio_outside:
-            _clear_dir(DIR_AUDIOBOOK)
-            for f in self._audio_files:
-                shutil.copy2(f, DIR_AUDIOBOOK / f.name)
-                self.after(0, self._log_write, f"  audio : {f.name}\n")
-        else:
-            self.after(0, self._log_write, "  audio : files already in place\n")
+        if mode != "Generate audio":
+            audio_outside = [f for f in self._audio_files if f.parent != DIR_AUDIOBOOK]
+            if audio_outside:
+                _clear_dir(DIR_AUDIOBOOK)
+                for f in self._audio_files:
+                    shutil.copy2(f, DIR_AUDIOBOOK / f.name)
+                    self.after(0, self._log_write, f"  audio : {f.name}\n")
+            else:
+                self.after(0, self._log_write, "  audio : files already in place\n")
 
-        epub_outside = self._epub_file.parent != DIR_EBOOK
-        if epub_outside:
-            _clear_dir(DIR_EBOOK)
-            shutil.copy2(self._epub_file, DIR_EBOOK / self._epub_file.name)
-            self.after(0, self._log_write, f"  epub  : {self._epub_file.name}\n")
-        else:
-            self.after(0, self._log_write, "  epub  : file already in place\n")
+        if mode != "Generate subtitles" and self._epub_file is not None:
+            epub_outside = self._epub_file.parent != DIR_EBOOK
+            if epub_outside:
+                _clear_dir(DIR_EBOOK)
+                shutil.copy2(self._epub_file, DIR_EBOOK / self._epub_file.name)
+                self.after(0, self._log_write, f"  epub  : {self._epub_file.name}\n")
+            else:
+                self.after(0, self._log_write, "  epub  : file already in place\n")
 
     def _run_cmd(self, args: list[str]) -> int:
         proc = subprocess.Popen(

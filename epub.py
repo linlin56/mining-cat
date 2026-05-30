@@ -121,6 +121,43 @@ def extract_chapters(book) -> list[tuple[str, str]]:
 
     return chapters
 
+# Try to get a cover image from epub to use for video background
+def get_epub_cover() -> Path | None:
+    try:
+        epub_path = get_epub_file()
+        book = epub.read_epub(epub_path)
+    except FileNotFoundError:
+        return None
+
+    # We'll try multiple methods
+    content = None
+
+    # First look for items of type "cover"
+    for item in book.get_items_of_type(ebooklib.ITEM_COVER):
+        content = item.get_content()
+        break
+
+    # If not found, look for item referenced by <meta name="cover" content="...">
+    if not content:
+        cover_meta = book.get_metadata('OPF', 'cover')
+        if cover_meta:
+            item_id = cover_meta[0][0]
+            item = book.get_item_with_id(item_id)
+            if item:
+                content = item.get_content()
+    # If still not found, look for any image item with "cover" in the filename
+    if not content:
+        for item in book.get_items_of_type(ebooklib.ITEM_IMAGE):
+            if 'cover' in item.file_name.lower():
+                content = item.get_content()
+                break
+
+    # Save cover image to temp directory and return path
+    DIR_TEMP.mkdir(parents=True, exist_ok=True)
+    cover_path = DIR_TEMP / "cover.jpg"
+    cover_path.write_bytes(content)
+    return cover_path
+
 
 def save_chapters(
     selected: list[tuple[str, str]],

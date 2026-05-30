@@ -57,6 +57,11 @@ def cmd_transcribe(args: argparse.Namespace) -> None:
     )
 
 
+def cmd_tts(args: argparse.Namespace) -> None:
+    import tts
+    tts.run(voice=args.voice)
+
+
 def cmd_export(args: argparse.Namespace) -> None:
     import export
     export.run(
@@ -135,6 +140,10 @@ def main() -> None:
     p_transcribe.add_argument("--only", dest="only_ch", type=int, default=None,
                               help="Process only chapter N")
 
+    # tts
+    p_tts = sub.add_parser("tts", help="Generate audio from EPUB text using edge-tts")
+    p_tts.add_argument("--voice", required=True, help="Edge-TTS voice name (e.g. zh-TW-HsiaoChenNeural)")
+
     # export
     p_export = sub.add_parser("export", help="Render final MP4 files")
     p_export.add_argument("--chapter", type=int, default=None)
@@ -162,6 +171,7 @@ def main() -> None:
         "epub":       cmd_epub,
         "align":      cmd_align,
         "transcribe": cmd_transcribe,
+        "tts":        cmd_tts,
         "convert":    cmd_convert,
         "export":     cmd_export,
         "run":        cmd_run,

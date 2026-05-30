@@ -14,13 +14,30 @@ DIR_CHAPTERS_AUDIO = ROOT / "output" / "chapters_audio"
 DIR_CHAPTERS_TEXT  = ROOT / "output" / "chapters_text"
 DIR_SRT            = ROOT / "output" / "srt"
 DIR_FINAL          = ROOT / "output" / "final"
+DIR_TEMP = ROOT / "output" / "temp"
 
-#  Temp 
-DIR_TEMP = ROOT / "temp"
-
-#  Intermediate audio format 
+#  Intermediate audio format
 AUDIO_FORMAT  = "mp3"
 AUDIO_BITRATE = "192k"
+
+#  Font candidates for video overlay (ordered by Unicode/CJK coverage)
+FONT_CANDIDATES = [
+    # macOS — CJK support
+    "/System/Library/Fonts/PingFang.ttc",
+    "/System/Library/Fonts/STHeiti Light.ttc",
+    "/Library/Fonts/Arial Unicode.ttf",
+    "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+    # Linux — CJK support
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/noto-cjk/NotoSansCJKsc-Regular.otf",
+    # Windows — CJK support
+    "C:/Windows/Fonts/msyh.ttc",
+    "C:/Windows/Fonts/simsun.ttc",
+    # Latin fallbacks
+    "/System/Library/Fonts/Helvetica.ttc",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+]
 
 
 def detect_audio_mode() -> tuple[str, list[Path]]:

@@ -1,5 +1,3 @@
-# epub.py — Split epub into per-chapter text files.
-
 import json
 from pathlib import Path
 
@@ -9,7 +7,7 @@ from bs4 import BeautifulSoup
 
 from config import DIR_CHAPTERS_TEXT, DIR_EBOOK, DIR_TEMP
 
-
+22
 def get_epub_file() -> Path:
     files = sorted(DIR_EBOOK.glob("*.epub"))
     if not files:
@@ -152,11 +150,22 @@ def get_epub_cover() -> Path | None:
                 content = item.get_content()
                 break
 
-    # Save cover image to temp directory and return path
+    if not content:
+        return None
+
     DIR_TEMP.mkdir(parents=True, exist_ok=True)
     cover_path = DIR_TEMP / "cover.jpg"
     cover_path.write_bytes(content)
     return cover_path
+
+
+def get_epub_title() -> str | None:
+    try:
+        book = epub.read_epub(get_epub_file())
+        title = book.title
+        return title.strip() if title and title.strip() else None
+    except Exception:
+        return None
 
 
 def save_chapters(

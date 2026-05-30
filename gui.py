@@ -47,10 +47,18 @@ _VENV_PYTHON = ROOT / ".venv" / "bin" / "python"
 PYTHON = str(_VENV_PYTHON) if _VENV_PYTHON.exists() else sys.executable
 
 STEPS = [
-    ("Step 1/4 — Audio preparation",  10,  "audio",  []),
-    ("Step 2/4 — EPUB extraction",    25,  "epub",   []),
-    ("Step 3/4 — Alignment",          40,  "align",  []),
-    ("Step 4/4 — MP4 export",         80,  "export", ["--all"]),
+    ("Step 1/4 — Audio preparation",  10,  "audio",     []),
+    ("Step 2/4 — EPUB extraction",    25,  "epub",      []),
+    ("Step 3/4 — Alignment",          40,  "align",     []),
+    ("Step 4/4 — MP4 export",         80,  "export",    ["--all"]),
+]
+
+# Whisper-only pipeline: no epub, transcribe directly then export.
+# Requires main.py `transcribe` subcommand (to be implemented).
+STEPS_WHISPER = [
+    ("Step 1/3 — Audio preparation",  10,  "audio",      []),
+    ("Step 2/3 — Transcription",      40,  "transcribe", []),
+    ("Step 3/3 — MP4 export",         80,  "export",     ["--all"]),
 ]
 
 
@@ -170,8 +178,19 @@ class App(tk.Tk):
         )
         self._precision_combo.pack(side="left")
 
-        audio_lf = ttk.LabelFrame(outer, text="  Audio files  (MP3 or M4B)", padding=10)
-        audio_lf.pack(fill="x", pady=(0, 10))
+        ttk.Label(precision_row, text="Mode :").pack(side="left", padx=(16, 8))
+        self._mode_var = tk.StringVar(value="Standard")
+        self._mode_combo = ttk.Combobox(
+            precision_row, textvariable=self._mode_var,
+            values=["Standard", "Generate subtitles"],
+            state="readonly", width=22,
+        )
+        self._mode_combo.pack(side="left")
+        self._mode_combo.bind("<<ComboboxSelected>>", self._on_mode_change)
+
+        self._audio_lf = ttk.LabelFrame(outer, text="  Audio files  (MP3 or M4B)", padding=10)
+        self._audio_lf.pack(fill="x", pady=(0, 10))
+        audio_lf = self._audio_lf
 
         list_frame = tk.Frame(audio_lf, bg=c["PANEL"])
         list_frame.pack(fill="x")
@@ -195,8 +214,9 @@ class App(tk.Tk):
         ttk.Button(btn_row, text="− Remove selection",
                    command=self._remove_audio).pack(side="left")
 
-        epub_lf = ttk.LabelFrame(outer, text="  Book  (EPUB)", padding=10)
-        epub_lf.pack(fill="x", pady=(0, 14))
+        self._epub_lf = ttk.LabelFrame(outer, text="  Book  (EPUB)", padding=10)
+        self._epub_lf.pack(fill="x", pady=(0, 14))
+        epub_lf = self._epub_lf
 
         epub_row = tk.Frame(epub_lf, bg=c["PANEL"])
         epub_row.pack(fill="x")
@@ -301,13 +321,22 @@ class App(tk.Tk):
         self._convert_combo["values"] = self._convert_labels_for(lang)
         self._convert_var.set("No conversion")
 
+    def _on_mode_change(self, *_) -> None:
+        mode = self._mode_var.get()
+        if mode == "Standard":
+            if not self._epub_lf.winfo_ismapped():
+                self._epub_lf.pack(fill="x", pady=(0, 14), after=self._audio_lf)
+        elif mode == "Generate subtitles":
+            self._epub_lf.pack_forget()
+
     def _start(self) -> None:
+        mode = self._mode_var.get()
         if not self._audio_files:
             messagebox.showwarning(
                 "Missing files", "Add at least one audio file (MP3 or M4B)."
             )
             return
-        if self._epub_file is None:
+        if mode == "Standard" and self._epub_file is None:
             messagebox.showwarning(
                 "Missing file", "Select an EPUB file."
             )
@@ -317,6 +346,7 @@ class App(tk.Tk):
         self._lang_combo.config(state="disabled")
         self._convert_combo.config(state="disabled")
         self._precision_combo.config(state="disabled")
+        self._mode_combo.config(state="disabled")
         self._log_clear()
         self._set_status("Preparing…", 0)
         threading.Thread(target=self._pipeline, daemon=True).start()
@@ -325,10 +355,14 @@ class App(tk.Tk):
         lang = Language.from_label(self._lang_var.get())
         convert_target = _CONVERT_BY_LABEL.get(self._convert_var.get())
         model = self._precision_var.get().split()[0].lower()
+        mode = self._mode_var.get()
+
+        steps = STEPS if mode == "Standard" else STEPS_WHISPER
+
         try:
             self._copy_sources()
-            for label, pct_start, cmd, extra in STEPS:
-                if cmd == "align":
+            for label, pct_start, cmd, extra in steps:
+                if cmd in ("align", "transcribe"):
                     extra = extra + ["--language", lang.name.lower(), "--model", model]
                 self.after(0, self._set_status, label + "…", pct_start)
                 self.after(0, self._log_write, f"\n{label}\n")
@@ -352,6 +386,7 @@ class App(tk.Tk):
             self.after(0, self._lang_combo.config, {"state": "readonly"})
             self.after(0, self._convert_combo.config, {"state": "readonly"})
             self.after(0, self._precision_combo.config, {"state": "readonly"})
+            self.after(0, self._mode_combo.config, {"state": "readonly"})
 
     def _copy_sources(self) -> None:
         self.after(0, self._log_write, "Copying source files\n")
@@ -364,6 +399,9 @@ class App(tk.Tk):
                 self.after(0, self._log_write, f"  audio : {f.name}\n")
         else:
             self.after(0, self._log_write, "  audio : files already in place\n")
+
+        if self._epub_file is None or self._mode_var.get() != "Standard":
+            return
 
         epub_outside = self._epub_file.parent != DIR_EBOOK
         if epub_outside:

@@ -93,6 +93,78 @@ def align_chapter(
             segs.append(Segment(0, start, end, text))
     return fix_leading_punct(segs, lang)
 
+def transcribe_chapter(
+    model,
+    audio_file: Path,
+    lang: Language = Language.MANDARIN_TW,
+) -> list[Segment]:
+    result = model.transcribe(
+        str(audio_file),
+        language=lang.value.whisper_code,
+        verbose=False,
+    )
+    raw_segs = result.segments if hasattr(result, "segments") else result.get("segments", [])
+    segs = []
+    for seg in raw_segs:
+        start = seg.start if hasattr(seg, "start") else seg["start"]
+        end   = seg.end   if hasattr(seg, "end")   else seg["end"]
+        text  = (seg.text if hasattr(seg, "text")  else seg["text"]).strip()
+        if text:
+            segs.append(Segment(0, start, end, text))
+    return fix_leading_punct(segs, lang)
+
+
+def run_transcribe(
+    model_name: str = "tiny",
+    language: Language = Language.MANDARIN_TW,
+    from_ch: int | None = None,
+    only_ch: int | None = None,
+) -> None:
+    import sys
+
+    if only_ch is not None:
+        from_ch = only_ch
+
+    if not DIR_CHAPTERS_AUDIO.exists():
+        print(f"Error: {DIR_CHAPTERS_AUDIO} not found — Run 'audio' first")
+        sys.exit(1)
+
+    DIR_SRT.mkdir(parents=True, exist_ok=True)
+
+    audio_files = sorted(DIR_CHAPTERS_AUDIO.glob("*.mp3"))
+    print(f"Audio chapters: {len(audio_files)}")
+
+    start_idx = (from_ch - 1) if from_ch else 0
+    files = audio_files[start_idx:]
+    print()
+
+    print(f"Loading stable-whisper model '{model_name}'...")
+    model = stable_whisper.load_model(model_name, device="cpu")
+    print()
+
+    for i, audio_file in enumerate(
+        tqdm(files, desc="Chapters"), start=start_idx
+    ):
+        ch_num = i + 1
+        srt_out = DIR_SRT / (audio_file.stem + ".srt")
+
+        if srt_out.exists() and from_ch is None:
+            tqdm.write(f"  Ch.{ch_num:03d} skip")
+            continue
+
+        t0 = time.time()
+        segs = transcribe_chapter(model, audio_file, lang=language)
+        save_srt(segs, srt_out)
+        elapsed = time.time() - t0
+
+        tqdm.write(f"  Ch.{ch_num:03d}  {len(segs)} seg  {elapsed:.0f}s")
+
+        if only_ch is not None:
+            break
+
+    print("\nDone.")
+
+
 # Run alignment for all chapters, with options to start from a specific chapter or only process one chapter.
 def run(
     model_name: str = "tiny",

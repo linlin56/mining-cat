@@ -172,12 +172,17 @@ def run(dry_run: bool = False) -> None:
         print(f"\n{len(copied)} chapters ready in {DIR_CHAPTERS_AUDIO}/")
         return
 
-    # TODO: support single .mp3 with chapter splitting (not yet implemented)
     if mode == "single_mp3":
-        print("Error: single .mp3 found.")
-        print("  Splitting a single .mp3 by chapter is not yet supported.")
-        print("  Use a .m4b with chapter markers, or provide multiple .mp3 files.")
-        sys.exit(1)
+        print(f"Mode: single-MP3 (treated as one chapter)")
+        for f in audio_files:
+            print(f"  {f.name}")
+        print()
+        if dry_run:
+            print("Dry-run: no files copied.")
+            return
+        copied = copy_mp3_chapters(audio_files, DIR_CHAPTERS_AUDIO)
+        print(f"\n{len(copied)} chapter ready in {DIR_CHAPTERS_AUDIO}/")
+        return
 
     m4b_path = audio_files[0]
     print(f"Analysing {m4b_path.name} ...")

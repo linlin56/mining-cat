@@ -114,6 +114,8 @@ class App(tk.Tk):
 
         self._audio_files: list[Path] = []
         self._epub_file: Path | None = None
+        self._epub_chapters: list[tuple[str, str]] = []
+        self._selected_chapters: list[int] = []
         self._running = False
 
         self._setup_style()
@@ -277,6 +279,29 @@ class App(tk.Tk):
         ttk.Button(epub_row, text="Select…",
                    command=self._select_epub).pack(side="right")
 
+        chap_frame = tk.Frame(epub_lf, bg=c["PANEL"])
+        chap_frame.pack(fill="x", pady=(6, 0))
+        self._chapter_lb = tk.Listbox(
+            chap_frame, height=5, selectmode=tk.EXTENDED,
+            bg=c["BG"], fg=c["FG"], selectbackground=c["ACCENT"],
+            selectforeground=c["BG"], relief="flat", borderwidth=0,
+            highlightthickness=0, font=FONT_LISTBOX, activestyle="none",
+        )
+        chap_sb = ttk.Scrollbar(chap_frame, orient="vertical", command=self._chapter_lb.yview)
+        self._chapter_lb.config(yscrollcommand=chap_sb.set)
+        self._chapter_lb.pack(side="left", fill="both", expand=True)
+        chap_sb.pack(side="right", fill="y")
+        self._chapter_lb.bind("<<ListboxSelect>>", self._update_chapter_count)
+
+        chap_ctrl = tk.Frame(epub_lf, bg=c["PANEL"])
+        chap_ctrl.pack(fill="x", pady=(4, 0))
+        ttk.Button(chap_ctrl, text="Select all",
+                   command=self._chapter_select_all).pack(side="left", padx=(0, 6))
+        ttk.Button(chap_ctrl, text="Deselect all",
+                   command=self._chapter_deselect_all).pack(side="left")
+        self._chapter_count_lbl = ttk.Label(chap_ctrl, text="", style="Dim.TLabel", font=FONT_SMALL)
+        self._chapter_count_lbl.pack(side="right")
+
         self._start_btn = ttk.Button(
             outer, text="Start",
             style="Start.TButton", command=self._start,
@@ -330,6 +355,7 @@ class App(tk.Tk):
         if epubs:
             self._epub_file = epubs[0]
             self._epub_lbl.config(text=self._epub_file.name, style="Epub.TLabel")
+            self._load_epub_chapters()
 
     def _add_audio(self) -> None:
         paths = filedialog.askopenfilenames(
@@ -355,10 +381,48 @@ class App(tk.Tk):
         )
         if p:
             self._epub_file = Path(p)
-            self._epub_lbl.config(
-                text=self._epub_file.name,
-                style="Epub.TLabel",
-            )
+            self._epub_lbl.config(text=self._epub_file.name, style="Epub.TLabel")
+            self._load_epub_chapters()
+
+    def _load_epub_chapters(self) -> None:
+        self._chapter_lb.config(state="normal")
+        self._chapter_lb.delete(0, tk.END)
+        self._chapter_lb.insert(tk.END, "Loading chapters…")
+        self._chapter_lb.config(state="disabled")
+        self._chapter_count_lbl.config(text="")
+        threading.Thread(target=self._load_epub_chapters_bg, daemon=True).start()
+
+    def _load_epub_chapters_bg(self) -> None:
+        try:
+            from ebooklib import epub as ebooklib_epub
+            import epub as epub_mod
+            book = ebooklib_epub.read_epub(str(self._epub_file))
+            chapters = epub_mod.extract_chapters(book)
+        except Exception:
+            chapters = []
+        self.after(0, self._on_epub_chapters_loaded, chapters)
+
+    def _on_epub_chapters_loaded(self, chapters: list) -> None:
+        self._epub_chapters = chapters
+        self._chapter_lb.config(state="normal")
+        self._chapter_lb.delete(0, tk.END)
+        for i, (title, _) in enumerate(chapters, 1):
+            self._chapter_lb.insert(tk.END, f"Ch.{i:03d} — {title}")
+        self._chapter_lb.select_set(0, tk.END)
+        self._update_chapter_count()
+
+    def _chapter_select_all(self) -> None:
+        self._chapter_lb.select_set(0, tk.END)
+        self._update_chapter_count()
+
+    def _chapter_deselect_all(self) -> None:
+        self._chapter_lb.select_clear(0, tk.END)
+        self._update_chapter_count()
+
+    def _update_chapter_count(self, *_) -> None:
+        total = self._chapter_lb.size()
+        sel = len(self._chapter_lb.curselection())
+        self._chapter_count_lbl.config(text=f"{sel}/{total} chapters" if total else "")
 
     def _convert_labels_for(self, lang: Language) -> list[str]:
         script = chinese_converter.SCRIPT_FOR_LANGUAGE.get(lang, "s")
@@ -409,10 +473,13 @@ class App(tk.Tk):
             )
             return
         if mode != "Generate subtitles" and self._epub_file is None:
-            messagebox.showwarning(
-                "Missing file", "Select an EPUB file."
-            )
+            messagebox.showwarning("Missing file", "Select an EPUB file.")
             return
+        if mode != "Generate subtitles":
+            self._selected_chapters = list(self._chapter_lb.curselection())
+            if self._chapter_lb.size() > 0 and len(self._selected_chapters) == 0:
+                messagebox.showwarning("No chapters selected", "Select at least one chapter.")
+                return
 
         self._start_btn.config(state="disabled")
         self._lang_combo.config(state="disabled")
@@ -440,7 +507,12 @@ class App(tk.Tk):
         try:
             self._copy_sources()
             for label, pct_start, cmd, extra in steps:
-                if cmd in ("align", "transcribe"):
+                if cmd == "epub":
+                    total = len(self._epub_chapters)
+                    sel = self._selected_chapters
+                    if sel and len(sel) < total:
+                        extra = extra + ["--chapters", ",".join(str(i + 1) for i in sel)]
+                elif cmd in ("align", "transcribe"):
                     extra = extra + ["--language", lang.name.lower(), "--model", model]
                 elif cmd == "tts":
                     voice_id = _VOICE_ID_BY_LABEL[self._voice_var.get()]

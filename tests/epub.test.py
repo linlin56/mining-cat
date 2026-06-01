@@ -1,7 +1,10 @@
 import shutil
 import pytest
 import epub
-from shared import MOCK_EPUB_TW, MOCK_EPUB_CN, skip_if_no_epub_tw, skip_if_no_epub_cn
+from shared import (
+    MOCK_EPUB_TW, MOCK_EPUB_CN, skip_if_no_epub_tw, skip_if_no_epub_cn,
+    MOCK_TXT_TW, MOCK_TXT_CN, skip_if_no_txt_tw, skip_if_no_txt_cn,
+)
 
 EXPECTED_LINES_TW = [
     "你好。",
@@ -62,6 +65,58 @@ def test_run_chapter_content(epub_dir, expected, monkeypatch):
     all_text = "".join(
         f.read_text(encoding="utf-8")
         for f in sorted((epub_dir / "chapters_text").glob("chapter_*.txt"))
+    )
+    for line in expected:
+        assert line in all_text, f"Expected line not found in output: {line!r}"
+
+
+# --- TXT tests ---
+
+TXT_PARAMS = [
+    pytest.param(MOCK_TXT_TW, marks=skip_if_no_txt_tw, id="zh-TW"),
+    pytest.param(MOCK_TXT_CN, marks=skip_if_no_txt_cn, id="zh-CN"),
+]
+
+
+@pytest.fixture
+def txt_dir(tmp_path, request):
+    txt_src = request.param
+    shutil.copy(txt_src, tmp_path / txt_src.name)
+    return tmp_path
+
+
+@pytest.mark.parametrize("txt_dir", TXT_PARAMS, indirect=True)
+def test_txt_list_only(txt_dir, monkeypatch):
+    monkeypatch.setattr(epub, "DIR_EBOOK", txt_dir)
+    monkeypatch.setattr(epub, "DIR_CHAPTERS_TEXT", txt_dir / "chapters_text")
+    monkeypatch.setattr(epub, "DIR_TEMP", txt_dir / "temp")
+    epub.run(list_only=True)
+    assert not (txt_dir / "chapters_text").exists()
+
+
+@pytest.mark.parametrize("txt_dir", TXT_PARAMS, indirect=True)
+def test_txt_saves_single_chapter(txt_dir, monkeypatch):
+    monkeypatch.setattr(epub, "DIR_EBOOK", txt_dir)
+    monkeypatch.setattr(epub, "DIR_CHAPTERS_TEXT", txt_dir / "chapters_text")
+    monkeypatch.setattr(epub, "DIR_TEMP", txt_dir / "temp")
+    epub.run()
+    chapters = sorted((txt_dir / "chapters_text").glob("chapter_*.txt"))
+    assert len(chapters) == 1
+
+
+@pytest.mark.parametrize("txt_dir,expected", [
+    pytest.param(MOCK_TXT_TW, EXPECTED_LINES_TW, marks=skip_if_no_txt_tw, id="zh-TW"),
+    pytest.param(MOCK_TXT_CN, EXPECTED_LINES_CN, marks=skip_if_no_txt_cn, id="zh-CN"),
+], indirect=["txt_dir"])
+def test_txt_chapter_content(txt_dir, expected, monkeypatch):
+    monkeypatch.setattr(epub, "DIR_EBOOK", txt_dir)
+    monkeypatch.setattr(epub, "DIR_CHAPTERS_TEXT", txt_dir / "chapters_text")
+    monkeypatch.setattr(epub, "DIR_TEMP", txt_dir / "temp")
+    epub.run()
+
+    all_text = "".join(
+        f.read_text(encoding="utf-8")
+        for f in sorted((txt_dir / "chapters_text").glob("chapter_*.txt"))
     )
     for line in expected:
         assert line in all_text, f"Expected line not found in output: {line!r}"

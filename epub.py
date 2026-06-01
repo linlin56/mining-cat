@@ -8,13 +8,26 @@ from bs4 import BeautifulSoup
 from config import DIR_CHAPTERS_TEXT, DIR_EBOOK, DIR_TEMP
 
 22
+def get_ebook_file() -> tuple[str, Path]:
+    # Returns (format, path) where format is 'epub' or 'txt'.
+    epubs = sorted(DIR_EBOOK.glob("*.epub"))
+    if epubs:
+        if len(epubs) > 1:
+            print(f"Warning: multiple .epub files found, using: {epubs[0].name}")
+        return "epub", epubs[0]
+    txts = sorted(DIR_EBOOK.glob("*.txt"))
+    if txts:
+        if len(txts) > 1:
+            print(f"Warning: multiple .txt files found, using: {txts[0].name}")
+        return "txt", txts[0]
+    raise FileNotFoundError(f"No .epub or .txt found in {DIR_EBOOK}")
+
+
 def get_epub_file() -> Path:
-    files = sorted(DIR_EBOOK.glob("*.epub"))
-    if not files:
+    fmt, path = get_ebook_file()
+    if fmt != "epub":
         raise FileNotFoundError(f"No .epub found in {DIR_EBOOK}")
-    if len(files) > 1:
-        print(f"Warning: multiple .epub files found, using: {files[0].name}")
-    return files[0]
+    return path
 
 # Convert the content of an ebook item to plain text, stripping HTML tags and unnecessary whitespace.
 def _item_to_text(item) -> str:
@@ -198,17 +211,44 @@ def save_chapters(
     print(f"\n{len(selected)} chapters saved.")
     print(f"  Manifest: temp/ebook_chapters.json")
 
-# Run epub processing
+# For .txt files, treat the whole text as one chapter with the filename (without extension) as the title.
+def _run_txt(
+    txt_path: Path,
+    list_only: bool = False,
+    preview: bool = False,
+) -> None:
+    print(f"Reading {txt_path.name} ...")
+    text = txt_path.read_text(encoding="utf-8").strip()
+    if not text:
+        print("Error: text file is empty.")
+        return
+    title = txt_path.stem
+    print(f"  1 chapter (full text — no chapter info in .txt)\n")
+    print(f"{'#':>4}  {'Chars':>8}  Title")
+    print("  " + "-" * 60)
+    print(f"  {1:>3}  {len(text):>8,}  {title}")
+    print()
+    if list_only:
+        return
+    save_chapters([(title, text)], preview=preview)
+
+
+# Run ebook processing (EPUB or TXT)
 def run(
     list_only: bool = False,
     range_str: str | None = None,
     chapters_str: str | None = None,
     preview: bool = False,
 ) -> None:
-    epub_path = get_epub_file()
-    print(f"Reading {epub_path.name} ...")
+    fmt, ebook_path = get_ebook_file()
 
-    book = epub.read_epub(epub_path)
+    if fmt == "txt":
+        _run_txt(ebook_path, list_only=list_only, preview=preview)
+        return
+
+    print(f"Reading {ebook_path.name} ...")
+
+    book = epub.read_epub(ebook_path)
     all_chapters = extract_chapters(book)
 
     print(f"  {len(all_chapters)} chapter(s) detected (TOC + orphan spine items)\n")

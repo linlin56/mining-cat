@@ -264,7 +264,7 @@ class App(tk.Tk):
         )
         self._voice_combo.pack(side="left")
 
-        self._epub_lf = ttk.LabelFrame(outer, text="  Book  (EPUB)", padding=10)
+        self._epub_lf = ttk.LabelFrame(outer, text="  Book - EPUB (recommended) or TXT", padding=10)
         self._epub_lf.pack(fill="x", pady=(0, 14))
         epub_lf = self._epub_lf
 
@@ -351,9 +351,9 @@ class App(tk.Tk):
             if f not in self._audio_files:
                 self._audio_files.append(f)
                 self._audio_lb.insert(tk.END, f.name)
-        epubs = sorted(DIR_EBOOK.glob("*.epub"))
-        if epubs:
-            self._epub_file = epubs[0]
+        ebooks = sorted(DIR_EBOOK.glob("*.epub")) + sorted(DIR_EBOOK.glob("*.txt"))
+        if ebooks:
+            self._epub_file = ebooks[0]
             self._epub_lbl.config(text=self._epub_file.name, style="Epub.TLabel")
             self._load_epub_chapters()
 
@@ -376,8 +376,8 @@ class App(tk.Tk):
 
     def _select_epub(self) -> None:
         p = filedialog.askopenfilename(
-            title="Select an EPUB file",
-            filetypes=[("EPUB", "*.epub"), ("All", "*.*")],
+            title="Select an EPUB or TXT file",
+            filetypes=[("EPUB", "*.epub"), ("Text", "*.txt"), ("All", "*.*")],
         )
         if p:
             self._epub_file = Path(p)
@@ -394,10 +394,14 @@ class App(tk.Tk):
 
     def _load_epub_chapters_bg(self) -> None:
         try:
-            from ebooklib import epub as ebooklib_epub
-            import epub as epub_mod
-            book = ebooklib_epub.read_epub(str(self._epub_file))
-            chapters = epub_mod.extract_chapters(book)
+            if self._epub_file.suffix.lower() == ".txt":
+                text = self._epub_file.read_text(encoding="utf-8")
+                chapters = [(self._epub_file.stem, text)]
+            else:
+                from ebooklib import epub as ebooklib_epub
+                import epub as epub_mod
+                book = ebooklib_epub.read_epub(str(self._epub_file))
+                chapters = epub_mod.extract_chapters(book)
         except Exception:
             chapters = []
         self.after(0, self._on_epub_chapters_loaded, chapters)
@@ -473,7 +477,7 @@ class App(tk.Tk):
             )
             return
         if mode != "Generate subtitles" and self._epub_file is None:
-            messagebox.showwarning("Missing file", "Select an EPUB file.")
+            messagebox.showwarning("Missing file", "Select an EPUB or TXT file.")
             return
         if mode != "Generate subtitles":
             self._selected_chapters = list(self._chapter_lb.curselection())
@@ -561,9 +565,9 @@ class App(tk.Tk):
             if epub_outside:
                 _clear_dir(DIR_EBOOK)
                 shutil.copy2(self._epub_file, DIR_EBOOK / self._epub_file.name)
-                self.after(0, self._log_write, f"  epub  : {self._epub_file.name}\n")
+                self.after(0, self._log_write, f"  ebook : {self._epub_file.name}\n")
             else:
-                self.after(0, self._log_write, "  epub  : file already in place\n")
+                self.after(0, self._log_write, "  ebook : file already in place\n")
 
     def _run_cmd(self, args: list[str]) -> int:
         proc = subprocess.Popen(

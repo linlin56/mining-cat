@@ -85,7 +85,7 @@ def cmd_run(args: argparse.Namespace) -> None:
     print("=== Step 1: audio ===")
     audio.run()
 
-    print("\n=== Step 2: epub ===")
+    print("\n=== Step 2: ebook ===")
     epub.run(range_str=args.range_str)
 
     print("\n=== Step 3: align ===")

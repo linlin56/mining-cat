@@ -27,6 +27,13 @@ class Language(Enum):
         vocab_annotation_pattern=r'\[\d+\]',
     )
     # TODO : Add more! Priorities are languages that me (the owner) can understand enough to test
+    JAPANESE = LangConfig(
+        label="Japanese",
+        whisper_code="ja",
+        closing_punct=frozenset('。？！』」'),
+        vocab_annotation_pattern=r'［＃.+?］', # Pattern for Aozora Bunko style notes
+    )
+    # TODO : Add more!
 
     @classmethod
     def from_id(cls, lang_id: str) -> "Language":

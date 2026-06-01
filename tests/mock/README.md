@@ -24,3 +24,18 @@ A .epub that I made to test Chinese mandarin.
 我是测试文件。
 我是用来测试软件是否正常运行的。
 “这是一句非常有趣的句子，里面包含了标点符号。”
+
+## book_ja.epub
+
+A .epub to test Japanese. _(not yet available — use book_ja.txt in the meantime)_
+
+## book_ja.txt / srt_ja.srt
+
+Plain-text and SRT mocks for Japanese.
+
+### Content
+
+こんにちは。
+私はテストファイルです。
+ソフトウェアが正常に動作するかをテストするために使われます。
+「これはとても興味深い文で、句読点が含まれています。」

@@ -12,6 +12,13 @@ from config import DIR_CHAPTERS_AUDIO, DIR_CHAPTERS_TEXT, DIR_SRT
 from language import Language
 
 
+def get_device() -> str:
+    try:
+        import torch
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    except ImportError:
+        return "cpu"
+
 @dataclass
 class Segment:
     index: int
@@ -66,13 +73,24 @@ def prepare_text(raw: str, lang: Language = Language.MANDARIN_TW) -> str:
     lines = [l for l in text.splitlines() if l.strip()]
     return '\n'.join(lines).strip()
 
+def _extract_segments(result, lang: Language) -> list[Segment]:
+    raw_segs = result.segments if hasattr(result, "segments") else result.get("segments", [])
+    segs = []
+    for seg in raw_segs:
+        start = seg.start if hasattr(seg, "start") else seg["start"]
+        end   = seg.end   if hasattr(seg, "end")   else seg["end"]
+        text  = (seg.text if hasattr(seg, "text")  else seg["text"]).strip()
+        if text:
+            segs.append(Segment(0, start, end, text))
+    return fix_leading_punct(segs, lang)
+
 # Align a single chapter's audio and text, returning a list of segments with timestamps.
 def align_chapter(
     model,
     audio_file: Path,
     text_file: Path,
     lang: Language = Language.MANDARIN_TW,
-) -> list[Segment]:
+) -> tuple[list[Segment], int]:
     # Load and prepare text, then run alignment.
     chapter_text = prepare_text(text_file.read_text(encoding="utf-8").strip(), lang)
     result = model.align(
@@ -81,17 +99,8 @@ def align_chapter(
         language=lang.value.whisper_code,
         verbose=False,
     )
-    # The result may have segments in result.segments or result["segments"] depending on the model version, so we check both.
-    raw_segs = result.segments if hasattr(result, "segments") else result.get("segments", [])
-    segs = []
-    # Each segment has start, end, and text. We create Segment objects and then fix leading punctuation.
-    for seg in raw_segs:
-        start = seg.start if hasattr(seg, "start") else seg["start"]
-        end   = seg.end   if hasattr(seg, "end")   else seg["end"]
-        text  = (seg.text if hasattr(seg, "text")  else seg["text"]).strip()
-        if text:
-            segs.append(Segment(0, start, end, text))
-    return fix_leading_punct(segs, lang)
+    segs = _extract_segments(result, lang)
+    return segs, len(chapter_text)
 
 def transcribe_chapter(
     model,
@@ -103,15 +112,7 @@ def transcribe_chapter(
         language=lang.value.whisper_code,
         verbose=False,
     )
-    raw_segs = result.segments if hasattr(result, "segments") else result.get("segments", [])
-    segs = []
-    for seg in raw_segs:
-        start = seg.start if hasattr(seg, "start") else seg["start"]
-        end   = seg.end   if hasattr(seg, "end")   else seg["end"]
-        text  = (seg.text if hasattr(seg, "text")  else seg["text"]).strip()
-        if text:
-            segs.append(Segment(0, start, end, text))
-    return fix_leading_punct(segs, lang)
+    return _extract_segments(result, lang)
 
 
 def run_transcribe(
@@ -139,7 +140,7 @@ def run_transcribe(
     print()
 
     print(f"Loading stable-whisper model '{model_name}'...")
-    model = stable_whisper.load_model(model_name, device="cpu")
+    model = stable_whisper.load_model(model_name, device=get_device())
     print()
 
     for i, audio_file in enumerate(
@@ -205,7 +206,7 @@ def run(
 
     # Load stable-whisper
     print(f"Loading stable-whisper model '{model_name}'...")
-    model = stable_whisper.load_model(model_name, device="cpu")
+    model = stable_whisper.load_model(model_name, device=get_device())
     print()
 
     # Process each chapter, skipping already existing SRT files unless from_ch is specified (which indicates a retry).
@@ -221,11 +222,10 @@ def run(
             continue
 
         t0 = time.time()
-        segs = align_chapter(model, audio_file, text_file, lang=language)
+        segs, text_len = align_chapter(model, audio_file, text_file, lang=language)
         save_srt(segs, srt_out)
         elapsed = time.time() - t0
 
-        text_len = len(prepare_text(text_file.read_text(encoding="utf-8").strip(), language))
         tqdm.write(
             f"  Ch.{ch_num:03d}  {len(segs)} seg  {elapsed:.0f}s  "
             f"ebook={text_len:,}c"

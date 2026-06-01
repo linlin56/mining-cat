@@ -83,10 +83,18 @@ _VOICES_FOR_LANGUAGE: dict[Language, list[tuple[str, str]]] = {
         ("Yunxia — Mandarin (China), male",       "zh-CN-YunxiaNeural"),
         ("Yunyang — Mandarin (China), male",      "zh-CN-YunyangNeural"),
     ],
+    Language.JAPANESE: [
+        ("Nanami — Japanese, female",  "ja-JP-NanamiNeural"),
+        ("Keita — Japanese, male",     "ja-JP-KeitaNeural"),
+        ("Mayu — Japanese, female",    "ja-JP-MayuNeural"),
+        ("Naoki — Japanese, male",     "ja-JP-NaokiNeural"),
+        ("Shiori — Japanese, female",  "ja-JP-ShioriNeural"),
+    ],
 }
 _DEFAULT_VOICE_FOR_LANGUAGE: dict[Language, str] = {
     Language.MANDARIN_TW: "HsiaoChen — Mandarin (Taiwan), female",
     Language.MANDARIN_CN: "Xiaoxiao — Mandarin (China), female",
+    Language.JAPANESE:    "Nanami — Japanese, female",
 }
 _VOICE_ID_BY_LABEL: dict[str, str] = {
     label: voice_id
@@ -429,13 +437,18 @@ class App(tk.Tk):
         self._chapter_count_lbl.config(text=f"{sel}/{total} chapters" if total else "")
 
     def _convert_labels_for(self, lang: Language) -> list[str]:
-        script = chinese_converter.SCRIPT_FOR_LANGUAGE.get(lang, "s")
+        script = chinese_converter.SCRIPT_FOR_LANGUAGE.get(lang)
+        if script is None:
+            return ["No conversion"]
         return [label for label, _ in _CONVERT_OPTIONS_FOR_SCRIPT[script]]
 
     def _on_lang_change(self, *_) -> None:
         lang = Language.from_label(self._lang_var.get())
-        self._convert_combo["values"] = self._convert_labels_for(lang)
+        labels = self._convert_labels_for(lang)
+        self._convert_combo["values"] = labels
         self._convert_var.set("No conversion")
+        has_conversion = len(labels) > 1
+        self._convert_combo.config(state="readonly" if has_conversion else "disabled")
         self._update_voice_options(lang)
 
     def _update_voice_options(self, lang: Language) -> None:
@@ -518,6 +531,8 @@ class App(tk.Tk):
                         extra = extra + ["--chapters", ",".join(str(i + 1) for i in sel)]
                 elif cmd in ("align", "transcribe"):
                     extra = extra + ["--language", lang.name.lower(), "--model", model]
+                elif cmd == "export":
+                    extra = extra + ["--language", lang.name.lower()]
                 elif cmd == "tts":
                     voice_id = _VOICE_ID_BY_LABEL[self._voice_var.get()]
                     extra = extra + ["--voice", voice_id]

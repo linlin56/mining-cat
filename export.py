@@ -103,6 +103,7 @@ def create_video_frame(
             pass
 
     frame = _draw_text_overlay(frame, book_title, chapter_title, width, height)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     frame.save(output_path)
     return output_path
 
@@ -135,6 +136,7 @@ def export_chapter_to_mp4(
     video_frame: Path,
     output_file: Path,
     preset: str = "ultrafast",
+    subtitle_lang: str = "zho",
 ) -> bool:
     srt_file = DIR_SRT / (audio_file.stem + ".srt")
     if not srt_file.exists():
@@ -162,7 +164,7 @@ def export_chapter_to_mp4(
         '-c:v', 'libx264', '-preset', preset, '-pix_fmt', 'yuv420p',
         '-c:a', 'aac', '-b:a', '128k',
         '-c:s', 'mov_text',
-        '-metadata:s:s:0', 'language=zho',
+        '-metadata:s:s:0', f'language={subtitle_lang}',
         '-t', str(audio_duration),
         '-y',
         str(output_file),
@@ -183,6 +185,7 @@ def run(
     chapter_num: int | None = None,
     all_chapters: bool = False,
     preset: str = "ultrafast",
+    subtitle_lang: str = "zho",
 ) -> None:
     import sys
 
@@ -207,7 +210,7 @@ def run(
         print(f"Exporting {len(chapter_files)} chapters...\n")
         for i, audio_file in enumerate(tqdm(chapter_files, unit="ch"), start=1):
             output_file = DIR_FINAL / f"chapter_{i:03d}.mp4"
-            export_chapter_to_mp4(audio_file, _frame_for(audio_file, i), output_file, preset)
+            export_chapter_to_mp4(audio_file, _frame_for(audio_file, i), output_file, preset, subtitle_lang)
         print(f"\nDone: {DIR_FINAL}/")
     else:
         num = chapter_num or 1
@@ -217,6 +220,6 @@ def run(
         audio_file = chapter_files[num - 1]
         output_file = DIR_FINAL / f"chapter_{num:03d}.mp4"
         print(f"Exporting chapter {num}: {audio_file.name}")
-        if export_chapter_to_mp4(audio_file, _frame_for(audio_file, num), output_file, preset):
+        if export_chapter_to_mp4(audio_file, _frame_for(audio_file, num), output_file, preset, subtitle_lang):
             size_mb = output_file.stat().st_size / (1024 * 1024)
             print(f"\nOK: {output_file}  ({size_mb:.1f} MB)")

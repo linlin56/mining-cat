@@ -17,6 +17,8 @@
 import argparse
 import sys
 
+from language import Language
+
 
 def cmd_audio(args: argparse.Namespace) -> None:
     import audio
@@ -64,10 +66,12 @@ def cmd_tts(args: argparse.Namespace) -> None:
 
 def cmd_export(args: argparse.Namespace) -> None:
     import export
+    lang = Language.from_id(args.language)
     export.run(
         chapter_num=args.chapter,
         all_chapters=args.all,
         preset=args.preset,
+        subtitle_lang=lang.value.iso639_2,
     )
 
 
@@ -123,7 +127,7 @@ def main() -> None:
     p_align.add_argument("--model", default="tiny",
                          choices=["tiny", "base", "small", "medium", "large"])
     p_align.add_argument("--language", default="mandarin_tw",
-                         choices=["mandarin_tw", "mandarin_cn"])
+                         choices=["mandarin_tw", "mandarin_cn", "japanese"])
     p_align.add_argument("--from", dest="from_ch", type=int, default=None,
                          help="Start from chapter N")
     p_align.add_argument("--only", dest="only_ch", type=int, default=None,
@@ -134,7 +138,7 @@ def main() -> None:
     p_transcribe.add_argument("--model", default="tiny",
                               choices=["tiny", "base", "small", "medium", "large"])
     p_transcribe.add_argument("--language", default="mandarin_tw",
-                              choices=["mandarin_tw", "mandarin_cn"])
+                              choices=["mandarin_tw", "mandarin_cn", "japanese"])
     p_transcribe.add_argument("--from", dest="from_ch", type=int, default=None,
                               help="Start from chapter N")
     p_transcribe.add_argument("--only", dest="only_ch", type=int, default=None,
@@ -148,6 +152,8 @@ def main() -> None:
     p_export = sub.add_parser("export", help="Render final MP4 files")
     p_export.add_argument("--chapter", type=int, default=None)
     p_export.add_argument("--all", action="store_true")
+    p_export.add_argument("--language", default="mandarin_tw",
+                          choices=Language.ids())
     p_export.add_argument("--preset", default="ultrafast",
                           choices=["ultrafast", "superfast", "veryfast",
                                    "faster", "fast", "medium"])

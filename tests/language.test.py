@@ -1,0 +1,71 @@
+import re
+import pytest
+from language import Language
+
+
+# vocab_annotation_pattern :
+
+MANDARIN_PATTERN = re.compile(Language.MANDARIN_TW.value.vocab_annotation_pattern)
+JAPANESE_PATTERN = re.compile(Language.JAPANESE.value.vocab_annotation_pattern)
+
+@pytest.mark.parametrize("text,expected", [
+    ("學習[1]很重要", "學習很重要"),
+    ("一[12]二[345]三", "一二三"),
+    ("沒有標記", "沒有標記"),
+    ("[1]開頭", "開頭"),
+    ("結尾[99]", "結尾"),
+])
+def test_mandarin_vocab_annotation_pattern(text, expected):
+    assert MANDARIN_PATTERN.sub("", text) == expected
+
+
+@pytest.mark.parametrize("text", [
+    "学习很重要",       # no annotation
+    "[abc]",           # letters, not digits — should NOT match
+    "[ 1]",            # space before digit — should NOT match
+])
+def test_mandarin_vocab_annotation_no_false_positives(text):
+    assert MANDARIN_PATTERN.sub("", text) == text
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("本文［＃「」は二重山括弧に変える］終わり", "本文終わり"),
+    ("始め［＃ここから太字］本文［＃ここで太字終わり］", "始め本文"),
+    ("アノテーションなし", "アノテーションなし"),
+    ("［＃改ページ］", ""),
+])
+def test_japanese_vocab_annotation_pattern(text, expected):
+    assert JAPANESE_PATTERN.sub("", text) == expected
+
+
+@pytest.mark.parametrize("text", [
+    "[＃半角bracket]",    # opening bracket is ASCII — should NOT match
+    "［＃",               # unclosed — should NOT match (no closing ］)
+    "普通のテキスト",
+])
+def test_japanese_vocab_annotation_no_false_positives(text):
+    assert JAPANESE_PATTERN.sub("", text) == text
+
+
+# iso639_2 used for subtitles in mp4
+
+def test_iso639_2_values():
+    assert Language.MANDARIN_TW.value.iso639_2 == "zho"
+    assert Language.MANDARIN_CN.value.iso639_2 == "zho"
+    assert Language.JAPANESE.value.iso639_2 == "jpn"
+
+
+# from_id / from_label / ids / all_labels
+
+def test_from_id_case_insensitive():
+    assert Language.from_id("japanese") is Language.JAPANESE
+    assert Language.from_id("JAPANESE") is Language.JAPANESE
+    assert Language.from_id("mandarin_tw") is Language.MANDARIN_TW
+    assert Language.from_id("MANDARIN_TW") is Language.MANDARIN_TW
+    assert Language.from_id("mandarin_cn") is Language.MANDARIN_CN
+    assert Language.from_id("MANDARIN_CN") is Language.MANDARIN_CN
+
+
+def test_from_id_unknown_raises():
+    with pytest.raises(ValueError, match="Unknown language id"):
+        Language.from_id("dothraki")

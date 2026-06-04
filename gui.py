@@ -310,11 +310,20 @@ class App(tk.Tk):
         self._chapter_count_lbl = ttk.Label(chap_ctrl, text="", style="Dim.TLabel", font=FONT_SMALL)
         self._chapter_count_lbl.pack(side="right")
 
+        self._start_row = tk.Frame(outer, bg=c["BG"])
+        self._start_row.pack(fill="x", pady=(0, 10))
+
         self._start_btn = ttk.Button(
-            outer, text="Start",
+            self._start_row, text="Start",
             style="Start.TButton", command=self._start,
         )
-        self._start_btn.pack(fill="x", pady=(0, 10))
+        self._start_btn.pack(side="left", fill="x", expand=True)
+
+        self._clear_btn = ttk.Button(
+            self._start_row, text="Clear output",
+            command=self._clear_output,
+        )
+        self._clear_btn.pack(side="left", padx=(8, 0))
 
         prog_frame = tk.Frame(outer, bg=c["BG"])
         prog_frame.pack(fill="x", pady=(0, 10))
@@ -469,18 +478,18 @@ class App(tk.Tk):
                 self._precision_combo.pack(side="left")
 
         # Always reset the three section frames, then re-pack in the right order.
-        # Using before=self._start_btn guarantees correct insertion point.
+        # Using before=self._start_row guarantees correct insertion point.
         self._audio_lf.pack_forget()
         self._voice_lf.pack_forget()
         self._epub_lf.pack_forget()
         if mode == "Standard":
-            self._audio_lf.pack(fill="x", pady=(0, 10), before=self._start_btn)
-            self._epub_lf.pack(fill="x", pady=(0, 14), before=self._start_btn)
+            self._audio_lf.pack(fill="x", pady=(0, 10), before=self._start_row)
+            self._epub_lf.pack(fill="x", pady=(0, 14), before=self._start_row)
         elif mode == "Generate subtitles":
-            self._audio_lf.pack(fill="x", pady=(0, 10), before=self._start_btn)
+            self._audio_lf.pack(fill="x", pady=(0, 10), before=self._start_row)
         elif mode == "Generate audio":
-            self._voice_lf.pack(fill="x", pady=(0, 10), before=self._start_btn)
-            self._epub_lf.pack(fill="x", pady=(0, 14), before=self._start_btn)
+            self._voice_lf.pack(fill="x", pady=(0, 10), before=self._start_row)
+            self._epub_lf.pack(fill="x", pady=(0, 14), before=self._start_row)
 
     def _start(self) -> None:
         mode = self._mode_var.get()
@@ -604,6 +613,18 @@ class App(tk.Tk):
             "Processing complete!\n\nOpen the output folder?",
         ):
             subprocess.run(["open", str(DIR_FINAL)])
+
+    def _clear_output(self) -> None:
+        if not messagebox.askyesno(
+            "Clear output",
+            "This will delete all files in the output folder.\n\nAre you sure?",
+        ):
+            return
+        output_dir = ROOT / "output"
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        self._log_write("Output folder cleared.\n")
 
     def _log_write(self, text: str) -> None:
         self._log.config(state="normal")

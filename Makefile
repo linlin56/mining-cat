@@ -10,10 +10,8 @@ RANGE    ?=
 PYTHON   ?= .venv/bin/python3
 MAIN     := $(PYTHON) main.py
 
-GUI_PYTHON ?= python
-
 gui:
-	$(GUI_PYTHON) gui.py
+	$(PYTHON) gui.py
 
 help:
 	@echo "AudiobookMiner"

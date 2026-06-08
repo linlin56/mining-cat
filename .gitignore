@@ -10,6 +10,8 @@ sources/
 __pycache__/
 *.py[cod]
 *.egg-info/
+.coverage
+coverage.xml
 
 # macOS
 .DS_Store

@@ -39,3 +39,14 @@ Plain-text and SRT mocks for Japanese.
 私はテストファイルです。
 ソフトウェアが正常に動作するかをテストするために使われます。
 「これはとても興味深い文で、句読点が含まれています。」
+
+## book_fr.epub / book_fr.txt / srt_fr.srt
+
+EPUB, plain-text, and SRT mocks for French.
+
+### Content
+
+Bonjour.
+Je suis un fichier de test.
+Je suis utilisé pour tester le bon fonctionnement du logiciel.
+« C'est une phrase très intéressante, qui contient de la ponctuation. »

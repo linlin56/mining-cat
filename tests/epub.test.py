@@ -2,11 +2,12 @@ import shutil
 import pytest
 import epub
 from shared import (
-    MOCK_EPUB_TW, MOCK_EPUB_CN, MOCK_EPUB_JA,
-    skip_if_no_epub_tw, skip_if_no_epub_cn, skip_if_no_epub_ja,
-    MOCK_TXT_TW, MOCK_TXT_CN, MOCK_TXT_JA,
-    skip_if_no_txt_tw, skip_if_no_txt_cn, skip_if_no_txt_ja,
+    MOCK_EPUB_TW, MOCK_EPUB_CN, MOCK_EPUB_JA, MOCK_EPUB_FR,
+    skip_if_no_epub_tw, skip_if_no_epub_cn, skip_if_no_epub_ja, skip_if_no_epub_fr,
+    MOCK_TXT_TW, MOCK_TXT_CN, MOCK_TXT_JA, MOCK_TXT_FR,
+    skip_if_no_txt_tw, skip_if_no_txt_cn, skip_if_no_txt_ja, skip_if_no_txt_fr,
     MOCK_SRT_JA, skip_if_no_srt_ja,
+    MOCK_SRT_FR, skip_if_no_srt_fr,
 )
 
 EXPECTED_LINES_TW = [
@@ -30,10 +31,18 @@ EXPECTED_LINES_JA = [
     "「これはとても興味深い文で、句読点が含まれています。」",
 ]
 
+EXPECTED_LINES_FR = [
+    "Bonjour.",
+    "Je suis un fichier de test.",
+    "Je suis utilisé pour tester le bon fonctionnement du logiciel.",
+    "« C'est une phrase très intéressante, qui contient de la ponctuation. »",
+]
+
 EPUB_PARAMS = [
     pytest.param(MOCK_EPUB_TW, marks=skip_if_no_epub_tw, id="zh-TW"),
     pytest.param(MOCK_EPUB_CN, marks=skip_if_no_epub_cn, id="zh-CN"),
     pytest.param(MOCK_EPUB_JA, marks=skip_if_no_epub_ja, id="ja"),
+    pytest.param(MOCK_EPUB_FR, marks=skip_if_no_epub_fr, id="fr"),
 ]
 
 
@@ -67,6 +76,7 @@ def test_run_saves_chapters(epub_dir, monkeypatch):
     pytest.param(MOCK_EPUB_TW, EXPECTED_LINES_TW, marks=skip_if_no_epub_tw, id="zh-TW"),
     pytest.param(MOCK_EPUB_CN, EXPECTED_LINES_CN, marks=skip_if_no_epub_cn, id="zh-CN"),
     pytest.param(MOCK_EPUB_JA, EXPECTED_LINES_JA, marks=skip_if_no_epub_ja, id="ja"),
+    pytest.param(MOCK_EPUB_FR, EXPECTED_LINES_FR, marks=skip_if_no_epub_fr, id="fr"),
 ], indirect=["epub_dir"])
 def test_run_chapter_content(epub_dir, expected, monkeypatch):
     monkeypatch.setattr(epub, "DIR_EBOOK", epub_dir)
@@ -88,6 +98,7 @@ TXT_PARAMS = [
     pytest.param(MOCK_TXT_TW, marks=skip_if_no_txt_tw, id="zh-TW"),
     pytest.param(MOCK_TXT_CN, marks=skip_if_no_txt_cn, id="zh-CN"),
     pytest.param(MOCK_TXT_JA, marks=skip_if_no_txt_ja, id="ja"),
+    pytest.param(MOCK_TXT_FR, marks=skip_if_no_txt_fr, id="fr"),
 ]
 
 
@@ -121,6 +132,7 @@ def test_txt_saves_single_chapter(txt_dir, monkeypatch):
     pytest.param(MOCK_TXT_TW, EXPECTED_LINES_TW, marks=skip_if_no_txt_tw, id="zh-TW"),
     pytest.param(MOCK_TXT_CN, EXPECTED_LINES_CN, marks=skip_if_no_txt_cn, id="zh-CN"),
     pytest.param(MOCK_TXT_JA, EXPECTED_LINES_JA, marks=skip_if_no_txt_ja, id="ja"),
+    pytest.param(MOCK_TXT_FR, EXPECTED_LINES_FR, marks=skip_if_no_txt_fr, id="fr"),
 ], indirect=["txt_dir"])
 def test_txt_chapter_content(txt_dir, expected, monkeypatch):
     monkeypatch.setattr(epub, "DIR_EBOOK", txt_dir)
@@ -155,6 +167,28 @@ def test_srt_ja_content():
 def test_srt_ja_timecodes():
     timecodes = [l for l in MOCK_SRT_JA.read_text(encoding="utf-8").splitlines() if "-->" in l]
     assert len(timecodes) == len(EXPECTED_LINES_JA)
+    for tc in timecodes:
+        start, end = tc.split(" --> ")
+        assert start < end
+
+
+@skip_if_no_srt_fr
+def test_srt_fr_segment_count():
+    segments = [b for b in MOCK_SRT_FR.read_text(encoding="utf-8").strip().split("\n\n") if b.strip()]
+    assert len(segments) == len(EXPECTED_LINES_FR)
+
+
+@skip_if_no_srt_fr
+def test_srt_fr_content():
+    text = MOCK_SRT_FR.read_text(encoding="utf-8")
+    for line in EXPECTED_LINES_FR:
+        assert line in text
+
+
+@skip_if_no_srt_fr
+def test_srt_fr_timecodes():
+    timecodes = [l for l in MOCK_SRT_FR.read_text(encoding="utf-8").splitlines() if "-->" in l]
+    assert len(timecodes) == len(EXPECTED_LINES_FR)
     for tc in timecodes:
         start, end = tc.split(" --> ")
         assert start < end

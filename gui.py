@@ -90,11 +90,19 @@ _VOICES_FOR_LANGUAGE: dict[Language, list[tuple[str, str]]] = {
         ("Naoki — Japanese, male",     "ja-JP-NaokiNeural"),
         ("Shiori — Japanese, female",  "ja-JP-ShioriNeural"),
     ],
+    Language.FRENCH: [
+        ("Denise — French (France), female",   "fr-FR-DeniseNeural"),
+        ("Eloise — French (France), female",   "fr-FR-EloiseNeural"),
+        ("Henri — French (France), male",      "fr-FR-HenriNeural"),
+        ("Sylvie — French (Canada), female",   "fr-CA-SylvieNeural"),
+        ("Jean — French (Canada), male",       "fr-CA-JeanNeural"),
+    ],
 }
 _DEFAULT_VOICE_FOR_LANGUAGE: dict[Language, str] = {
     Language.MANDARIN_TW: "HsiaoChen — Mandarin (Taiwan), female",
     Language.MANDARIN_CN: "Xiaoxiao — Mandarin (China), female",
     Language.JAPANESE:    "Nanami — Japanese, female",
+    Language.FRENCH:      "Denise — French (France), female",
 }
 _VOICE_ID_BY_LABEL: dict[str, str] = {
     label: voice_id

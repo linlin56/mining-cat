@@ -53,6 +53,7 @@ def test_iso639_2_values():
     assert Language.MANDARIN_TW.value.iso639_2 == "zho"
     assert Language.MANDARIN_CN.value.iso639_2 == "zho"
     assert Language.JAPANESE.value.iso639_2 == "jpn"
+    assert Language.FRENCH.value.iso639_2 == "fra"
 
 
 # from_id / from_label / ids / all_labels
@@ -64,6 +65,8 @@ def test_from_id_case_insensitive():
     assert Language.from_id("MANDARIN_TW") is Language.MANDARIN_TW
     assert Language.from_id("mandarin_cn") is Language.MANDARIN_CN
     assert Language.from_id("MANDARIN_CN") is Language.MANDARIN_CN
+    assert Language.from_id("french") is Language.FRENCH
+    assert Language.from_id("FRENCH") is Language.FRENCH
 
 
 def test_from_id_unknown_raises():

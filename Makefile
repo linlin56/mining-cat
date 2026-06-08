@@ -10,7 +10,7 @@ RANGE    ?=
 PYTHON   ?= .venv/bin/python3
 MAIN     := $(PYTHON) main.py
 
-GUI_PYTHON ?= python3.12
+GUI_PYTHON ?= python3.14
 
 gui:
 	$(GUI_PYTHON) gui.py

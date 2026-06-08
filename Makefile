@@ -1,4 +1,4 @@
-.PHONY: help gui install test audio epub align export chapter1 chapter run clean
+.PHONY: help gui install test coverage audio epub align export chapter1 chapter run clean
 
 # Defaults
 CHAPTER  ?= 1
@@ -41,6 +41,9 @@ install:
 
 test:
 	$(PYTHON) -m pytest
+
+coverage:
+	$(PYTHON) -m pytest --cov=. --cov-report=xml --cov-report=term-missing
 
 audio:
 	$(MAIN) audio

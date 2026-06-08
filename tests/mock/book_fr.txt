@@ -1,0 +1,4 @@
+Bonjour.
+Je suis un fichier de test.
+Je suis utilisé pour tester le bon fonctionnement du logiciel.
+« C'est une phrase très intéressante, qui contient de la ponctuation. »

@@ -36,6 +36,13 @@ class Language(Enum):
         closing_punct=frozenset('。？！」』）'),
         vocab_annotation_pattern=r'［＃.+?］',
     )
+    FRENCH = LangConfig(
+        label='French',
+        whisper_code='fr',
+        iso639_2='fra',
+        closing_punct=frozenset('!?»…'),
+        vocab_annotation_pattern=r'',
+    )
     # TODO : Add more! Priorities are languages that me (the owner) can understand enough to test
 
     @classmethod

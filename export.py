@@ -190,7 +190,7 @@ def run(
     import sys
 
     if not DIR_CHAPTERS_AUDIO.exists():
-        print(f"Error: {DIR_CHAPTERS_AUDIO} not found — run 'audio' first")
+        print(f"Error: {DIR_CHAPTERS_AUDIO} not found - run 'audio' first")
         sys.exit(1)
 
     chapter_files = get_chapter_audio_files()

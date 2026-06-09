@@ -16,14 +16,14 @@ class LangConfig:
 
 class Language(Enum):
     MANDARIN_TW = LangConfig(
-        label='Mandarin — Taiwan (Traditionnal)',
+        label='Mandarin - Taiwan (Traditionnal)',
         whisper_code='zh',
         iso639_2='zho',
         closing_punct=frozenset('。？！」'),
         vocab_annotation_pattern=r'\[\d+\]',
     )
     MANDARIN_CN = LangConfig(
-        label='Mandarin — China (Simplified)',
+        label='Mandarin - China (Simplified)',
         whisper_code='zh',
         iso639_2='zho',
         closing_punct=frozenset('。？！」”'),
@@ -41,6 +41,20 @@ class Language(Enum):
         whisper_code='fr',
         iso639_2='fra',
         closing_punct=frozenset('!?»…'),
+        vocab_annotation_pattern=r'',
+    )
+    ENGLISH_US = LangConfig(
+        label='English - United States',
+        whisper_code='en',
+        iso639_2='eng',
+        closing_punct=frozenset('.?!"'),
+        vocab_annotation_pattern=r'',
+    )
+    ENGLISH_UK = LangConfig(
+        label='English - United Kingdom',
+        whisper_code='en',
+        iso639_2='eng',
+        closing_punct=frozenset('.?!\u2019'),
         vocab_annotation_pattern=r'',
     )
     # TODO : Add more! Priorities are languages that me (the owner) can understand enough to test

@@ -1,4 +1,4 @@
-# align.py — Forced alignment of chapter text to audio.
+# align.py - Forced alignment of chapter text to audio.
 
 import re
 import time
@@ -127,7 +127,7 @@ def run_transcribe(
         from_ch = only_ch
 
     if not DIR_CHAPTERS_AUDIO.exists():
-        print(f"Error: {DIR_CHAPTERS_AUDIO} not found — Run 'audio' first")
+        print(f"Error: {DIR_CHAPTERS_AUDIO} not found - Run 'audio' first")
         sys.exit(1)
 
     DIR_SRT.mkdir(parents=True, exist_ok=True)
@@ -184,7 +184,7 @@ def run(
         (DIR_CHAPTERS_TEXT,  "Run 'epub' first"),
     ]:
         if not p.exists():
-            print(f"Error: {p} not found — {msg}")
+            print(f"Error: {p} not found - {msg}")
             sys.exit(1)
 
     DIR_SRT.mkdir(parents=True, exist_ok=True)
@@ -197,7 +197,7 @@ def run(
 
 # If the counts don't match, we warn but continue with the minimum of the two.
     if len(audio_files) != len(text_files):
-        print(f"Warning: {len(audio_files)} audio vs {len(text_files)} text — "
+        print(f"Warning: {len(audio_files)} audio vs {len(text_files)} text - "
               f"processing min({len(audio_files)}, {len(text_files)}).")
 
     start_idx = (from_ch - 1) if from_ch else 0

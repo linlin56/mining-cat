@@ -223,7 +223,7 @@ def _run_txt(
         print("Error: text file is empty.")
         return
     title = txt_path.stem
-    print(f"  1 chapter (full text — no chapter info in .txt)\n")
+    print(f"  1 chapter (full text - no chapter info in .txt)\n")
     print(f"{'#':>4}  {'Chars':>8}  Title")
     print("  " + "-" * 60)
     print(f"  {1:>3}  {len(text):>8,}  {title}")

@@ -19,12 +19,12 @@ from language import Language
 _CONVERT_OPTIONS_FOR_SCRIPT: dict[str, list[tuple[str, str | None]]] = {
     "s": [
         ("No conversion", None),
-        ("Traditional — Taiwan", "tw"),
-        ("Traditional — Chinese", "t"),
+        ("Traditional - Taiwan", "tw"),
+        ("Traditional - Chinese", "t"),
     ],
     "tw": [
         ("No conversion", None),
-        ("Simplified — China", "s"),
+        ("Simplified - China", "s"),
     ],
 }
 # Flat label ： code lookup used when reading the combo value at pipeline time
@@ -47,62 +47,80 @@ _VENV_PYTHON = ROOT / ".venv" / "bin" / "python"
 PYTHON = str(_VENV_PYTHON) if _VENV_PYTHON.exists() else sys.executable
 
 STEPS = [
-    ("Step 1/4 — Audio preparation",  10,  "audio",     []),
-    ("Step 2/4 — EPUB extraction",    25,  "epub",      []),
-    ("Step 3/4 — Alignment",          40,  "align",     []),
-    ("Step 4/4 — MP4 export",         80,  "export",    ["--all"]),
+    ("Step 1/4 - Audio preparation",  10,  "audio",     []),
+    ("Step 2/4 - EPUB extraction",    25,  "epub",      []),
+    ("Step 3/4 - Alignment",          40,  "align",     []),
+    ("Step 4/4 - MP4 export",         80,  "export",    ["--all"]),
 ]
 
 # Whisper-only pipeline: no epub, transcribe directly then export.
 STEPS_WHISPER = [
-    ("Step 1/3 — Audio preparation",  10,  "audio",      []),
-    ("Step 2/3 — Transcription",      40,  "transcribe", []),
-    ("Step 3/3 — MP4 export",         80,  "export",     ["--all"]),
+    ("Step 1/3 - Audio preparation",  10,  "audio",      []),
+    ("Step 2/3 - Transcription",      40,  "transcribe", []),
+    ("Step 3/3 - MP4 export",         80,  "export",     ["--all"]),
 ]
 
 # TTS pipeline: epub → tts (audio + SRT from sentence boundaries) → export.
-# No Whisper alignment needed — edge-tts provides timing directly.
+# No Whisper alignment needed - edge-tts provides timing directly.
 STEPS_TTS = [
-    ("Step 1/3 — EPUB extraction",   10,  "epub",   []),
-    ("Step 2/3 — Audio + subtitles", 40,  "tts",    []),
-    ("Step 3/3 — MP4 export",        80,  "export", ["--all"]),
+    ("Step 1/3 - EPUB extraction",   10,  "epub",   []),
+    ("Step 2/3 - Audio + subtitles", 40,  "tts",    []),
+    ("Step 3/3 - MP4 export",        80,  "export", ["--all"]),
 ]
 
 # edge-tts voices per language (no HK/Cantonese, no dialect voices)
 _VOICES_FOR_LANGUAGE: dict[Language, list[tuple[str, str]]] = {
     Language.MANDARIN_TW: [
-        ("HsiaoChen — Mandarin (Taiwan), female", "zh-TW-HsiaoChenNeural"),
-        ("HsiaoYu — Mandarin (Taiwan), female",   "zh-TW-HsiaoYuNeural"),
-        ("YunJhe — Mandarin (Taiwan), male",       "zh-TW-YunJheNeural"),
+        ("HsiaoChen - Mandarin (Taiwan), female", "zh-TW-HsiaoChenNeural"),
+        ("HsiaoYu - Mandarin (Taiwan), female",   "zh-TW-HsiaoYuNeural"),
+        ("YunJhe - Mandarin (Taiwan), male",       "zh-TW-YunJheNeural"),
     ],
     Language.MANDARIN_CN: [
-        ("Xiaoxiao — Mandarin (China), female",   "zh-CN-XiaoxiaoNeural"),
-        ("Xiaoyi — Mandarin (China), female",     "zh-CN-XiaoyiNeural"),
-        ("Yunxi — Mandarin (China), male",        "zh-CN-YunxiNeural"),
-        ("Yunjian — Mandarin (China), male",      "zh-CN-YunjianNeural"),
-        ("Yunxia — Mandarin (China), male",       "zh-CN-YunxiaNeural"),
-        ("Yunyang — Mandarin (China), male",      "zh-CN-YunyangNeural"),
+        ("Xiaoxiao - Mandarin (China), female",   "zh-CN-XiaoxiaoNeural"),
+        ("Xiaoyi - Mandarin (China), female",     "zh-CN-XiaoyiNeural"),
+        ("Yunxi - Mandarin (China), male",        "zh-CN-YunxiNeural"),
+        ("Yunjian - Mandarin (China), male",      "zh-CN-YunjianNeural"),
+        ("Yunxia - Mandarin (China), male",       "zh-CN-YunxiaNeural"),
+        ("Yunyang - Mandarin (China), male",      "zh-CN-YunyangNeural"),
     ],
     Language.JAPANESE: [
-        ("Nanami — Japanese, female",  "ja-JP-NanamiNeural"),
-        ("Keita — Japanese, male",     "ja-JP-KeitaNeural"),
-        ("Mayu — Japanese, female",    "ja-JP-MayuNeural"),
-        ("Naoki — Japanese, male",     "ja-JP-NaokiNeural"),
-        ("Shiori — Japanese, female",  "ja-JP-ShioriNeural"),
+        ("Nanami - Japanese, female",  "ja-JP-NanamiNeural"),
+        ("Keita - Japanese, male",     "ja-JP-KeitaNeural"),
+        ("Mayu - Japanese, female",    "ja-JP-MayuNeural"),
+        ("Naoki - Japanese, male",     "ja-JP-NaokiNeural"),
+        ("Shiori - Japanese, female",  "ja-JP-ShioriNeural"),
     ],
     Language.FRENCH: [
-        ("Denise — French (France), female",   "fr-FR-DeniseNeural"),
-        ("Eloise — French (France), female",   "fr-FR-EloiseNeural"),
-        ("Henri — French (France), male",      "fr-FR-HenriNeural"),
-        ("Sylvie — French (Canada), female",   "fr-CA-SylvieNeural"),
-        ("Jean — French (Canada), male",       "fr-CA-JeanNeural"),
+        ("Denise - French (France), female",   "fr-FR-DeniseNeural"),
+        ("Eloise - French (France), female",   "fr-FR-EloiseNeural"),
+        ("Henri - French (France), male",      "fr-FR-HenriNeural"),
+        ("Sylvie - French (Canada), female",   "fr-CA-SylvieNeural"),
+        ("Jean - French (Canada), male",       "fr-CA-JeanNeural"),
+    ],
+    Language.ENGLISH_US: [
+        ("Jenny - English (US), female",   "en-US-JennyNeural"),
+        ("Aria - English (US), female",    "en-US-AriaNeural"),
+        ("Michelle - English (US), female","en-US-MichelleNeural"),
+        ("Guy - English (US), male",       "en-US-GuyNeural"),
+        ("Eric - English (US), male",      "en-US-EricNeural"),
+        ("Roger - English (US), male",     "en-US-RogerNeural"),
+    ],
+    Language.ENGLISH_UK: [
+        ("Sonia - English (UK), female",  "en-GB-SoniaNeural"),
+        ("Libby - English (UK), female",  "en-GB-LibbyNeural"),
+        ("Maisie - English (UK), female", "en-GB-MaisieNeural"),
+        ("Ryan - English (UK), male",     "en-GB-RyanNeural"),
+        ("Oliver - English (UK), male",   "en-GB-OliverNeural"),
+        ("Thomas - English (UK), male",   "en-GB-ThomasNeural"),
     ],
 }
 _DEFAULT_VOICE_FOR_LANGUAGE: dict[Language, str] = {
-    Language.MANDARIN_TW: "HsiaoChen — Mandarin (Taiwan), female",
-    Language.MANDARIN_CN: "Xiaoxiao — Mandarin (China), female",
-    Language.JAPANESE:    "Nanami — Japanese, female",
-    Language.FRENCH:      "Denise — French (France), female",
+    Language.MANDARIN_TW: "HsiaoChen - Mandarin (Taiwan), female",
+    Language.MANDARIN_CN: "Xiaoxiao - Mandarin (China), female",
+    Language.JAPANESE:    "Nanami - Japanese, female",
+    Language.FRENCH:      "Denise - French (France), female",
+    Language.ENGLISH_US:  "Jenny - English (US), female",
+    Language.ENGLISH_UK:  "Sonia - English (UK), female",
 }
 _VOICE_ID_BY_LABEL: dict[str, str] = {
     label: voice_id
@@ -267,7 +285,7 @@ class App(tk.Tk):
         ttk.Button(btn_row, text="− Remove selection",
                    command=self._remove_audio).pack(side="left")
 
-        # Voice selector — only shown in "Generate audio" mode (not packed initially)
+        # Voice selector - only shown in "Generate audio" mode (not packed initially)
         self._voice_lf = ttk.LabelFrame(outer, text="  Voice", padding=10)
         voice_row = tk.Frame(self._voice_lf, bg=c["PANEL"])
         voice_row.pack(fill="x")
@@ -436,7 +454,7 @@ class App(tk.Tk):
         self._chapter_lb.config(state="normal")
         self._chapter_lb.delete(0, tk.END)
         for i, (title, _) in enumerate(chapters, 1):
-            self._chapter_lb.insert(tk.END, f"Ch.{i:03d} — {title}")
+            self._chapter_lb.insert(tk.END, f"Ch.{i:03d} - {title}")
         self._chapter_lb.select_set(0, tk.END)
         self._update_chapter_count()
 
@@ -560,8 +578,8 @@ class App(tk.Tk):
                     raise RuntimeError(f"Command '{cmd}' failed (code {rc})")
                 if cmd in ("align", "tts") and convert_target is not None:
                     source = chinese_converter.SCRIPT_FOR_LANGUAGE[lang]
-                    self.after(0, self._set_status, "Step 3.5 — Character conversion…", 45)
-                    self.after(0, self._log_write, "\nStep 3.5 — Character conversion\n")
+                    self.after(0, self._set_status, "Step 3.5 - Character conversion…", 45)
+                    self.after(0, self._log_write, "\nStep 3.5 - Character conversion\n")
                     chinese_converter.convert_srt_dir(source, convert_target)
                     self.after(0, self._log_write, "  Done.\n")
             self.after(0, self._set_status, "Done", 100)
@@ -569,7 +587,7 @@ class App(tk.Tk):
             self.after(0, self._on_done)
         except Exception as exc:
             self.after(0, self._log_write, f"\n[ERROR] {exc}\n")
-            self.after(0, self._set_status, "Error — check the log.", 0)
+            self.after(0, self._set_status, "Error - check the log.", 0)
         finally:
             self.after(0, self._start_btn.config, {"state": "normal"})
             self.after(0, self._lang_combo.config, {"state": "readonly"})

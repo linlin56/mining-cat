@@ -21,8 +21,8 @@ def test_mandarin_vocab_annotation_pattern(text, expected):
 
 @pytest.mark.parametrize("text", [
     "学习很重要",       # no annotation
-    "[abc]",           # letters, not digits — should NOT match
-    "[ 1]",            # space before digit — should NOT match
+    "[abc]",           # letters, not digits - should NOT match
+    "[ 1]",            # space before digit - should NOT match
 ])
 def test_mandarin_vocab_annotation_no_false_positives(text):
     assert MANDARIN_PATTERN.sub("", text) == text
@@ -39,8 +39,8 @@ def test_japanese_vocab_annotation_pattern(text, expected):
 
 
 @pytest.mark.parametrize("text", [
-    "[＃半角bracket]",    # opening bracket is ASCII — should NOT match
-    "［＃",               # unclosed — should NOT match (no closing ］)
+    "[＃半角bracket]",    # opening bracket is ASCII - should NOT match
+    "［＃",               # unclosed - should NOT match (no closing ］)
     "普通のテキスト",
 ])
 def test_japanese_vocab_annotation_no_false_positives(text):
@@ -54,6 +54,8 @@ def test_iso639_2_values():
     assert Language.MANDARIN_CN.value.iso639_2 == "zho"
     assert Language.JAPANESE.value.iso639_2 == "jpn"
     assert Language.FRENCH.value.iso639_2 == "fra"
+    assert Language.ENGLISH_US.value.iso639_2 == "eng"
+    assert Language.ENGLISH_UK.value.iso639_2 == "eng"
 
 
 # from_id / from_label / ids / all_labels
@@ -67,6 +69,10 @@ def test_from_id_case_insensitive():
     assert Language.from_id("MANDARIN_CN") is Language.MANDARIN_CN
     assert Language.from_id("french") is Language.FRENCH
     assert Language.from_id("FRENCH") is Language.FRENCH
+    assert Language.from_id("english_us") is Language.ENGLISH_US
+    assert Language.from_id("ENGLISH_US") is Language.ENGLISH_US
+    assert Language.from_id("english_uk") is Language.ENGLISH_UK
+    assert Language.from_id("ENGLISH_UK") is Language.ENGLISH_UK
 
 
 def test_from_id_unknown_raises():

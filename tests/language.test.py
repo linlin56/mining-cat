@@ -78,3 +78,21 @@ def test_from_id_case_insensitive():
 def test_from_id_unknown_raises():
     with pytest.raises(ValueError, match="Unknown language id"):
         Language.from_id("dothraki")
+
+
+def test_from_label():
+    assert Language.from_label("Japanese") is Language.JAPANESE
+    assert Language.from_label("French") is Language.FRENCH
+    assert Language.from_label("Mandarin - Taiwan (Traditionnal)") is Language.MANDARIN_TW
+
+
+def test_from_label_unknown_raises():
+    with pytest.raises(ValueError, match="Unknown language label"):
+        Language.from_label("Klingon")
+
+
+def test_all_labels():
+    labels = Language.all_labels()
+    assert "Japanese" in labels
+    assert "French" in labels
+    assert len(labels) == len(list(Language))

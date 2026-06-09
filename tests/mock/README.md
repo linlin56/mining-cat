@@ -27,7 +27,7 @@ A .epub that I made to test Chinese mandarin.
 
 ## book_ja.epub
 
-A .epub to test Japanese. _(not yet available — use book_ja.txt in the meantime)_
+A .epub to test Japanese. _(not yet available - use book_ja.txt in the meantime)_
 
 ## book_ja.txt / srt_ja.srt
 
@@ -50,3 +50,25 @@ Bonjour.
 Je suis un fichier de test.
 Je suis utilisé pour tester le bon fonctionnement du logiciel.
 « C'est une phrase très intéressante, qui contient de la ponctuation. »
+
+## book_en.epub / book_en.txt / srt_en.srt
+
+EPUB, plain-text, and SRT mocks for English (United States).
+
+### Content
+
+Hello.
+I'm a test file.
+I am used to test the proper functioning of the software.
+"This is a very interesting sentence that contains punctuation."
+
+## book_en-GB.epub / book_en-GB.txt / srt_en-GB.srt
+
+EPUB, plain-text, and SRT mocks for English (United Kingdom).
+
+### Content
+
+Hello.
+I'm a test file.
+I am used to test the proper functioning of the software.
+'This is a very interesting sentence that contains punctuation.'

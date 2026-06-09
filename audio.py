@@ -1,4 +1,4 @@
-# audio.py — Audio chapter extraction.
+# audio.py - Audio chapter extraction.
 
 import json
 import shutil
@@ -138,7 +138,7 @@ def extract_all_chapters(
 def copy_mp3_chapters(mp3_files: list[Path], output_dir: Path) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     copied = []
-    print(f"{len(mp3_files)} MP3 files found — multi-chapter mode\n")
+    print(f"{len(mp3_files)} MP3 files found - multi-chapter mode\n")
     for src in mp3_files:
         dst = output_dir / src.name
         if not dst.exists():

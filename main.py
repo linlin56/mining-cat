@@ -1,4 +1,4 @@
-# main.py — Audiobook-to-subtitles pipeline.
+# main.py - Audiobook-to-subtitles pipeline.
 #
 # Subcommands:
 #   audio   Prepare audio chapters (copy MP3s or split .m4b)

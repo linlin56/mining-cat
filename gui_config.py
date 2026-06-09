@@ -1,4 +1,4 @@
-# gui_config.py — GUI configuration (colors, fonts, window size)
+# gui_config.py - GUI configuration (colors, fonts, window size)
 
 # Window configuration
 WINDOW_TITLE = "AudiobookMiner"

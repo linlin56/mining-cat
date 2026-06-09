@@ -1,4 +1,4 @@
-# config.py — Global paths and configuration.
+# config.py - Global paths and configuration.
 
 from pathlib import Path
 
@@ -22,16 +22,16 @@ AUDIO_BITRATE = "192k"
 
 #  Font candidates for video overlay (ordered by Unicode/CJK coverage)
 FONT_CANDIDATES = [
-    # macOS — CJK support
+    # macOS - CJK support
     "/System/Library/Fonts/PingFang.ttc",
     "/System/Library/Fonts/STHeiti Light.ttc",
     "/Library/Fonts/Arial Unicode.ttf",
     "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-    # Linux — CJK support
+    # Linux - CJK support
     "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
     "/usr/share/fonts/noto-cjk/NotoSansCJKsc-Regular.otf",
-    # Windows — CJK support
+    # Windows - CJK support
     "C:/Windows/Fonts/msyh.ttc",
     "C:/Windows/Fonts/simsun.ttc",
     # Latin fallbacks

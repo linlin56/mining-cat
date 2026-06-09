@@ -1,0 +1,4 @@
+Hello.
+I'm a test file.
+I am used to test the proper functioning of the software.
+"This is a very interesting sentence that contains punctuation."

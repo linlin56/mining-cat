@@ -162,27 +162,36 @@ def test_extract_chapter_skips_if_exists(tmp_path):
     assert result == out_path
 
 
-# --- copy_mp3_chapters ---
+# --- copy_audio_chapters ---
 
-def test_copy_mp3_chapters_copies_files(tmp_path):
+def test_copy_audio_chapters_copies_files(tmp_path):
     src = tmp_path / "src" / "ch1.mp3"
     src.parent.mkdir()
     src.write_bytes(b"audio")
     dst_dir = tmp_path / "dst"
-    result = audio.copy_mp3_chapters([src], dst_dir)
+    result = audio.copy_audio_chapters([src], dst_dir)
     assert len(result) == 1
     assert (dst_dir / "ch1.mp3").read_bytes() == b"audio"
 
 
-def test_copy_mp3_chapters_skips_existing(tmp_path):
+def test_copy_audio_chapters_skips_existing(tmp_path):
     src = tmp_path / "src" / "ch1.mp3"
     src.parent.mkdir()
     src.write_bytes(b"new")
     dst_dir = tmp_path / "dst"
     dst_dir.mkdir()
     (dst_dir / "ch1.mp3").write_bytes(b"old")
-    audio.copy_mp3_chapters([src], dst_dir)
+    audio.copy_audio_chapters([src], dst_dir)
     assert (dst_dir / "ch1.mp3").read_bytes() == b"old"
+
+
+def test_copy_audio_chapters_handles_non_mp3(tmp_path):
+    src = tmp_path / "src" / "ch1.flac"
+    src.parent.mkdir()
+    src.write_bytes(b"audio")
+    dst_dir = tmp_path / "dst"
+    result = audio.copy_audio_chapters([src], dst_dir)
+    assert (dst_dir / "ch1.flac").read_bytes() == b"audio"
 
 
 # --- run non-dry-run paths ---

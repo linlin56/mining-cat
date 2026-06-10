@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
 
 import epub as epub_module
-from config import DIR_CHAPTERS_AUDIO, DIR_FINAL, DIR_SRT, DIR_TEMP, FONT_CANDIDATES
+from config import DIR_CHAPTERS_AUDIO, DIR_FINAL, DIR_SRT, DIR_TEMP, FONT_CANDIDATES, glob_audio_files
 
 
 def _load_font(size: int) -> ImageFont.FreeTypeFont:
@@ -120,9 +120,9 @@ def _load_chapter_titles() -> dict[int, str]:
 
 
 def get_chapter_audio_files() -> list[Path]:
-    files = sorted(DIR_CHAPTERS_AUDIO.glob("*.mp3"))
+    files = glob_audio_files(DIR_CHAPTERS_AUDIO)
     if not files:
-        raise FileNotFoundError(f"No .mp3 found in {DIR_CHAPTERS_AUDIO}")
+        raise FileNotFoundError(f"No audio file found in {DIR_CHAPTERS_AUDIO}")
     return files
 
 
@@ -147,7 +147,7 @@ def export_chapter_to_mp4(
     output_file.parent.mkdir(parents=True, exist_ok=True)
     audio_duration = get_audio_duration(audio_file)
 
-    srt_link = Path("subs.srt")
+    srt_link = DIR_TEMP / "subs.srt"
     if srt_link.exists():
         srt_link.unlink()
     try:

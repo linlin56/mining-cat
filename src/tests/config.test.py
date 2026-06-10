@@ -6,7 +6,7 @@ def test_detect_audio_mode_single_mp3(tmp_path, monkeypatch):
     (tmp_path / "audio.mp3").touch()
     monkeypatch.setattr(config, "DIR_AUDIOBOOK", tmp_path)
     mode, files = config.detect_audio_mode()
-    assert mode == "single_mp3"
+    assert mode == "single_audio"
     assert len(files) == 1
 
 
@@ -15,7 +15,23 @@ def test_detect_audio_mode_multi_mp3(tmp_path, monkeypatch):
     (tmp_path / "ch2.mp3").touch()
     monkeypatch.setattr(config, "DIR_AUDIOBOOK", tmp_path)
     mode, files = config.detect_audio_mode()
-    assert mode == "multi_mp3"
+    assert mode == "multi_audio"
+    assert len(files) == 2
+
+
+def test_detect_audio_mode_single_ogg(tmp_path, monkeypatch):
+    (tmp_path / "audio.ogg").touch()
+    monkeypatch.setattr(config, "DIR_AUDIOBOOK", tmp_path)
+    mode, files = config.detect_audio_mode()
+    assert mode == "single_audio"
+
+
+def test_detect_audio_mode_mixed_formats(tmp_path, monkeypatch):
+    (tmp_path / "ch1.mp3").touch()
+    (tmp_path / "ch2.flac").touch()
+    monkeypatch.setattr(config, "DIR_AUDIOBOOK", tmp_path)
+    mode, files = config.detect_audio_mode()
+    assert mode == "multi_audio"
     assert len(files) == 2
 
 

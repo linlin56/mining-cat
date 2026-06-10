@@ -14,6 +14,7 @@ Contributions and issues are very appreciated!
 - Mandarin (China, simplified characters)
 - Japanese
 - French
+- English
 - More will come later!
 
 ### How to use it

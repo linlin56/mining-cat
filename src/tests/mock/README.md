@@ -72,3 +72,14 @@ Hello.
 I'm a test file.
 I am used to test the proper functioning of the software.
 'This is a very interesting sentence that contains punctuation.'
+
+## book_it.epub / book_it.txt / srt_it.srt
+
+EPUB, plain-text, and SRT mocks for Italian.
+
+### Content
+
+Ciao.
+Sono un file di test.
+Vengo utilizzato per verificare il corretto funzionamento del software.
+«Questa è una frase molto interessante, che contiene della punteggiatura.»

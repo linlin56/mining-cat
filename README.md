@@ -15,6 +15,7 @@ Contributions and issues are very appreciated!
 - Japanese
 - French
 - English (American and British supported)
+- Italian
 - More will come later!
 
 ### How to use it

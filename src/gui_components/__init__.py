@@ -1,0 +1,3 @@
+from gui_components.audio_panel import AudioPanel
+from gui_components.epub_panel import EpubPanel
+from gui_components.log_panel import LogPanel

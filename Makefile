@@ -7,11 +7,20 @@ MODEL    ?= tiny
 LANGUAGE ?= zh
 PRESET   ?= ultrafast
 RANGE    ?=
-PYTHON   ?= .venv/bin/python3
-MAIN     := $(PYTHON) main.py
+ifeq ($(OS),Windows_NT)
+  _VENV_PYTHON := .venv/Scripts/python.exe
+else
+  _VENV_PYTHON := .venv/bin/python3
+endif
+ifeq ($(wildcard $(_VENV_PYTHON)),)
+  PYTHON ?= python
+else
+  PYTHON ?= $(_VENV_PYTHON)
+endif
+MAIN     := $(PYTHON) src/main.py
 
 gui:
-	$(PYTHON) gui.py
+	$(PYTHON) src/gui.py
 
 help:
 	@echo "AudiobookMiner"
@@ -41,7 +50,7 @@ test:
 	$(PYTHON) -m pytest
 
 coverage:
-	$(PYTHON) -m pytest --cov=. --cov-report=xml --cov-report=term-missing
+	$(PYTHON) -m pytest --cov=src --cov-report=xml --cov-report=term-missing
 
 audio:
 	$(MAIN) audio

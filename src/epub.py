@@ -8,19 +8,20 @@ from bs4 import BeautifulSoup
 from config import DIR_CHAPTERS_TEXT, DIR_EBOOK, DIR_TEMP
 
 22
-def get_ebook_file() -> tuple[str, Path]:
-    # Returns (format, path) where format is 'epub' or 'txt'.
+def get_ebook_file() -> tuple[str, Path | list[Path]]:
+    # Returns (format, path) where format is 'epub', 'txt', or 'multi_txt'.
+    # 'multi_txt' is returned when multiple .txt files are found; path is then a list.
     epubs = sorted(DIR_EBOOK.glob("*.epub"))
     if epubs:
         if len(epubs) > 1:
             print(f"Warning: multiple .epub files found, using: {epubs[0].name}")
         return "epub", epubs[0]
     txts = sorted(DIR_EBOOK.glob("*.txt"))
-    if txts:
-        if len(txts) > 1:
-            print(f"Warning: multiple .txt files found, using: {txts[0].name}")
+    if not txts:
+        raise FileNotFoundError(f"No .epub or .txt found in {DIR_EBOOK}")
+    if len(txts) == 1:
         return "txt", txts[0]
-    raise FileNotFoundError(f"No .epub or .txt found in {DIR_EBOOK}")
+    return "multi_txt", txts
 
 
 def get_epub_file() -> Path:
@@ -233,6 +234,52 @@ def _run_txt(
     save_chapters([(title, text)], preview=preview)
 
 
+def _run_multi_txt(
+    txt_paths: list[Path],
+    list_only: bool = False,
+    range_str: str | None = None,
+    chapters_str: str | None = None,
+    preview: bool = False,
+) -> None:
+    all_chapters: list[tuple[str, str]] = []
+    for p in txt_paths:
+        text = p.read_text(encoding="utf-8").strip()
+        if text:
+            all_chapters.append((p.stem, text))
+
+    print(f"Found {len(txt_paths)} .txt files - each treated as a chapter.\n")
+    print(f"{'#':>4}  {'Chars':>8}  Title")
+    print("  " + "-" * 60)
+    for i, (title, text) in enumerate(all_chapters, 1):
+        print(f"  {i:>3}  {len(text):>8,}  {title}")
+    print()
+
+    if list_only:
+        return
+
+    selected = all_chapters
+    if range_str:
+        try:
+            a, b = range_str.split("-")
+            selected = all_chapters[int(a) - 1 : int(b)]
+        except (ValueError, IndexError):
+            print(f"Error: invalid --range: {range_str!r}  (expected format: A-B)")
+            return
+    elif chapters_str:
+        try:
+            idxs = [int(x) - 1 for x in chapters_str.split(",")]
+            selected = [all_chapters[i] for i in idxs if 0 <= i < len(all_chapters)]
+        except (ValueError, IndexError):
+            print(f"Error: invalid --chapters: {chapters_str!r}")
+            return
+
+    if not selected:
+        print("No chapters selected.")
+        return
+
+    save_chapters(selected, preview=preview)
+
+
 # Run ebook processing (EPUB or TXT)
 def run(
     list_only: bool = False,
@@ -240,12 +287,18 @@ def run(
     chapters_str: str | None = None,
     preview: bool = False,
 ) -> None:
-    fmt, ebook_path = get_ebook_file()
+    fmt, ebook_src = get_ebook_file()
 
-    if fmt == "txt":
-        _run_txt(ebook_path, list_only=list_only, preview=preview)
+    if fmt == "multi_txt":
+        _run_multi_txt(ebook_src, list_only=list_only, range_str=range_str,
+                       chapters_str=chapters_str, preview=preview)
         return
 
+    if fmt == "txt":
+        _run_txt(ebook_src, list_only=list_only, preview=preview)
+        return
+
+    ebook_path = ebook_src
     print(f"Reading {ebook_path.name} ...")
 
     book = epub.read_epub(ebook_path)

@@ -3,7 +3,7 @@
 from pathlib import Path
 
 #  Project root 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).parent.parent
 
 #  Sources 
 DIR_EBOOK     = ROOT / "sources" / "ebook"

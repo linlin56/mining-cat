@@ -45,7 +45,7 @@ No other changes are needed in `language.py` - `all_labels()`, `ids()`, and `fro
 
 ---
 
-### 2. `gui.py` - add TTS voices
+### 2. `gui_components/constants.py` - add TTS voices
 
 Add your language's edge-tts voices to the two dictionaries:
 
@@ -58,7 +58,7 @@ Language.YOUR_LANGUAGE: [
 ],
 ```
 
-**`_DEFAULT_VOICE_FOR_LANGUAGE`** (line 94):
+**`DEFAULT_VOICE_FOR_LANGUAGE`**:
 
 ```python
 Language.YOUR_LANGUAGE: "VoiceName - Language (Region), female",

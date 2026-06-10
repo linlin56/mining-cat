@@ -1,0 +1,4 @@
+Ciao.
+Sono un file di test.
+Vengo utilizzato per verificare il corretto funzionamento del software.
+«Questa è una frase molto interessante, che contiene della punteggiatura.»

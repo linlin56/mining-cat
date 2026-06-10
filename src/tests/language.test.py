@@ -56,6 +56,7 @@ def test_iso639_2_values():
     assert Language.FRENCH.value.iso639_2 == "fra"
     assert Language.ENGLISH_US.value.iso639_2 == "eng"
     assert Language.ENGLISH_UK.value.iso639_2 == "eng"
+    assert Language.ITALIAN.value.iso639_2 == "ita"
 
 
 # from_id / from_label / ids / all_labels
@@ -73,6 +74,8 @@ def test_from_id_case_insensitive():
     assert Language.from_id("ENGLISH_US") is Language.ENGLISH_US
     assert Language.from_id("english_uk") is Language.ENGLISH_UK
     assert Language.from_id("ENGLISH_UK") is Language.ENGLISH_UK
+    assert Language.from_id("italian") is Language.ITALIAN
+    assert Language.from_id("ITALIAN") is Language.ITALIAN
 
 
 def test_from_id_unknown_raises():

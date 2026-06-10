@@ -5,18 +5,23 @@ import webbrowser
 import tkinter as tk
 from tkinter import messagebox, ttk
 
+# Visual constants: colors, fonts, window title and minimum dimensions
 from gui_config import COLORS, WINDOW_TITLE, WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT
 from gui_config import FONT_DEFAULT, FONT_LABEL, FONT_SMALL, FONT_BUTTON_LARGE
+# Chinese script conversion utilities (Traditional ↔ Simplified)
 import chinese_converter
 from language import Language
 
+# Shared constants: URLs, file paths, voice/conversion option mappings
 from gui_components.constants import (
     GITHUB_URL, ROOT,
     _CONVERT_OPTIONS_FOR_SCRIPT, CONVERT_BY_LABEL,
     VOICES_FOR_LANGUAGE, DEFAULT_VOICE_FOR_LANGUAGE,
     PYTHON,
 )
+# Reusable UI panels for audio files, epub file, and log output
 from gui_components import AudioPanel, EpubPanel, LogPanel
+# Orchestrates the full processing pipeline in a background thread
 from gui_components import pipeline
 
 
@@ -38,6 +43,7 @@ class App(tk.Tk):
         self.after(200, lambda: self.attributes("-topmost", False))
         self.focus_force()
 
+    # Applies the dark theme to all ttk widgets using the "clam" base theme
     def _setup_style(self) -> None:
         style = ttk.Style(self)
         style.theme_use("clam")
@@ -84,6 +90,7 @@ class App(tk.Tk):
             FG_DIM=COLORS["FG_DIM"], BTN_BG=COLORS["BTN_BG"], START=COLORS["START"],
         )
 
+    # Creates and lays out all widgets: dropdowns, panels, buttons, progress bar, log
     def _build_ui(self) -> None:
         c = self._colors
         outer = ttk.Frame(self, padding=16)
@@ -185,12 +192,14 @@ class App(tk.Tk):
 
     # ----- event handlers -----
 
+    # Returns the list of conversion options available for the given language
     def _convert_labels_for(self, lang: Language) -> list[str]:
         script = chinese_converter.SCRIPT_FOR_LANGUAGE.get(lang)
         if script is None:
             return ["No conversion"]
         return [label for label, _ in _CONVERT_OPTIONS_FOR_SCRIPT[script]]
 
+    # Updates conversion and voice dropdowns when the user picks a different language
     def _on_lang_change(self, *_) -> None:
         lang = Language.from_label(self._lang_var.get())
         labels = self._convert_labels_for(lang)
@@ -201,6 +210,7 @@ class App(tk.Tk):
         self._voice_combo["values"] = [lbl for lbl, _ in voices]
         self._voice_var.set(DEFAULT_VOICE_FOR_LANGUAGE.get(lang, voices[0][0] if voices else ""))
 
+    # Shows/hides panels and controls depending on the selected processing mode
     def _on_mode_change(self, *_) -> None:
         mode = self._mode_var.get()
         if mode == "Generate audio":
@@ -223,6 +233,7 @@ class App(tk.Tk):
             self._voice_lf.pack(fill="x",    pady=(0, 10),  before=self._start_row)
             self._epub_panel.pack(fill="x",  pady=(0, 14),  before=self._start_row)
 
+    # Validates inputs, disables controls, then launches the pipeline in a background thread
     def _start(self) -> None:
         mode = self._mode_var.get()
         if mode != "Generate audio" and not self._audio_panel.files:
@@ -266,10 +277,12 @@ class App(tk.Tk):
             daemon=True,
         ).start()
 
+    # Called when the pipeline succeeds: prompts the user to open the output folder
     def _on_done(self) -> None:
         if messagebox.askyesno("Done", "Processing complete!\n\nOpen the output folder?"):
             subprocess.run(["open", str(ROOT / "output" / "final")])
 
+    # Re-enables all controls after the pipeline finishes (success or failure)
     def _on_finish(self) -> None:
         self._start_btn.config(state="normal")
         self._lang_combo.config(state="readonly")
@@ -278,6 +291,7 @@ class App(tk.Tk):
         self._mode_combo.config(state="readonly")
         self._voice_combo.config(state="readonly")
 
+    # Deletes all files in the output folder after user confirmation
     def _clear_output(self) -> None:
         if not messagebox.askyesno(
             "Clear output",
@@ -290,6 +304,7 @@ class App(tk.Tk):
         output_dir.mkdir(parents=True, exist_ok=True)
         self._log_panel.write("Output folder cleared.\n")
 
+    # Updates the status label and progress bar (called from the pipeline thread via schedule)
     def _set_status(self, text: str, pct: float) -> None:
         self._status_lbl.config(text=text)
         self._progress["value"] = pct

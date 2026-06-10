@@ -18,6 +18,7 @@ from gui_components.constants import (
 )
 from gui_components import AudioPanel, EpubPanel, LogPanel
 from gui_components import pipeline
+from gui_components.utils import open_folder
 
 
 class App(tk.Tk):
@@ -268,7 +269,7 @@ class App(tk.Tk):
 
     def _on_done(self) -> None:
         if messagebox.askyesno("Done", "Processing complete!\n\nOpen the output folder?"):
-            subprocess.run(["open", str(ROOT / "output" / "final")])
+            open_folder(ROOT / "output" / "final")
 
     def _on_finish(self) -> None:
         self._start_btn.config(state="normal")

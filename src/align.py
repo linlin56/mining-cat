@@ -8,7 +8,7 @@ from pathlib import Path
 import stable_whisper
 from tqdm import tqdm
 
-from config import DIR_CHAPTERS_AUDIO, DIR_CHAPTERS_TEXT, DIR_SRT
+from config import DIR_CHAPTERS_AUDIO, DIR_CHAPTERS_TEXT, DIR_SRT, glob_audio_files
 from language import Language
 
 
@@ -132,7 +132,7 @@ def run_transcribe(
 
     DIR_SRT.mkdir(parents=True, exist_ok=True)
 
-    audio_files = sorted(DIR_CHAPTERS_AUDIO.glob("*.mp3"))
+    audio_files = glob_audio_files(DIR_CHAPTERS_AUDIO)
     print(f"Audio chapters: {len(audio_files)}")
 
     start_idx = (from_ch - 1) if from_ch else 0
@@ -189,7 +189,7 @@ def run(
 
     DIR_SRT.mkdir(parents=True, exist_ok=True)
 
-    audio_files = sorted(DIR_CHAPTERS_AUDIO.glob("*.mp3"))
+    audio_files = glob_audio_files(DIR_CHAPTERS_AUDIO)
     text_files  = sorted(DIR_CHAPTERS_TEXT.glob("chapter_*.txt"))
 
     print(f"Audio chapters: {len(audio_files)}")

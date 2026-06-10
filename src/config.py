@@ -39,20 +39,28 @@ FONT_CANDIDATES = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
 ]
 
+AUDIO_EXTENSIONS = ("mp3", "m4a", "aac", "ogg", "wav", "flac", "opus", "m4b")
+
 
 def detect_audio_mode() -> tuple[str, list[Path]]:
     # Detect which audio input mode to use:
-    # - 'multi_mp3'  : multiple .mp3 files, each treated as one chapter
-    # - 'single_m4b' : single .m4b file to be split by chapter markers
-    # - 'single_mp3' : single .mp3 file (chapter splitting not yet supported)
-    mp3_files = sorted(DIR_AUDIOBOOK.glob("*.mp3"))
-    if len(mp3_files) > 1:
-        return "multi_mp3", mp3_files
-    m4b_files = sorted(DIR_AUDIOBOOK.glob("*.m4b"))
-    if m4b_files:
-        return "single_m4b", m4b_files[:1]
-    if mp3_files:
-        return "single_mp3", mp3_files
-    raise FileNotFoundError(f"No audio file found in {DIR_AUDIOBOOK}")
+    # - 'multi_audio'  : multiple files, each treated as one chapter
+    # - 'single_m4b'   : single .m4b file to be split by chapter markers
+    # - 'single_audio' : single file (treated as one chapter)
+    all_files = glob_audio_files(DIR_AUDIOBOOK)
+    if not all_files:
+        raise FileNotFoundError(f"No audio file found in {DIR_AUDIOBOOK}")
+    if len(all_files) > 1:
+        return "multi_audio", all_files
+    if all_files[0].suffix.lower() == ".m4b":
+        return "single_m4b", all_files
+    return "single_audio", all_files
 
 
+def glob_audio_files(directory: Path) -> list[Path]:
+    if not directory.exists():
+        return []
+    return sorted(
+        f for f in directory.iterdir()
+        if f.is_file() and f.suffix.lower().lstrip(".") in AUDIO_EXTENSIONS
+    )

@@ -122,7 +122,8 @@ def _run_cmd(
         stderr=subprocess.STDOUT,
         text=True,
         cwd=str(SRC_DIR),
-        env={**os.environ, "PYTHONUNBUFFERED": "1"},
+        env={**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONUTF8": "1"},
+        encoding="utf-8",
     )
     for line in proc.stdout:
         schedule(0, log, line)

@@ -134,12 +134,12 @@ def extract_all_chapters(
         extracted.append(path)
     return extracted
 
-# If multiple .mp3 files are found in the audiobook directory, we treat each as a chapter and copy them to the output directory.
-def copy_mp3_chapters(mp3_files: list[Path], output_dir: Path) -> list[Path]:
+# If multiple audio files are found in the audiobook directory, we treat each as a chapter and copy them to the output directory.
+def copy_audio_chapters(audio_files: list[Path], output_dir: Path) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     copied = []
-    print(f"{len(mp3_files)} MP3 files found - multi-chapter mode\n")
-    for src in mp3_files:
+    print(f"{len(audio_files)} audio files found - multi-chapter mode\n")
+    for src in audio_files:
         dst = output_dir / src.name
         if not dst.exists():
             shutil.copy2(src, dst)
@@ -160,27 +160,27 @@ def run(dry_run: bool = False) -> None:
         print(f"Error: {e}")
         sys.exit(1)
 
-    if mode == "multi_mp3":
-        print(f"Mode: multi-MP3 ({len(audio_files)} files = {len(audio_files)} chapters)")
+    if mode == "multi_audio":
+        print(f"Mode: multi-audio ({len(audio_files)} files = {len(audio_files)} chapters)")
         for f in audio_files:
             print(f"  {f.name}")
         print()
         if dry_run:
             print("Dry-run: no files copied.")
             return
-        copied = copy_mp3_chapters(audio_files, DIR_CHAPTERS_AUDIO)
+        copied = copy_audio_chapters(audio_files, DIR_CHAPTERS_AUDIO)
         print(f"\n{len(copied)} chapters ready in {DIR_CHAPTERS_AUDIO}/")
         return
 
-    if mode == "single_mp3":
-        print(f"Mode: single-MP3 (treated as one chapter)")
+    if mode == "single_audio":
+        print(f"Mode: single-audio (treated as one chapter)")
         for f in audio_files:
             print(f"  {f.name}")
         print()
         if dry_run:
             print("Dry-run: no files copied.")
             return
-        copied = copy_mp3_chapters(audio_files, DIR_CHAPTERS_AUDIO)
+        copied = copy_audio_chapters(audio_files, DIR_CHAPTERS_AUDIO)
         print(f"\n{len(copied)} chapter ready in {DIR_CHAPTERS_AUDIO}/")
         return
 

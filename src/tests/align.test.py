@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 import align
-from align import Segment, save_srt, fix_leading_punct, fix_trailing_opening_punct, prepare_text, _extract_segments, get_device
+from align import Segment, save_srt, fix_leading_punct, fix_trailing_opening_punct, restore_opening_punct, prepare_text, _extract_segments, get_device
 from language import Language
 
 
@@ -133,6 +133,43 @@ def test_fix_trailing_opening_punct_noop_for_language_without_opening():
     segs = [Segment(1, 0.0, 1.0, "Hello."), Segment(2, 1.0, 2.0, "World.")]
     result = fix_trailing_opening_punct(segs, Language.ENGLISH_US)
     assert result == segs
+
+
+# --- restore_opening_punct ---
+
+def test_restore_opening_punct_adds_missing_inverted_question():
+    ref = "conducir al revés. ¿Quieres intentarlo?"
+    segs = [Segment(1, 0.0, 1.0, "conducir al revés."), Segment(2, 1.0, 2.0, "Quieres intentarlo?")]
+    result = restore_opening_punct(segs, ref, Language.SPANISH)
+    assert result[1].text == "¿Quieres intentarlo?"
+
+
+def test_restore_opening_punct_no_change_when_already_present():
+    ref = "Hola. ¿Cómo estás?"
+    segs = [Segment(1, 0.0, 1.0, "Hola."), Segment(2, 1.0, 2.0, "¿Cómo estás?")]
+    result = restore_opening_punct(segs, ref, Language.SPANISH)
+    assert result[1].text == "¿Cómo estás?"
+
+
+def test_restore_opening_punct_noop_without_opening_punct():
+    ref = "Hello. How are you?"
+    segs = [Segment(1, 0.0, 1.0, "Hello."), Segment(2, 1.0, 2.0, "How are you?")]
+    result = restore_opening_punct(segs, ref, Language.ENGLISH_US)
+    assert result[1].text == "How are you?"
+
+
+def test_restore_opening_punct_multiple_questions():
+    ref = "Texto. ¿Primera pregunta? ¡Exclamación! ¿Segunda pregunta?"
+    segs = [
+        Segment(1, 0.0, 1.0, "Texto."),
+        Segment(2, 1.0, 2.0, "Primera pregunta?"),
+        Segment(3, 2.0, 3.0, "Exclamación!"),
+        Segment(4, 3.0, 4.0, "Segunda pregunta?"),
+    ]
+    result = restore_opening_punct(segs, ref, Language.SPANISH)
+    assert result[1].text == "¿Primera pregunta?"
+    assert result[2].text == "¡Exclamación!"
+    assert result[3].text == "¿Segunda pregunta?"
 
 
 # --- prepare_text ---

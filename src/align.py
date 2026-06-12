@@ -91,6 +91,37 @@ def fix_trailing_opening_punct(segs: list[Segment], lang: Language = Language.MA
     return [s for s in result if s is not None]
 
 
+# Restore opening punctuation (¿ ¡ « etc.) that stable-whisper silently drops from
+# aligned segments. Searches each segment's text in the reference to detect a
+# directly-preceding opening punct char and prepends it when found.
+def restore_opening_punct(segs: list[Segment], reference: str, lang: Language) -> list[Segment]:
+    opening_punct = lang.value.opening_punct
+    if not opening_punct:
+        return segs
+    result = []
+    ref_pos = 0
+    for seg in segs:
+        text = seg.text.lstrip()
+        if not text or text[0] in opening_punct:
+            result.append(Segment(seg.index, seg.start, seg.end, text))
+            ref_pos = max(ref_pos, reference.find(text[:12], ref_pos) + 1) if text else ref_pos
+            continue
+        key = text[:12]
+        idx = reference.find(key, ref_pos)
+        if idx == -1:
+            idx = reference.find(key)
+        if idx > 0:
+            pre = idx - 1
+            while pre >= 0 and reference[pre] in ' \t\n\r':
+                pre -= 1
+            if pre >= 0 and reference[pre] in opening_punct:
+                text = reference[pre] + text
+        if idx != -1:
+            ref_pos = idx + len(text)
+        result.append(Segment(seg.index, seg.start, seg.end, text))
+    return result
+
+
 # This is the main alignment function, which takes an audio file and a text file, and returns a list of aligned segments.
 def prepare_text(raw: str, lang: Language = Language.MANDARIN_TW) -> str:
     text = re.sub(lang.value.vocab_annotation_pattern, '', raw)
@@ -125,6 +156,7 @@ def align_chapter(
         verbose=False,
     )
     segs = _extract_segments(result, lang)
+    segs = restore_opening_punct(segs, chapter_text, lang)
     return segs, len(chapter_text)
 
 def transcribe_chapter(

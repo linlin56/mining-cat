@@ -89,7 +89,7 @@ def run_pipeline(
             elif cmd == "export":
                 extra += ["--language", lang.name.lower()]
             elif cmd == "tts":
-                extra += ["--voice", VOICE_ID_BY_LABEL[voice_label]]
+                extra += ["--voice", VOICE_ID_BY_LABEL[voice_label], "--language", lang.name.lower()]
             schedule(0, set_status, label + "…", pct_start)
             schedule(0, log, f"\n{label}\n")
             rc = _run_cmd([python_exe, str(SRC_DIR / "main.py"), cmd] + extra,

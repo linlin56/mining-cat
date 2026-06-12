@@ -64,6 +64,13 @@ class Language(Enum):
         closing_punct=frozenset('!?\u00bb\u2026'),
         vocab_annotation_pattern=r'',
     )
+    SPANISH = LangConfig(
+        label='Spanish',
+        whisper_code='es',
+        iso639_2='spa',
+        closing_punct=frozenset('!?\u00bb\u2026'),
+        vocab_annotation_pattern=r'',
+    )
     # TODO : Add more! Priorities are languages that me (the owner) can understand enough to test
 
     @classmethod

@@ -83,3 +83,16 @@ Ciao.
 Sono un file di test.
 Vengo utilizzato per verificare il corretto funzionamento del software.
 «Questa è una frase molto interessante, che contiene della punteggiatura.»
+
+## book_es.epub / book_es.txt / srt_es.srt
+
+EPUB, plain-text, and SRT mocks for Spanish.
+
+### Content
+
+Hola.
+Soy un archivo de prueba.
+Soy utilizado para probar el correcto funcionamiento del software.
+«Es una frase muy interesante, que contiene puntuación.»
+¿Esto es una pregunta?
+¡Esto es una exclamación!

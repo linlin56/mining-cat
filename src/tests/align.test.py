@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 import align
-from align import Segment, save_srt, fix_leading_punct, prepare_text, _extract_segments, get_device
+from align import Segment, save_srt, fix_leading_punct, fix_trailing_opening_punct, prepare_text, _extract_segments, get_device
 from language import Language
 
 
@@ -104,6 +104,35 @@ def test_fix_leading_punct_first_seg_unchanged():
     result = fix_leading_punct(segs, Language.MANDARIN_TW)
     assert len(result) == 1
     assert result[0].text == "。你好"
+
+
+# --- fix_trailing_opening_punct ---
+
+def test_fix_trailing_opening_punct_no_opening():
+    segs = [Segment(1, 0.0, 1.0, "Hola."), Segment(2, 1.0, 2.0, "¿Cómo estás?")]
+    result = fix_trailing_opening_punct(segs, Language.SPANISH)
+    assert result[0].text == "Hola."
+    assert result[1].text == "¿Cómo estás?"
+
+
+def test_fix_trailing_opening_punct_moves_to_next():
+    segs = [Segment(1, 0.0, 1.0, "Hola. ¿"), Segment(2, 1.0, 2.0, "Cómo estás?")]
+    result = fix_trailing_opening_punct(segs, Language.SPANISH)
+    assert result[0].text == "Hola."
+    assert result[1].text == "¿Cómo estás?"
+
+
+def test_fix_trailing_opening_punct_only_opening_dropped():
+    segs = [Segment(1, 0.0, 1.0, "¿"), Segment(2, 1.0, 2.0, "Cómo estás?")]
+    result = fix_trailing_opening_punct(segs, Language.SPANISH)
+    assert len(result) == 1
+    assert result[0].text == "¿Cómo estás?"
+
+
+def test_fix_trailing_opening_punct_noop_for_language_without_opening():
+    segs = [Segment(1, 0.0, 1.0, "Hello."), Segment(2, 1.0, 2.0, "World.")]
+    result = fix_trailing_opening_punct(segs, Language.ENGLISH_US)
+    assert result == segs
 
 
 # --- prepare_text ---

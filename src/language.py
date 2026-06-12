@@ -10,6 +10,7 @@ class LangConfig:
     whisper_code: str
     iso639_2: str  # ISO 639-2 code used for MP4 subtitle track metadata
     closing_punct: frozenset
+    opening_punct: frozenset
     # Regex pattern for in-text vocabulary annotations to strip before alignment.
     vocab_annotation_pattern: str
 
@@ -20,6 +21,7 @@ class Language(Enum):
         whisper_code='zh',
         iso639_2='zho',
         closing_punct=frozenset('。？！」'),
+        opening_punct=frozenset(),
         vocab_annotation_pattern=r'\[\d+\]',
     )
     MANDARIN_CN = LangConfig(
@@ -27,6 +29,7 @@ class Language(Enum):
         whisper_code='zh',
         iso639_2='zho',
         closing_punct=frozenset('。？！」”'),
+        opening_punct=frozenset(),
         vocab_annotation_pattern=r'\[\d+\]',
     )
     JAPANESE = LangConfig(
@@ -34,6 +37,7 @@ class Language(Enum):
         whisper_code='ja',
         iso639_2='jpn',
         closing_punct=frozenset('。？！」』）'),
+        opening_punct=frozenset(),
         vocab_annotation_pattern=r'［＃.+?］',
     )
     FRENCH = LangConfig(
@@ -41,6 +45,7 @@ class Language(Enum):
         whisper_code='fr',
         iso639_2='fra',
         closing_punct=frozenset('!?»…'),
+        opening_punct=frozenset(),
         vocab_annotation_pattern=r'',
     )
     ENGLISH_US = LangConfig(
@@ -48,27 +53,31 @@ class Language(Enum):
         whisper_code='en',
         iso639_2='eng',
         closing_punct=frozenset('.?!"'),
+        opening_punct=frozenset(),
         vocab_annotation_pattern=r'',
     )
     ENGLISH_UK = LangConfig(
         label='English - United Kingdom',
         whisper_code='en',
         iso639_2='eng',
-        closing_punct=frozenset('.?!\u2019'),
+        closing_punct=frozenset('.?!’'),
+        opening_punct=frozenset(),
         vocab_annotation_pattern=r'',
     )
     ITALIAN = LangConfig(
         label='Italian',
         whisper_code='it',
         iso639_2='ita',
-        closing_punct=frozenset('!?\u00bb\u2026'),
+        closing_punct=frozenset('!?»…'),
+        opening_punct=frozenset(),
         vocab_annotation_pattern=r'',
     )
     SPANISH = LangConfig(
         label='Spanish',
         whisper_code='es',
         iso639_2='spa',
-        closing_punct=frozenset('!?\u00bb\u2026'),
+        closing_punct=frozenset('!?»…'),
+        opening_punct=frozenset('¿¡'),  # ¿ ¡
         vocab_annotation_pattern=r'',
     )
     # TODO : Add more! Priorities are languages that me (the owner) can understand enough to test

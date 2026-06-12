@@ -67,6 +67,30 @@ def fix_leading_punct(segs: list[Segment], lang: Language = Language.MANDARIN_TW
     return result
 
 
+# Move trailing opening punctuation (e.g. ¿ ¡) to the start of the next segment.
+# Whisper may align ¿/¡ to the tail of the previous segment rather than the head of the question/exclamation, causing it to be dropped or misplaced in the SRT.
+def fix_trailing_opening_punct(segs: list[Segment], lang: Language = Language.MANDARIN_TW) -> list[Segment]:
+    opening_punct = lang.value.opening_punct
+    if not opening_punct:
+        return segs
+    result: list[Segment] = list(segs)
+    for i in range(len(result) - 1):
+        text = result[i].text
+        j = len(text)
+        while j > 0 and text[j - 1] in opening_punct:
+            j -= 1
+        trailing = text[j:]
+        if not trailing:
+            continue
+        body = text[:j].rstrip()
+        next_seg = result[i + 1]
+        result[i] = Segment(result[i].index, result[i].start, result[i].end, body) if body else result[i]
+        result[i + 1] = Segment(next_seg.index, next_seg.start, next_seg.end, trailing + next_seg.text)
+        if not body:
+            result[i] = None  # type: ignore[assignment]
+    return [s for s in result if s is not None]
+
+
 # This is the main alignment function, which takes an audio file and a text file, and returns a list of aligned segments.
 def prepare_text(raw: str, lang: Language = Language.MANDARIN_TW) -> str:
     text = re.sub(lang.value.vocab_annotation_pattern, '', raw)
@@ -82,7 +106,8 @@ def _extract_segments(result, lang: Language) -> list[Segment]:
         text  = (seg.text if hasattr(seg, "text")  else seg["text"]).strip()
         if text:
             segs.append(Segment(0, start, end, text))
-    return fix_leading_punct(segs, lang)
+    segs = fix_leading_punct(segs, lang)
+    return fix_trailing_opening_punct(segs, lang)
 
 # Align a single chapter's audio and text, returning a list of segments with timestamps.
 def align_chapter(

@@ -20,7 +20,7 @@ class Language(Enum):
         label='Mandarin - Taiwan (Traditionnal)',
         whisper_code='zh',
         iso639_2='zho',
-        closing_punct=frozenset('。？！」'),
+        closing_punct=frozenset('。？！」』'),
         opening_punct=frozenset(),
         vocab_annotation_pattern=r'\[\d+\]',
     )
@@ -44,7 +44,7 @@ class Language(Enum):
         label='French',
         whisper_code='fr',
         iso639_2='fra',
-        closing_punct=frozenset('!?»…'),
+        closing_punct=frozenset('!?»…”’'),
         opening_punct=frozenset(),
         vocab_annotation_pattern=r'',
     )
@@ -52,7 +52,7 @@ class Language(Enum):
         label='English - United States',
         whisper_code='en',
         iso639_2='eng',
-        closing_punct=frozenset('.?!"'),
+        closing_punct=frozenset('.?!"”’'),
         opening_punct=frozenset(),
         vocab_annotation_pattern=r'',
     )
@@ -60,7 +60,7 @@ class Language(Enum):
         label='English - United Kingdom',
         whisper_code='en',
         iso639_2='eng',
-        closing_punct=frozenset('.?!’'),
+        closing_punct=frozenset('.?!’”'),
         opening_punct=frozenset(),
         vocab_annotation_pattern=r'',
     )
@@ -68,7 +68,7 @@ class Language(Enum):
         label='Italian',
         whisper_code='it',
         iso639_2='ita',
-        closing_punct=frozenset('!?»…'),
+        closing_punct=frozenset('!?»…”'),
         opening_punct=frozenset(),
         vocab_annotation_pattern=r'',
     )
@@ -76,7 +76,7 @@ class Language(Enum):
         label='Spanish',
         whisper_code='es',
         iso639_2='spa',
-        closing_punct=frozenset('!?»…'),
+        closing_punct=frozenset('!?»…”'),
         opening_punct=frozenset('¿¡'),  # ¿ ¡
         vocab_annotation_pattern=r'',
     )

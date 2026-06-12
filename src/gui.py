@@ -11,6 +11,7 @@ from gui_config import FONT_DEFAULT, FONT_LABEL, FONT_SMALL, FONT_BUTTON_LARGE
 # Chinese script conversion utilities (Traditional ↔ Simplified)
 import chinese_converter
 from language import Language
+from frequency import word_frequency, character_frequency
 
 # Shared constants: URLs, file paths, voice/conversion option mappings
 from gui_components.constants import (
@@ -158,7 +159,23 @@ class App(tk.Tk):
         self._voice_combo.pack(side="left")
 
         self._epub_panel = EpubPanel(outer, c)
-        self._epub_panel.pack(fill="x", pady=(0, 14))
+        self._epub_panel.pack(fill="x", pady=(0, 10))
+
+        # Frequency lists
+        self._freq_lf = ttk.LabelFrame(outer, text="  Frequency lists", padding=10)
+        freq_row = tk.Frame(self._freq_lf, bg=c["PANEL"])
+        freq_row.pack(fill="x")
+        self._word_freq_btn = ttk.Button(
+            freq_row, text="Word frequency", command=self._run_word_frequency,
+        )
+        self._word_freq_btn.pack(side="left", padx=(0, 8))
+        _char_state = "normal" if character_frequency.supports_language(Language.MANDARIN_TW) else "disabled"
+        self._char_freq_btn = ttk.Button(
+            freq_row, text="Character list", command=self._run_char_frequency,
+            state=_char_state,
+        )
+        self._char_freq_btn.pack(side="left")
+        self._freq_lf.pack(fill="x", pady=(0, 14))
 
         # Start / clear row
         self._start_row = tk.Frame(outer, bg=c["BG"])
@@ -200,7 +217,7 @@ class App(tk.Tk):
             return ["No conversion"]
         return [label for label, _ in _CONVERT_OPTIONS_FOR_SCRIPT[script]]
 
-    # Updates conversion and voice dropdowns when the user picks a different language
+    # Updates conversion, voice, and character-list button when the user picks a different language
     def _on_lang_change(self, *_) -> None:
         lang = Language.from_label(self._lang_var.get())
         labels = self._convert_labels_for(lang)
@@ -210,6 +227,9 @@ class App(tk.Tk):
         voices = VOICES_FOR_LANGUAGE.get(lang, [])
         self._voice_combo["values"] = [lbl for lbl, _ in voices]
         self._voice_var.set(DEFAULT_VOICE_FOR_LANGUAGE.get(lang, voices[0][0] if voices else ""))
+        self._char_freq_btn.config(
+            state="normal" if character_frequency.supports_language(lang) else "disabled"
+        )
 
     # Shows/hides panels and controls depending on the selected processing mode
     def _on_mode_change(self, *_) -> None:
@@ -225,14 +245,17 @@ class App(tk.Tk):
         self._audio_panel.pack_forget()
         self._voice_lf.pack_forget()
         self._epub_panel.pack_forget()
+        self._freq_lf.pack_forget()
         if mode == "Standard":
             self._audio_panel.pack(fill="x", pady=(0, 10),  before=self._start_row)
-            self._epub_panel.pack(fill="x",  pady=(0, 14),  before=self._start_row)
+            self._epub_panel.pack(fill="x",  pady=(0, 10),  before=self._start_row)
+            self._freq_lf.pack(fill="x",     pady=(0, 14),  before=self._start_row)
         elif mode == "Generate subtitles":
             self._audio_panel.pack(fill="x", pady=(0, 10),  before=self._start_row)
         elif mode == "Generate audio":
             self._voice_lf.pack(fill="x",    pady=(0, 10),  before=self._start_row)
-            self._epub_panel.pack(fill="x",  pady=(0, 14),  before=self._start_row)
+            self._epub_panel.pack(fill="x",  pady=(0, 10),  before=self._start_row)
+            self._freq_lf.pack(fill="x",     pady=(0, 14),  before=self._start_row)
 
     # Validates inputs, disables controls, then launches the pipeline in a background thread
     def _start(self) -> None:
@@ -277,6 +300,84 @@ class App(tk.Tk):
             ),
             daemon=True,
         ).start()
+
+    def _run_word_frequency(self) -> None:
+        all_chapters = self._epub_panel.chapters
+        indices = self._epub_panel.selected_indices
+        if not all_chapters:
+            messagebox.showwarning("No chapters", "Load an EPUB or TXT file first.")
+            return
+        if not indices:
+            messagebox.showwarning("No chapters selected", "Select at least one chapter.")
+            return
+        chapters = [all_chapters[i] for i in indices]
+        lang = Language.from_label(self._lang_var.get())
+        epub_file = self._epub_panel.epub_file
+        self._word_freq_btn.config(state="disabled")
+        threading.Thread(
+            target=self._word_freq_bg, args=(chapters, lang, epub_file), daemon=True,
+        ).start()
+
+    def _word_freq_bg(self, chapters, lang, epub_file) -> None:
+        try:
+            text = "\n".join(t for _, t in chapters)
+            counter = word_frequency.compute(text, lang)
+            out_dir = ROOT / "output" / "frequency"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            stem = epub_file.stem if epub_file else "book"
+            out_path = out_dir / f"{stem}_word_freq.csv"
+            word_frequency.save_csv(counter, out_path)
+            self.after(0, self._on_word_freq_done, out_path, len(counter))
+        except Exception as e:
+            self.after(0, self._log_panel.write, f"Word frequency error: {e}\n")
+            self.after(0, lambda: self._word_freq_btn.config(state="normal"))
+
+    def _on_word_freq_done(self, out_path, n_words) -> None:
+        self._word_freq_btn.config(state="normal")
+        self._log_panel.write(f"Word frequency: {n_words} unique words → {out_path}\n")
+        if messagebox.askyesno("Done", f"Word frequency saved ({n_words} unique words).\n\nOpen output folder?"):
+            open_folder(out_path.parent)
+
+    def _run_char_frequency(self) -> None:
+        all_chapters = self._epub_panel.chapters
+        indices = self._epub_panel.selected_indices
+        if not all_chapters:
+            messagebox.showwarning("No chapters", "Load an EPUB or TXT file first.")
+            return
+        if not indices:
+            messagebox.showwarning("No chapters selected", "Select at least one chapter.")
+            return
+        chapters = [all_chapters[i] for i in indices]
+        lang = Language.from_label(self._lang_var.get())
+        epub_file = self._epub_panel.epub_file
+        self._char_freq_btn.config(state="disabled")
+        threading.Thread(
+            target=self._char_freq_bg, args=(chapters, lang, epub_file), daemon=True,
+        ).start()
+
+    def _char_freq_bg(self, chapters, lang, epub_file) -> None:
+        try:
+            text = "\n".join(t for _, t in chapters)
+            counter = character_frequency.compute(text, lang)
+            stem = epub_file.stem if epub_file else "book"
+            data = character_frequency.build_json(stem, lang, counter)
+            out_dir = ROOT / "output" / "frequency"
+            out_path = out_dir / f"{stem}_char_list.json"
+            character_frequency.save_json(data, out_path)
+            self.after(0, self._on_char_freq_done, out_path, len(counter))
+        except Exception as e:
+            self.after(0, self._log_panel.write, f"Character list error: {e}\n")
+            self.after(0, lambda: self._char_freq_btn.config(
+                state="normal" if character_frequency.supports_language(
+                    Language.from_label(self._lang_var.get())
+                ) else "disabled"
+            ))
+
+    def _on_char_freq_done(self, out_path, n_chars) -> None:
+        self._char_freq_btn.config(state="normal")
+        self._log_panel.write(f"Character list: {n_chars} unique characters → {out_path}\n")
+        if messagebox.askyesno("Done", f"Character list saved ({n_chars} unique characters).\n\nOpen output folder?"):
+            open_folder(out_path.parent)
 
     # Called when the pipeline succeeds: prompts the user to open the output folder
     def _on_done(self) -> None:

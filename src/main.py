@@ -127,7 +127,7 @@ def main() -> None:
     p_align.add_argument("--model", default="tiny",
                          choices=["tiny", "base", "small", "medium", "large"])
     p_align.add_argument("--language", default="mandarin_tw",
-                         choices=["mandarin_tw", "mandarin_cn", "japanese"])
+                         choices=Language.ids())
     p_align.add_argument("--from", dest="from_ch", type=int, default=None,
                          help="Start from chapter N")
     p_align.add_argument("--only", dest="only_ch", type=int, default=None,
@@ -138,7 +138,7 @@ def main() -> None:
     p_transcribe.add_argument("--model", default="tiny",
                               choices=["tiny", "base", "small", "medium", "large"])
     p_transcribe.add_argument("--language", default="mandarin_tw",
-                              choices=["mandarin_tw", "mandarin_cn", "japanese"])
+                              choices=Language.ids())
     p_transcribe.add_argument("--from", dest="from_ch", type=int, default=None,
                               help="Start from chapter N")
     p_transcribe.add_argument("--only", dest="only_ch", type=int, default=None,

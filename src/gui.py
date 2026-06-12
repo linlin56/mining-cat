@@ -240,7 +240,7 @@ class App(tk.Tk):
         if mode != "Generate audio" and not self._audio_panel.files:
             messagebox.showwarning("Missing files", "Add at least one audio file (MP3 or M4B).")
             return
-        if mode != "Generate subtitles" and self._epub_panel.epub_file is None:
+        if mode != "Generate subtitles" and not self._epub_panel.epub_files:
             messagebox.showwarning("Missing file", "Select an EPUB or TXT file.")
             return
         selected_chapters: list[int] = []
@@ -266,7 +266,7 @@ class App(tk.Tk):
                 convert_target=CONVERT_BY_LABEL.get(self._convert_var.get()),
                 voice_label=self._voice_var.get(),
                 audio_files=list(self._audio_panel.files),
-                epub_file=self._epub_panel.epub_file,
+                epub_files=list(self._epub_panel.epub_files),
                 epub_chapters=list(self._epub_panel.chapters),
                 selected_chapters=selected_chapters,
                 schedule=self.after,

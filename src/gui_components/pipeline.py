@@ -26,7 +26,7 @@ def copy_sources(
     *,
     mode: str,
     audio_files: list[Path],
-    epub_file: Path | None,
+    epub_files: list[Path],
     log: Callable[[str], None],
 ) -> None:
     log("Copying source files\n")
@@ -40,13 +40,15 @@ def copy_sources(
         else:
             log("  audio : files already in place\n")
 
-    if mode != "Generate subtitles" and epub_file is not None:
-        if epub_file.parent != DIR_EBOOK:
+    if mode != "Generate subtitles" and epub_files:
+        outside = [f for f in epub_files if f.parent != DIR_EBOOK]
+        if outside:
             _clear_dir(DIR_EBOOK)
-            shutil.copy2(epub_file, DIR_EBOOK / epub_file.name)
-            log(f"  ebook : {epub_file.name}\n")
+            for f in epub_files:
+                shutil.copy2(f, DIR_EBOOK / f.name)
+                log(f"  ebook : {f.name}\n")
         else:
-            log("  ebook : file already in place\n")
+            log(f"  ebook : file(s) already in place\n")
 
 
 def run_pipeline(
@@ -58,7 +60,7 @@ def run_pipeline(
     convert_target: str | None,
     voice_label: str,
     audio_files: list[Path],
-    epub_file: Path | None,
+    epub_files: list[Path],
     epub_chapters: list[tuple[str, str]],
     selected_chapters: list[int],
     schedule: Callable,
@@ -75,7 +77,7 @@ def run_pipeline(
         steps = STEPS_TTS
 
     try:
-        copy_sources(mode=mode, audio_files=audio_files, epub_file=epub_file, log=log)
+        copy_sources(mode=mode, audio_files=audio_files, epub_files=epub_files, log=log)
         for label, pct_start, cmd, extra in steps:
             extra = list(extra)
             if cmd == "epub":

@@ -11,13 +11,17 @@ class EpubPanel(ttk.LabelFrame):
     def __init__(self, parent, colors: dict, **kwargs):
         super().__init__(parent, text="  Book - EPUB (recommended) or TXT", padding=10, **kwargs)
         self._colors = colors
-        self._epub_file: Path | None = None
+        self._epub_files: list[Path] = []
         self._chapters: list[tuple[str, str]] = []
         self._build()
 
     @property
     def epub_file(self) -> Path | None:
-        return self._epub_file
+        return self._epub_files[0] if self._epub_files else None
+
+    @property
+    def epub_files(self) -> list[Path]:
+        return self._epub_files
 
     @property
     def chapters(self) -> list[tuple[str, str]]:
@@ -58,21 +62,40 @@ class EpubPanel(ttk.LabelFrame):
         self._count_lbl.pack(side="right")
 
     def preload(self) -> None:
-        ebooks = sorted(DIR_EBOOK.glob("*.epub")) + sorted(DIR_EBOOK.glob("*.txt"))
-        if ebooks:
-            self._epub_file = ebooks[0]
-            self._lbl.config(text=self._epub_file.name, style="Epub.TLabel")
-            self._load_chapters()
+        epubs = sorted(DIR_EBOOK.glob("*.epub"))
+        txts  = sorted(DIR_EBOOK.glob("*.txt"))
+        if epubs:
+            self._epub_files = [epubs[0]]
+        elif txts:
+            self._epub_files = txts
+        else:
+            return
+        self._update_label()
+        self._load_chapters()
 
     def _select(self) -> None:
-        p = filedialog.askopenfilename(
-            title="Select an EPUB or TXT file",
+        paths = filedialog.askopenfilenames(
+            title="Select an EPUB or TXT file(s)",
             filetypes=[("EPUB", "*.epub"), ("Text", "*.txt"), ("All", "*.*")],
         )
-        if p:
-            self._epub_file = Path(p)
-            self._lbl.config(text=self._epub_file.name, style="Epub.TLabel")
-            self._load_chapters()
+        if not paths:
+            return
+        selected = [Path(p) for p in paths]
+        epubs = [p for p in selected if p.suffix.lower() == ".epub"]
+        if epubs:
+            self._epub_files = [epubs[0]]
+        else:
+            self._epub_files = sorted(selected)
+        self._update_label()
+        self._load_chapters()
+
+    def _update_label(self) -> None:
+        if not self._epub_files:
+            self._lbl.config(text="No file selected", style="EpubDim.TLabel")
+        elif len(self._epub_files) == 1:
+            self._lbl.config(text=self._epub_files[0].name, style="Epub.TLabel")
+        else:
+            self._lbl.config(text=f"{len(self._epub_files)} TXT files selected", style="Epub.TLabel")
 
     def _load_chapters(self) -> None:
         self._lb.config(state="normal")
@@ -84,13 +107,19 @@ class EpubPanel(ttk.LabelFrame):
 
     def _load_chapters_bg(self) -> None:
         try:
-            if self._epub_file.suffix.lower() == ".txt":
-                text = self._epub_file.read_text(encoding="utf-8")
-                chapters = [(self._epub_file.stem, text)]
+            if len(self._epub_files) > 1:
+                chapters = []
+                for p in self._epub_files:
+                    text = p.read_text(encoding="utf-8").strip()
+                    if text:
+                        chapters.append((p.stem, text))
+            elif self._epub_files[0].suffix.lower() == ".txt":
+                f = self._epub_files[0]
+                chapters = [(f.stem, f.read_text(encoding="utf-8"))]
             else:
                 from ebooklib import epub as ebooklib_epub
                 import epub as epub_mod
-                book = ebooklib_epub.read_epub(str(self._epub_file))
+                book = ebooklib_epub.read_epub(str(self._epub_files[0]))
                 chapters = epub_mod.extract_chapters(book)
         except Exception:
             chapters = []

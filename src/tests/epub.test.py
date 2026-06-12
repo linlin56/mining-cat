@@ -198,6 +198,87 @@ def test_txt_chapter_content(txt_dir, expected, monkeypatch):
         assert line in all_text, f"Expected line not found in output: {line!r}"
 
 
+# Multi-TXT tests
+
+multi_txt_skip = pytest.mark.skipif(
+    not (MOCK_TXT_TW.exists() and MOCK_TXT_CN.exists()),
+    reason="tests/mock/book_zh-TW.txt and book_zh-CN.txt not available"
+)
+
+
+@pytest.fixture
+def multi_txt_dir(tmp_path):
+    for src in [MOCK_TXT_TW, MOCK_TXT_CN]:
+        shutil.copy(src, tmp_path / src.name)
+    return tmp_path
+
+
+@multi_txt_skip
+def test_multi_txt_list_only(multi_txt_dir, monkeypatch):
+    monkeypatch.setattr(epub, "DIR_EBOOK", multi_txt_dir)
+    monkeypatch.setattr(epub, "DIR_CHAPTERS_TEXT", multi_txt_dir / "chapters_text")
+    monkeypatch.setattr(epub, "DIR_TEMP", multi_txt_dir / "temp")
+    epub.run(list_only=True)
+    assert not (multi_txt_dir / "chapters_text").exists()
+
+
+@multi_txt_skip
+def test_multi_txt_saves_one_chapter_per_file(multi_txt_dir, monkeypatch):
+    monkeypatch.setattr(epub, "DIR_EBOOK", multi_txt_dir)
+    monkeypatch.setattr(epub, "DIR_CHAPTERS_TEXT", multi_txt_dir / "chapters_text")
+    monkeypatch.setattr(epub, "DIR_TEMP", multi_txt_dir / "temp")
+    epub.run()
+    chapters = sorted((multi_txt_dir / "chapters_text").glob("chapter_*.txt"))
+    assert len(chapters) == 2
+
+
+@multi_txt_skip
+def test_multi_txt_chapter_titles(multi_txt_dir, monkeypatch):
+    import json
+    monkeypatch.setattr(epub, "DIR_EBOOK", multi_txt_dir)
+    monkeypatch.setattr(epub, "DIR_CHAPTERS_TEXT", multi_txt_dir / "chapters_text")
+    monkeypatch.setattr(epub, "DIR_TEMP", multi_txt_dir / "temp")
+    epub.run()
+    manifest = json.loads((multi_txt_dir / "temp" / "ebook_chapters.json").read_text())
+    titles = {entry["title"] for entry in manifest}
+    assert "book_zh-TW" in titles
+    assert "book_zh-CN" in titles
+
+
+@multi_txt_skip
+def test_multi_txt_chapter_content(multi_txt_dir, monkeypatch):
+    monkeypatch.setattr(epub, "DIR_EBOOK", multi_txt_dir)
+    monkeypatch.setattr(epub, "DIR_CHAPTERS_TEXT", multi_txt_dir / "chapters_text")
+    monkeypatch.setattr(epub, "DIR_TEMP", multi_txt_dir / "temp")
+    epub.run()
+    all_text = "".join(
+        f.read_text(encoding="utf-8")
+        for f in sorted((multi_txt_dir / "chapters_text").glob("chapter_*.txt"))
+    )
+    for line in EXPECTED_LINES_TW + EXPECTED_LINES_CN:
+        assert line in all_text, f"Expected line not found: {line!r}"
+
+
+@multi_txt_skip
+def test_multi_txt_range(multi_txt_dir, monkeypatch):
+    monkeypatch.setattr(epub, "DIR_EBOOK", multi_txt_dir)
+    monkeypatch.setattr(epub, "DIR_CHAPTERS_TEXT", multi_txt_dir / "chapters_text")
+    monkeypatch.setattr(epub, "DIR_TEMP", multi_txt_dir / "temp")
+    epub.run(range_str="1-1")
+    chapters = sorted((multi_txt_dir / "chapters_text").glob("chapter_*.txt"))
+    assert len(chapters) == 1
+
+
+@multi_txt_skip
+def test_multi_txt_chapters_str(multi_txt_dir, monkeypatch):
+    monkeypatch.setattr(epub, "DIR_EBOOK", multi_txt_dir)
+    monkeypatch.setattr(epub, "DIR_CHAPTERS_TEXT", multi_txt_dir / "chapters_text")
+    monkeypatch.setattr(epub, "DIR_TEMP", multi_txt_dir / "temp")
+    epub.run(chapters_str="2")
+    chapters = sorted((multi_txt_dir / "chapters_text").glob("chapter_*.txt"))
+    assert len(chapters) == 1
+
+
 # SRT tests
 
 @skip_if_no_srt_ja

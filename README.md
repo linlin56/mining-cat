@@ -16,6 +16,7 @@ Contributions and issues are very appreciated!
 - French
 - English (American and British supported)
 - Italian
+- Spanish
 - More will come later!
 
 ### How to use it
@@ -64,6 +65,15 @@ The subtitles timing are generated using Whisper. this allows you to select whic
 - Base (default) : recommended for most usages
 - Tiny : recommended for standard mode, should be a little bit faster
 - Small, Medium and Large : only recommended for "generate subtitles" mode, as this takes longer to generate. Should give better subtitles (useless in standard mode because we use the ebook.)
+
+## Frequency lists
+
+Available in Standard and Generate audio modes (requires an ebook to be loaded with chapters selected).
+
+- **Word frequency** : generates a `.csv` file with each unique word and its occurrence count, sorted by frequency. Works for all languages.
+- **Character list** : generates a `.json` file compatible with [Kanji Grid](https://github.com/Kuuuube/kanjigrid), grouping characters by frequency rank (top 1k, 2k, etc.). Only available for Mandarin and Japanese.
+
+Output files are saved in `output/frequency/`.
 
 ## Chapter selection
 

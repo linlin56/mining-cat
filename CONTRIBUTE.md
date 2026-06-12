@@ -10,12 +10,11 @@ The priority is to add languages :
 - Supported by Migaku
 - Supported by edge-tts and Whisper
 
-The owner (me) of the repo is willing to add French, English, Spanish, Italian, Korean.  
 I may be able to add new languages that I don't speak, but help is wanted to double-check!
 
 ---
 
-### 1. `language.py` - define the language
+### 1. `src/language.py` - define the language
 
 Add a new member to the `Language` enum:
 
@@ -29,6 +28,8 @@ YOUR_LANGUAGE = LangConfig(
     iso639_2='xxx',
     # sentence-closing punctuation chars for your language
     closing_punct=frozenset('…'),
+    # sentence-opening punctuation chars (e.g. opening quotes, brackets)
+    opening_punct=frozenset(''),
     # regex to strip in-text vocabulary annotations (use r'' if none)
     vocab_annotation_pattern=r'...',
 )
@@ -38,14 +39,15 @@ YOUR_LANGUAGE = LangConfig(
 
 - `whisper_code` - see the Whisper supported languages list
 - `iso639_2` - look up your language
-- `closing_punct` - sentence-final punctuation that Whisper sometimes wrongly places at the start of the next segment; used by `align.fix_leading_punct()`. This is to be sure that a sentence doesn't start with a closing parenthesis for example.
+- `closing_punct` - sentence-final punctuation that Whisper sometimes wrongly places at the start of the next segment; used by `align.fix_leading_punct()`
+- `opening_punct` - sentence-opening punctuation (quotes, brackets) used by `align.fix_trailing_opening_punct()` and `align.restore_opening_punct()` to avoid orphaned opening marks at segment boundaries; use `frozenset('')` if your language has none
 - `vocab_annotation_pattern` - regex matching glossary or ruby annotations embedded in ebook text that should be stripped before alignment (e.g. `\[\d+\]` for Chinese, `［＃.+?］` for Japanese Aozora Bunko format); use `r''` if your books don't use any
 
-No other changes are needed in `language.py` - `all_labels()`, `ids()`, and `from_id()` are derived automatically from the enum members.
+No other changes are needed in `src/language.py` - `all_labels()`, `ids()`, and `from_id()` are derived automatically from the enum members.
 
 ---
 
-### 2. `gui_components/constants.py` - add TTS voices
+### 2. `src/gui_components/constants.py` - add TTS voices
 
 Add your language's edge-tts voices to the two dictionaries:
 
@@ -66,7 +68,7 @@ Language.YOUR_LANGUAGE: "VoiceName - Language (Region), female",
 
 ---
 
-### 3. `chinese_converter.py` - Chinese-only, skip if not applicable
+### 3. `src/chinese_converter.py` - Chinese-only, skip if not applicable
 
 This file handles script conversion between Simplified and Traditional Chinese using OpenCC.
 Mandarin is already supported.
@@ -77,7 +79,7 @@ May be useful for Cantonese (HK traditional is supported by OpenCC)
 
 ---
 
-### 4. `main.py` - expose the language in the CLI
+### 4. `src/main.py` - expose the language in the CLI
 
 The `--language` argument in the `align`, `transcribe`, and `export` subcommands is populated from `Language.ids()`, so **no change is needed** - your new enum member is picked up automatically.
 
@@ -85,10 +87,10 @@ The `--language` argument in the `align`, `transcribe`, and `export` subcommands
 
 ### 5. Tests - add mock files and test cases
 
-**Mock files** (`tests/mock/`):
+**Mock files** (`src/tests/mock/`):
 
 Create an epub with few lines in the language. You can do that we a text editor.
-Add these language in a txt file as well, and in the `tests/mock/README.md`.
+Add these language in a txt file as well, and in the `src/tests/mock/README.md`.
 
 | File           | Purpose                                       |
 | -------------- | --------------------------------------------- |
@@ -96,9 +98,9 @@ Add these language in a txt file as well, and in the `tests/mock/README.md`.
 | `book_xx.txt`  | Same content as plain text                    |
 | `srt_xx.srt`   | Matching SRT with correct timecodes           |
 
-Replace `xx` with the BCP-47 code you use for your language (e.g. `ko`, `fr-FR`). Keep the files short - see `tests/mock/README.md` for the expected format and content conventions.
+Replace `xx` with the BCP-47 code you use for your language (e.g. `ko`, `fr-FR`). Keep the files short - see `src/tests/mock/README.md` for the expected format and content conventions.
 
-**`tests/shared.py`** - declare the mock path constants and skip decorators:
+**`src/tests/shared.py`** - declare the mock path constants and skip decorators:
 
 ```python
 MOCK_EPUB_XX = MOCK_DIR / "book_xx.epub"
@@ -110,25 +112,25 @@ skip_if_no_txt_xx  = pytest.mark.skipif(not MOCK_TXT_XX.exists(),  reason="tests
 skip_if_no_srt_xx  = pytest.mark.skipif(not MOCK_SRT_XX.exists(),  reason="tests/mock/srt_xx.srt not available")
 ```
 
-**`tests/language.test.py`** - test the new enum member:
+**`src/tests/language.test.py`** - test the new enum member:
 
 - Add parametrize cases for `vocab_annotation_pattern` (true positives and false positives)
 - Add an assertion for the `iso639_2` value in `test_iso639_2_values()`
 - Add `Language.from_id("your_language")` cases in `test_from_id_case_insensitive()`
 
-**`tests/epub.test.py`** - add the EPUB and TXT parametrize params (follow the pattern used for `zh-TW`, `zh-CN`, `ja`) with a matching `EXPECTED_LINES_XX` list, and add SRT content/timecode tests.
+**`src/tests/epub.test.py`** - add the EPUB and TXT parametrize params (follow the pattern used for `zh-TW`, `zh-CN`, `ja`) with a matching `EXPECTED_LINES_XX` list, and add SRT content/timecode tests.
 
 ---
 
 ### Checklist
 
-- [ ] New `Language` enum member in `language.py`
-- [ ] `closing_punct` verified against real text samples
+- [ ] New `Language` enum member in `src/language.py`
+- [ ] `closing_punct` and `opening_punct` verified against real text samples
 - [ ] `vocab_annotation_pattern` tested (or confirmed unused)
-- [ ] edge-tts voices added in `gui.py` (or documented as unavailable)
-- [ ] `chinese_converter.py` updated if adding a Chinese variant
-- [ ] Mock files created in `tests/mock/`
-- [ ] Constants and skip markers added in `tests/shared.py`
-- [ ] Test cases added in `tests/language.test.py`
-- [ ] Test cases added in `tests/epub.test.py`
+- [ ] edge-tts voices added in `src/gui_components/constants.py` (or documented as unavailable)
+- [ ] `src/chinese_converter.py` updated if adding a Chinese variant
+- [ ] Mock files created in `src/tests/mock/`
+- [ ] Constants and skip markers added in `src/tests/shared.py`
+- [ ] Test cases added in `src/tests/language.test.py`
+- [ ] Test cases added in `src/tests/epub.test.py`
 - [ ] `make test` passes

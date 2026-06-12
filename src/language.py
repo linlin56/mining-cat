@@ -21,7 +21,7 @@ class Language(Enum):
         whisper_code='zh',
         iso639_2='zho',
         closing_punct=frozenset('。？！」』'),
-        opening_punct=frozenset(),
+        opening_punct=frozenset('「『'),
         vocab_annotation_pattern=r'\[\d+\]',
     )
     MANDARIN_CN = LangConfig(
@@ -29,7 +29,7 @@ class Language(Enum):
         whisper_code='zh',
         iso639_2='zho',
         closing_punct=frozenset('。？！」”'),
-        opening_punct=frozenset(),
+        opening_punct=frozenset('“'),
         vocab_annotation_pattern=r'\[\d+\]',
     )
     JAPANESE = LangConfig(
@@ -37,7 +37,7 @@ class Language(Enum):
         whisper_code='ja',
         iso639_2='jpn',
         closing_punct=frozenset('。？！」』）'),
-        opening_punct=frozenset(),
+        opening_punct=frozenset('「『（'),
         vocab_annotation_pattern=r'［＃.+?］',
     )
     FRENCH = LangConfig(
@@ -45,7 +45,7 @@ class Language(Enum):
         whisper_code='fr',
         iso639_2='fra',
         closing_punct=frozenset('!?»…”’'),
-        opening_punct=frozenset(),
+        opening_punct=frozenset('«'),
         vocab_annotation_pattern=r'',
     )
     ENGLISH_US = LangConfig(
@@ -53,7 +53,7 @@ class Language(Enum):
         whisper_code='en',
         iso639_2='eng',
         closing_punct=frozenset('.?!"”’'),
-        opening_punct=frozenset(),
+        opening_punct=frozenset('“‘'),
         vocab_annotation_pattern=r'',
     )
     ENGLISH_UK = LangConfig(
@@ -61,7 +61,7 @@ class Language(Enum):
         whisper_code='en',
         iso639_2='eng',
         closing_punct=frozenset('.?!’”'),
-        opening_punct=frozenset(),
+        opening_punct=frozenset('‘“'),
         vocab_annotation_pattern=r'',
     )
     ITALIAN = LangConfig(
@@ -69,7 +69,7 @@ class Language(Enum):
         whisper_code='it',
         iso639_2='ita',
         closing_punct=frozenset('!?»…”'),
-        opening_punct=frozenset(),
+        opening_punct=frozenset('«'),
         vocab_annotation_pattern=r'',
     )
     SPANISH = LangConfig(
@@ -77,7 +77,7 @@ class Language(Enum):
         whisper_code='es',
         iso639_2='spa',
         closing_punct=frozenset('!?»…”'),
-        opening_punct=frozenset('¿¡'),  # ¿ ¡
+        opening_punct=frozenset('«¿¡'),
         vocab_annotation_pattern=r'',
     )
     # TODO : Add more! Priorities are languages that me (the owner) can understand enough to test

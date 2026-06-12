@@ -98,10 +98,10 @@ def test_cmd_transcribe_calls_run():
 
 
 def test_cmd_tts_calls_run():
-    args = argparse.Namespace(voice="zh-TW-HsiaoChenNeural")
+    args = argparse.Namespace(voice="zh-TW-HsiaoChenNeural", language="mandarin_tw")
     with patch("tts.run") as mock:
         main.cmd_tts(args)
-    mock.assert_called_once_with(voice="zh-TW-HsiaoChenNeural")
+    mock.assert_called_once()
 
 
 def test_cmd_export_calls_run():

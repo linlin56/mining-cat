@@ -23,6 +23,9 @@ MOCK_SRT_EN_GB = MOCK_DIR / "srt_en-GB.srt"
 MOCK_EPUB_IT = MOCK_DIR / "book_it.epub"
 MOCK_TXT_IT  = MOCK_DIR / "book_it.txt"
 MOCK_SRT_IT  = MOCK_DIR / "srt_it.srt"
+MOCK_EPUB_ES = MOCK_DIR / "book_es.epub"
+MOCK_TXT_ES  = MOCK_DIR / "book_es.txt"
+MOCK_SRT_ES  = MOCK_DIR / "srt_es.srt"
 
 skip_if_no_epub_tw = pytest.mark.skipif(
     not MOCK_EPUB_TW.exists(),
@@ -107,4 +110,16 @@ skip_if_no_txt_it = pytest.mark.skipif(
 skip_if_no_srt_it = pytest.mark.skipif(
     not MOCK_SRT_IT.exists(),
     reason="tests/mock/srt_it.srt not available"
+)
+skip_if_no_epub_es = pytest.mark.skipif(
+    not MOCK_EPUB_ES.exists(),
+    reason="tests/mock/book_es.epub not available"
+)
+skip_if_no_txt_es = pytest.mark.skipif(
+    not MOCK_TXT_ES.exists(),
+    reason="tests/mock/book_es.txt not available"
+)
+skip_if_no_srt_es = pytest.mark.skipif(
+    not MOCK_SRT_ES.exists(),
+    reason="tests/mock/srt_es.srt not available"
 )

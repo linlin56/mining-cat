@@ -1,0 +1,23 @@
+1
+00:00:01,000 --> 00:00:03,500
+Hola.
+
+2
+00:00:04,000 --> 00:00:06,500
+Soy un archivo de prueba.
+
+3
+00:00:07,000 --> 00:00:09,500
+Soy utilizado para probar el correcto funcionamiento del software.
+
+4
+00:00:10,000 --> 00:00:12,500
+«Es una frase muy interesante, que contiene puntuación.»
+
+5
+00:00:13,000 --> 00:00:15,500
+¿Esto es una pregunta?
+
+6
+00:00:16,000 --> 00:00:18,500
+¡Esto es una exclamación!

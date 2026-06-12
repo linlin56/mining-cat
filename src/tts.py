@@ -5,12 +5,13 @@ import edge_tts
 from tqdm import tqdm
 
 from config import DIR_CHAPTERS_TEXT, DIR_CHAPTERS_AUDIO, DIR_SRT
-from align import Segment, save_srt
+from align import Segment, save_srt, restore_opening_punct
+from language import Language
 
 _TICKS_PER_SECOND = 10_000_000
 
 # Synthesize the given text to the given audio path, and save the sentence boundary events as an SRT file.
-async def _synthesize(text: str, voice: str, audio_path: Path, srt_path: Path) -> int:
+async def _synthesize(text: str, voice: str, audio_path: Path, srt_path: Path, lang: Language = Language.MANDARIN_TW) -> int:
     communicate = edge_tts.Communicate(text, voice)
 
     audio_buf = bytearray()
@@ -36,11 +37,12 @@ async def _synthesize(text: str, voice: str, audio_path: Path, srt_path: Path) -
         if sentence:
             segments.append(Segment(0, start, end, sentence))
 
+    segments = restore_opening_punct(segments, text, lang)
     save_srt(segments, srt_path)
     return len(segments)
 
 
-def run(voice: str) -> None:
+def run(voice: str, lang: Language = Language.MANDARIN_TW) -> None:
     import sys
 
     if not DIR_CHAPTERS_TEXT.exists():
@@ -69,7 +71,7 @@ def run(voice: str) -> None:
             continue
 
         text = text_file.read_text(encoding="utf-8").strip()
-        n_segs = asyncio.run(_synthesize(text, voice, audio_path, srt_path))
+        n_segs = asyncio.run(_synthesize(text, voice, audio_path, srt_path, lang))
         tqdm.write(f"  {text_file.stem}  {n_segs} seg")
 
     print("\nDone.")

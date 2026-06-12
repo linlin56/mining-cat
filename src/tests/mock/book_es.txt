@@ -1,0 +1,6 @@
+Hola.
+Soy un archivo de prueba.
+Soy utilizado para probar el correcto funcionamiento del software.
+«Es una frase muy interesante, que contiene puntuación.»
+¿Esto es una pregunta?
+¡Esto es una exclamación!

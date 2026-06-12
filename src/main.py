@@ -61,7 +61,7 @@ def cmd_transcribe(args: argparse.Namespace) -> None:
 
 def cmd_tts(args: argparse.Namespace) -> None:
     import tts
-    tts.run(voice=args.voice)
+    tts.run(voice=args.voice, lang=Language.from_id(args.language))
 
 
 def cmd_export(args: argparse.Namespace) -> None:
@@ -147,6 +147,7 @@ def main() -> None:
     # tts
     p_tts = sub.add_parser("tts", help="Generate audio from EPUB text using edge-tts")
     p_tts.add_argument("--voice", required=True, help="Edge-TTS voice name (e.g. zh-TW-HsiaoChenNeural)")
+    p_tts.add_argument("--language", default="mandarin_tw", choices=Language.ids())
 
     # export
     p_export = sub.add_parser("export", help="Render final MP4 files")

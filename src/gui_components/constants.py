@@ -105,6 +105,12 @@ _VOICES_FOR_LANGUAGE: dict[Language, list[tuple[str, str]]] = {
         ("Diego - Italian, male",       "it-IT-DiegoNeural"),
         ("Benigno - Italian, male",     "it-IT-BenignoNeural"),
     ],
+    Language.SPANISH: [
+        ("Elvira - Spanish (Spain), female",    "es-ES-ElviraNeural"),
+        ("Alvaro - Spanish (Spain), male",      "es-ES-AlvaroNeural"),
+        ("Dalia - Spanish (Mexico), female",    "es-MX-DaliaNeural"),
+        ("Jorge - Spanish (Mexico), male",      "es-MX-JorgeNeural"),
+    ],
 }
 DEFAULT_VOICE_FOR_LANGUAGE: dict[Language, str] = {
     Language.MANDARIN_TW: "HsiaoChen - Mandarin (Taiwan), female",
@@ -114,6 +120,7 @@ DEFAULT_VOICE_FOR_LANGUAGE: dict[Language, str] = {
     Language.ENGLISH_US:  "Jenny - English (US), female",
     Language.ENGLISH_UK:  "Sonia - English (UK), female",
     Language.ITALIAN:     "Elsa - Italian, female",
+    Language.SPANISH:     "Elvira - Spanish (Spain), female",
 }
 VOICE_ID_BY_LABEL: dict[str, str] = {
     label: voice_id

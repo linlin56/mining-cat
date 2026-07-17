@@ -119,6 +119,12 @@ def _latest_file(directory: Path, pattern: str) -> Path | None:
     return files[-1] if files else None
 
 
+# Picks the SRT to use for frequency lists after a video run. Prefers the Whisper
+# transcript (always generated, most complete) over a platform-provided "*_source.srt".
+def _find_video_srt(directory: Path) -> Path | None:
+    return _latest_file(directory, "*_whisper.srt") or _latest_file(directory, "*.srt")
+
+
 # Pipeline for downloading and transcribing a video from an online platform
 def run_video_pipeline(
     *,
@@ -146,7 +152,7 @@ def run_video_pipeline(
         if rc != 0:
             raise RuntimeError(f"Command 'video' failed (code {rc})")
 
-        srt_path = _latest_file(DIR_SRT, "*.srt")
+        srt_path = _find_video_srt(DIR_SRT)
 
         schedule(0, set_status, "Done", 100)
         schedule(0, log, "\nPipeline complete.\n")

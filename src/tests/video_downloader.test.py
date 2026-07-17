@@ -42,4 +42,4 @@ def test_download_video_defaults_to_dir_videos(tmp_path, monkeypatch):
 
 def test_download_video_unknown_host_raises(tmp_path):
     with pytest.raises(ValueError):
-        video_downloader.download_video("https://www.youtube.com/watch?v=xxx", tmp_path)
+        video_downloader.download_video("https://www.tiktok.com/@user/video/xxx", tmp_path)

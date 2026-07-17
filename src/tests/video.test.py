@@ -22,8 +22,26 @@ def test_extract_audio_builds_expected_path(tmp_path):
     assert output_dir.exists()
 
 
+# find_platform_subtitle
+def test_find_platform_subtitle_found(tmp_path):
+    (tmp_path / "abc.mp4").touch()
+    (tmp_path / "abc.zh-Hant.srt").write_text("1\n", encoding="utf-8")
+    result = video.find_platform_subtitle(tmp_path, "abc")
+    assert result == tmp_path / "abc.zh-Hant.srt"
+
+
+def test_find_platform_subtitle_none(tmp_path):
+    (tmp_path / "abc.mp4").touch()
+    assert video.find_platform_subtitle(tmp_path, "abc") is None
+
+
+def test_find_platform_subtitle_ignores_other_stems(tmp_path):
+    (tmp_path / "other.en.srt").write_text("1\n", encoding="utf-8")
+    assert video.find_platform_subtitle(tmp_path, "abc") is None
+
+
 # mux_subtitles
-def test_mux_subtitles_success(tmp_path, monkeypatch):
+def test_mux_subtitles_single_track(tmp_path, monkeypatch):
     monkeypatch.setattr(video, "DIR_TEMP", tmp_path)
     video_file = tmp_path / "reel.mp4"
     video_file.touch()
@@ -33,13 +51,44 @@ def test_mux_subtitles_success(tmp_path, monkeypatch):
 
     mock_result = MagicMock(returncode=0)
     with patch("subprocess.run", return_value=mock_result) as mock_run:
-        ok = video.mux_subtitles(video_file, srt_file, output_file, subtitle_lang="zho")
+        ok = video.mux_subtitles(video_file, [(srt_file, "Whisper")], output_file, subtitle_lang="zho")
 
     assert ok is True
     cmd = mock_run.call_args[0][0]
     assert str(video_file) in cmd
     assert "mov_text" in cmd
+    assert cmd.count("-i") == 2  # video + one subtitle track
+    assert "title=Whisper" in cmd
     assert output_file.parent.exists()
+
+
+def test_mux_subtitles_multiple_tracks(tmp_path, monkeypatch):
+    monkeypatch.setattr(video, "DIR_TEMP", tmp_path)
+    video_file = tmp_path / "vid.mp4"
+    video_file.touch()
+    source_srt = tmp_path / "source.srt"
+    source_srt.write_text("1\n00:00:00,000 --> 00:00:01,000\nsource\n", encoding="utf-8")
+    whisper_srt = tmp_path / "whisper.srt"
+    whisper_srt.write_text("1\n00:00:00,000 --> 00:00:01,000\nwhisper\n", encoding="utf-8")
+    output_file = tmp_path / "out" / "vid.mp4"
+
+    mock_result = MagicMock(returncode=0)
+    with patch("subprocess.run", return_value=mock_result) as mock_run:
+        ok = video.mux_subtitles(
+            video_file, [(source_srt, "Source"), (whisper_srt, "Whisper")], output_file,
+        )
+
+    assert ok is True
+    cmd = mock_run.call_args[0][0]
+    assert cmd.count("-i") == 3  # video + two subtitle tracks
+    assert "-map" in cmd and "1:0" in cmd and "2:0" in cmd
+    assert "title=Source" in cmd
+    assert "title=Whisper" in cmd
+
+
+def test_mux_subtitles_no_tracks_returns_false(tmp_path):
+    ok = video.mux_subtitles(tmp_path / "vid.mp4", [], tmp_path / "out.mp4")
+    assert ok is False
 
 
 def test_mux_subtitles_ffmpeg_failure(tmp_path, monkeypatch):
@@ -52,7 +101,7 @@ def test_mux_subtitles_ffmpeg_failure(tmp_path, monkeypatch):
 
     mock_result = MagicMock(returncode=1)
     with patch("subprocess.run", return_value=mock_result):
-        ok = video.mux_subtitles(video_file, srt_file, output_file)
+        ok = video.mux_subtitles(video_file, [(srt_file, "Whisper")], output_file)
 
     assert ok is False
 
@@ -68,7 +117,7 @@ def _make_pipeline_mocks(tmp_path, call_order):
         return tmp_path / "temp" / "abc.mp3"
     mock_extract_audio = MagicMock(side_effect=fake_extract_audio)
 
-    def fake_mux(video_file, srt_file, output_file, subtitle_lang="zho"):
+    def fake_mux(video_file, subtitle_tracks, output_file, subtitle_lang="zho"):
         call_order.append("mux")
         output_file.parent.mkdir(parents=True, exist_ok=True)
         output_file.write_bytes(b"fake")
@@ -108,6 +157,14 @@ def _make_pipeline_mocks(tmp_path, call_order):
     )
 
 
+def _patched_modules(m):
+    return patch.dict("sys.modules", {
+        "stable_whisper": m["stable_whisper"],
+        "align": m["align"],
+        "chinese_converter": m["chinese_converter"],
+    })
+
+
 def test_run_orchestrates_pipeline(tmp_path, monkeypatch):
     monkeypatch.setattr(video, "DIR_VIDEOS", tmp_path / "videos")
     monkeypatch.setattr(video, "DIR_TEMP", tmp_path / "temp")
@@ -120,18 +177,48 @@ def test_run_orchestrates_pipeline(tmp_path, monkeypatch):
     with patch("video_downloader.download_video", m["download"]), \
          patch("video.extract_audio", m["extract_audio"]), \
          patch("video.mux_subtitles", m["mux"]), \
-         patch.dict("sys.modules", {
-             "stable_whisper": m["stable_whisper"],
-             "align": m["align"],
-             "chinese_converter": m["chinese_converter"],
-         }):
+         _patched_modules(m):
         video.run("https://www.instagram.com/reel/xxx/", model_name="tiny", language=Language.MANDARIN_TW)
 
     m["download"].assert_called_once()
     m["extract_audio"].assert_called_once()
     m["align"].transcribe_chapter.assert_called_once()
     m["mux"].assert_called_once()
+    # No platform subtitle exists (Instagram) -> only the Whisper track is muxed
+    tracks = m["mux"].call_args[0][1]
+    assert len(tracks) == 1
+    assert tracks[0][1] == "Whisper"
+    assert tracks[0][0].name == "abc_whisper.srt"
     m["chinese_converter"].convert_srt_dir.assert_not_called()
+
+
+def test_run_includes_platform_subtitle_when_present(tmp_path, monkeypatch):
+    monkeypatch.setattr(video, "DIR_VIDEOS", tmp_path / "videos")
+    monkeypatch.setattr(video, "DIR_TEMP", tmp_path / "temp")
+    monkeypatch.setattr(video, "DIR_SRT", tmp_path / "srt")
+    monkeypatch.setattr(video, "DIR_FINAL", tmp_path / "final")
+
+    call_order: list[str] = []
+    m = _make_pipeline_mocks(tmp_path, call_order)
+    # Simulate a YouTube caption file written alongside the video by yt-dlp
+    (tmp_path / "videos").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "videos" / "abc.zh-Hant.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nyoutube caption\n", encoding="utf-8",
+    )
+
+    with patch("video_downloader.download_video", m["download"]), \
+         patch("video.extract_audio", m["extract_audio"]), \
+         patch("video.mux_subtitles", m["mux"]), \
+         _patched_modules(m):
+        video.run("https://www.youtube.com/watch?v=xxx", model_name="tiny", language=Language.MANDARIN_TW)
+
+    # Whisper still ran even though a platform track was found
+    m["align"].transcribe_chapter.assert_called_once()
+    tracks = m["mux"].call_args[0][1]
+    assert [title for _, title in tracks] == ["Source", "Whisper"]
+    assert (tmp_path / "srt" / "abc_source.srt").exists()
+    assert (tmp_path / "srt" / "abc_source.srt").read_text(encoding="utf-8") == \
+        "1\n00:00:00,000 --> 00:00:01,000\nyoutube caption\n"
 
 
 def test_run_applies_conversion_before_mux(tmp_path, monkeypatch):
@@ -146,11 +233,7 @@ def test_run_applies_conversion_before_mux(tmp_path, monkeypatch):
     with patch("video_downloader.download_video", m["download"]), \
          patch("video.extract_audio", m["extract_audio"]), \
          patch("video.mux_subtitles", m["mux"]), \
-         patch.dict("sys.modules", {
-             "stable_whisper": m["stable_whisper"],
-             "align": m["align"],
-             "chinese_converter": m["chinese_converter"],
-         }):
+         _patched_modules(m):
         video.run(
             "https://www.instagram.com/reel/xxx/", model_name="tiny",
             language=Language.MANDARIN_TW, convert_target="s",
@@ -172,11 +255,7 @@ def test_run_skips_conversion_for_unsupported_language(tmp_path, monkeypatch):
     with patch("video_downloader.download_video", m["download"]), \
          patch("video.extract_audio", m["extract_audio"]), \
          patch("video.mux_subtitles", m["mux"]), \
-         patch.dict("sys.modules", {
-             "stable_whisper": m["stable_whisper"],
-             "align": m["align"],
-             "chinese_converter": m["chinese_converter"],
-         }):
+         _patched_modules(m):
         video.run(
             "https://www.instagram.com/reel/xxx/", model_name="tiny",
             language=Language.JAPANESE, convert_target="s",

@@ -1,9 +1,10 @@
 from urllib.parse import urlparse
 
-from . import instagram
+from . import instagram, youtube
 
+_HANDLER_MODULES = (instagram, youtube)
 _HANDLERS = {
-    domain: instagram for domain in instagram.DOMAINS
+    domain: module for module in _HANDLER_MODULES for domain in module.DOMAINS
 }
 
 

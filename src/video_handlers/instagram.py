@@ -11,7 +11,7 @@ import yt_dlp
 DOMAINS = ("instagram.com",)
 
 
-def download(url: str, output_dir: Path, app_id: str = "web") -> Path:
+def download(url: str, output_dir: Path, app_id: str = "web", **_ignored) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     ydl_opts = {
         "outtmpl": str(output_dir / "%(id)s.%(ext)s"),

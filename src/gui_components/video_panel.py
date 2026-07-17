@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-TARGET_WEBSITES = ["Instagram"]
+TARGET_WEBSITES = ["Instagram", "YouTube"]
 
 
 class VideoPanel(ttk.LabelFrame):

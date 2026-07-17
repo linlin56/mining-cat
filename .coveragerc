@@ -1,10 +1,14 @@
 [run]
 omit =
     .venv/*
-    tests/*
+    src/tests/*
     */site-packages/*
+    src/gui.py
+    src/gui_config.py
+    src/gui_components/*
 
 [report]
+fail_under = 80
 exclude_lines =
     pragma: no cover
     if __name__ == .__main__.:

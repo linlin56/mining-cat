@@ -183,3 +183,17 @@ So far I used Tiktok as it is not supported. **If you want to add TikTok** pleas
 - [ ] `get_handler()` dispatch tests added in `src/tests/video_handlers.test.py`
 - [ ] README's "Video from Web" > "Supported platforms" list updated
 - [ ] `make test` passes
+
+## GUI
+
+You can add to the GUI but try to keep a nice user experience and change as little as possible.
+
+### Tests for GUI
+
+There are tests files for the GUI currently, and they should pass for the PR to be merged.
+However, they are ignored for the coverage calculation.
+
+## Coverage
+
+Rules are in `.coveragerc` and they define which paths are excluded (including gui and build related stuff.)
+The coverage should be at least 80% for the CI to succeed. Please test locally with `make test` before pushing!

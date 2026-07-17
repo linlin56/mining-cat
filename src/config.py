@@ -9,12 +9,15 @@ ROOT = Path(__file__).parent.parent
 DIR_EBOOK     = ROOT / "sources" / "ebook"
 DIR_AUDIOBOOK = ROOT / "sources" / "audiobook"
 
-#  Outputs 
+#  Outputs
 DIR_CHAPTERS_AUDIO = ROOT / "output" / "chapters_audio"
 DIR_CHAPTERS_TEXT  = ROOT / "output" / "chapters_text"
 DIR_SRT            = ROOT / "output" / "srt"
 DIR_FINAL          = ROOT / "output" / "final"
 DIR_TEMP = ROOT / "output" / "temp"
+
+#  Downloaded online videos (e.g. Instagram reels)
+DIR_VIDEOS = ROOT / "output" / "videos"
 
 #  Intermediate audio format
 AUDIO_FORMAT  = "mp3"

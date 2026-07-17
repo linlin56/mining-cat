@@ -1,12 +1,14 @@
-.PHONY: help gui install test coverage audio epub align export chapter1 chapter run clean
+.PHONY: help gui install test coverage audio epub align export chapter1 chapter run clean video
 
 # Defaults
 CHAPTER  ?= 1
 N        ?= 1
 MODEL    ?= tiny
-LANGUAGE ?= zh
+LANGUAGE ?= mandarin_tw
 PRESET   ?= ultrafast
 RANGE    ?=
+URL      ?=
+APP_ID   ?= web
 ifeq ($(OS),Windows_NT)
   _VENV_PYTHON := .venv/Scripts/python.exe
 else
@@ -35,6 +37,7 @@ help:
 	@echo "  make chapter1                   Align + export chapter 1"
 	@echo "  make chapter N=5                Align + export chapter N"
 	@echo "  make run [RANGE=4-9]            Run all steps in sequence"
+	@echo "  make video URL=...              Download an online video and generate subtitles"
 	@echo "  make clean                      Clean temp and output files"
 	@echo ""
 	@echo "Examples:"
@@ -42,6 +45,7 @@ help:
 	@echo "  make align CHAPTER=all MODEL=large"
 	@echo "  make export CHAPTER=all PRESET=superfast"
 	@echo "  make run RANGE=4-9"
+	@echo "  make video URL=https://www.instagram.com/reel/xxxxx/"
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
@@ -91,6 +95,14 @@ run:
 	else \
 		$(MAIN) run; \
 	fi
+
+# make video URL=https://www.instagram.com/reel/xxxxx/
+video:
+	@if [ -z "$(URL)" ]; then \
+		echo "Error: URL is required, e.g. make video URL=https://www.instagram.com/reel/xxxxx/"; \
+		exit 1; \
+	fi
+	$(MAIN) video --url "$(URL)" --model $(MODEL) --language $(LANGUAGE) --app-id $(APP_ID)
 
 clean:
 	rm -rf temp/*.mp3 temp/*.txt temp/*.srt output/*

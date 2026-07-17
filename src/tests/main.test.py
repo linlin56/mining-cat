@@ -67,6 +67,13 @@ def test_main_dispatches_tts():
     mock.assert_called_once()
 
 
+def test_main_dispatches_video():
+    with patch.object(sys, "argv", ["main.py", "video", "--url", "https://www.instagram.com/reel/xxx/"]):
+        with patch("main.cmd_video") as mock:
+            main.main()
+    mock.assert_called_once()
+
+
 # --- cmd_* function bodies ---
 
 def test_cmd_audio_calls_run():
@@ -116,6 +123,32 @@ def test_cmd_convert_calls_convert():
     with patch("chinese_converter.convert_srt_dir") as mock:
         main.cmd_convert(args)
     mock.assert_called_once_with("tw", "s")
+
+
+def test_cmd_video_calls_run():
+    args = argparse.Namespace(
+        url="https://www.instagram.com/reel/xxx/",
+        model="tiny",
+        language="mandarin_tw",
+        app_id="web",
+        convert_to=None,
+    )
+    with patch("video.run") as mock:
+        main.cmd_video(args)
+    mock.assert_called_once()
+
+
+def test_cmd_video_passes_convert_to():
+    args = argparse.Namespace(
+        url="https://www.instagram.com/reel/xxx/",
+        model="tiny",
+        language="mandarin_tw",
+        app_id="web",
+        convert_to="s",
+    )
+    with patch("video.run") as mock:
+        main.cmd_video(args)
+    assert mock.call_args.kwargs["convert_target"] == "s"
 
 
 def test_cmd_run_calls_all_steps():

@@ -6,6 +6,7 @@
 #   align   Forced alignment of chapter text to audio
 #   export  Render final MP4 files
 #   run     Run all steps in sequence
+#   video   Download an online video (e.g. Instagram reel) and generate subtitles
 #
 # Usage:
 #   python main.py audio [--dry-run]
@@ -13,6 +14,7 @@
 #   python main.py align [--model tiny] [--language zh] [--from 3] [--only 1]
 #   python main.py export [--chapter 5] [--all] [--preset ultrafast]
 #   python main.py run [--range 4-9]
+#   python main.py video --url <URL> [--model tiny] [--language mandarin_tw]
 
 import argparse
 import sys
@@ -78,6 +80,17 @@ def cmd_export(args: argparse.Namespace) -> None:
 def cmd_convert(args: argparse.Namespace) -> None:
     import chinese_converter
     chinese_converter.convert_srt_dir(args.source, args.target)
+
+
+def cmd_video(args: argparse.Namespace) -> None:
+    import video
+    video.run(
+        url=args.url,
+        model_name=args.model,
+        language=Language.from_id(args.language),
+        app_id=args.app_id,
+        convert_target=args.convert_to,
+    )
 
 
 def cmd_run(args: argparse.Namespace) -> None:
@@ -171,6 +184,19 @@ def main() -> None:
     p_run.add_argument("--range", dest="range_str", metavar="A-B",
                        help="Epub chapter range (e.g. 4-9)")
 
+    # video
+    p_video = sub.add_parser("video", help="Download an online video and generate subtitles")
+    p_video.add_argument("--url", required=True, help="Video URL (e.g. Instagram reel)")
+    p_video.add_argument("--model", default="tiny",
+                         choices=["tiny", "base", "small", "medium", "large"])
+    p_video.add_argument("--language", default="mandarin_tw",
+                         choices=Language.ids())
+    p_video.add_argument("--app-id", dest="app_id", default="web",
+                         help="Instagram X-IG-App-ID (numeric id, 'ios', or 'web')")
+    p_video.add_argument("--convert-to", dest="convert_to", default=None,
+                         choices=["s", "tw", "t", "hk"],
+                         help="Convert the generated SRT to this script (e.g. s=Simplified)")
+
     args = parser.parse_args()
 
     dispatch = {
@@ -182,6 +208,7 @@ def main() -> None:
         "convert":    cmd_convert,
         "export":     cmd_export,
         "run":        cmd_run,
+        "video":      cmd_video,
     }
     dispatch[args.command](args)
 

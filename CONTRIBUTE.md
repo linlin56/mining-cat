@@ -134,3 +134,52 @@ skip_if_no_srt_xx  = pytest.mark.skipif(not MOCK_SRT_XX.exists(),  reason="tests
 - [ ] Test cases added in `src/tests/language.test.py`
 - [ ] Test cases added in `src/tests/epub.test.py`
 - [ ] `make test` passes
+
+---
+
+## Add a video platform
+
+The "Video from Web" feature (`src/video.py`) downloads a video from an online platform, transcribes it with Whisper, and optionally reuses subtitles the platform already provides. Each platform is a self-contained handler module in `src/video_handlers/`; `src/video_handlers/instagram.py` and `src/video_handlers/youtube.py` are the reference implementations.
+
+---
+
+### 1. `src/video_handlers/your_site.py` - the handler module
+
+`video.run()` calls every handler's `download()` with the same set of keyword arguments (`app_id`, `language`, ...) regardless of platform, since it doesn't know ahead of time which handler will be picked.
+
+If yt-dlp needs platform-specific options (custom headers, extractor args, cookies...), check the [yt-dlp README](https://github.com/yt-dlp/yt-dlp) for the extractor's supported `extractor_args` first - see `instagram.py`'s `app_id` handling for an example.
+
+---
+
+### 2. Optional: reuse subtitles the platform already provides
+
+If the platform can serve existing subtitles (like YouTube captions), have yt-dlp download them alongside the video!
+
+If the platform has no subtitle concept, skip this step entirely - the plain `download()` from step 1 is enough, and the final video will just get the single Whisper track (like Instagram).
+
+---
+
+### 3. `src/video_handlers/__init__.py` - register the handler
+
+## Add the new handler here.
+
+### 4. Tests
+
+- `src/tests/video_handlers_your_site.test.py` - mirror `video_handlers_instagram.test.py` / `video_handlers_youtube.test.py`: mock `yt_dlp.YoutubeDL` and check the built `ydl_opts` and returned path, no real network calls.
+- `src/tests/video_handlers.test.py` - add `get_handler()` cases for your new domain(s).
+- If you added subtitle reuse (step 2), add a case to `src/tests/video.test.py` similar to `test_run_includes_platform_subtitle_when_present`.
+
+**Never point a test at a real URL** - `video_downloader.test.py::test_download_video_unknown_host_raises`.
+So far I used Tiktok as it is not supported. **If you want to add TikTok** please also update the older tests to point to a non-supported platform!
+
+---
+
+### Checklist
+
+- [ ] New handler module in `src/video_handlers/` with `DOMAINS` and `download(url, output_dir, **_ignored)`
+- [ ] Registered in `_HANDLER_MODULES` in `src/video_handlers/__init__.py`
+- [ ] Subtitle reuse implemented if the platform supports it (optional)
+- [ ] Handler tests added (mocked `yt_dlp.YoutubeDL`, no real network calls)
+- [ ] `get_handler()` dispatch tests added in `src/tests/video_handlers.test.py`
+- [ ] README's "Video from Web" > "Supported platforms" list updated
+- [ ] `make test` passes

@@ -50,7 +50,7 @@ def copy_sources(
         else:
             log(f"  ebook : file(s) already in place\n")
 
-
+# Pipeline for audiobook/ebook processing: alignment, transcription, TTS, and export
 def run_pipeline(
     *,
     python_exe: str,
@@ -105,6 +105,52 @@ def run_pipeline(
         schedule(0, set_status, "Done", 100)
         schedule(0, log, "\nPipeline complete.\n")
         schedule(0, on_done)
+    except Exception as exc:
+        schedule(0, log, f"\n[ERROR] {exc}\n")
+        schedule(0, set_status, "Error - check the log.", 0)
+    finally:
+        schedule(0, on_finish)
+
+
+def _latest_file(directory: Path, pattern: str) -> Path | None:
+    if not directory.exists():
+        return None
+    files = sorted(directory.glob(pattern), key=lambda p: p.stat().st_mtime)
+    return files[-1] if files else None
+
+
+# Pipeline for downloading and transcribing a video from an online platform
+def run_video_pipeline(
+    *,
+    python_exe: str,
+    lang: Language,
+    model: str,
+    convert_target: str | None,
+    url: str,
+    schedule: Callable,
+    log: Callable[[str], None],
+    set_status: Callable[[str, float], None],
+    on_done: Callable[[Path | None], None],
+    on_finish: Callable[[], None],
+) -> None:
+    from config import DIR_SRT
+
+    try:
+        schedule(0, set_status, "Downloading & transcribing video…", 10)
+        schedule(0, log, "\nStep 1/1 - Video download + subtitles\n")
+        cmd_args = [python_exe, str(SRC_DIR / "main.py"), "video",
+                    "--url", url, "--model", model, "--language", lang.name.lower()]
+        if convert_target is not None:
+            cmd_args += ["--convert-to", convert_target]
+        rc = _run_cmd(cmd_args, schedule=schedule, log=log)
+        if rc != 0:
+            raise RuntimeError(f"Command 'video' failed (code {rc})")
+
+        srt_path = _latest_file(DIR_SRT, "*.srt")
+
+        schedule(0, set_status, "Done", 100)
+        schedule(0, log, "\nPipeline complete.\n")
+        schedule(0, on_done, srt_path)
     except Exception as exc:
         schedule(0, log, f"\n[ERROR] {exc}\n")
         schedule(0, set_status, "Error - check the log.", 0)

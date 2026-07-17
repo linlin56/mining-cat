@@ -1,4 +1,5 @@
 ffmpeg-python>=0.2.0
+yt-dlp>=2024.8.6
 ebooklib>=0.18
 beautifulsoup4>=4.12
 lxml>=4.9

@@ -2,6 +2,7 @@ import shutil
 import subprocess
 import threading
 import webbrowser
+from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -20,11 +21,11 @@ from gui_components.constants import (
     VOICES_FOR_LANGUAGE, DEFAULT_VOICE_FOR_LANGUAGE,
     PYTHON,
 )
-# Reusable UI panels for audio files, epub file, and log output
-from gui_components import AudioPanel, EpubPanel, LogPanel
+# Reusable UI panels for audio files, epub file, video source, and log output
+from gui_components import AudioPanel, EpubPanel, LogPanel, VideoPanel
 # Orchestrates the full processing pipeline in a background thread
 from gui_components import pipeline
-from gui_components.utils import open_folder
+from gui_components.utils import open_folder, srt_to_text
 
 
 class App(tk.Tk):
@@ -35,10 +36,13 @@ class App(tk.Tk):
         self.resizable(True, True)
         self.minsize(WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT)
 
+        self._last_video_srt: Path | None = None
+
         self._setup_style()
         self._build_ui()
         self._audio_panel.preload()
         self._epub_panel.preload()
+        self._update_video_freq_buttons()
 
         self.lift()
         self.attributes("-topmost", True)
@@ -87,6 +91,10 @@ class App(tk.Tk):
                   fieldbackground=[("readonly", COLORS["BTN_BG"])],
                   foreground=[("readonly", COLORS["FG"])])
 
+        style.configure("TEntry",
+                        fieldbackground=COLORS["BTN_BG"], foreground=COLORS["FG"],
+                        insertcolor=COLORS["FG"])
+
         self._colors = dict(
             BG=COLORS["BG"], PANEL=COLORS["PANEL"], ACCENT=COLORS["ACCENT"], FG=COLORS["FG"],
             FG_DIM=COLORS["FG_DIM"], BTN_BG=COLORS["BTN_BG"], START=COLORS["START"],
@@ -119,20 +127,11 @@ class App(tk.Tk):
         )
         self._convert_combo.pack(side="left")
 
-        # Mode / precision row
+        # Precision row
         precision_row = tk.Frame(outer, bg=c["BG"])
-        precision_row.pack(fill="x", pady=(0, 12))
-        ttk.Label(precision_row, text="Mode :").pack(side="left", padx=(0, 8))
-        self._mode_var = tk.StringVar(value="Standard")
-        self._mode_combo = ttk.Combobox(
-            precision_row, textvariable=self._mode_var,
-            values=["Standard", "Generate subtitles", "Generate audio"],
-            state="readonly", width=22,
-        )
-        self._mode_combo.pack(side="left")
-        self._mode_combo.bind("<<ComboboxSelected>>", self._on_mode_change)
+        precision_row.pack(fill="x", pady=(0, 8))
         self._precision_lbl = ttk.Label(precision_row, text="Precision :")
-        self._precision_lbl.pack(side="left", padx=(16, 8))
+        self._precision_lbl.pack(side="left", padx=(0, 8))
         self._precision_var = tk.StringVar(value="Base (default)")
         self._precision_combo = ttk.Combobox(
             precision_row, textvariable=self._precision_var,
@@ -141,12 +140,40 @@ class App(tk.Tk):
         )
         self._precision_combo.pack(side="left")
 
-        # Panels
-        self._audio_panel = AudioPanel(outer, c)
+        # Source row
+        source_row = tk.Frame(outer, bg=c["BG"])
+        source_row.pack(fill="x", pady=(0, 12))
+        ttk.Label(source_row, text="Source :").pack(side="left", padx=(0, 8))
+        self._source_var = tk.StringVar(value="Audiobook / Ebook")
+        self._source_combo = ttk.Combobox(
+            source_row, textvariable=self._source_var,
+            values=["Audiobook / Ebook", "Video from Web"],
+            state="readonly", width=22,
+        )
+        self._source_combo.pack(side="left")
+        self._source_combo.bind("<<ComboboxSelected>>", self._on_source_change)
+
+        # ----- Audiobook / Ebook screen -----
+        self._audiobook_screen = tk.Frame(outer, bg=c["BG"])
+
+        # Mode row
+        mode_row = tk.Frame(self._audiobook_screen, bg=c["BG"])
+        mode_row.pack(fill="x", pady=(0, 10))
+        ttk.Label(mode_row, text="Mode :").pack(side="left", padx=(0, 8))
+        self._mode_var = tk.StringVar(value="Standard")
+        self._mode_combo = ttk.Combobox(
+            mode_row, textvariable=self._mode_var,
+            values=["Standard", "Generate subtitles", "Generate audio"],
+            state="readonly", width=22,
+        )
+        self._mode_combo.pack(side="left")
+        self._mode_combo.bind("<<ComboboxSelected>>", self._on_mode_change)
+
+        self._audio_panel = AudioPanel(self._audiobook_screen, c)
         self._audio_panel.pack(fill="x", pady=(0, 10))
 
         # Voice selector — only shown in "Generate audio" mode
-        self._voice_lf = ttk.LabelFrame(outer, text="  Voice", padding=10)
+        self._voice_lf = ttk.LabelFrame(self._audiobook_screen, text="  Voice", padding=10)
         voice_row = tk.Frame(self._voice_lf, bg=c["PANEL"])
         voice_row.pack(fill="x")
         _init_lang = Language.MANDARIN_TW
@@ -158,11 +185,11 @@ class App(tk.Tk):
         )
         self._voice_combo.pack(side="left")
 
-        self._epub_panel = EpubPanel(outer, c)
+        self._epub_panel = EpubPanel(self._audiobook_screen, c)
         self._epub_panel.pack(fill="x", pady=(0, 10))
 
         # Frequency lists
-        self._freq_lf = ttk.LabelFrame(outer, text="  Frequency lists", padding=10)
+        self._freq_lf = ttk.LabelFrame(self._audiobook_screen, text="  Frequency lists", padding=10)
         freq_row = tk.Frame(self._freq_lf, bg=c["PANEL"])
         freq_row.pack(fill="x")
         self._word_freq_btn = ttk.Button(
@@ -178,7 +205,7 @@ class App(tk.Tk):
         self._freq_lf.pack(fill="x", pady=(0, 14))
 
         # Start / clear row
-        self._start_row = tk.Frame(outer, bg=c["BG"])
+        self._start_row = tk.Frame(self._audiobook_screen, bg=c["BG"])
         self._start_row.pack(fill="x", pady=(0, 10))
         self._start_btn = ttk.Button(
             self._start_row, text="Start",
@@ -188,8 +215,42 @@ class App(tk.Tk):
         ttk.Button(self._start_row, text="Clear output",
                    command=self._clear_output).pack(side="left", padx=(8, 0))
 
+        self._audiobook_screen.pack(fill="x")
+
+        # ----- Video from Web screen -----
+        self._video_screen = tk.Frame(outer, bg=c["BG"])
+
+        self._video_panel = VideoPanel(self._video_screen, c)
+        self._video_panel.pack(fill="x", pady=(0, 10))
+
+        self._video_freq_lf = ttk.LabelFrame(self._video_screen, text="  Frequency lists", padding=10)
+        video_freq_row = tk.Frame(self._video_freq_lf, bg=c["PANEL"])
+        video_freq_row.pack(fill="x")
+        self._video_word_freq_btn = ttk.Button(
+            video_freq_row, text="Word frequency", command=self._run_word_frequency_video,
+            state="disabled",
+        )
+        self._video_word_freq_btn.pack(side="left", padx=(0, 8))
+        self._video_char_freq_btn = ttk.Button(
+            video_freq_row, text="Character list", command=self._run_char_frequency_video,
+            state="disabled",
+        )
+        self._video_char_freq_btn.pack(side="left")
+        self._video_freq_lf.pack(fill="x", pady=(0, 14))
+
+        video_start_row = tk.Frame(self._video_screen, bg=c["BG"])
+        video_start_row.pack(fill="x", pady=(0, 10))
+        self._video_generate_btn = ttk.Button(
+            video_start_row, text="Generate From Source",
+            style="Start.TButton", command=self._start_video,
+        )
+        self._video_generate_btn.pack(side="left", fill="x", expand=True)
+        ttk.Button(video_start_row, text="Clear output",
+                   command=self._clear_output).pack(side="left", padx=(8, 0))
+
         # Progress bar + status label
         prog_frame = tk.Frame(outer, bg=c["BG"])
+        self._progress_frame = prog_frame
         prog_frame.pack(fill="x", pady=(0, 10))
         self._progress = ttk.Progressbar(prog_frame, mode="determinate", maximum=100, value=0)
         self._progress.pack(fill="x")
@@ -230,6 +291,21 @@ class App(tk.Tk):
         self._char_freq_btn.config(
             state="normal" if character_frequency.supports_language(lang) else "disabled"
         )
+        self._update_video_freq_buttons()
+
+    # Switches between the "Audiobook / Ebook" and "Video from Web" screens
+    def _on_source_change(self, *_) -> None:
+        source = self._source_var.get()
+        if source == "Video from Web":
+            if not self._precision_lbl.winfo_ismapped():
+                self._precision_lbl.pack(side="left", padx=(0, 8))
+                self._precision_combo.pack(side="left")
+            self._audiobook_screen.pack_forget()
+            self._video_screen.pack(fill="x", before=self._progress_frame)
+        else:
+            self._video_screen.pack_forget()
+            self._audiobook_screen.pack(fill="x", before=self._progress_frame)
+            self._on_mode_change()
 
     # Shows/hides panels and controls depending on the selected processing mode
     def _on_mode_change(self, *_) -> None:
@@ -239,7 +315,7 @@ class App(tk.Tk):
             self._precision_combo.pack_forget()
         else:
             if not self._precision_lbl.winfo_ismapped():
-                self._precision_lbl.pack(side="left", padx=(16, 8))
+                self._precision_lbl.pack(side="left", padx=(0, 8))
                 self._precision_combo.pack(side="left")
 
         self._audio_panel.pack_forget()
@@ -296,6 +372,36 @@ class App(tk.Tk):
                 log=self._log_panel.write,
                 set_status=self._set_status,
                 on_done=self._on_done,
+                on_finish=self._on_finish,
+            ),
+            daemon=True,
+        ).start()
+
+    # Validates the URL, disables controls, then launches the video pipeline in a background thread
+    def _start_video(self) -> None:
+        url = self._video_panel.url
+        if not url:
+            messagebox.showwarning("Missing URL", "Enter a video URL.")
+            return
+
+        for w in (self._video_generate_btn, self._lang_combo, self._convert_combo,
+                  self._precision_combo, self._source_combo):
+            w.config(state="disabled")
+        self._log_panel.clear()
+        self._set_status("Preparing…", 0)
+
+        threading.Thread(
+            target=pipeline.run_video_pipeline,
+            kwargs=dict(
+                python_exe=PYTHON,
+                lang=Language.from_label(self._lang_var.get()),
+                model=self._precision_var.get().split()[0].lower(),
+                convert_target=CONVERT_BY_LABEL.get(self._convert_var.get()),
+                url=url,
+                schedule=self.after,
+                log=self._log_panel.write,
+                set_status=self._set_status,
+                on_done=self._on_video_done,
                 on_finish=self._on_finish,
             ),
             daemon=True,
@@ -379,17 +485,99 @@ class App(tk.Tk):
         if messagebox.askyesno("Done", f"Character list saved ({n_chars} unique characters).\n\nOpen output folder?"):
             open_folder(out_path.parent)
 
+    # --- Video from Web: frequency lists (computed from the last generated SRT) ---
+
+    def _run_word_frequency_video(self) -> None:
+        if self._last_video_srt is None or not self._last_video_srt.exists():
+            messagebox.showwarning("No video processed", "Generate a video first.")
+            return
+        lang = Language.from_label(self._lang_var.get())
+        srt_path = self._last_video_srt
+        self._video_word_freq_btn.config(state="disabled")
+        threading.Thread(
+            target=self._word_freq_bg_video, args=(srt_path, lang), daemon=True,
+        ).start()
+
+    def _word_freq_bg_video(self, srt_path, lang) -> None:
+        try:
+            text = srt_to_text(srt_path)
+            counter = word_frequency.compute(text, lang)
+            out_dir = ROOT / "output" / "frequency"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            out_path = out_dir / f"{srt_path.stem}_word_freq.csv"
+            word_frequency.save_csv(counter, out_path)
+            self.after(0, self._on_word_freq_done_video, out_path, len(counter))
+        except Exception as e:
+            self.after(0, self._log_panel.write, f"Word frequency error: {e}\n")
+            self.after(0, lambda: self._video_word_freq_btn.config(state="normal"))
+
+    def _on_word_freq_done_video(self, out_path, n_words) -> None:
+        self._video_word_freq_btn.config(state="normal")
+        self._log_panel.write(f"Word frequency: {n_words} unique words → {out_path}\n")
+        if messagebox.askyesno("Done", f"Word frequency saved ({n_words} unique words).\n\nOpen output folder?"):
+            open_folder(out_path.parent)
+
+    def _run_char_frequency_video(self) -> None:
+        if self._last_video_srt is None or not self._last_video_srt.exists():
+            messagebox.showwarning("No video processed", "Generate a video first.")
+            return
+        lang = Language.from_label(self._lang_var.get())
+        srt_path = self._last_video_srt
+        self._video_char_freq_btn.config(state="disabled")
+        threading.Thread(
+            target=self._char_freq_bg_video, args=(srt_path, lang), daemon=True,
+        ).start()
+
+    def _char_freq_bg_video(self, srt_path, lang) -> None:
+        try:
+            text = srt_to_text(srt_path)
+            counter = character_frequency.compute(text, lang)
+            data = character_frequency.build_json(srt_path.stem, lang, counter)
+            out_dir = ROOT / "output" / "frequency"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            out_path = out_dir / f"{srt_path.stem}_char_list.json"
+            character_frequency.save_json(data, out_path)
+            self.after(0, self._on_char_freq_done_video, out_path, len(counter))
+        except Exception as e:
+            self.after(0, self._log_panel.write, f"Character list error: {e}\n")
+            self.after(0, lambda: self._video_char_freq_btn.config(state="normal"))
+
+    def _on_char_freq_done_video(self, out_path, n_chars) -> None:
+        self._video_char_freq_btn.config(state="normal")
+        self._log_panel.write(f"Character list: {n_chars} unique characters → {out_path}\n")
+        if messagebox.askyesno("Done", f"Character list saved ({n_chars} unique characters).\n\nOpen output folder?"):
+            open_folder(out_path.parent)
+
+    # Enables/disables the video screen's frequency buttons based on whether a video has been
+    # generated yet, and whether the current language supports character lists.
+    def _update_video_freq_buttons(self) -> None:
+        has_srt = self._last_video_srt is not None
+        self._video_word_freq_btn.config(state="normal" if has_srt else "disabled")
+        lang = Language.from_label(self._lang_var.get())
+        self._video_char_freq_btn.config(
+            state="normal" if has_srt and character_frequency.supports_language(lang) else "disabled"
+        )
+
     # Called when the pipeline succeeds: prompts the user to open the output folder
     def _on_done(self) -> None:
         if messagebox.askyesno("Done", "Processing complete!\n\nOpen the output folder?"):
             open_folder(ROOT / "output" / "final")
 
-    # Re-enables all controls after the pipeline finishes (success or failure)
+    # Called when the video pipeline succeeds: records the generated SRT and prompts to open the output folder
+    def _on_video_done(self, srt_path: Path | None) -> None:
+        self._last_video_srt = srt_path
+        self._update_video_freq_buttons()
+        if messagebox.askyesno("Done", "Video processing complete!\n\nOpen the output folder?"):
+            open_folder(ROOT / "output" / "final")
+
+    # Re-enables all controls after a pipeline finishes (success or failure)
     def _on_finish(self) -> None:
         self._start_btn.config(state="normal")
+        self._video_generate_btn.config(state="normal")
         self._lang_combo.config(state="readonly")
         self._convert_combo.config(state="readonly")
         self._precision_combo.config(state="readonly")
+        self._source_combo.config(state="readonly")
         self._mode_combo.config(state="readonly")
         self._voice_combo.config(state="readonly")
 
@@ -404,6 +592,8 @@ class App(tk.Tk):
         if output_dir.exists():
             shutil.rmtree(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
+        self._last_video_srt = None
+        self._update_video_freq_buttons()
         self._log_panel.write("Output folder cleared.\n")
 
     # Updates the status label and progress bar (called from the pipeline thread via schedule)

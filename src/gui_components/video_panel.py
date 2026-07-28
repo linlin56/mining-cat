@@ -1,7 +1,7 @@
 import threading
 from pathlib import Path
 import tkinter as tk
-from tkinter import filedialog, ttk
+from tkinter import filedialog, messagebox, ttk
 
 TARGET_WEBSITES = ["Instagram", "YouTube"]
 INPUT_MODES = ["From web", "Local file"]
@@ -88,6 +88,8 @@ class VideoPanel(ttk.LabelFrame):
         self._url_var = tk.StringVar()
         self._url_entry = ttk.Entry(url_row, textvariable=self._url_var, width=60)
         self._url_entry.pack(side="left", fill="x", expand=True)
+        # A region drawn for a previous URL's frame shouldn't silently apply to a different one.
+        self._url_var.trace_add("write", lambda *_: setattr(self, "_ocr_region", None))
 
         self._web_frame.pack(fill="x", pady=(8, 0))
 
@@ -109,16 +111,19 @@ class VideoPanel(ttk.LabelFrame):
         )
         self._audio_track_combo.pack(side="left")
 
-        ocr_row = tk.Frame(self._local_frame, bg=c["PANEL"])
-        ocr_row.pack(fill="x", pady=(8, 0))
+        # Shared by both modes (regardless of local file / web URL)
+        # the OCR pipeline itself doesn't care where the video came from. 
+        # Kept as its own frame (rather than nested in _local_frame/_web_frame) so it stays visible across mode switches without duplicating the widgets.
+        self._ocr_row = tk.Frame(self, bg=c["PANEL"])
+        self._ocr_row.pack(fill="x", pady=(8, 0))
         self._ocr_var = tk.BooleanVar(value=False)
         self._ocr_check = ttk.Checkbutton(
-            ocr_row, text="Use OCR for hardsubs (will not rely on audio track)",
+            self._ocr_row, text="Use OCR for hardsubs (will not rely on audio track)",
             variable=self._ocr_var, command=self._on_ocr_toggle,
         )
         self._ocr_check.pack(side="left")
         self._ocr_region_btn = ttk.Button(
-            ocr_row, text="Please select subtitle region…", command=self._select_ocr_region, state="disabled",
+            self._ocr_row, text="Select subtitle region…", command=self._select_ocr_region, state="disabled",
         )
         self._ocr_region_btn.pack(side="left", padx=(8, 0))
 
@@ -129,6 +134,10 @@ class VideoPanel(ttk.LabelFrame):
         else:
             self._local_frame.pack_forget()
             self._web_frame.pack(fill="x", pady=(8, 0))
+        # The user might have already selected a region for a previous video
+        # that region is unlikely to be valid for a different video : reset
+        self._ocr_row.pack_forget()
+        self._ocr_row.pack(fill="x", pady=(8, 0))
 
     def _select_file(self) -> None:
         path = filedialog.askopenfilename(title="Select a video file", filetypes=VIDEO_FILETYPES)
@@ -144,10 +153,42 @@ class VideoPanel(ttk.LabelFrame):
         self._ocr_region_btn.config(state="normal" if self.use_ocr else "disabled")
 
     def _select_ocr_region(self) -> None:
-        if self._video_file is None:
+        if self.is_local:
+            if self._video_file is None:
+                return
+            self._open_ocr_region_dialog(self._video_file)
             return
+
+        url = self.url
+        if not url:
+            messagebox.showwarning("Missing URL", "Enter a video URL.")
+            return
+        # No local frame to preview yet 
+        # download the video first (yt-dlp skips re-downloading later, during "Generate From Source", once it's cached).
+        self._ocr_region_btn.config(state="disabled", text="Downloading preview…")
+        threading.Thread(target=self._download_for_preview_bg, args=(url,), daemon=True).start()
+
+    def _download_for_preview_bg(self, url: str) -> None:
+        import video_downloader
+        from config import DIR_VIDEOS
+        try:
+            video_file = video_downloader.download_video(url, DIR_VIDEOS, app_id="web")
+        except Exception as exc:
+            self.after(0, self._on_preview_download_failed, str(exc))
+            return
+        self.after(0, self._on_preview_download_done, video_file)
+
+    def _on_preview_download_failed(self, message: str) -> None:
+        self._ocr_region_btn.config(state="normal", text="Select subtitle region…")
+        messagebox.showerror("Download failed", f"Could not download the video for preview:\n{message}")
+
+    def _on_preview_download_done(self, video_file: Path) -> None:
+        self._ocr_region_btn.config(state="normal", text="Select subtitle region…")
+        self._open_ocr_region_dialog(video_file)
+
+    def _open_ocr_region_dialog(self, video_file: Path) -> None:
         from gui_components.ocr_region_dialog import OcrRegionDialog
-        dialog = OcrRegionDialog(self, self._video_file, initial_region=self._ocr_region)
+        dialog = OcrRegionDialog(self, video_file, initial_region=self._ocr_region)
         region = dialog.show()
         if region is not None:
             self._ocr_region = region

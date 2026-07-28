@@ -38,6 +38,21 @@ def test_extract_audio_maps_requested_audio_track(tmp_path):
     assert kwargs["map"] == "0:a:2"
 
 
+def test_extract_audio_reuses_existing_file(tmp_path, capsys):
+    video_file = tmp_path / "reel.mp4"
+    output_dir = tmp_path / "audio_out"
+    output_dir.mkdir()
+    existing = output_dir / "reel.mp3"
+    existing.write_bytes(b"already there")
+
+    with patch("video.ffmpeg.input") as mock_input:
+        result = video.extract_audio(video_file, output_dir)
+
+    mock_input.assert_not_called()
+    assert result == existing
+    assert "already extracted" in capsys.readouterr().out
+
+
 # list_audio_tracks
 def test_list_audio_tracks_returns_audio_streams_only(tmp_path):
     video_file = tmp_path / "movie.mkv"
@@ -307,6 +322,33 @@ def test_run_orchestrates_pipeline(tmp_path, monkeypatch):
     assert tracks[0][1] == "Whisper"
     assert tracks[0][0].name == "abc_whisper.srt"
     m["chinese_converter"].convert_srt_dir.assert_not_called()
+
+
+def test_run_logs_and_overwrites_previous_transcription(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(video, "DIR_VIDEOS", tmp_path / "videos")
+    monkeypatch.setattr(video, "DIR_TEMP", tmp_path / "temp")
+    monkeypatch.setattr(video, "DIR_SRT", tmp_path / "srt")
+    monkeypatch.setattr(video, "DIR_FINAL", tmp_path / "final")
+
+    call_order: list[str] = []
+    m = _make_pipeline_mocks(tmp_path, call_order)
+    previous_srt = tmp_path / "srt" / "abc_whisper.srt"
+    previous_srt.parent.mkdir(parents=True, exist_ok=True)
+    previous_srt.write_text("1\n00:00:00,000 --> 00:00:01,000\nold transcription\n", encoding="utf-8")
+
+    with patch("video_downloader.download_video", m["download"]), \
+         patch("video.extract_audio", m["extract_audio"]), \
+         patch("video.mux_subtitles", m["mux"]), \
+         patch("video.extract_embedded_subtitles", m["extract_embedded_subtitles"]), \
+         _patched_modules(m):
+        video.run("https://www.instagram.com/reel/xxx/", model_name="tiny", language=Language.MANDARIN_TW)
+
+    # Still re-transcribes rather than skipping...
+    m["align"].transcribe_chapter.assert_called_once()
+    # ...but logs that it's about to overwrite a previous transcription
+    out = capsys.readouterr().out
+    assert "previous transcription" in out.lower()
+    assert str(previous_srt) in out
 
 
 def test_run_includes_platform_subtitle_when_present(tmp_path, monkeypatch):

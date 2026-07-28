@@ -10,9 +10,16 @@ from config import AUDIO_BITRATE, DIR_FINAL, DIR_SRT, DIR_TEMP, DIR_VIDEOS
 from language import Language
 
 
+# Skips re-extraction if the mp3 is already sitting in output_dir from a previous run on the
+# same video (e.g. re-running after tweaking the language or model). Note: if you re-run with
+# a different audio_track than last time, delete the cached mp3 first - it won't be redone
+# automatically since we have no record of which track produced it.
 def extract_audio(video_file: Path, output_dir: Path, audio_track: int | None = None) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     audio_path = output_dir / f"{video_file.stem}.mp3"
+    if audio_path.exists():
+        print(f"Audio already extracted, reusing: {audio_path}")
+        return audio_path
     output_kwargs = dict(acodec="libmp3lame", audio_bitrate=AUDIO_BITRATE, vn=None)
     if audio_track is not None:
         output_kwargs["map"] = f"0:a:{audio_track}"
@@ -185,9 +192,11 @@ def run(
     print(f"Audio: {audio_file}")
 
     print(f"\n=== Transcribing (model={model_name}, language={language.name.lower()}) ===")
+    whisper_srt_file = DIR_SRT / f"{video_file.stem}_whisper.srt"
+    if whisper_srt_file.exists():
+        print(f"A previous transcription exists and will be overwritten: {whisper_srt_file}")
     model = stable_whisper.load_model(model_name, device=align.get_device())
     segs = align.transcribe_chapter(model, audio_file, lang=language)
-    whisper_srt_file = DIR_SRT / f"{video_file.stem}_whisper.srt"
     align.save_srt(segs, whisper_srt_file)
     print(f"Subtitles: {whisper_srt_file}  ({len(segs)} segments)")
     subtitle_tracks.append((whisper_srt_file, "Whisper"))

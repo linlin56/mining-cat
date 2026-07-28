@@ -53,6 +53,31 @@ def test_grab_sample_frame_uses_fraction_of_duration(tmp_path):
     assert result == output_path
 
 
+# grab_sample_frames
+def test_grab_sample_frames_grabs_one_per_fraction(tmp_path):
+    video_file = tmp_path / "movie.mp4"
+    output_dir = tmp_path / "preview"
+
+    with patch("ocr_mining.frames.grab_sample_frame") as mock_grab:
+        mock_grab.side_effect = lambda video_file, output_path, at_fraction: output_path
+        result = frames.grab_sample_frames(video_file, output_dir, fractions=(0.1, 0.5, 0.9))
+
+    assert mock_grab.call_count == 3
+    fractions_used = [call.kwargs["at_fraction"] for call in mock_grab.call_args_list]
+    assert fractions_used == [0.1, 0.5, 0.9]
+    assert result == [
+        output_dir / "preview_00.jpg",
+        output_dir / "preview_01.jpg",
+        output_dir / "preview_02.jpg",
+    ]
+
+
+def test_grab_sample_frames_default_fractions_avoid_start_and_end():
+    assert frames.DEFAULT_PREVIEW_FRACTIONS[0] > 0.0
+    assert frames.DEFAULT_PREVIEW_FRACTIONS[-1] < 1.0
+    assert len(frames.DEFAULT_PREVIEW_FRACTIONS) == 10
+
+
 # extract_cropped_frames
 def test_extract_cropped_frames_builds_fps_and_crop_filters(tmp_path):
     video_file = tmp_path / "movie.mp4"

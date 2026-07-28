@@ -18,7 +18,7 @@ def probe_duration(video_file: Path) -> float:
     return float(probe["format"]["duration"])
 
 
-# Grabs a single frame at a given fraction of the video's duration, 
+# Grabs a single frame at a given fraction of the video's duration,
 # for the region-selection preview (GUI popup or CLI helper).
 def grab_sample_frame(video_file: Path, output_path: Path, at_fraction: float = 0.25) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -31,6 +31,21 @@ def grab_sample_frame(video_file: Path, output_path: Path, at_fraction: float = 
         .run(quiet=True)
     )
     return output_path
+
+
+# Spread across the middle of the video (avoiding the very start/end, which are more likely to be black frames, logos, or credits without any dialogue).
+DEFAULT_PREVIEW_FRACTIONS: tuple[float, ...] = tuple(i / 11 for i in range(1, 11))
+
+
+# Grabs several candidate preview frames so the GUI's region-selection dialog can offer a small carousel
+# the subtitle-selection frame might land on a moment with no dialogue on screen, having multiple frames helps to avoid that.
+def grab_sample_frames(
+    video_file: Path, output_dir: Path, fractions: tuple[float, ...] = DEFAULT_PREVIEW_FRACTIONS,
+) -> list[Path]:
+    return [
+        grab_sample_frame(video_file, output_dir / f"preview_{i:02d}.jpg", at_fraction=fraction)
+        for i, fraction in enumerate(fractions)
+    ]
 
 
 # Converts a normalized (x, y, w, h) region (fractions in [0, 1]) to pixel coordinates for the given frame size, clamping so the crop never runs past the frame edges.

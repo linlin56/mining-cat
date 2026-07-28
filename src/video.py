@@ -10,24 +10,87 @@ from config import AUDIO_BITRATE, DIR_FINAL, DIR_SRT, DIR_TEMP, DIR_VIDEOS
 from language import Language
 
 
-def extract_audio(video_file: Path, output_dir: Path) -> Path:
+def extract_audio(video_file: Path, output_dir: Path, audio_track: int | None = None) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     audio_path = output_dir / f"{video_file.stem}.mp3"
+    output_kwargs = dict(acodec="libmp3lame", audio_bitrate=AUDIO_BITRATE, vn=None)
+    if audio_track is not None:
+        output_kwargs["map"] = f"0:a:{audio_track}"
     (
         ffmpeg
         .input(str(video_file))
-        .output(str(audio_path), acodec="libmp3lame", audio_bitrate=AUDIO_BITRATE, vn=None)
+        .output(str(audio_path), **output_kwargs)
         .overwrite_output()
         .run(quiet=True)
     )
     return audio_path
 
 
-# Finds a platform-provided subtitle file written alongside the video (e.g. YouTube
-# captions downloaded as a side effect of video_downloader.download_video), if any.
-def find_platform_subtitle(directory: Path, video_stem: str) -> Path | None:
-    matches = sorted(directory.glob(f"{video_stem}.*.srt"))
-    return matches[0] if matches else None
+# Lists the audio streams of a video file so the user can pick which one to transcribe
+#  useful when a local video has several audio tracks (e.g. dubs) and the default isn't the wanted language.
+def list_audio_tracks(video_file: Path) -> list[dict]:
+    try:
+        probe = ffmpeg.probe(str(video_file))
+    except ffmpeg.Error:
+        return []
+    tracks = []
+    for i, stream in enumerate(s for s in probe.get("streams", []) if s.get("codec_type") == "audio"):
+        tags = stream.get("tags", {})
+        tracks.append({
+            "index": i,
+            "language": tags.get("language", ""),
+            "title": tags.get("title", ""),
+            "channels": stream.get("channels"),
+            "codec": stream.get("codec_name"),
+        })
+    return tracks
+
+
+# Finds all platform-provided subtitle files written alongside the video (e.g. YouTube
+# captions downloaded as a side effect of video_downloader.download_video, one per language).
+def find_platform_subtitles(directory: Path, video_stem: str) -> list[Path]:
+    return sorted(directory.glob(f"{video_stem}.*.srt"))
+
+
+# Tag identifying a sidecar subtitle file, e.g. "video.zh-Hant.srt" with stem "video" -> "zh-Hant".
+def _sidecar_tag(srt_file: Path, video_stem: str) -> str:
+    return srt_file.stem[len(video_stem) + 1:]
+
+
+# Extracts every text-based subtitle stream muxed into the video container itself, e.g. a local .mkv/.mp4 that carries one or more subtitle tracks. 
+# Streams that can't be converted to SRT are skipped.
+# Returns (path, tag) pairs, tag being the stream's title/language tag if present (falls back to "Track N").
+def extract_embedded_subtitles(video_file: Path, output_dir: Path) -> list[tuple[Path, str]]:
+    try:
+        probe = ffmpeg.probe(str(video_file))
+    except ffmpeg.Error:
+        return []
+    subtitle_streams = [s for s in probe.get("streams", []) if s.get("codec_type") == "subtitle"]
+    if not subtitle_streams:
+        return []
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    results: list[tuple[Path, str]] = []
+    for i, stream in enumerate(subtitle_streams):
+        srt_path = output_dir / f"{video_file.stem}_embedded_{i}.srt"
+        result = subprocess.run(
+            ["ffmpeg", "-y", "-i", str(video_file), "-map", f"0:s:{i}", str(srt_path)],
+            capture_output=True, check=False,
+        )
+        if result.returncode != 0 or not srt_path.exists() or srt_path.stat().st_size == 0:
+            continue
+        tags = stream.get("tags", {})
+        tag = tags.get("title") or tags.get("language") or f"Track {i}"
+        results.append((srt_path, tag))
+    return results
+
+
+# Gathers every subtitle track the input video already came with
+def _collect_source_subtitles(video_file: Path) -> list[tuple[Path, str]]:
+    sidecars = find_platform_subtitles(video_file.parent, video_file.stem)
+    if sidecars:
+        return [(p, _sidecar_tag(p, video_file.stem)) for p in sidecars]
+    return extract_embedded_subtitles(video_file, DIR_TEMP)
 
 
 # Mux one or more subtitle tracks into the original video, keeping video/audio streams
@@ -80,33 +143,45 @@ def mux_subtitles(
 
 
 def run(
-    url: str,
+    url: str | None = None,
     model_name: str = "tiny",
     language: Language = Language.MANDARIN_TW,
     app_id: str = "web",
     convert_target: str | None = None,
+    video_path: str | Path | None = None,
+    audio_track: int | None = None,
 ) -> None:
     import stable_whisper
 
     import align
     import chinese_converter
 
-    video_file = video_downloader.download_video(
-        url, DIR_VIDEOS, app_id=app_id, language=language,
-    )
+    if video_path is not None:
+        video_file = Path(video_path)
+        print(f"Using local video: {video_file}")
+    else:
+        video_file = video_downloader.download_video(
+            url, DIR_VIDEOS, app_id=app_id, language=language,
+        )
 
     subtitle_tracks: list[tuple[Path, str]] = []
 
     DIR_SRT.mkdir(parents=True, exist_ok=True)
-    platform_srt = find_platform_subtitle(DIR_VIDEOS, video_file.stem)
-    if platform_srt is not None:
-        source_srt_file = DIR_SRT / f"{video_file.stem}_source.srt"
-        shutil.copy(platform_srt, source_srt_file)
-        print(f"Existing subtitles found: {platform_srt.name} -> {source_srt_file}")
-        subtitle_tracks.append((source_srt_file, "Source"))
+    # Looks next to the video file itself - this is where yt-dlp writes platform captions,
+    # and also lets a local video reuse any same-stem .srt files sitting alongside it. 
+    # Falls back to subtitle streams embedded in the container when there's no sidecar file at all.
+    source_subs = _collect_source_subtitles(video_file)
+    multiple = len(source_subs) > 1
+    for i, (srt_file, tag) in enumerate(source_subs):
+        suffix = f"_{i}" if multiple else ""
+        source_srt_file = DIR_SRT / f"{video_file.stem}_source{suffix}.srt"
+        shutil.copy(srt_file, source_srt_file)
+        label = f"Source ({tag})" if multiple else "Source"
+        print(f"Existing subtitles found: {srt_file.name} -> {source_srt_file}")
+        subtitle_tracks.append((source_srt_file, label))
 
     print("\n=== Extracting audio ===")
-    audio_file = extract_audio(video_file, DIR_TEMP)
+    audio_file = extract_audio(video_file, DIR_TEMP, audio_track=audio_track)
     print(f"Audio: {audio_file}")
 
     print(f"\n=== Transcribing (model={model_name}, language={language.name.lower()}) ===")

@@ -132,6 +132,8 @@ def test_cmd_video_calls_run():
         language="mandarin_tw",
         app_id="web",
         convert_to=None,
+        video_path=None,
+        audio_track=None,
     )
     with patch("video.run") as mock:
         main.cmd_video(args)
@@ -145,10 +147,63 @@ def test_cmd_video_passes_convert_to():
         language="mandarin_tw",
         app_id="web",
         convert_to="s",
+        video_path=None,
+        audio_track=None,
     )
     with patch("video.run") as mock:
         main.cmd_video(args)
     assert mock.call_args.kwargs["convert_target"] == "s"
+
+
+def test_cmd_video_passes_local_file():
+    args = argparse.Namespace(
+        url=None,
+        model="tiny",
+        language="mandarin_tw",
+        app_id="web",
+        convert_to=None,
+        video_path="/tmp/movie.mp4",
+        audio_track=None,
+    )
+    with patch("video.run") as mock:
+        main.cmd_video(args)
+    assert mock.call_args.kwargs["video_path"] == "/tmp/movie.mp4"
+
+
+def test_cmd_video_passes_audio_track():
+    args = argparse.Namespace(
+        url=None,
+        model="tiny",
+        language="mandarin_tw",
+        app_id="web",
+        convert_to=None,
+        video_path="/tmp/movie.mp4",
+        audio_track=2,
+    )
+    with patch("video.run") as mock:
+        main.cmd_video(args)
+    assert mock.call_args.kwargs["audio_track"] == 2
+
+
+def test_main_dispatches_video_with_file():
+    with patch.object(sys, "argv", ["main.py", "video", "--file", "/tmp/movie.mp4"]):
+        with patch("main.cmd_video") as mock:
+            main.main()
+    mock.assert_called_once()
+
+
+def test_main_video_requires_url_or_file():
+    with patch.object(sys, "argv", ["main.py", "video"]):
+        with pytest.raises(SystemExit):
+            main.main()
+
+
+def test_main_video_rejects_url_and_file_together():
+    with patch.object(sys, "argv", [
+        "main.py", "video", "--url", "https://www.instagram.com/reel/xxx/", "--file", "/tmp/movie.mp4",
+    ]):
+        with pytest.raises(SystemExit):
+            main.main()
 
 
 def test_cmd_run_calls_all_steps():

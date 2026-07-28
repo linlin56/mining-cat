@@ -125,14 +125,16 @@ def _find_video_srt(directory: Path) -> Path | None:
     return _latest_file(directory, "*_whisper.srt") or _latest_file(directory, "*.srt")
 
 
-# Pipeline for downloading and transcribing a video from an online platform
+# Pipeline for transcribing a video, either downloaded from an online platform or a local file
 def run_video_pipeline(
     *,
     python_exe: str,
     lang: Language,
     model: str,
     convert_target: str | None,
-    url: str,
+    url: str | None = None,
+    video_path: Path | None = None,
+    audio_track: int | None = None,
     schedule: Callable,
     log: Callable[[str], None],
     set_status: Callable[[str, float], None],
@@ -142,12 +144,19 @@ def run_video_pipeline(
     from config import DIR_SRT
 
     try:
-        schedule(0, set_status, "Downloading & transcribing video…", 10)
-        schedule(0, log, "\nStep 1/1 - Video download + subtitles\n")
+        if video_path is not None:
+            schedule(0, set_status, "Transcribing local video…", 10)
+            schedule(0, log, "\nStep 1/1 - Local video subtitles\n")
+        else:
+            schedule(0, set_status, "Downloading & transcribing video…", 10)
+            schedule(0, log, "\nStep 1/1 - Video download + subtitles\n")
         cmd_args = [python_exe, str(SRC_DIR / "main.py"), "video",
-                    "--url", url, "--model", model, "--language", lang.name.lower()]
+                    "--model", model, "--language", lang.name.lower()]
+        cmd_args += ["--file", str(video_path)] if video_path is not None else ["--url", url]
         if convert_target is not None:
             cmd_args += ["--convert-to", convert_target]
+        if audio_track is not None:
+            cmd_args += ["--audio-track", str(audio_track)]
         rc = _run_cmd(cmd_args, schedule=schedule, log=log)
         if rc != 0:
             raise RuntimeError(f"Command 'video' failed (code {rc})")

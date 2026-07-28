@@ -8,6 +8,7 @@ LANGUAGE ?= mandarin_tw
 PRESET   ?= ultrafast
 RANGE    ?=
 URL      ?=
+FILE     ?=
 APP_ID   ?= web
 ifeq ($(OS),Windows_NT)
   _VENV_PYTHON := .venv/Scripts/python.exe
@@ -38,6 +39,7 @@ help:
 	@echo "  make chapter N=5                Align + export chapter N"
 	@echo "  make run [RANGE=4-9]            Run all steps in sequence"
 	@echo "  make video URL=...              Download an online video and generate subtitles"
+	@echo "  make video FILE=...             Use a local video file and generate subtitles"
 	@echo "  make clean                      Clean temp and output files"
 	@echo ""
 	@echo "Examples:"
@@ -97,12 +99,16 @@ run:
 	fi
 
 # make video URL=https://www.instagram.com/reel/xxxxx/
+# make video FILE=path/to/movie.mp4
 video:
-	@if [ -z "$(URL)" ]; then \
-		echo "Error: URL is required, e.g. make video URL=https://www.instagram.com/reel/xxxxx/"; \
+	@if [ -n "$(FILE)" ]; then \
+		$(MAIN) video --file "$(FILE)" --model $(MODEL) --language $(LANGUAGE); \
+	elif [ -n "$(URL)" ]; then \
+		$(MAIN) video --url "$(URL)" --model $(MODEL) --language $(LANGUAGE) --app-id $(APP_ID); \
+	else \
+		echo "Error: URL or FILE is required, e.g. make video URL=https://www.instagram.com/reel/xxxxx/"; \
 		exit 1; \
 	fi
-	$(MAIN) video --url "$(URL)" --model $(MODEL) --language $(LANGUAGE) --app-id $(APP_ID)
 
 clean:
 	rm -rf temp/*.mp3 temp/*.txt temp/*.srt output/*

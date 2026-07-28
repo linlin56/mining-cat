@@ -147,7 +147,7 @@ class App(tk.Tk):
         self._source_var = tk.StringVar(value="Audiobook / Ebook")
         self._source_combo = ttk.Combobox(
             source_row, textvariable=self._source_var,
-            values=["Audiobook / Ebook", "Video from Web"],
+            values=["Audiobook / Ebook", "Video"],
             state="readonly", width=22,
         )
         self._source_combo.pack(side="left")
@@ -217,7 +217,7 @@ class App(tk.Tk):
 
         self._audiobook_screen.pack(fill="x")
 
-        # ----- Video from Web screen -----
+        # Video screen (from web or local file) 
         self._video_screen = tk.Frame(outer, bg=c["BG"])
 
         self._video_panel = VideoPanel(self._video_screen, c)
@@ -293,10 +293,10 @@ class App(tk.Tk):
         )
         self._update_video_freq_buttons()
 
-    # Switches between the "Audiobook / Ebook" and "Video from Web" screens
+    # Switches between the "Audiobook / Ebook" and "Video" screens
     def _on_source_change(self, *_) -> None:
         source = self._source_var.get()
-        if source == "Video from Web":
+        if source == "Video":
             if not self._precision_lbl.winfo_ismapped():
                 self._precision_lbl.pack(side="left", padx=(0, 8))
                 self._precision_combo.pack(side="left")
@@ -377,10 +377,16 @@ class App(tk.Tk):
             daemon=True,
         ).start()
 
-    # Validates the URL, disables controls, then launches the video pipeline in a background thread
+    # Validates the URL or local file, disables controls, then launches the video pipeline in a background thread
     def _start_video(self) -> None:
+        is_local = self._video_panel.is_local
+        video_file = self._video_panel.video_file
         url = self._video_panel.url
-        if not url:
+        if is_local:
+            if video_file is None:
+                messagebox.showwarning("Missing file", "Select a local video file.")
+                return
+        elif not url:
             messagebox.showwarning("Missing URL", "Enter a video URL.")
             return
 
@@ -397,7 +403,9 @@ class App(tk.Tk):
                 lang=Language.from_label(self._lang_var.get()),
                 model=self._precision_var.get().split()[0].lower(),
                 convert_target=CONVERT_BY_LABEL.get(self._convert_var.get()),
-                url=url,
+                url=None if is_local else url,
+                video_path=video_file if is_local else None,
+                audio_track=self._video_panel.audio_track if is_local else None,
                 schedule=self.after,
                 log=self._log_panel.write,
                 set_status=self._set_status,
@@ -485,7 +493,7 @@ class App(tk.Tk):
         if messagebox.askyesno("Done", f"Character list saved ({n_chars} unique characters).\n\nOpen output folder?"):
             open_folder(out_path.parent)
 
-    # --- Video from Web: frequency lists (computed from the last generated SRT) ---
+    # Video: frequency lists (computed from the last generated SRT)
 
     def _run_word_frequency_video(self) -> None:
         if self._last_video_srt is None or not self._last_video_srt.exists():

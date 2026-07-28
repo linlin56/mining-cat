@@ -41,7 +41,7 @@ You can use an ebook in .epub and .txt format, and/or audiobook in .mp3 or .m4b,
 The GUI has a **Source** dropdown that picks which screen you're working with:
 
 - **Audiobook / Ebook** : the original workflow described below (Modes, Precision, ebook/audio panels, frequency lists).
-- **Video from Web** : download a video from a supported platform and generate mineable subtitles for it. See [Video from Web](#video-from-web).
+- **Video** : download a video from a supported platform, or provide your own local video file, and generate mineable subtitles for it. See [Video](#video).
 
 The rest of the header (Language, Convert to, Precision) applies to both screens.
 
@@ -68,35 +68,48 @@ There are 3 modes in the GUI :
 - You will get .mp4 videos (one per chapter) generate audio (TTS) with subtitles made from the ebook.
   This mode generates audio, which is way less natural than an actual narrator, but it's great if you don't have the audio files.
 
-## Video from Web
+## Video
 
-_Select "Video from Web" in the Source dropdown._
+_Select "Video" in the Source dropdown._
 
-Download a video from a supported platform and get back an .mp4 with generated subtitles, saved in `output/final/`.
+Get an .mp4 with generated subtitles, saved in `output/final/`, from either an online video or a video already on your computer.
 
-#### Supported platforms
+#### Input source
 
-- **Instagram** : Reels
-- **YouTube** : regular videos and Shorts
-- More to come :)
+- **From web** : pick the **Target website** (currently informational - the actual platform is auto-detected from the URL) and paste the video **URL**.
+  - **Instagram** : Reels
+  - **YouTube** : regular videos and Shorts
+  - More to come :)
+- **Local file** : pick a video file already on your computer, just like you'd provide an ebook.
 
 #### How it works
 
-1. Pick the **Target website** (currently informational - the actual platform is auto-detected from the URL) and paste the video **URL**.
-2. Click **Generate From Source**.
-3. The video is downloaded, its audio is transcribed with Whisper (using the selected Language and Precision) to build a `_whisper.srt` subtitle track.
-4. **YouTube only** : if the video already has subtitles (manual or auto-generated) in the target language, they're downloaded too as a `_source.srt` track - Whisper still runs regardless, so you always get both. The final video ends up with two subtitle tracks (labelled "Source" and "Whisper" in players like VLC) when both are available, or just "Whisper" otherwise. Instagram doesn't expose platform subtitles, so Reels only ever get the Whisper track.
-5. Subtitle files live in `output/srt/`, same as the audiobook workflow, so **Convert to** and both **Frequency lists** buttons work the same way (computed from the Whisper transcript).
+1. Pick **From web** or **Local file** and provide the video.
+2. If a local file has more than one audio track (e.g. multiple dubs), an **Audio track** dropdown appears - pick the one matching the selected Language.
+3. Click **Generate From Source**.
+4. The video is loaded, its audio is transcribed with Whisper (using the selected Language, Precision, and audio track) to build a `_whisper.srt` subtitle track.
+5. If the video already has subtitles, they're kept alongside the Whisper track as a `_source.srt` :
+   - **YouTube** : manual or auto-generated captions in the target language are downloaded alongside the video.
+   - **Local file** : a same-stem sidecar `.srt` next to the video (e.g. `movie.mp4` + `movie.en.srt`) is reused, or failing that a text-based subtitle track already muxed into the video container is extracted (bitmap subtitle formats like PGS/VobSub can't be extracted this way).
+   - Instagram doesn't expose platform subtitles, so Reels only ever get the Whisper track.
+   - The final video ends up with two subtitle tracks (labelled "Source" and "Whisper" in players like VLC) when both are available, or just "Whisper" otherwise.
+6. Subtitle files live in `output/srt/`, same as the audiobook workflow, so **Convert to** and both **Frequency lists** buttons work the same way (computed from the Whisper transcript).
 
 #### CLI
 
 ```
 python src/main.py video --url <URL> [--model tiny] [--language mandarin_tw] [--convert-to s]
 # or
+python src/main.py video --file <PATH> [--model tiny] [--language mandarin_tw] [--convert-to s] [--audio-track 1]
+# or
 make video URL="<URL>"
+# or
+make video FILE="<PATH>"
 ```
 
 Instagram-only: `--app-id` overrides the X-IG-App-ID header (`web` by default, or `ios`/a numeric id) if downloads start failing.
+
+`--audio-track` picks which 0-based audio stream to transcribe when the video has several (useful for local files with multiple dubs); omit it to use the container's default audio stream.
 
 ## Precision
 

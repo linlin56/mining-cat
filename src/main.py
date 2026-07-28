@@ -6,7 +6,7 @@
 #   align   Forced alignment of chapter text to audio
 #   export  Render final MP4 files
 #   run     Run all steps in sequence
-#   video   Download an online video (e.g. Instagram reel) and generate subtitles
+#   video   Download an online video (e.g. Instagram reel) or use a local file, and generate subtitles
 #
 # Usage:
 #   python main.py audio [--dry-run]
@@ -15,6 +15,7 @@
 #   python main.py export [--chapter 5] [--all] [--preset ultrafast]
 #   python main.py run [--range 4-9]
 #   python main.py video --url <URL> [--model tiny] [--language mandarin_tw]
+#   python main.py video --file <PATH> [--model tiny] [--language mandarin_tw]
 
 import argparse
 import sys
@@ -90,6 +91,8 @@ def cmd_video(args: argparse.Namespace) -> None:
         language=Language.from_id(args.language),
         app_id=args.app_id,
         convert_target=args.convert_to,
+        video_path=args.video_path,
+        audio_track=args.audio_track,
     )
 
 
@@ -185,8 +188,10 @@ def main() -> None:
                        help="Epub chapter range (e.g. 4-9)")
 
     # video
-    p_video = sub.add_parser("video", help="Download an online video and generate subtitles")
-    p_video.add_argument("--url", required=True, help="Video URL (e.g. Instagram reel)")
+    p_video = sub.add_parser("video", help="Download an online video or use a local video file, and generate subtitles")
+    video_source = p_video.add_mutually_exclusive_group(required=True)
+    video_source.add_argument("--url", help="Video URL (e.g. Instagram reel)")
+    video_source.add_argument("--file", dest="video_path", help="Path to a local video file")
     p_video.add_argument("--model", default="tiny",
                          choices=["tiny", "base", "small", "medium", "large"])
     p_video.add_argument("--language", default="mandarin_tw",
@@ -196,6 +201,8 @@ def main() -> None:
     p_video.add_argument("--convert-to", dest="convert_to", default=None,
                          choices=["s", "tw", "t", "hk"],
                          help="Convert the generated SRT to this script (e.g. s=Simplified)")
+    p_video.add_argument("--audio-track", dest="audio_track", type=int, default=None,
+                         help="Index of the audio track to transcribe, if the video has several (0-based)")
 
     args = parser.parse_args()
 

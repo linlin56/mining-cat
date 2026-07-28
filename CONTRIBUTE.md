@@ -139,7 +139,7 @@ skip_if_no_srt_xx  = pytest.mark.skipif(not MOCK_SRT_XX.exists(),  reason="tests
 
 ## Add a video platform
 
-The "Video from Web" feature (`src/video.py`) downloads a video from an online platform, transcribes it with Whisper, and optionally reuses subtitles the platform already provides. Each platform is a self-contained handler module in `src/video_handlers/`; `src/video_handlers/instagram.py` and `src/video_handlers/youtube.py` are the reference implementations.
+The "Video" feature (`src/video.py`) downloads a video from an online platform (or takes a local video file directly, skipping the download step), transcribes it with Whisper, and optionally reuses subtitles that were already provided - either by the platform, or found alongside/inside a local file. Each platform is a self-contained handler module in `src/video_handlers/`; `src/video_handlers/instagram.py` and `src/video_handlers/youtube.py` are the reference implementations. Local file support doesn't need a handler - `video.run()` skips `video_downloader.download_video()` entirely when called with `video_path` instead of `url`.
 
 ---
 

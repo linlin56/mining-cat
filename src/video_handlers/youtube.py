@@ -3,6 +3,7 @@ from pathlib import Path
 import yt_dlp
 
 from language import Language
+from video_handlers._common import resolve_downloaded_path
 
 DOMAINS = ("youtube.com", "youtu.be", "m.youtube.com")
 
@@ -38,6 +39,4 @@ def download(url: str, output_dir: Path, language: Language | None = None, **_ig
         })
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
-        if info.get("requested_downloads"):
-            return Path(info["requested_downloads"][0]["filepath"])
-        return Path(ydl.prepare_filename(info))
+        return resolve_downloaded_path(ydl, info)

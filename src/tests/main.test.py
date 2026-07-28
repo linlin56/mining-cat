@@ -134,6 +134,8 @@ def test_cmd_video_calls_run():
         convert_to=None,
         video_path=None,
         audio_track=None,
+        ocr=False,
+        ocr_region=None,
     )
     with patch("video.run") as mock:
         main.cmd_video(args)
@@ -149,6 +151,8 @@ def test_cmd_video_passes_convert_to():
         convert_to="s",
         video_path=None,
         audio_track=None,
+        ocr=False,
+        ocr_region=None,
     )
     with patch("video.run") as mock:
         main.cmd_video(args)
@@ -164,6 +168,8 @@ def test_cmd_video_passes_local_file():
         convert_to=None,
         video_path="/tmp/movie.mp4",
         audio_track=None,
+        ocr=False,
+        ocr_region=None,
     )
     with patch("video.run") as mock:
         main.cmd_video(args)
@@ -179,10 +185,30 @@ def test_cmd_video_passes_audio_track():
         convert_to=None,
         video_path="/tmp/movie.mp4",
         audio_track=2,
+        ocr=False,
+        ocr_region=None,
     )
     with patch("video.run") as mock:
         main.cmd_video(args)
     assert mock.call_args.kwargs["audio_track"] == 2
+
+
+def test_cmd_video_passes_ocr_flags():
+    args = argparse.Namespace(
+        url=None,
+        model="tiny",
+        language="mandarin_tw",
+        app_id="web",
+        convert_to=None,
+        video_path="/tmp/movie.mp4",
+        audio_track=None,
+        ocr=True,
+        ocr_region=(0.0, 0.5, 1.0, 0.5),
+    )
+    with patch("video.run") as mock:
+        main.cmd_video(args)
+    assert mock.call_args.kwargs["use_ocr"] is True
+    assert mock.call_args.kwargs["ocr_region"] == (0.0, 0.5, 1.0, 0.5)
 
 
 def test_main_dispatches_video_with_file():
@@ -204,6 +230,32 @@ def test_main_video_rejects_url_and_file_together():
     ]):
         with pytest.raises(SystemExit):
             main.main()
+
+
+def test_main_video_ocr_region_malformed_exits():
+    with patch.object(sys, "argv", [
+        "main.py", "video", "--file", "/tmp/movie.mp4", "--ocr", "--ocr-region", "not,a,region",
+    ]):
+        with pytest.raises(SystemExit):
+            main.main()
+
+
+def test_main_video_ocr_region_out_of_range_exits():
+    with patch.object(sys, "argv", [
+        "main.py", "video", "--file", "/tmp/movie.mp4", "--ocr", "--ocr-region", "0,0,1,1.5",
+    ]):
+        with pytest.raises(SystemExit):
+            main.main()
+
+
+def test_main_video_ocr_region_parses_valid_input():
+    with patch.object(sys, "argv", [
+        "main.py", "video", "--file", "/tmp/movie.mp4", "--ocr", "--ocr-region", "0,0.5,1,0.5",
+    ]):
+        with patch("video.run") as mock:
+            main.main()
+    assert mock.call_args.kwargs["use_ocr"] is True
+    assert mock.call_args.kwargs["ocr_region"] == (0.0, 0.5, 1.0, 0.5)
 
 
 def test_cmd_run_calls_all_steps():

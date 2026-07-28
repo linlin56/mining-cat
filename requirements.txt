@@ -7,6 +7,7 @@ tqdm>=4.66
 Pillow>=10.0
 stable-ts>=2.16.1
 faster-whisper>=1.0.0
+owocr[easyocr]>=1.26.8
 opencc-python-reimplemented>=0.1.7
 edge-tts>=7.0
 jieba>=0.42

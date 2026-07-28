@@ -13,6 +13,8 @@ class LangConfig:
     opening_punct: frozenset
     # Regex pattern for in-text vocabulary annotations to strip before alignment.
     vocab_annotation_pattern: str
+    ocr_lang_apple: str  # BCP-47 code for Apple Vision's setRecognitionLanguages_
+    ocr_lang_easyocr: str  # short code for easyocr.Reader([...])
 
 
 class Language(Enum):
@@ -23,6 +25,8 @@ class Language(Enum):
         closing_punct=frozenset('。？！」』'),
         opening_punct=frozenset('「『'),
         vocab_annotation_pattern=r'\[\d+\]',
+        ocr_lang_apple='zh-Hant',
+        ocr_lang_easyocr='ch_tra',
     )
     MANDARIN_CN = LangConfig(
         label='Mandarin - China (Simplified)',
@@ -31,6 +35,8 @@ class Language(Enum):
         closing_punct=frozenset('。？！」”'),
         opening_punct=frozenset('“'),
         vocab_annotation_pattern=r'\[\d+\]',
+        ocr_lang_apple='zh-Hans',
+        ocr_lang_easyocr='ch_sim',
     )
     JAPANESE = LangConfig(
         label='Japanese',
@@ -39,6 +45,8 @@ class Language(Enum):
         closing_punct=frozenset('。？！」』）'),
         opening_punct=frozenset('「『（'),
         vocab_annotation_pattern=r'［＃.+?］',
+        ocr_lang_apple='ja-JP',
+        ocr_lang_easyocr='ja',
     )
     FRENCH = LangConfig(
         label='French',
@@ -47,6 +55,8 @@ class Language(Enum):
         closing_punct=frozenset('!?»…”’'),
         opening_punct=frozenset('«'),
         vocab_annotation_pattern=r'',
+        ocr_lang_apple='fr-FR',
+        ocr_lang_easyocr='fr',
     )
     ENGLISH_US = LangConfig(
         label='English - United States',
@@ -55,6 +65,8 @@ class Language(Enum):
         closing_punct=frozenset('.?!"”’'),
         opening_punct=frozenset('“‘'),
         vocab_annotation_pattern=r'',
+        ocr_lang_apple='en-US',
+        ocr_lang_easyocr='en',
     )
     ENGLISH_UK = LangConfig(
         label='English - United Kingdom',
@@ -63,6 +75,8 @@ class Language(Enum):
         closing_punct=frozenset('.?!’”'),
         opening_punct=frozenset('‘“'),
         vocab_annotation_pattern=r'',
+        ocr_lang_apple='en-GB',
+        ocr_lang_easyocr='en',
     )
     ITALIAN = LangConfig(
         label='Italian',
@@ -71,6 +85,8 @@ class Language(Enum):
         closing_punct=frozenset('!?»…”'),
         opening_punct=frozenset('«'),
         vocab_annotation_pattern=r'',
+        ocr_lang_apple='it-IT',
+        ocr_lang_easyocr='it',
     )
     SPANISH = LangConfig(
         label='Spanish',
@@ -79,6 +95,8 @@ class Language(Enum):
         closing_punct=frozenset('!?»…”'),
         opening_punct=frozenset('«¿¡'),
         vocab_annotation_pattern=r'',
+        ocr_lang_apple='es-ES',
+        ocr_lang_easyocr='es',
     )
     # TODO : Add more! Priorities are languages that me (the owner) can understand enough to test
 

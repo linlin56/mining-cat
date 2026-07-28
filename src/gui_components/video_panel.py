@@ -20,6 +20,7 @@ class VideoPanel(ttk.LabelFrame):
         self._video_file: Path | None = None
         self._tracks: list[dict] = []
         self._track_by_label: dict[str, int] = {}
+        self._ocr_region: tuple[float, float, float, float] | None = None
         self._build()
 
     @property
@@ -44,6 +45,16 @@ class VideoPanel(ttk.LabelFrame):
         if len(self._tracks) <= 1:
             return None
         return self._track_by_label.get(self._audio_track_var.get())
+
+    @property
+    def use_ocr(self) -> bool:
+        return self._ocr_var.get()
+
+    # Normalized (x, y, w, h) region fractions the user selected, or None
+    # (caller/CLI applies the bottom-third default) if never picked.
+    @property
+    def ocr_region(self) -> tuple[float, float, float, float] | None:
+        return self._ocr_region
 
     def _build(self) -> None:
         c = self._colors
@@ -98,6 +109,19 @@ class VideoPanel(ttk.LabelFrame):
         )
         self._audio_track_combo.pack(side="left")
 
+        ocr_row = tk.Frame(self._local_frame, bg=c["PANEL"])
+        ocr_row.pack(fill="x", pady=(8, 0))
+        self._ocr_var = tk.BooleanVar(value=False)
+        self._ocr_check = ttk.Checkbutton(
+            ocr_row, text="Use OCR for hardsubs (will not rely on audio track)",
+            variable=self._ocr_var, command=self._on_ocr_toggle,
+        )
+        self._ocr_check.pack(side="left")
+        self._ocr_region_btn = ttk.Button(
+            ocr_row, text="Please select subtitle region…", command=self._select_ocr_region, state="disabled",
+        )
+        self._ocr_region_btn.pack(side="left", padx=(8, 0))
+
     def _on_mode_change(self, *_) -> None:
         if self.is_local:
             self._web_frame.pack_forget()
@@ -113,6 +137,20 @@ class VideoPanel(ttk.LabelFrame):
         self._video_file = Path(path)
         self._file_lbl.config(text=self._video_file.name, style="Epub.TLabel")
         self._load_audio_tracks()
+        # A region drawn for a previous video's frame shouldn't silently apply to a different one.
+        self._ocr_region = None
+
+    def _on_ocr_toggle(self) -> None:
+        self._ocr_region_btn.config(state="normal" if self.use_ocr else "disabled")
+
+    def _select_ocr_region(self) -> None:
+        if self._video_file is None:
+            return
+        from gui_components.ocr_region_dialog import OcrRegionDialog
+        dialog = OcrRegionDialog(self, self._video_file, initial_region=self._ocr_region)
+        region = dialog.show()
+        if region is not None:
+            self._ocr_region = region
 
     def _load_audio_tracks(self) -> None:
         self._audio_track_row.pack_forget()

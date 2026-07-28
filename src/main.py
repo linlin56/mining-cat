@@ -23,6 +23,19 @@ import sys
 from language import Language
 
 
+def _parse_ocr_region(value: str) -> tuple[float, float, float, float]:
+    parts = value.split(",")
+    if len(parts) != 4:
+        raise argparse.ArgumentTypeError("--ocr-region must be 4 comma-separated fractions: x,y,w,h")
+    try:
+        x, y, w, h = (float(p) for p in parts)
+    except ValueError:
+        raise argparse.ArgumentTypeError("--ocr-region values must be numbers")
+    if not all(0.0 <= v <= 1.0 for v in (x, y, w, h)):
+        raise argparse.ArgumentTypeError("--ocr-region values must be fractions between 0 and 1")
+    return (x, y, w, h)
+
+
 def cmd_audio(args: argparse.Namespace) -> None:
     import audio
     audio.run(dry_run=args.dry_run)
@@ -93,6 +106,8 @@ def cmd_video(args: argparse.Namespace) -> None:
         convert_target=args.convert_to,
         video_path=args.video_path,
         audio_track=args.audio_track,
+        use_ocr=args.ocr,
+        ocr_region=args.ocr_region,
     )
 
 
@@ -203,6 +218,10 @@ def main() -> None:
                          help="Convert the generated SRT to this script (e.g. s=Simplified)")
     p_video.add_argument("--audio-track", dest="audio_track", type=int, default=None,
                          help="Index of the audio track to transcribe, if the video has several (0-based)")
+    p_video.add_argument("--ocr", action="store_true",
+                         help="Use OCR on burned-in subtitles instead of Whisper (skips audio extraction/transcription)")
+    p_video.add_argument("--ocr-region", dest="ocr_region", type=_parse_ocr_region, default=None,
+                         metavar="X,Y,W,H", help="Normalized subtitle region as fractions 0-1 (default: bottom third)")
 
     args = parser.parse_args()
 

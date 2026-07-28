@@ -157,11 +157,16 @@ def run(
     convert_target: str | None = None,
     video_path: str | Path | None = None,
     audio_track: int | None = None,
+    use_ocr: bool = False,
+    ocr_region: tuple[float, float, float, float] | None = None,
 ) -> None:
-    import stable_whisper
-
     import align
     import chinese_converter
+
+    if use_ocr:
+        from ocr_mining.pipeline import generate_segments
+    else:
+        import stable_whisper
 
     if video_path is not None:
         video_file = Path(video_path)
@@ -187,19 +192,27 @@ def run(
         print(f"Existing subtitles found: {srt_file.name} -> {source_srt_file}")
         subtitle_tracks.append((source_srt_file, label))
 
-    print("\n=== Extracting audio ===")
-    audio_file = extract_audio(video_file, DIR_TEMP, audio_track=audio_track)
-    print(f"Audio: {audio_file}")
+    if use_ocr:
+        print(f"\n=== OCR (hardsubs, language={language.name.lower()}) ===")
+        ocr_srt_file = DIR_SRT / f"{video_file.stem}_ocr.srt"
+        segs = generate_segments(video_file, language=language, region=ocr_region)
+        align.save_srt(segs, ocr_srt_file)
+        print(f"Subtitles: {ocr_srt_file}  ({len(segs)} segments)")
+        subtitle_tracks.append((ocr_srt_file, "OCR"))
+    else:
+        print("\n=== Extracting audio ===")
+        audio_file = extract_audio(video_file, DIR_TEMP, audio_track=audio_track)
+        print(f"Audio: {audio_file}")
 
-    print(f"\n=== Transcribing (model={model_name}, language={language.name.lower()}) ===")
-    whisper_srt_file = DIR_SRT / f"{video_file.stem}_whisper.srt"
-    if whisper_srt_file.exists():
-        print(f"A previous transcription exists and will be overwritten: {whisper_srt_file}")
-    model = stable_whisper.load_model(model_name, device=align.get_device())
-    segs = align.transcribe_chapter(model, audio_file, lang=language)
-    align.save_srt(segs, whisper_srt_file)
-    print(f"Subtitles: {whisper_srt_file}  ({len(segs)} segments)")
-    subtitle_tracks.append((whisper_srt_file, "Whisper"))
+        print(f"\n=== Transcribing (model={model_name}, language={language.name.lower()}) ===")
+        whisper_srt_file = DIR_SRT / f"{video_file.stem}_whisper.srt"
+        if whisper_srt_file.exists():
+            print(f"A previous transcription exists and will be overwritten: {whisper_srt_file}")
+        model = stable_whisper.load_model(model_name, device=align.get_device())
+        segs = align.transcribe_chapter(model, audio_file, lang=language)
+        align.save_srt(segs, whisper_srt_file)
+        print(f"Subtitles: {whisper_srt_file}  ({len(segs)} segments)")
+        subtitle_tracks.append((whisper_srt_file, "Whisper"))
 
     # Convert script if requested (applies to every SRT in DIR_SRT, source and whisper alike)
     source_script = chinese_converter.SCRIPT_FOR_LANGUAGE.get(language)

@@ -436,6 +436,7 @@ class App(tk.Tk):
                 audio_track=self._video_panel.audio_track if is_local else None,
                 use_ocr=self._video_panel.use_ocr,
                 ocr_region=self._video_panel.ocr_region,
+                ocr_fps=self._video_panel.ocr_fps,
                 schedule=self.after,
                 log=self._log_panel.write,
                 set_status=self._set_status,

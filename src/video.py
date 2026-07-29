@@ -159,11 +159,13 @@ def run(
     audio_track: int | None = None,
     use_ocr: bool = False,
     ocr_region: tuple[float, float, float, float] | None = None,
+    ocr_fps: int | None = None,
 ) -> None:
     import align
     import chinese_converter
 
     if use_ocr:
+        from ocr_mining.frames import OCR_FPS_DEFAULT
         from ocr_mining.pipeline import generate_segments
     else:
         import stable_whisper
@@ -195,7 +197,8 @@ def run(
     if use_ocr:
         print(f"\n=== OCR (hardsubs, language={language.name.lower()}) ===")
         ocr_srt_file = DIR_SRT / f"{video_file.stem}_ocr.srt"
-        segs = generate_segments(video_file, language=language, region=ocr_region)
+        fps = ocr_fps if ocr_fps is not None else OCR_FPS_DEFAULT
+        segs = generate_segments(video_file, language=language, region=ocr_region, fps=fps)
         align.save_srt(segs, ocr_srt_file)
         print(f"Subtitles: {ocr_srt_file}  ({len(segs)} segments)")
         subtitle_tracks.append((ocr_srt_file, "OCR"))

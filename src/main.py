@@ -21,6 +21,7 @@ import argparse
 import sys
 
 from language import Language
+from ocr_mining.frames import OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
 
 
 def _parse_ocr_region(value: str) -> tuple[float, float, float, float]:
@@ -108,6 +109,7 @@ def cmd_video(args: argparse.Namespace) -> None:
         audio_track=args.audio_track,
         use_ocr=args.ocr,
         ocr_region=args.ocr_region,
+        ocr_fps=args.ocr_fps,
     )
 
 
@@ -222,6 +224,9 @@ def main() -> None:
                          help="Use OCR on burned-in subtitles instead of Whisper (skips audio extraction/transcription)")
     p_video.add_argument("--ocr-region", dest="ocr_region", type=_parse_ocr_region, default=None,
                          metavar="X,Y,W,H", help="Normalized subtitle region as fractions 0-1 (default: bottom third)")
+    p_video.add_argument("--ocr-fps", dest="ocr_fps", type=int, default=OCR_FPS_DEFAULT,
+                         choices=range(OCR_FPS_MIN, OCR_FPS_MAX + 1), metavar=f"[{OCR_FPS_MIN}-{OCR_FPS_MAX}]",
+                         help=f"OCR frame sampling rate in frames/second (default: {OCR_FPS_DEFAULT})")
 
     args = parser.parse_args()
 

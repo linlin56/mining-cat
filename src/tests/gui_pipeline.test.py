@@ -73,3 +73,15 @@ def test_run_video_pipeline_adds_ocr_region_flag():
     assert "--ocr-region" in args
     idx = args.index("--ocr-region")
     assert args[idx + 1] == "0.0,0.5,1.0,0.5"
+
+
+def test_run_video_pipeline_omits_ocr_fps_by_default():
+    args = _run_and_capture_cmd_args(use_ocr=True)
+    assert "--ocr-fps" not in args
+
+
+def test_run_video_pipeline_adds_ocr_fps_flag():
+    args = _run_and_capture_cmd_args(use_ocr=True, ocr_fps=8)
+    assert "--ocr-fps" in args
+    idx = args.index("--ocr-fps")
+    assert args[idx + 1] == "8"

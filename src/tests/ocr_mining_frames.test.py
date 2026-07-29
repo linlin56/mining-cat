@@ -3,6 +3,18 @@ from unittest.mock import MagicMock, patch
 from ocr_mining import frames
 
 
+# OCR_FPS constants
+def test_ocr_fps_default_within_range():
+    assert frames.OCR_FPS_MIN == 2
+    assert frames.OCR_FPS_MAX == 12
+    assert frames.OCR_FPS_MIN <= frames.OCR_FPS_DEFAULT <= frames.OCR_FPS_MAX
+
+
+def test_extract_cropped_frames_defaults_to_ocr_fps_default():
+    import inspect
+    assert inspect.signature(frames.extract_cropped_frames).parameters["fps"].default == frames.OCR_FPS_DEFAULT
+
+
 # region_to_pixels
 def test_region_to_pixels_bottom_third():
     assert frames.region_to_pixels(frames.DEFAULT_REGION, 1920, 1080) == (0, 720, 1920, 360)

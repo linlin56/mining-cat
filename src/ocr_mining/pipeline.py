@@ -14,7 +14,7 @@ def generate_segments(
     video_file: Path,
     language: Language,
     region: tuple[float, float, float, float] | None = None,
-    fps: int = 2,
+    fps: int = frames.OCR_FPS_DEFAULT,
 ) -> list[Segment]:
     region = region or frames.DEFAULT_REGION
     width, height = frames.probe_dimensions(video_file)

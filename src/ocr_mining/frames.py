@@ -2,9 +2,14 @@ from pathlib import Path
 
 import ffmpeg
 
-# Normalized (x, y, w, h) fractions of the frame 
+# Normalized (x, y, w, h) fractions of the frame
 # bottom third, minimizes OCR noise from on-screen visual content compared to e.g. bottom half.
 DEFAULT_REGION: tuple[float, float, float, float] = (0.0, 2 / 3, 1.0, 1 / 3)
+
+# User-adjustable OCR sampling rate range (GUI slider / --ocr-fps CLI flag).
+OCR_FPS_MIN = 2
+OCR_FPS_MAX = 12
+OCR_FPS_DEFAULT = 4
 
 
 def probe_dimensions(video_file: Path) -> tuple[int, int]:
@@ -64,7 +69,7 @@ def region_to_pixels(
 # it avoids extracting full frames and cropping them in Python.
 # Returns paths sorted by frame index, where frame N (0-indexed) corresponds to timestamp N / fps seconds.
 def extract_cropped_frames(
-    video_file: Path, output_dir: Path, region_px: tuple[int, int, int, int], fps: int = 2,
+    video_file: Path, output_dir: Path, region_px: tuple[int, int, int, int], fps: int = OCR_FPS_DEFAULT,
 ) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     x, y, w, h = region_px

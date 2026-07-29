@@ -139,6 +139,7 @@ def run_video_pipeline(
     audio_track: int | None = None,
     use_ocr: bool = False,
     ocr_region: tuple[float, float, float, float] | None = None,
+    ocr_fps: int | None = None,
     schedule: Callable,
     log: Callable[[str], None],
     set_status: Callable[[str, float], None],
@@ -165,6 +166,8 @@ def run_video_pipeline(
             cmd_args += ["--ocr"]
         if ocr_region is not None:
             cmd_args += ["--ocr-region", ",".join(str(v) for v in ocr_region)]
+        if ocr_fps is not None:
+            cmd_args += ["--ocr-fps", str(ocr_fps)]
         rc = _run_cmd(cmd_args, schedule=schedule, log=log)
         if rc != 0:
             raise RuntimeError(f"Command 'video' failed (code {rc})")

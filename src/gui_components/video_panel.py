@@ -4,6 +4,8 @@ from typing import Callable
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
+from ocr_mining.frames import OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
+
 TARGET_WEBSITES = ["Instagram", "YouTube"]
 INPUT_MODES = ["From web", "Local file"]
 VIDEO_FILETYPES = [
@@ -59,6 +61,11 @@ class VideoPanel(ttk.LabelFrame):
     @property
     def ocr_region(self) -> tuple[float, float, float, float] | None:
         return self._ocr_region
+
+    # Frames per second to sample when running OCR (2-12, default 4).
+    @property
+    def ocr_fps(self) -> int:
+        return self._ocr_fps_var.get()
 
     def _build(self) -> None:
         c = self._colors
@@ -131,6 +138,21 @@ class VideoPanel(ttk.LabelFrame):
         )
         self._ocr_region_btn.pack(side="left", padx=(8, 0))
 
+        # Sampling rate for OCR frame extraction, only meaningful when OCR is on, shown/hidden accordingly by _update_ocr_controls.
+        self._ocr_fps_row = tk.Frame(self, bg=c["PANEL"])
+        ttk.Label(self._ocr_fps_row, text="OCR frames per second :", style="Epub.TLabel").pack(
+            side="left", padx=(0, 8),
+        )
+        self._ocr_fps_var = tk.IntVar(value=OCR_FPS_DEFAULT)
+        self._ocr_fps_scale = tk.Scale(
+            self._ocr_fps_row, from_=OCR_FPS_MIN, to=OCR_FPS_MAX, resolution=1,
+            orient="horizontal", variable=self._ocr_fps_var,
+            tickinterval=1, length=260, showvalue=True,
+            bg=c["PANEL"], fg=c["FG"], troughcolor=c["BTN_BG"],
+            activebackground=c["ACCENT"], highlightthickness=0,
+        )
+        self._ocr_fps_scale.pack(side="left")
+
         # Shown below the region button while OCR is on but no region has been
         # picked yet - hidden/repositioned dynamically by _update_ocr_hint.
         self._ocr_hint_lbl = tk.Label(
@@ -157,17 +179,22 @@ class VideoPanel(ttk.LabelFrame):
     def _has_video_source(self) -> bool:
         return self._video_file is not None if self.is_local else bool(self.url)
 
-    # Keeps the region button's enabled state and the "no zone selected" hint in sync with use_ocr / video source / picked region.
+    # Keeps the region button's enabled state, the fps slider's visibility, and the "no zone selected" hint in sync with use_ocr / video source / region.
     def _update_ocr_controls(self) -> None:
         can_pick_region = self.use_ocr and self._has_video_source()
         self._ocr_region_btn.config(state="normal" if can_pick_region else "disabled")
+
+        self._ocr_fps_row.pack_forget()
+        if self.use_ocr:
+            self._ocr_fps_row.pack(fill="x", pady=(4, 0), after=self._ocr_row)
+
         self._update_ocr_hint()
 
-    # Shown right below the region button while OCR is enabled but no region has been picked yet (defaults to the bottom third otherwise).
+    # Shown right below the fps slider while OCR is enabled but no region has been picked yet (defaults to the bottom third otherwise).
     def _update_ocr_hint(self) -> None:
         self._ocr_hint_lbl.pack_forget()
         if self.use_ocr and self._ocr_region is None:
-            self._ocr_hint_lbl.pack(fill="x", pady=(4, 0), after=self._ocr_row)
+            self._ocr_hint_lbl.pack(fill="x", pady=(4, 0), after=self._ocr_fps_row)
 
     def _select_file(self) -> None:
         path = filedialog.askopenfilename(title="Select a video file", filetypes=VIDEO_FILETYPES)

@@ -74,3 +74,42 @@ def test_is_plausible_text_rejects_cjk_for_latin_language():
 def test_is_plausible_text_rejects_symbols_only_for_latin_language():
     assert dedup.is_plausible_text("000", Language.ENGLISH_US) is False
     assert dedup.is_plausible_text("）", Language.ENGLISH_US) is False
+
+
+# levenshtein_distance
+def test_levenshtein_distance_identical_strings():
+    assert dedup.levenshtein_distance("hello", "hello") == 0
+
+
+def test_levenshtein_distance_single_substitution():
+    # real-world case: 白 misread as 口 by OCR.
+    assert dedup.levenshtein_distance("我可以明白", "我可以明口") == 1
+
+
+def test_levenshtein_distance_single_insertion_and_deletion():
+    assert dedup.levenshtein_distance("hello", "helloo") == 1
+    assert dedup.levenshtein_distance("helloo", "hello") == 1
+
+
+def test_levenshtein_distance_empty_strings():
+    assert dedup.levenshtein_distance("", "") == 0
+    assert dedup.levenshtein_distance("", "abc") == 3
+    assert dedup.levenshtein_distance("abc", "") == 3
+
+
+def test_levenshtein_distance_completely_different_strings():
+    assert dedup.levenshtein_distance("hello", "xyz") >= 4
+
+
+# is_near_duplicate
+def test_is_near_duplicate_true_within_default_max_edits():
+    assert dedup.is_near_duplicate("我可以明白", "我可以明口") is True
+
+
+def test_is_near_duplicate_false_beyond_max_edits():
+    assert dedup.is_near_duplicate("hello world", "xyz") is False
+
+
+def test_is_near_duplicate_respects_custom_max_edits():
+    assert dedup.is_near_duplicate("hello", "help") is False  # 2 edits
+    assert dedup.is_near_duplicate("hello", "help", max_edits=2) is True

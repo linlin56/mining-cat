@@ -46,4 +46,5 @@ def generate_segments(
     finally:
         # Clean up the temporary frames directory after processing to free up disk space.
         shutil.rmtree(frames_dir, ignore_errors=True)
-    return builder.build_segments(frame_records, frame_duration=1 / fps)
+    segments = builder.build_segments(frame_records, frame_duration=1 / fps)
+    return builder.merge_near_duplicates(segments)

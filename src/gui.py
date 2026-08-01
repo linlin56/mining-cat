@@ -203,7 +203,7 @@ class App(tk.Tk):
         freq_row = tk.Frame(self._freq_lf, bg=c["PANEL"])
         freq_row.pack(fill="x")
         self._word_freq_btn = ttk.Button(
-            freq_row, text="Word frequency", command=self._run_word_frequency,
+            freq_row, text="Compute word count and give Word frequency as CSV", command=self._run_word_frequency,
         )
         self._word_freq_btn.pack(side="left", padx=(0, 8))
         _char_state = "normal" if character_frequency.supports_language(Language.MANDARIN_TW) else "disabled"
@@ -249,7 +249,7 @@ class App(tk.Tk):
         video_freq_row = tk.Frame(self._video_freq_lf, bg=c["PANEL"])
         video_freq_row.pack(fill="x")
         self._video_word_freq_btn = ttk.Button(
-            video_freq_row, text="Word frequency", command=self._run_word_frequency_video,
+            video_freq_row, text="Compute word count and give Word frequency as CSV", command=self._run_word_frequency_video,
             state="disabled",
         )
         self._video_word_freq_btn.pack(side="left", padx=(0, 8))
@@ -472,15 +472,16 @@ class App(tk.Tk):
             stem = epub_file.stem if epub_file else "book"
             out_path = out_dir / f"{stem}_word_freq.csv"
             word_frequency.save_csv(counter, out_path)
-            self.after(0, self._on_word_freq_done, out_path, len(counter))
+            total = word_frequency.total_count(counter)
+            self.after(0, self._on_word_freq_done, out_path, len(counter), total)
         except Exception as e:
             self.after(0, self._log_panel.write, f"Word frequency error: {e}\n")
             self.after(0, lambda: self._word_freq_btn.config(state="normal"))
 
-    def _on_word_freq_done(self, out_path, n_words) -> None:
+    def _on_word_freq_done(self, out_path, n_words, total_words) -> None:
         self._word_freq_btn.config(state="normal")
-        self._log_panel.write(f"Word frequency: {n_words} unique words → {out_path}\n")
-        if messagebox.askyesno("Done", f"Word frequency saved ({n_words} unique words).\n\nOpen output folder?"):
+        self._log_panel.write(f"Word frequency: {n_words} unique words, {total_words} total words : {out_path}\n")
+        if messagebox.askyesno("Done", f"Word frequency saved ({n_words} unique words, {total_words} total words).\n\nOpen output folder?"):
             open_folder(out_path.parent)
 
     def _run_char_frequency(self) -> None:
@@ -545,15 +546,16 @@ class App(tk.Tk):
             out_dir.mkdir(parents=True, exist_ok=True)
             out_path = out_dir / f"{srt_path.stem}_word_freq.csv"
             word_frequency.save_csv(counter, out_path)
-            self.after(0, self._on_word_freq_done_video, out_path, len(counter))
+            total = word_frequency.total_count(counter)
+            self.after(0, self._on_word_freq_done_video, out_path, len(counter), total)
         except Exception as e:
             self.after(0, self._log_panel.write, f"Word frequency error: {e}\n")
             self.after(0, lambda: self._video_word_freq_btn.config(state="normal"))
 
-    def _on_word_freq_done_video(self, out_path, n_words) -> None:
+    def _on_word_freq_done_video(self, out_path, n_words, total_words) -> None:
         self._video_word_freq_btn.config(state="normal")
-        self._log_panel.write(f"Word frequency: {n_words} unique words → {out_path}\n")
-        if messagebox.askyesno("Done", f"Word frequency saved ({n_words} unique words).\n\nOpen output folder?"):
+        self._log_panel.write(f"Word frequency: {n_words} unique words, {total_words} total words : {out_path}\n")
+        if messagebox.askyesno("Done", f"Word frequency saved ({n_words} unique words, {total_words} total words).\n\nOpen output folder?"):
             open_folder(out_path.parent)
 
     def _run_char_frequency_video(self) -> None:

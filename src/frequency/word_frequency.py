@@ -34,6 +34,11 @@ def compute(text: str, language: Language, min_length: int = 1) -> Counter:
     return Counter(w for w in words if len(w) >= min_length and w.strip())
 
 
+def total_count(counter: Counter) -> int:
+    """Total number of word occurrences (tokens), not unique words."""
+    return sum(counter.values())
+
+
 def save_csv(counter: Counter, output_path: Path, min_count: int = 1) -> None:
     output_path = Path(output_path)
     with open(output_path, "w", encoding="utf-8") as f:

@@ -157,6 +157,15 @@ class TestWordFrequencyCompute:
         assert len(counter) == 0
 
 
+class TestTotalCount:
+    def test_sums_all_occurrences(self):
+        counter = word_frequency.compute("hello world hello", Language.ENGLISH_US)
+        assert word_frequency.total_count(counter) == 3
+
+    def test_empty_counter(self):
+        assert word_frequency.total_count(Counter()) == 0
+
+
 class TestSaveCsv:
     def test_saves_header_and_rows(self, tmp_path):
         out = tmp_path / "freq.csv"

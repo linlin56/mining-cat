@@ -79,6 +79,7 @@ Get an .mp4 with generated subtitles, saved in `output/final/`, from either an o
 - **From web** : pick the **Target website** (currently informational - the actual platform is auto-detected from the URL) and paste the video **URL**.
   - **Instagram** : Reels
   - **YouTube** : regular videos and Shorts
+  - **Bilibili** : regular videos
   - More to come :)
 - **Local file** : pick a video file already on your computer, just like you'd provide an ebook.
 
@@ -91,7 +92,7 @@ Get an .mp4 with generated subtitles, saved in `output/final/`, from either an o
 5. If the video already has subtitles, they're kept alongside the Whisper track as a `_source.srt` :
    - **YouTube** : manual or auto-generated captions in the target language are downloaded alongside the video.
    - **Local file** : a same-stem sidecar `.srt` next to the video (e.g. `movie.mp4` + `movie.en.srt`) is reused, or failing that a text-based subtitle track already muxed into the video container is extracted (bitmap subtitle formats like PGS/VobSub can't be extracted this way).
-   - Instagram doesn't expose platform subtitles, so Reels only ever get the Whisper track.
+   - Instagram and Bilibili don't expose usable platform subtitles, so their videos only ever get the Whisper track.
    - The final video ends up with two subtitle tracks (labelled "Source" and "Whisper" in players like VLC) when both are available, or just "Whisper" otherwise.
 6. Subtitle files live in `output/srt/`, same as the audiobook workflow, so **Convert to** and both **Frequency lists** buttons work the same way (computed from the Whisper transcript).
 

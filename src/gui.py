@@ -414,9 +414,14 @@ class App(tk.Tk):
             if video_file is None:
                 messagebox.showwarning("Missing file", "Select a local video file.")
                 return
-        elif not url:
-            messagebox.showwarning("Missing URL", "Enter a video URL.")
-            return
+        else:
+            if not url:
+                messagebox.showwarning("Missing URL", "Enter a video URL.")
+                return
+            url_error = self._video_panel.validate_url()
+            if url_error:
+                messagebox.showerror("URL mismatch", url_error)
+                return
 
         for w in (self._video_generate_btn, self._lang_combo, self._convert_combo,
                   self._video_precision_combo, self._source_combo):

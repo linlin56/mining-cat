@@ -6,7 +6,7 @@ from tkinter import filedialog, messagebox, ttk
 
 from ocr_mining.frames import OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
 
-TARGET_WEBSITES = ["Instagram", "YouTube"]
+TARGET_WEBSITES = ["Instagram", "YouTube", "Bilibili"]
 INPUT_MODES = ["From web", "Local file"]
 VIDEO_FILETYPES = [
     ("Video", "*.mp4 *.mkv *.mov *.avi *.webm *.m4v"),
@@ -14,6 +14,13 @@ VIDEO_FILETYPES = [
 ]
 
 _CHANNEL_LABELS = {1: "mono", 2: "stereo"}
+
+# Example URL shown as greyed-out placeholder text in the URL entry, per selected website.
+_URL_HINT_BY_WEBSITE = {
+    "Instagram": "https://www.instagram.com/reel/...",
+    "YouTube": "https://www.youtube.com/watch?v=... or https://youtu.be/...",
+    "Bilibili": "https://www.bilibili.com/video/BV...",
+}
 
 
 class VideoPanel(ttk.LabelFrame):
@@ -39,6 +46,8 @@ class VideoPanel(ttk.LabelFrame):
 
     @property
     def url(self) -> str:
+        if self._url_placeholder_active:
+            return ""
         return self._url_var.get().strip()
 
     @property
@@ -92,6 +101,7 @@ class VideoPanel(ttk.LabelFrame):
             values=TARGET_WEBSITES, state="readonly", width=20,
         )
         self._website_combo.pack(side="left")
+        self._website_combo.bind("<<ComboboxSelected>>", self._on_website_change)
 
         url_row = tk.Frame(self._web_frame, bg=c["PANEL"])
         url_row.pack(fill="x", pady=(8, 0))
@@ -99,7 +109,13 @@ class VideoPanel(ttk.LabelFrame):
         self._url_var = tk.StringVar()
         self._url_entry = ttk.Entry(url_row, textvariable=self._url_var, width=60)
         self._url_entry.pack(side="left", fill="x", expand=True)
+        self._url_entry.bind("<FocusIn>", self._on_url_focus_in)
+        self._url_entry.bind("<FocusOut>", self._on_url_focus_out)
+        self._url_placeholder_active = False
+        self._show_url_placeholder()
         # A region drawn for a previous URL's frame shouldn't silently apply to a different one.
+        # Attached after the placeholder is set so the initial placeholder text doesn't itself
+        # trigger a reset before the OCR controls further down in _build() even exist yet.
         self._url_var.trace_add("write", lambda *_: self._reset_ocr_region())
 
         self._web_frame.pack(fill="x", pady=(8, 0))
@@ -159,6 +175,52 @@ class VideoPanel(ttk.LabelFrame):
             self, text="No zone selected - will default to bottom third selection",
             bg=c["PANEL"], fg=c["START"],
         )
+
+    def _show_url_placeholder(self) -> None:
+        self._url_placeholder_active = True
+        self._url_var.set(_URL_HINT_BY_WEBSITE.get(self.website, ""))
+        self._url_entry.config(foreground=self._colors["FG_DIM"])
+
+    def _hide_url_placeholder(self) -> None:
+        self._url_placeholder_active = False
+        self._url_var.set("")
+        self._url_entry.config(foreground=self._colors["FG"])
+
+    def _on_url_focus_in(self, *_) -> None:
+        if self._url_placeholder_active:
+            self._hide_url_placeholder()
+
+    def _on_url_focus_out(self, *_) -> None:
+        if not self._url_var.get().strip():
+            self._show_url_placeholder()
+
+    def _on_website_change(self, *_) -> None:
+        if self._url_placeholder_active:
+            self._show_url_placeholder()
+
+    # Checks the entered URL against the selected website
+    # returns an error message if they don't match (wrong site picked, or an unsupported platform altogether), else None.
+    def validate_url(self) -> str | None:
+        url = self.url
+        if not url:
+            return None
+        import video_handlers
+
+        hint = _URL_HINT_BY_WEBSITE.get(self.website, "")
+        try:
+            handler = video_handlers.get_handler(url)
+        except ValueError:
+            return f"This doesn't look like a supported video URL.\nExpected {self.website} format: {hint}"
+
+        handler_by_website = {
+            "Instagram": video_handlers.instagram,
+            "YouTube": video_handlers.youtube,
+            "Bilibili": video_handlers.bilibili,
+        }
+        expected = handler_by_website.get(self.website)
+        if expected is not None and handler is not expected:
+            return f"This URL doesn't match the selected website ({self.website}).\nExpected format: {hint}"
+        return None
 
     def _on_mode_change(self, *_) -> None:
         if self.is_local:
@@ -228,7 +290,7 @@ class VideoPanel(ttk.LabelFrame):
             return
         # No local frame to preview yet 
         # download the video first (yt-dlp skips re-downloading later, during "Generate From Source", once it's cached).
-        self._ocr_region_btn.config(state="disabled", text="Downloading preview…")
+        self._ocr_region_btn.config(state="disabled", text="Downloading preview, please wait…")
         threading.Thread(target=self._download_for_preview_bg, args=(url,), daemon=True).start()
 
     def _download_for_preview_bg(self, url: str) -> None:

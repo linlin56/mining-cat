@@ -23,11 +23,21 @@ Contributions and issues are very appreciated!
 
 This project is fairly recent and has only been tested with a handful of books.
 
+#### Requirements
+
+- Python (tested with 3.14.5)
+- `venv` (bundled with Python) to create an isolated environment
+- Tk bindings for Python (`tkinter`), needed for the GUI :
+  - Debian/Ubuntu : `sudo apt install python3-tk`
+  - macOS : bundled with the official python.org installer (Homebrew's `python` also needs `brew install python-tk`)
+- [owocr](https://pypi.org/project/owocr/) for hardsubs OCR (video mode) — installed automatically by `make install`, no separate step needed
+
 The simplest way to use :
 
-1. Run `make install`
-2. Run `make gui`
-3. Follow the instructions.
+1. Create and activate a virtual environment, e.g. `python3 -m venv .venv`
+2. Run `make install`
+3. Run `make gui`
+4. Follow the instructions.
 
 You can use an ebook in .epub and .txt format, and/or audiobook in .mp3 or .m4b, and/or a video downloaded from the web (see [Video from Web](#video-from-web)).
 

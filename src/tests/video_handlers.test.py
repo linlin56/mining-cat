@@ -1,8 +1,17 @@
 import pytest
 
 import video_handlers
+import video_handlers.bilibili as bilibili
 import video_handlers.instagram as instagram
 import video_handlers.youtube as youtube
+
+
+def test_get_handler_bilibili():
+    assert video_handlers.get_handler("https://www.bilibili.com/video/BVxxx") is bilibili
+
+
+def test_get_handler_bilibili_without_www():
+    assert video_handlers.get_handler("https://bilibili.com/video/BVxxx") is bilibili
 
 
 def test_get_handler_instagram():

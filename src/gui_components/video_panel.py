@@ -3,7 +3,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, ttk
 
-TARGET_WEBSITES = ["Instagram", "YouTube"]
+TARGET_WEBSITES = ["Instagram", "YouTube", "Bilibili"]
 INPUT_MODES = ["From web", "Local file"]
 VIDEO_FILETYPES = [
     ("Video", "*.mp4 *.mkv *.mov *.avi *.webm *.m4v"),

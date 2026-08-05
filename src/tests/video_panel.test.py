@@ -7,8 +7,7 @@ if importlib.util.find_spec("_tkinter") is None:
 import tkinter as tk
 
 from gui_components.video_panel import VideoPanel
-
-_COLORS = {"PANEL": "#ffffff", "FG": "#2d2d2d", "FG_DIM": "#999999"}
+from gui_config import COLORS as _COLORS
 
 
 @pytest.fixture

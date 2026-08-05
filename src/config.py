@@ -19,6 +19,9 @@ DIR_TEMP = ROOT / "output" / "temp"
 #  Downloaded online videos (e.g. Instagram reels)
 DIR_VIDEOS = ROOT / "output" / "videos"
 
+#  Scratch space for OCR frame extraction (per-video subdirectory, cleaned up after use)
+DIR_OCR_FRAMES = DIR_TEMP / "ocr_frames"
+
 #  Intermediate audio format
 AUDIO_FORMAT  = "mp3"
 AUDIO_BITRATE = "192k"

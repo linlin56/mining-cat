@@ -120,9 +120,11 @@ def _latest_file(directory: Path, pattern: str) -> Path | None:
 
 
 # Picks the SRT to use for frequency lists after a video run. Prefers the Whisper
-# transcript (always generated, most complete) over a platform-provided "*_source.srt".
+# or OCR transcript (always generated, most complete) over a platform-provided "*_source.srt".
 def _find_video_srt(directory: Path) -> Path | None:
-    return _latest_file(directory, "*_whisper.srt") or _latest_file(directory, "*.srt")
+    return (_latest_file(directory, "*_whisper.srt")
+            or _latest_file(directory, "*_ocr.srt")
+            or _latest_file(directory, "*.srt"))
 
 
 # Pipeline for transcribing a video, either downloaded from an online platform or a local file
@@ -135,6 +137,9 @@ def run_video_pipeline(
     url: str | None = None,
     video_path: Path | None = None,
     audio_track: int | None = None,
+    use_ocr: bool = False,
+    ocr_region: tuple[float, float, float, float] | None = None,
+    ocr_fps: int | None = None,
     schedule: Callable,
     log: Callable[[str], None],
     set_status: Callable[[str, float], None],
@@ -157,6 +162,12 @@ def run_video_pipeline(
             cmd_args += ["--convert-to", convert_target]
         if audio_track is not None:
             cmd_args += ["--audio-track", str(audio_track)]
+        if use_ocr:
+            cmd_args += ["--ocr"]
+        if ocr_region is not None:
+            cmd_args += ["--ocr-region", ",".join(str(v) for v in ocr_region)]
+        if ocr_fps is not None:
+            cmd_args += ["--ocr-fps", str(ocr_fps)]
         rc = _run_cmd(cmd_args, schedule=schedule, log=log)
         if rc != 0:
             raise RuntimeError(f"Command 'video' failed (code {rc})")

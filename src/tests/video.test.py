@@ -550,3 +550,75 @@ def test_run_skips_conversion_for_unsupported_language(tmp_path, monkeypatch):
         )
 
     m["chinese_converter"].convert_srt_dir.assert_not_called()
+
+
+# run() - OCR mode (replaces Whisper entirely)
+def test_run_ocr_skips_whisper_and_produces_ocr_track(tmp_path, monkeypatch):
+    monkeypatch.setattr(video, "DIR_VIDEOS", tmp_path / "videos")
+    monkeypatch.setattr(video, "DIR_TEMP", tmp_path / "temp")
+    monkeypatch.setattr(video, "DIR_SRT", tmp_path / "srt")
+    monkeypatch.setattr(video, "DIR_FINAL", tmp_path / "final")
+
+    call_order: list[str] = []
+    m = _make_pipeline_mocks(tmp_path, call_order)
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
+    local_video = local_dir / "movie.mp4"
+    local_video.touch()
+
+    mock_generate_segments = MagicMock(return_value=[])
+    fake_ocr_pipeline_module = MagicMock(generate_segments=mock_generate_segments)
+
+    with patch("video_downloader.download_video", m["download"]), \
+         patch("video.extract_audio", m["extract_audio"]), \
+         patch("video.mux_subtitles", m["mux"]), \
+         patch("video.extract_embedded_subtitles", m["extract_embedded_subtitles"]), \
+         patch.dict("sys.modules", {"ocr_mining.pipeline": fake_ocr_pipeline_module}), \
+         _patched_modules(m):
+        video.run(
+            language=Language.MANDARIN_TW, video_path=local_video,
+            use_ocr=True, ocr_region=(0.0, 0.5, 1.0, 0.5),
+        )
+
+    m["download"].assert_not_called()
+    m["extract_audio"].assert_not_called()
+    m["align"].transcribe_chapter.assert_not_called()
+    mock_generate_segments.assert_called_once_with(
+        local_video, language=Language.MANDARIN_TW, region=(0.0, 0.5, 1.0, 0.5), fps=4,
+    )
+    tracks = m["mux"].call_args[0][1]
+    assert len(tracks) == 1
+    assert tracks[0][1] == "OCR"
+    assert tracks[0][0].name == "movie_ocr.srt"
+
+
+def test_run_ocr_passes_custom_fps(tmp_path, monkeypatch):
+    monkeypatch.setattr(video, "DIR_VIDEOS", tmp_path / "videos")
+    monkeypatch.setattr(video, "DIR_TEMP", tmp_path / "temp")
+    monkeypatch.setattr(video, "DIR_SRT", tmp_path / "srt")
+    monkeypatch.setattr(video, "DIR_FINAL", tmp_path / "final")
+
+    call_order: list[str] = []
+    m = _make_pipeline_mocks(tmp_path, call_order)
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
+    local_video = local_dir / "movie.mp4"
+    local_video.touch()
+
+    mock_generate_segments = MagicMock(return_value=[])
+    fake_ocr_pipeline_module = MagicMock(generate_segments=mock_generate_segments)
+
+    with patch("video_downloader.download_video", m["download"]), \
+         patch("video.extract_audio", m["extract_audio"]), \
+         patch("video.mux_subtitles", m["mux"]), \
+         patch("video.extract_embedded_subtitles", m["extract_embedded_subtitles"]), \
+         patch.dict("sys.modules", {"ocr_mining.pipeline": fake_ocr_pipeline_module}), \
+         _patched_modules(m):
+        video.run(
+            language=Language.MANDARIN_TW, video_path=local_video,
+            use_ocr=True, ocr_region=(0.0, 0.5, 1.0, 0.5), ocr_fps=8,
+        )
+
+    mock_generate_segments.assert_called_once_with(
+        local_video, language=Language.MANDARIN_TW, region=(0.0, 0.5, 1.0, 0.5), fps=8,
+    )

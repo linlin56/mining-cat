@@ -6,8 +6,8 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-# Visual constants: colors, fonts, window title and minimum dimensions
-from gui_config import COLORS, WINDOW_TITLE, WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT
+# Visual constants: colors, fonts, window title and fixed dimensions
+from gui_config import COLORS, WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT
 from gui_config import FONT_DEFAULT, FONT_LABEL, FONT_SMALL, FONT_BUTTON_LARGE
 # Chinese script conversion utilities (Traditional ↔ Simplified)
 import chinese_converter
@@ -27,14 +27,15 @@ from gui_components import AudioPanel, EpubPanel, LogPanel, VideoPanel
 from gui_components import pipeline
 from gui_components.utils import open_folder, srt_to_text
 
+PRECISION_LABEL = "Transcription Precision Level :"
+PRECISION_VALUES = ["Tiny", "Base (default)", "Small", "Medium", "Large"]
+
 
 class App(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title(WINDOW_TITLE)
         self.configure(bg=COLORS["BG"])
-        self.resizable(True, True)
-        self.minsize(WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT)
 
         self._last_video_srt: Path | None = None
 
@@ -43,6 +44,11 @@ class App(tk.Tk):
         self._audio_panel.preload()
         self._epub_panel.preload()
         self._update_video_freq_buttons()
+
+        # Centers the window on the screen and makes it non-resizable
+        self.update_idletasks()
+        self.resizable(False, False)
+        self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}+{int((self.winfo_screenwidth() - WINDOW_WIDTH) / 2)}+{int((self.winfo_screenheight() - WINDOW_HEIGHT) / 2)}")
 
         self.lift()
         self.attributes("-topmost", True)
@@ -103,8 +109,10 @@ class App(tk.Tk):
     # Creates and lays out all widgets: dropdowns, panels, buttons, progress bar, log
     def _build_ui(self) -> None:
         c = self._colors
-        outer = ttk.Frame(self, padding=16)
+        # A fixed-size container with propagation disabled - otherwise the window would auto-resize every time 
+        outer = ttk.Frame(self, padding=16, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
         outer.pack(fill="both", expand=True)
+        outer.pack_propagate(False)
 
         # Language / conversion row
         lang_row = tk.Frame(outer, bg=c["BG"])
@@ -127,18 +135,9 @@ class App(tk.Tk):
         )
         self._convert_combo.pack(side="left")
 
-        # Precision row
-        precision_row = tk.Frame(outer, bg=c["BG"])
-        precision_row.pack(fill="x", pady=(0, 8))
-        self._precision_lbl = ttk.Label(precision_row, text="Precision :")
-        self._precision_lbl.pack(side="left", padx=(0, 8))
+        # Shared between both screens' precision rows below - only relevant
+        # when a Whisper model actually runs (not for OCR or TTS-only modes).
         self._precision_var = tk.StringVar(value="Base (default)")
-        self._precision_combo = ttk.Combobox(
-            precision_row, textvariable=self._precision_var,
-            values=["Tiny", "Base (default)", "Small", "Medium", "Large"],
-            state="readonly", width=18,
-        )
-        self._precision_combo.pack(side="left")
 
         # Source row
         source_row = tk.Frame(outer, bg=c["BG"])
@@ -168,6 +167,17 @@ class App(tk.Tk):
         )
         self._mode_combo.pack(side="left")
         self._mode_combo.bind("<<ComboboxSelected>>", self._on_mode_change)
+
+        # Precision row - hidden in "Generate audio" mode (TTS, no Whisper involved)
+        self._precision_row = tk.Frame(self._audiobook_screen, bg=c["BG"])
+        self._precision_row.pack(fill="x", pady=(0, 10))
+        self._precision_lbl = ttk.Label(self._precision_row, text=PRECISION_LABEL)
+        self._precision_lbl.pack(side="left", padx=(0, 8))
+        self._precision_combo = ttk.Combobox(
+            self._precision_row, textvariable=self._precision_var,
+            values=PRECISION_VALUES, state="readonly", width=18,
+        )
+        self._precision_combo.pack(side="left")
 
         self._audio_panel = AudioPanel(self._audiobook_screen, c)
         self._audio_panel.pack(fill="x", pady=(0, 10))
@@ -222,6 +232,18 @@ class App(tk.Tk):
 
         self._video_panel = VideoPanel(self._video_screen, c)
         self._video_panel.pack(fill="x", pady=(0, 10))
+        self._video_panel.on_ocr_toggle = self._update_video_precision_visibility
+
+        # Precision row - hidden when OCR is used, since Whisper never runs then
+        self._video_precision_row = tk.Frame(self._video_screen, bg=c["BG"])
+        self._video_precision_row.pack(fill="x", pady=(0, 10))
+        self._video_precision_lbl = ttk.Label(self._video_precision_row, text=PRECISION_LABEL)
+        self._video_precision_lbl.pack(side="left", padx=(0, 8))
+        self._video_precision_combo = ttk.Combobox(
+            self._video_precision_row, textvariable=self._precision_var,
+            values=PRECISION_VALUES, state="readonly", width=18,
+        )
+        self._video_precision_combo.pack(side="left")
 
         self._video_freq_lf = ttk.LabelFrame(self._video_screen, text="  Frequency lists", padding=10)
         video_freq_row = tk.Frame(self._video_freq_lf, bg=c["PANEL"])
@@ -297,15 +319,21 @@ class App(tk.Tk):
     def _on_source_change(self, *_) -> None:
         source = self._source_var.get()
         if source == "Video":
-            if not self._precision_lbl.winfo_ismapped():
-                self._precision_lbl.pack(side="left", padx=(0, 8))
-                self._precision_combo.pack(side="left")
             self._audiobook_screen.pack_forget()
             self._video_screen.pack(fill="x", before=self._progress_frame)
         else:
             self._video_screen.pack_forget()
             self._audiobook_screen.pack(fill="x", before=self._progress_frame)
             self._on_mode_change()
+
+    # Shown only when OCR is off, since Whisper never runs when it's on
+    def _update_video_precision_visibility(self) -> None:
+        if self._video_panel.use_ocr:
+            self._video_precision_lbl.pack_forget()
+            self._video_precision_combo.pack_forget()
+        elif not self._video_precision_lbl.winfo_ismapped():
+            self._video_precision_lbl.pack(side="left", padx=(0, 8))
+            self._video_precision_combo.pack(side="left")
 
     # Shows/hides panels and controls depending on the selected processing mode
     def _on_mode_change(self, *_) -> None:
@@ -396,7 +424,7 @@ class App(tk.Tk):
                 return
 
         for w in (self._video_generate_btn, self._lang_combo, self._convert_combo,
-                  self._precision_combo, self._source_combo):
+                  self._video_precision_combo, self._source_combo):
             w.config(state="disabled")
         self._log_panel.clear()
         self._set_status("Preparing…", 0)
@@ -411,6 +439,9 @@ class App(tk.Tk):
                 url=None if is_local else url,
                 video_path=video_file if is_local else None,
                 audio_track=self._video_panel.audio_track if is_local else None,
+                use_ocr=self._video_panel.use_ocr,
+                ocr_region=self._video_panel.ocr_region,
+                ocr_fps=self._video_panel.ocr_fps,
                 schedule=self.after,
                 log=self._log_panel.write,
                 set_status=self._set_status,
@@ -592,6 +623,7 @@ class App(tk.Tk):
         self._lang_combo.config(state="readonly")
         self._convert_combo.config(state="readonly")
         self._precision_combo.config(state="readonly")
+        self._video_precision_combo.config(state="readonly")
         self._source_combo.config(state="readonly")
         self._mode_combo.config(state="readonly")
         self._voice_combo.config(state="readonly")

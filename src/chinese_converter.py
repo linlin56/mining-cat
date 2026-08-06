@@ -56,6 +56,8 @@ def convert_srt_dir(source_script: str, target_script: str) -> None:
     # Convert all SRT files in DIR_SRT from source_script to target_script in-place.
     if source_script == target_script:
         return
+    if (source_script, target_script) not in _CONFIGS:
+        raise ValueError(f"No conversion path from {source_script!r} to {target_script!r}")
 
     srt_files = sorted(DIR_SRT.glob("*.srt"))
     if not srt_files:

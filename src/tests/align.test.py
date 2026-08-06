@@ -282,6 +282,7 @@ def test_run_transcribe_processes_chapter(tmp_path, monkeypatch):
     monkeypatch.setattr(align, "DIR_SRT", srt_dir)
 
     mock_model = MagicMock()
+    mock_model.num_languages = 100
     mock_model.transcribe.return_value = {"segments": [{"start": 0.0, "end": 1.0, "text": "Hello"}]}
 
     with patch("stable_whisper.load_model", return_value=mock_model):
@@ -302,6 +303,7 @@ def test_run_transcribe_skips_existing(tmp_path, monkeypatch):
     monkeypatch.setattr(align, "DIR_SRT", srt_dir)
 
     mock_model = MagicMock()
+    mock_model.num_languages = 100
     with patch("stable_whisper.load_model", return_value=mock_model):
         align.run_transcribe(model_name="tiny")
 
@@ -324,6 +326,7 @@ def test_run_processes_chapter(tmp_path, monkeypatch):
     monkeypatch.setattr(align, "DIR_SRT", srt_dir)
 
     mock_model = MagicMock()
+    mock_model.num_languages = 100
     mock_model.align.return_value = {"segments": [{"start": 0.0, "end": 1.0, "text": "Hello world"}]}
 
     with patch("stable_whisper.load_model", return_value=mock_model):
@@ -348,6 +351,7 @@ def test_run_skips_existing_srt(tmp_path, monkeypatch):
     monkeypatch.setattr(align, "DIR_SRT", srt_dir)
 
     mock_model = MagicMock()
+    mock_model.num_languages = 100
     with patch("stable_whisper.load_model", return_value=mock_model):
         align.run(model_name="tiny")
 
@@ -369,6 +373,7 @@ def test_run_warns_on_count_mismatch(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(align, "DIR_SRT", srt_dir)
 
     mock_model = MagicMock()
+    mock_model.num_languages = 100
     mock_model.align.return_value = {"segments": []}
     with patch("stable_whisper.load_model", return_value=mock_model):
         align.run(model_name="tiny")

@@ -3,15 +3,25 @@ import pytest
 import epub
 from shared import (
     MOCK_EPUB_TW, MOCK_EPUB_CN, MOCK_EPUB_JA, MOCK_EPUB_FR, MOCK_EPUB_EN_US, MOCK_EPUB_EN_GB, MOCK_EPUB_IT, MOCK_EPUB_ES,
+    MOCK_EPUB_PL, MOCK_EPUB_KO, MOCK_EPUB_DE, MOCK_EPUB_PT, MOCK_EPUB_VI, MOCK_EPUB_YUE_HK,
     skip_if_no_epub_tw, skip_if_no_epub_cn, skip_if_no_epub_ja, skip_if_no_epub_fr, skip_if_no_epub_en_us, skip_if_no_epub_en_gb, skip_if_no_epub_it, skip_if_no_epub_es,
+    skip_if_no_epub_pl, skip_if_no_epub_ko, skip_if_no_epub_de, skip_if_no_epub_pt, skip_if_no_epub_vi, skip_if_no_epub_yue_hk,
     MOCK_TXT_TW, MOCK_TXT_CN, MOCK_TXT_JA, MOCK_TXT_FR, MOCK_TXT_EN_US, MOCK_TXT_EN_GB, MOCK_TXT_IT, MOCK_TXT_ES,
+    MOCK_TXT_PL, MOCK_TXT_KO, MOCK_TXT_DE, MOCK_TXT_PT, MOCK_TXT_VI, MOCK_TXT_YUE_HK,
     skip_if_no_txt_tw, skip_if_no_txt_cn, skip_if_no_txt_ja, skip_if_no_txt_fr, skip_if_no_txt_en_us, skip_if_no_txt_en_gb, skip_if_no_txt_it, skip_if_no_txt_es,
+    skip_if_no_txt_pl, skip_if_no_txt_ko, skip_if_no_txt_de, skip_if_no_txt_pt, skip_if_no_txt_vi, skip_if_no_txt_yue_hk,
     MOCK_SRT_JA, skip_if_no_srt_ja,
     MOCK_SRT_FR, skip_if_no_srt_fr,
     MOCK_SRT_EN_US, skip_if_no_srt_en_us,
     MOCK_SRT_EN_GB, skip_if_no_srt_en_gb,
     MOCK_SRT_IT, skip_if_no_srt_it,
     MOCK_SRT_ES, skip_if_no_srt_es,
+    MOCK_SRT_PL, skip_if_no_srt_pl,
+    MOCK_SRT_KO, skip_if_no_srt_ko,
+    MOCK_SRT_DE, skip_if_no_srt_de,
+    MOCK_SRT_PT, skip_if_no_srt_pt,
+    MOCK_SRT_VI, skip_if_no_srt_vi,
+    MOCK_SRT_YUE_HK, skip_if_no_srt_yue_hk,
 )
 
 EXPECTED_LINES_TW = [
@@ -72,6 +82,48 @@ EXPECTED_LINES_ES = [
     "¡Esto es una exclamación!",
 ]
 
+EXPECTED_LINES_PL = [
+    "Cześć.",
+    "Jestem plikiem testowym.",
+    "Służę do testowania poprawnego działania oprogramowania.",
+    "„To jest bardzo interesujące zdanie, które zawiera znaki interpunkcyjne.\"",
+]
+
+EXPECTED_LINES_KO = [
+    "안녕하세요.",
+    "저는 테스트 파일입니다.",
+    "저는 소프트웨어가 정상적으로 작동하는지 테스트하는 데 사용됩니다.",
+    '"이것은 문장 부호가 포함된 매우 흥미로운 문장입니다."',
+]
+
+EXPECTED_LINES_DE = [
+    "Hallo.",
+    "Ich bin eine Testdatei.",
+    "Ich werde verwendet, um die ordnungsgemäße Funktion der Software zu testen.",
+    "„Das ist ein sehr interessanter Satz, der Satzzeichen enthält.\"",
+]
+
+EXPECTED_LINES_PT = [
+    "Olá.",
+    "Sou um arquivo de teste.",
+    "Sou utilizado para testar o bom funcionamento do software.",
+    "«Esta é uma frase muito interessante, que contém pontuação.»",
+]
+
+EXPECTED_LINES_VI = [
+    "Xin chào.",
+    "Tôi là một tệp thử nghiệm.",
+    "Tôi được dùng để kiểm tra hoạt động đúng đắn của phần mềm.",
+    '"Đây là một câu rất thú vị có chứa dấu câu."',
+]
+
+EXPECTED_LINES_YUE_HK = [
+    "你好。",
+    "我係測試檔案。",
+    "我係用嚟測試軟件係咪正常運作嘅。",
+    "「呢句係一個好有趣嘅句子，入面有標點符號。」",
+]
+
 EPUB_PARAMS = [
     pytest.param(MOCK_EPUB_TW, marks=skip_if_no_epub_tw, id="zh-TW"),
     pytest.param(MOCK_EPUB_CN, marks=skip_if_no_epub_cn, id="zh-CN"),
@@ -81,6 +133,12 @@ EPUB_PARAMS = [
     pytest.param(MOCK_EPUB_EN_GB, marks=skip_if_no_epub_en_gb, id="en-GB"),
     pytest.param(MOCK_EPUB_IT, marks=skip_if_no_epub_it, id="it"),
     pytest.param(MOCK_EPUB_ES, marks=skip_if_no_epub_es, id="es"),
+    pytest.param(MOCK_EPUB_PL, marks=skip_if_no_epub_pl, id="pl"),
+    pytest.param(MOCK_EPUB_KO, marks=skip_if_no_epub_ko, id="ko"),
+    pytest.param(MOCK_EPUB_DE, marks=skip_if_no_epub_de, id="de"),
+    pytest.param(MOCK_EPUB_PT, marks=skip_if_no_epub_pt, id="pt"),
+    pytest.param(MOCK_EPUB_VI, marks=skip_if_no_epub_vi, id="vi"),
+    pytest.param(MOCK_EPUB_YUE_HK, marks=skip_if_no_epub_yue_hk, id="yue-HK"),
 ]
 
 
@@ -119,6 +177,12 @@ def test_run_saves_chapters(epub_dir, monkeypatch):
     pytest.param(MOCK_EPUB_EN_GB, EXPECTED_LINES_EN_GB, marks=skip_if_no_epub_en_gb, id="en-GB"),
     pytest.param(MOCK_EPUB_IT, EXPECTED_LINES_IT, marks=skip_if_no_epub_it, id="it"),
     pytest.param(MOCK_EPUB_ES, EXPECTED_LINES_ES, marks=skip_if_no_epub_es, id="es"),
+    pytest.param(MOCK_EPUB_PL, EXPECTED_LINES_PL, marks=skip_if_no_epub_pl, id="pl"),
+    pytest.param(MOCK_EPUB_KO, EXPECTED_LINES_KO, marks=skip_if_no_epub_ko, id="ko"),
+    pytest.param(MOCK_EPUB_DE, EXPECTED_LINES_DE, marks=skip_if_no_epub_de, id="de"),
+    pytest.param(MOCK_EPUB_PT, EXPECTED_LINES_PT, marks=skip_if_no_epub_pt, id="pt"),
+    pytest.param(MOCK_EPUB_VI, EXPECTED_LINES_VI, marks=skip_if_no_epub_vi, id="vi"),
+    pytest.param(MOCK_EPUB_YUE_HK, EXPECTED_LINES_YUE_HK, marks=skip_if_no_epub_yue_hk, id="yue-HK"),
 ], indirect=["epub_dir"])
 def test_run_chapter_content(epub_dir, expected, monkeypatch):
     monkeypatch.setattr(epub, "DIR_EBOOK", epub_dir)
@@ -145,6 +209,12 @@ TXT_PARAMS = [
     pytest.param(MOCK_TXT_EN_GB, marks=skip_if_no_txt_en_gb, id="en-GB"),
     pytest.param(MOCK_TXT_IT, marks=skip_if_no_txt_it, id="it"),
     pytest.param(MOCK_TXT_ES, marks=skip_if_no_txt_es, id="es"),
+    pytest.param(MOCK_TXT_PL, marks=skip_if_no_txt_pl, id="pl"),
+    pytest.param(MOCK_TXT_KO, marks=skip_if_no_txt_ko, id="ko"),
+    pytest.param(MOCK_TXT_DE, marks=skip_if_no_txt_de, id="de"),
+    pytest.param(MOCK_TXT_PT, marks=skip_if_no_txt_pt, id="pt"),
+    pytest.param(MOCK_TXT_VI, marks=skip_if_no_txt_vi, id="vi"),
+    pytest.param(MOCK_TXT_YUE_HK, marks=skip_if_no_txt_yue_hk, id="yue-HK"),
 ]
 
 
@@ -183,6 +253,12 @@ def test_txt_saves_single_chapter(txt_dir, monkeypatch):
     pytest.param(MOCK_TXT_EN_GB, EXPECTED_LINES_EN_GB, marks=skip_if_no_txt_en_gb, id="en-GB"),
     pytest.param(MOCK_TXT_IT, EXPECTED_LINES_IT, marks=skip_if_no_txt_it, id="it"),
     pytest.param(MOCK_TXT_ES, EXPECTED_LINES_ES, marks=skip_if_no_txt_es, id="es"),
+    pytest.param(MOCK_TXT_PL, EXPECTED_LINES_PL, marks=skip_if_no_txt_pl, id="pl"),
+    pytest.param(MOCK_TXT_KO, EXPECTED_LINES_KO, marks=skip_if_no_txt_ko, id="ko"),
+    pytest.param(MOCK_TXT_DE, EXPECTED_LINES_DE, marks=skip_if_no_txt_de, id="de"),
+    pytest.param(MOCK_TXT_PT, EXPECTED_LINES_PT, marks=skip_if_no_txt_pt, id="pt"),
+    pytest.param(MOCK_TXT_VI, EXPECTED_LINES_VI, marks=skip_if_no_txt_vi, id="vi"),
+    pytest.param(MOCK_TXT_YUE_HK, EXPECTED_LINES_YUE_HK, marks=skip_if_no_txt_yue_hk, id="yue-HK"),
 ], indirect=["txt_dir"])
 def test_txt_chapter_content(txt_dir, expected, monkeypatch):
     monkeypatch.setattr(epub, "DIR_EBOOK", txt_dir)
@@ -408,6 +484,138 @@ def test_srt_es_content():
 def test_srt_es_timecodes():
     timecodes = [l for l in MOCK_SRT_ES.read_text(encoding="utf-8").splitlines() if "-->" in l]
     assert len(timecodes) == len(EXPECTED_LINES_ES)
+    for tc in timecodes:
+        start, end = tc.split(" --> ")
+        assert start < end
+
+
+@skip_if_no_srt_pl
+def test_srt_pl_segment_count():
+    segments = [b for b in MOCK_SRT_PL.read_text(encoding="utf-8").strip().split("\n\n") if b.strip()]
+    assert len(segments) == len(EXPECTED_LINES_PL)
+
+
+@skip_if_no_srt_pl
+def test_srt_pl_content():
+    text = MOCK_SRT_PL.read_text(encoding="utf-8")
+    for line in EXPECTED_LINES_PL:
+        assert line in text
+
+
+@skip_if_no_srt_pl
+def test_srt_pl_timecodes():
+    timecodes = [l for l in MOCK_SRT_PL.read_text(encoding="utf-8").splitlines() if "-->" in l]
+    assert len(timecodes) == len(EXPECTED_LINES_PL)
+    for tc in timecodes:
+        start, end = tc.split(" --> ")
+        assert start < end
+
+
+@skip_if_no_srt_ko
+def test_srt_ko_segment_count():
+    segments = [b for b in MOCK_SRT_KO.read_text(encoding="utf-8").strip().split("\n\n") if b.strip()]
+    assert len(segments) == len(EXPECTED_LINES_KO)
+
+
+@skip_if_no_srt_ko
+def test_srt_ko_content():
+    text = MOCK_SRT_KO.read_text(encoding="utf-8")
+    for line in EXPECTED_LINES_KO:
+        assert line in text
+
+
+@skip_if_no_srt_ko
+def test_srt_ko_timecodes():
+    timecodes = [l for l in MOCK_SRT_KO.read_text(encoding="utf-8").splitlines() if "-->" in l]
+    assert len(timecodes) == len(EXPECTED_LINES_KO)
+    for tc in timecodes:
+        start, end = tc.split(" --> ")
+        assert start < end
+
+
+@skip_if_no_srt_de
+def test_srt_de_segment_count():
+    segments = [b for b in MOCK_SRT_DE.read_text(encoding="utf-8").strip().split("\n\n") if b.strip()]
+    assert len(segments) == len(EXPECTED_LINES_DE)
+
+
+@skip_if_no_srt_de
+def test_srt_de_content():
+    text = MOCK_SRT_DE.read_text(encoding="utf-8")
+    for line in EXPECTED_LINES_DE:
+        assert line in text
+
+
+@skip_if_no_srt_de
+def test_srt_de_timecodes():
+    timecodes = [l for l in MOCK_SRT_DE.read_text(encoding="utf-8").splitlines() if "-->" in l]
+    assert len(timecodes) == len(EXPECTED_LINES_DE)
+    for tc in timecodes:
+        start, end = tc.split(" --> ")
+        assert start < end
+
+
+@skip_if_no_srt_pt
+def test_srt_pt_segment_count():
+    segments = [b for b in MOCK_SRT_PT.read_text(encoding="utf-8").strip().split("\n\n") if b.strip()]
+    assert len(segments) == len(EXPECTED_LINES_PT)
+
+
+@skip_if_no_srt_pt
+def test_srt_pt_content():
+    text = MOCK_SRT_PT.read_text(encoding="utf-8")
+    for line in EXPECTED_LINES_PT:
+        assert line in text
+
+
+@skip_if_no_srt_pt
+def test_srt_pt_timecodes():
+    timecodes = [l for l in MOCK_SRT_PT.read_text(encoding="utf-8").splitlines() if "-->" in l]
+    assert len(timecodes) == len(EXPECTED_LINES_PT)
+    for tc in timecodes:
+        start, end = tc.split(" --> ")
+        assert start < end
+
+
+@skip_if_no_srt_vi
+def test_srt_vi_segment_count():
+    segments = [b for b in MOCK_SRT_VI.read_text(encoding="utf-8").strip().split("\n\n") if b.strip()]
+    assert len(segments) == len(EXPECTED_LINES_VI)
+
+
+@skip_if_no_srt_vi
+def test_srt_vi_content():
+    text = MOCK_SRT_VI.read_text(encoding="utf-8")
+    for line in EXPECTED_LINES_VI:
+        assert line in text
+
+
+@skip_if_no_srt_vi
+def test_srt_vi_timecodes():
+    timecodes = [l for l in MOCK_SRT_VI.read_text(encoding="utf-8").splitlines() if "-->" in l]
+    assert len(timecodes) == len(EXPECTED_LINES_VI)
+    for tc in timecodes:
+        start, end = tc.split(" --> ")
+        assert start < end
+
+
+@skip_if_no_srt_yue_hk
+def test_srt_yue_hk_segment_count():
+    segments = [b for b in MOCK_SRT_YUE_HK.read_text(encoding="utf-8").strip().split("\n\n") if b.strip()]
+    assert len(segments) == len(EXPECTED_LINES_YUE_HK)
+
+
+@skip_if_no_srt_yue_hk
+def test_srt_yue_hk_content():
+    text = MOCK_SRT_YUE_HK.read_text(encoding="utf-8")
+    for line in EXPECTED_LINES_YUE_HK:
+        assert line in text
+
+
+@skip_if_no_srt_yue_hk
+def test_srt_yue_hk_timecodes():
+    timecodes = [l for l in MOCK_SRT_YUE_HK.read_text(encoding="utf-8").splitlines() if "-->" in l]
+    assert len(timecodes) == len(EXPECTED_LINES_YUE_HK)
     for tc in timecodes:
         start, end = tc.split(" --> ")
         assert start < end

@@ -1,0 +1,4 @@
+Olá.
+Sou um arquivo de teste.
+Sou utilizado para testar o bom funcionamento do software.
+«Esta é uma frase muito interessante, que contém pontuação.»

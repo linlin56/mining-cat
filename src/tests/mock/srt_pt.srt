@@ -1,0 +1,15 @@
+1
+00:00:01,000 --> 00:00:03,500
+Olá.
+
+2
+00:00:04,000 --> 00:00:06,500
+Sou um arquivo de teste.
+
+3
+00:00:07,000 --> 00:00:09,500
+Sou utilizado para testar o bom funcionamento do software.
+
+4
+00:00:10,000 --> 00:00:12,500
+«Esta é uma frase muito interessante, que contém pontuação.»

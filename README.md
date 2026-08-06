@@ -17,7 +17,12 @@ Contributions and issues are very appreciated!
 - English (American and British supported)
 - Italian
 - Spanish
-- More will come later!
+- Polish
+- Korean
+- German
+- Portuguese (Brazil and Portugal voices)
+- Vietnamese
+- Cantonese (Hong Kong, traditional characters)
 
 ### How to use it
 

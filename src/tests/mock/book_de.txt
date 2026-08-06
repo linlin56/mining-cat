@@ -1,0 +1,4 @@
+Hallo.
+Ich bin eine Testdatei.
+Ich werde verwendet, um die ordnungsgemäße Funktion der Software zu testen.
+„Das ist ein sehr interessanter Satz, der Satzzeichen enthält."

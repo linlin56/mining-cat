@@ -48,6 +48,10 @@ _CONVERT_OPTIONS_FOR_SCRIPT: dict[str, list[tuple[str, str | None]]] = {
         ("No conversion", None),
         ("Simplified - China", "s"),
     ],
+    "hk": [
+        ("No conversion", None),
+        ("Simplified - China", "s"),
+    ],
 }
 CONVERT_BY_LABEL: dict[str, str | None] = {
     label: code
@@ -111,6 +115,35 @@ _VOICES_FOR_LANGUAGE: dict[Language, list[tuple[str, str]]] = {
         ("Dalia - Spanish (Mexico), female",    "es-MX-DaliaNeural"),
         ("Jorge - Spanish (Mexico), male",      "es-MX-JorgeNeural"),
     ],
+    Language.POLISH: [
+        ("Zofia - Polish, female",  "pl-PL-ZofiaNeural"),
+        ("Marek - Polish, male",    "pl-PL-MarekNeural"),
+    ],
+    Language.KOREAN: [
+        ("SunHi - Korean, female",   "ko-KR-SunHiNeural"),
+        ("InJoon - Korean, male",    "ko-KR-InJoonNeural"),
+    ],
+    Language.GERMAN: [
+        ("Katja - German, female",    "de-DE-KatjaNeural"),
+        ("Amala - German, female",    "de-DE-AmalaNeural"),
+        ("Conrad - German, male",     "de-DE-ConradNeural"),
+        ("Killian - German, male",    "de-DE-KillianNeural"),
+    ],
+    Language.PORTUGUESE: [
+        ("Francisca - Portuguese (Brazil), female",   "pt-BR-FranciscaNeural"),
+        ("Antonio - Portuguese (Brazil), male",       "pt-BR-AntonioNeural"),
+        ("Raquel - Portuguese (Portugal), female",    "pt-PT-RaquelNeural"),
+        ("Duarte - Portuguese (Portugal), male",      "pt-PT-DuarteNeural"),
+    ],
+    Language.VIETNAMESE: [
+        ("HoaiMy - Vietnamese, female",  "vi-VN-HoaiMyNeural"),
+        ("NamMinh - Vietnamese, male",   "vi-VN-NamMinhNeural"),
+    ],
+    Language.CANTONESE_HK: [
+        ("HiuMaan - Cantonese (Hong Kong), female",  "zh-HK-HiuMaanNeural"),
+        ("HiuGaai - Cantonese (Hong Kong), female",  "zh-HK-HiuGaaiNeural"),
+        ("WanLung - Cantonese (Hong Kong), male",    "zh-HK-WanLungNeural"),
+    ],
 }
 DEFAULT_VOICE_FOR_LANGUAGE: dict[Language, str] = {
     Language.MANDARIN_TW: "HsiaoChen - Mandarin (Taiwan), female",
@@ -121,6 +154,12 @@ DEFAULT_VOICE_FOR_LANGUAGE: dict[Language, str] = {
     Language.ENGLISH_UK:  "Sonia - English (UK), female",
     Language.ITALIAN:     "Elsa - Italian, female",
     Language.SPANISH:     "Elvira - Spanish (Spain), female",
+    Language.POLISH:      "Zofia - Polish, female",
+    Language.KOREAN:      "SunHi - Korean, female",
+    Language.GERMAN:      "Katja - German, female",
+    Language.PORTUGUESE:  "Francisca - Portuguese (Brazil), female",
+    Language.VIETNAMESE:  "HoaiMy - Vietnamese, female",
+    Language.CANTONESE_HK: "HiuMaan - Cantonese (Hong Kong), female",
 }
 VOICE_ID_BY_LABEL: dict[str, str] = {
     label: voice_id
@@ -128,5 +167,8 @@ VOICE_ID_BY_LABEL: dict[str, str] = {
     for label, voice_id in voices
 }
 VOICES_FOR_LANGUAGE = _VOICES_FOR_LANGUAGE
+
+# This is mostly for Cantonese, which only works with large or turbo models.
+LARGE_ONLY_WHISPER_CODES = {"yue"}  # Cantonese
 
 GITHUB_URL = "https://github.com/linlin56/audiobook-miner"

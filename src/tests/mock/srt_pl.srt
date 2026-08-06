@@ -1,0 +1,15 @@
+1
+00:00:01,000 --> 00:00:03,500
+Cześć.
+
+2
+00:00:04,000 --> 00:00:06,500
+Jestem plikiem testowym.
+
+3
+00:00:07,000 --> 00:00:09,500
+Służę do testowania poprawnego działania oprogramowania.
+
+4
+00:00:10,000 --> 00:00:12,500
+„To jest bardzo interesujące zdanie, które zawiera znaki interpunkcyjne."

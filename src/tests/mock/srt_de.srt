@@ -1,0 +1,15 @@
+1
+00:00:01,000 --> 00:00:03,500
+Hallo.
+
+2
+00:00:04,000 --> 00:00:06,500
+Ich bin eine Testdatei.
+
+3
+00:00:07,000 --> 00:00:09,500
+Ich werde verwendet, um die ordnungsgemäße Funktion der Software zu testen.
+
+4
+00:00:10,000 --> 00:00:12,500
+„Das ist ein sehr interessanter Satz, der Satzzeichen enthält."

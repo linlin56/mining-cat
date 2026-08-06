@@ -19,6 +19,7 @@ from gui_components.constants import (
     GITHUB_URL, ROOT,
     _CONVERT_OPTIONS_FOR_SCRIPT, CONVERT_BY_LABEL,
     VOICES_FOR_LANGUAGE, DEFAULT_VOICE_FOR_LANGUAGE,
+    LARGE_ONLY_WHISPER_CODES,
     PYTHON,
 )
 # Reusable UI panels for audio files, epub file, video source, and log output
@@ -28,7 +29,7 @@ from gui_components import pipeline
 from gui_components.utils import open_folder, srt_to_text
 
 PRECISION_LABEL = "Transcription Precision Level :"
-PRECISION_VALUES = ["Tiny", "Base (default)", "Small", "Medium", "Large"]
+PRECISION_VALUES = ["Tiny", "Base (default)", "Small", "Medium", "Large", "Turbo (fast, large-v3)"]
 
 
 class App(tk.Tk):
@@ -300,7 +301,15 @@ class App(tk.Tk):
             return ["No conversion"]
         return [label for label, _ in _CONVERT_OPTIONS_FOR_SCRIPT[script]]
 
-    # Updates conversion, voice, and character-list button when the user picks a different language
+    # Returns the precision options available for the given language
+    # some languages (like Cantonese) are only known to Whisper's large-v3/turbo checkpoints
+    # smaller models are hidden rather than left in the list to fail during transcription.
+    def _precision_values_for(self, lang: Language) -> list[str]:
+        if lang.value.whisper_code not in LARGE_ONLY_WHISPER_CODES:
+            return PRECISION_VALUES
+        return [v for v in PRECISION_VALUES if v.split()[0] in ("Large", "Turbo")]
+
+    # Updates conversion, voice, character-list button, and precision options when the user picks a different language
     def _on_lang_change(self, *_) -> None:
         lang = Language.from_label(self._lang_var.get())
         labels = self._convert_labels_for(lang)
@@ -313,6 +322,11 @@ class App(tk.Tk):
         self._char_freq_btn.config(
             state="normal" if character_frequency.supports_language(lang) else "disabled"
         )
+        precisions = self._precision_values_for(lang)
+        self._precision_combo["values"] = precisions
+        self._video_precision_combo["values"] = precisions
+        if self._precision_var.get() not in precisions:
+            self._precision_var.set(precisions[0])
         self._update_video_freq_buttons()
 
     # Switches between the "Audiobook / Ebook" and "Video" screens

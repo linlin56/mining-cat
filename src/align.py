@@ -8,6 +8,7 @@ from pathlib import Path
 import stable_whisper
 from tqdm import tqdm
 
+import chinese_converter
 from config import DIR_CHAPTERS_AUDIO, DIR_CHAPTERS_TEXT, DIR_SRT, glob_audio_files
 from language import Language
 
@@ -18,6 +19,18 @@ def get_device() -> str:
         return "cuda" if torch.cuda.is_available() else "cpu"
     except ImportError:
         return "cpu"
+
+
+# This is mostly for Cantonese, which only works with large or turbo models.
+def ensure_language_supported(model, lang: Language) -> None:
+    from whisper.tokenizer import LANGUAGES
+    code = lang.value.whisper_code
+    if code not in tuple(LANGUAGES.keys())[:model.num_languages]:
+        raise ValueError(
+            f"This Whisper checkpoint only supports {model.num_languages} languages and "
+            f"doesn't include {lang.name} (code '{code}'). Use --model large (large-v3) "
+            f"or turbo instead."
+        )
 
 @dataclass
 class Segment:
@@ -198,6 +211,7 @@ def run_transcribe(
 
     print(f"Loading stable-whisper model '{model_name}'...")
     model = stable_whisper.load_model(model_name, device=get_device())
+    ensure_language_supported(model, language)
     print()
 
     for i, audio_file in enumerate(
@@ -213,6 +227,7 @@ def run_transcribe(
         t0 = time.time()
         segs = transcribe_chapter(model, audio_file, lang=language)
         save_srt(segs, srt_out)
+        chinese_converter.normalize_whisper_script(srt_out, language)
         elapsed = time.time() - t0
 
         tqdm.write(f"  Ch.{ch_num:03d}  {len(segs)} seg  {elapsed:.0f}s")
@@ -264,6 +279,7 @@ def run(
     # Load stable-whisper
     print(f"Loading stable-whisper model '{model_name}'...")
     model = stable_whisper.load_model(model_name, device=get_device())
+    ensure_language_supported(model, language)
     print()
 
     # Process each chapter, skipping already existing SRT files unless from_ch is specified (which indicates a retry).

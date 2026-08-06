@@ -212,8 +212,10 @@ def run(
         if whisper_srt_file.exists():
             print(f"A previous transcription exists and will be overwritten: {whisper_srt_file}")
         model = stable_whisper.load_model(model_name, device=align.get_device())
+        align.ensure_language_supported(model, language)
         segs = align.transcribe_chapter(model, audio_file, lang=language)
         align.save_srt(segs, whisper_srt_file)
+        chinese_converter.normalize_whisper_script(whisper_srt_file, language)
         print(f"Subtitles: {whisper_srt_file}  ({len(segs)} segments)")
         subtitle_tracks.append((whisper_srt_file, "Whisper"))
 

@@ -1,5 +1,14 @@
 from pathlib import Path
 
+# Add retries to yt-dlp to avoid fails that can happen with large files or slow connections.
+BASE_YDL_OPTS = {
+    "quiet": True,
+    "no_warnings": True,
+    "noplaylist": True,
+    "retries": 10,
+    "fragment_retries": 10,
+}
+
 
 # yt-dlp sets info["__real_download"] to False (or leaves it unset) when the destination file already existed and the download was skipped
 # by default this is only reported via yt-dlp's own (suppressed, quiet=True) logging, 

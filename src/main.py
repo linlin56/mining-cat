@@ -158,7 +158,7 @@ def main() -> None:
     # align
     p_align = sub.add_parser("align", help="Forced alignment of chapter text to audio")
     p_align.add_argument("--model", default="tiny",
-                         choices=["tiny", "base", "small", "medium", "large"])
+                         choices=["tiny", "base", "small", "medium", "large", "turbo"])
     p_align.add_argument("--language", default="mandarin_tw",
                          choices=Language.ids())
     p_align.add_argument("--from", dest="from_ch", type=int, default=None,
@@ -169,7 +169,7 @@ def main() -> None:
     # transcribe
     p_transcribe = sub.add_parser("transcribe", help="Whisper transcription (no epub alignment)")
     p_transcribe.add_argument("--model", default="tiny",
-                              choices=["tiny", "base", "small", "medium", "large"])
+                              choices=["tiny", "base", "small", "medium", "large", "turbo"])
     p_transcribe.add_argument("--language", default="mandarin_tw",
                               choices=Language.ids())
     p_transcribe.add_argument("--from", dest="from_ch", type=int, default=None,
@@ -210,7 +210,7 @@ def main() -> None:
     video_source.add_argument("--url", help="Video URL (e.g. Instagram reel)")
     video_source.add_argument("--file", dest="video_path", help="Path to a local video file")
     p_video.add_argument("--model", default="tiny",
-                         choices=["tiny", "base", "small", "medium", "large"])
+                         choices=["tiny", "base", "small", "medium", "large", "turbo"])
     p_video.add_argument("--language", default="mandarin_tw",
                          choices=Language.ids())
     p_video.add_argument("--app-id", dest="app_id", default="web",

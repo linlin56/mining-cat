@@ -1,0 +1,4 @@
+Xin chào.
+Tôi là một tệp thử nghiệm.
+Tôi được dùng để kiểm tra hoạt động đúng đắn của phần mềm.
+"Đây là một câu rất thú vị có chứa dấu câu."

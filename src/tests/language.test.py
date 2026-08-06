@@ -7,6 +7,7 @@ from language import Language
 
 MANDARIN_PATTERN = re.compile(Language.MANDARIN_TW.value.vocab_annotation_pattern)
 JAPANESE_PATTERN = re.compile(Language.JAPANESE.value.vocab_annotation_pattern)
+CANTONESE_PATTERN = re.compile(Language.CANTONESE_HK.value.vocab_annotation_pattern)
 
 @pytest.mark.parametrize("text,expected", [
     ("學習[1]很重要", "學習很重要"),
@@ -26,6 +27,26 @@ def test_mandarin_vocab_annotation_pattern(text, expected):
 ])
 def test_mandarin_vocab_annotation_no_false_positives(text):
     assert MANDARIN_PATTERN.sub("", text) == text
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("學習[1]好緊要", "學習好緊要"),
+    ("一[12]二[345]三", "一二三"),
+    ("冇標記", "冇標記"),
+    ("[1]開頭", "開頭"),
+    ("結尾[99]", "結尾"),
+])
+def test_cantonese_vocab_annotation_pattern(text, expected):
+    assert CANTONESE_PATTERN.sub("", text) == expected
+
+
+@pytest.mark.parametrize("text", [
+    "學習好緊要",       # no annotation
+    "[abc]",           # letters, not digits - should NOT match
+    "[ 1]",            # space before digit - should NOT match
+])
+def test_cantonese_vocab_annotation_no_false_positives(text):
+    assert CANTONESE_PATTERN.sub("", text) == text
 
 
 @pytest.mark.parametrize("text,expected", [
@@ -58,6 +79,12 @@ def test_iso639_2_values():
     assert Language.ENGLISH_UK.value.iso639_2 == "eng"
     assert Language.ITALIAN.value.iso639_2 == "ita"
     assert Language.SPANISH.value.iso639_2 == "spa"
+    assert Language.POLISH.value.iso639_2 == "pol"
+    assert Language.KOREAN.value.iso639_2 == "kor"
+    assert Language.GERMAN.value.iso639_2 == "deu"
+    assert Language.PORTUGUESE.value.iso639_2 == "por"
+    assert Language.VIETNAMESE.value.iso639_2 == "vie"
+    assert Language.CANTONESE_HK.value.iso639_2 == "yue"
 
 
 # from_id / from_label / ids / all_labels
@@ -79,6 +106,18 @@ def test_from_id_case_insensitive():
     assert Language.from_id("ITALIAN") is Language.ITALIAN
     assert Language.from_id("spanish") is Language.SPANISH
     assert Language.from_id("SPANISH") is Language.SPANISH
+    assert Language.from_id("polish") is Language.POLISH
+    assert Language.from_id("POLISH") is Language.POLISH
+    assert Language.from_id("korean") is Language.KOREAN
+    assert Language.from_id("KOREAN") is Language.KOREAN
+    assert Language.from_id("german") is Language.GERMAN
+    assert Language.from_id("GERMAN") is Language.GERMAN
+    assert Language.from_id("portuguese") is Language.PORTUGUESE
+    assert Language.from_id("PORTUGUESE") is Language.PORTUGUESE
+    assert Language.from_id("vietnamese") is Language.VIETNAMESE
+    assert Language.from_id("VIETNAMESE") is Language.VIETNAMESE
+    assert Language.from_id("cantonese_hk") is Language.CANTONESE_HK
+    assert Language.from_id("CANTONESE_HK") is Language.CANTONESE_HK
 
 
 def test_from_id_unknown_raises():

@@ -7,18 +7,20 @@ from language import Language
 SCRIPT_FOR_LANGUAGE: dict[Language, str] = {
     Language.MANDARIN_CN: "s",
     Language.MANDARIN_TW: "tw",
+    Language.CANTONESE_HK: "hk",
 }
 
 # OpenCC config per (source_script, target_script).
-# Valid paths: s to tw or t  and  tw to s.
+# Valid paths: s to tw or t  and  tw to s  and  hk to s.
 _CONFIGS: dict[tuple[str, str], str] = {
     ("s",  "tw"): "s2tw",
     ("s",  "t"):  "s2t",
     ("tw", "s"):  "tw2s",
+    ("hk", "s"):  "hk2s",
 }
 
 # OpenCC does not convert quotation marks, so we do it manually.
-# Simplified mainland uses " " ' ' ; Traditional Taiwan/Chinese uses 「 」 『 』.
+# Simplified mainland uses " " ' ' ; Traditional Taiwan/Chinese/HK uses 「 」 『 』.
 _PUNCT_MAP: dict[tuple[str, str], dict[str, str]] = {
     ("s",  "tw"): {"“": "「", "”": "」",  # " " =「 」
                    "‘": "『", "’": "』"},  # ' ' = 『 』
@@ -26,6 +28,8 @@ _PUNCT_MAP: dict[tuple[str, str], dict[str, str]] = {
                    "‘": "『", "’": "』"},
     ("tw", "s"):  {"「": "“", "」": "”",  # 「 」 = " "
                    "『": "‘", "』": "’"},  # 『 』 = ' '
+    ("hk", "s"):  {"「": "“", "」": "”",
+                   "『": "‘", "』": "’"},
 }
 
 

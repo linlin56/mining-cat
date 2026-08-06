@@ -98,6 +98,66 @@ class Language(Enum):
         ocr_lang_apple='es-ES',
         ocr_lang_easyocr='es',
     )
+    POLISH = LangConfig(
+        label='Polish',
+        whisper_code='pl',
+        iso639_2='pol',
+        closing_punct=frozenset('!?…”'),
+        opening_punct=frozenset('„'),
+        vocab_annotation_pattern=r'',
+        ocr_lang_apple='pl-PL',
+        ocr_lang_easyocr='pl',
+    )
+    KOREAN = LangConfig(
+        label='Korean',
+        whisper_code='ko',
+        iso639_2='kor',
+        closing_punct=frozenset('.?!…”’'),
+        opening_punct=frozenset('“‘'),
+        vocab_annotation_pattern=r'',
+        ocr_lang_apple='ko-KR',
+        ocr_lang_easyocr='ko',
+    )
+    GERMAN = LangConfig(
+        label='German',
+        whisper_code='de',
+        iso639_2='deu',
+        closing_punct=frozenset('!?…”'),
+        opening_punct=frozenset('„'),
+        vocab_annotation_pattern=r'',
+        ocr_lang_apple='de-DE',
+        ocr_lang_easyocr='de',
+    )
+    PORTUGUESE = LangConfig(
+        label='Portuguese',
+        whisper_code='pt',
+        iso639_2='por',
+        closing_punct=frozenset('!?»…”'),
+        opening_punct=frozenset('«'),
+        vocab_annotation_pattern=r'',
+        ocr_lang_apple='pt-PT',
+        ocr_lang_easyocr='pt',
+    )
+    VIETNAMESE = LangConfig(
+        label='Vietnamese',
+        whisper_code='vi',
+        iso639_2='vie',
+        closing_punct=frozenset('.?!…”’'),
+        opening_punct=frozenset('“‘'),
+        vocab_annotation_pattern=r'',
+        ocr_lang_apple='vi-VN',
+        ocr_lang_easyocr='vi',
+    )
+    CANTONESE_HK = LangConfig(
+        label='Cantonese - Hong Kong (Traditional)',
+        whisper_code='yue',
+        iso639_2='yue',
+        closing_punct=frozenset('。？！」』'),
+        opening_punct=frozenset('「『'),
+        vocab_annotation_pattern=r'\[\d+\]',
+        ocr_lang_apple='zh-Hant',
+        ocr_lang_easyocr='ch_tra',
+    )
     # TODO : Add more! Priorities are languages that me (the owner) can understand enough to test
 
     @classmethod

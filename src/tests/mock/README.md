@@ -96,3 +96,69 @@ Soy utilizado para probar el correcto funcionamiento del software.
 «Es una frase muy interesante, que contiene puntuación.»
 ¿Esto es una pregunta?
 ¡Esto es una exclamación!
+
+## book_pl.epub / book_pl.txt / srt_pl.srt
+
+EPUB, plain-text, and SRT mocks for Polish.
+
+### Content
+
+Cześć.
+Jestem plikiem testowym.
+Służę do testowania poprawnego działania oprogramowania.
+„To jest bardzo interesujące zdanie, które zawiera znaki interpunkcyjne."
+
+## book_ko.epub / book_ko.txt / srt_ko.srt
+
+EPUB, plain-text, and SRT mocks for Korean.
+
+### Content
+
+안녕하세요.
+저는 테스트 파일입니다.
+저는 소프트웨어가 정상적으로 작동하는지 테스트하는 데 사용됩니다.
+"이것은 문장 부호가 포함된 매우 흥미로운 문장입니다."
+
+## book_de.epub / book_de.txt / srt_de.srt
+
+EPUB, plain-text, and SRT mocks for German.
+
+### Content
+
+Hallo.
+Ich bin eine Testdatei.
+Ich werde verwendet, um die ordnungsgemäße Funktion der Software zu testen.
+„Das ist ein sehr interessanter Satz, der Satzzeichen enthält."
+
+## book_pt.epub / book_pt.txt / srt_pt.srt
+
+EPUB, plain-text, and SRT mocks for Portuguese.
+
+### Content
+
+Olá.
+Sou um arquivo de teste.
+Sou utilizado para testar o bom funcionamento do software.
+«Esta é uma frase muito interessante, que contém pontuação.»
+
+## book_vi.epub / book_vi.txt / srt_vi.srt
+
+EPUB, plain-text, and SRT mocks for Vietnamese.
+
+### Content
+
+Xin chào.
+Tôi là một tệp thử nghiệm.
+Tôi được dùng để kiểm tra hoạt động đúng đắn của phần mềm.
+"Đây là một câu rất thú vị có chứa dấu câu."
+
+## book_yue-HK.epub / book_yue-HK.txt / srt_yue-HK.srt
+
+EPUB, plain-text, and SRT mocks for Cantonese (Hong Kong, Traditional).
+
+### Content
+
+你好。
+我係測試檔案。
+我係用嚟測試軟件係咪正常運作嘅。
+「呢句係一個好有趣嘅句子，入面有標點符號。」

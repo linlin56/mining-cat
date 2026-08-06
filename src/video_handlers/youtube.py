@@ -17,6 +17,12 @@ LANG_CODES: dict[Language, list[str]] = {
     Language.ENGLISH_UK:  ["en-GB", "en"],
     Language.ITALIAN:     ["it"],
     Language.SPANISH:     ["es"],
+    Language.POLISH:      ["pl"],
+    Language.KOREAN:      ["ko"],
+    Language.GERMAN:      ["de"],
+    Language.PORTUGUESE:  ["pt-PT", "pt-BR", "pt"],
+    Language.VIETNAMESE:  ["vi"],
+    Language.CANTONESE_HK: ["yue", "zh-HK", "zh-Hant", "zh"],
 }
 
 

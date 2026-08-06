@@ -1,0 +1,4 @@
+Cześć.
+Jestem plikiem testowym.
+Służę do testowania poprawnego działania oprogramowania.
+„To jest bardzo interesujące zdanie, które zawiera znaki interpunkcyjne."

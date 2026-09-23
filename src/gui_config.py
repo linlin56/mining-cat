@@ -2,7 +2,7 @@
 
 # Window configuration
 # Fixed size (window is not resizable for now, to avoid layout issues)
-WINDOW_TITLE = "AudiobookMiner"
+WINDOW_TITLE = "MiningCat"
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 800
 WINDOW_MIN_WIDTH = 800

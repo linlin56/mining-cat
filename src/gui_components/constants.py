@@ -171,4 +171,4 @@ VOICES_FOR_LANGUAGE = _VOICES_FOR_LANGUAGE
 # This is mostly for Cantonese, which only works with large or turbo models.
 LARGE_ONLY_WHISPER_CODES = {"yue"}  # Cantonese
 
-GITHUB_URL = "https://github.com/linlin56/audiobook-miner"
+GITHUB_URL = "https://github.com/linlin56/mining-cat"

@@ -1,4 +1,4 @@
-# AudiobookMiner
+# MiningCat
 
 ## Description
 
@@ -152,3 +152,9 @@ this is useful if you ebook doesn't match exactly with the audio, for example if
 In the UI, just select (highlight) chapters.  
 In the CLI, use the "range" option.  
 This is only available with .epub format
+
+## License
+
+MiningCat is free software, released under the [GNU Affero General Public License v3.0 or later](LICENSE) (AGPL-3.0-or-later).
+
+You are free to use, study, modify and redistribute it. If you distribute a modified version, or make it available to users over a network, you must publish its source code under the same license.

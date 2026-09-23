@@ -26,7 +26,7 @@ gui:
 	$(PYTHON) src/gui.py
 
 help:
-	@echo "AudiobookMiner"
+	@echo "MiningCat"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make install                    Install dependencies"

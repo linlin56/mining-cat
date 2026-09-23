@@ -1,0 +1,6 @@
+[project]
+site_name = "MiningCat"
+site_description = "Turn audiobooks, ebooks and online videos into mineable videos for language learning."
+site_url = "https://linlin56.github.io/mining-cat/"
+repo_url = "https://github.com/linlin56/mining-cat"
+copyright = "Copyright &copy; MiningCat project"

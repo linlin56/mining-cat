@@ -18,3 +18,5 @@ coverage.xml
 
 # Editor
 .vscode/
+# Docs (zensical build)
+site/

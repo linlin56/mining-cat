@@ -9,13 +9,10 @@ from game_ocr import capture
 from game_ocr.capture import CaptureBackend, CaptureError
 from game_ocr.settings import FULL_REGION, GameOcrSettings, Region
 from language import Language
-from ocr_mining import dedup, frames
+from ocr_mining import builder, dedup, frames
 
 # Languages written without spaces: lines wrapped by the game's dialog box are glued back together as-is.
 _NO_SPACE_LANGUAGES = {Language.MANDARIN_TW, Language.MANDARIN_CN, Language.CANTONESE_HK, Language.JAPANESE}
-
-# Below this length, a single different character is a different line (e.g. "はい" / "いい"), not OCR jitter.
-_NEAR_DUPLICATE_MIN_LENGTH = 8
 
 
 # Opens the backend of the current OS on the window saved in `settings`, without asking the user again.
@@ -100,19 +97,26 @@ class GameOcrSession:
             engine = OcrEngine(language)
         self._engine = engine
         self._detector = ChangeDetector()
-        self._last_text: str | None = None
+        # Raw OCR reading (one line per dialog box line) of the last capture pushed to the page, for repeat detection.
+        self._last_reading: str | None = None
 
     def grab(self) -> tuple[Image.Image, Image.Image]:
         return crop_areas(self._backend.grab_frame(), self._settings.screenshot_region, self._settings.text_region)
 
     def read(self, text_crop: Image.Image) -> str:
+        return self._format(self._read_lines(text_crop))
+
+    # The OCR reading as-is (one line per line of the dialog box), or "" if it isn't plausible text in the language.
+    def _read_lines(self, text_crop: Image.Image) -> str:
         # Every line of a dialog box matters: the hardsubs "drop narrow lines" heuristic would cut short last lines.
         text = self._engine.read_text(text_crop, drop_narrow_lines=False)
         if not dedup.is_plausible_text(text, self._language):
             return ""
-        if self._join:
-            text = join_lines(text, self._language)
-        if self._convert_source is not None:
+        return "\n".join(line.strip() for line in text.splitlines() if line.strip())
+
+    def _format(self, reading: str) -> str:
+        text = join_lines(reading, self._language) if self._join else reading
+        if text and self._convert_source is not None:
             text = chinese_converter.convert_text(text, self._convert_source, self._convert_target)
         return text.strip()
 
@@ -122,22 +126,29 @@ class GameOcrSession:
         screenshot, text_crop = self.grab()
         if not force and not self._detector.should_read(text_crop):
             return None, "text area unchanged"
-        text = self.read(text_crop)
-        if not text:
+        reading = self._read_lines(text_crop)
+        if not reading:
             return None, "no text detected"
-        if self._is_repeat(text):
+        if self._is_repeat(reading, near_duplicates=not force):
             return None, "same text as the previous capture"
-        self._last_text = text
+        self._last_reading = reading
+        text = self._format(reading)
         return CaptureResult(text=text, screenshot=screenshot, ms=round((time.perf_counter() - start) * 1000)), ""
 
     # Called when the page's history is cleared, so the current line can be captured again.
     def forget_last_text(self) -> None:
-        self._last_text = None
+        self._last_reading = None
 
-    def _is_repeat(self, text: str) -> bool:
-        last = self._last_text
+    # An exact repeat is always skipped. In continuous mode, a near-duplicate reading is skipped too, with the hardsubs rules
+    # (edits allowed in proportion to the line length, a line dropping out, lines read run together or swapped):
+    # it's the same line read again after the area flickered (animated background, cursor...).
+    # A capture asked for with the key is never skipped for being merely close: two real lines can differ by a character.
+    def _is_repeat(self, reading: str, near_duplicates: bool) -> bool:
+        last = self._last_reading
         if last is None:
             return False
-        if text == last:
+        if reading == last:
             return True
-        return min(len(text), len(last)) >= _NEAR_DUPLICATE_MIN_LENGTH and dedup.is_near_duplicate(text, last)
+        return near_duplicates and builder.lines_are_near_duplicate(
+            last, reading, builder.NEAR_DUPLICATE_MAX_EDITS, is_contiguous=False,
+        )

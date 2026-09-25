@@ -154,17 +154,48 @@ def test_capture_skips_repeated_text_until_forgotten():
     assert session.capture(force=True)[0] is not None
 
 
-def test_capture_skips_long_near_duplicate_but_not_short_one():
+def _continuous_session(engine):
+    session = _session(engine=engine)
+    session._detector.should_read = lambda _crop: True  # every poll sees a changed, settled text area
+    return session
+
+
+@pytest.mark.parametrize("first, again", [
+    ("今天天氣很好我們一起去散步", "今天天氣很好我們一起去散歩"),   # one OCR jitter character
+    ("她說\n今天天氣很好我們一起去散步", "今天天氣很好我們一起去散步"),   # a line dropped out
+    ("今天天氣很好\n我們一起去散步", "今天天氣很好我們一起去散步"),     # lines read run together
+    ("今天天氣很好\n我們一起去散步", "我們一起去散步\n今天天氣很好"),   # lines swapped
+])
+def test_continuous_capture_skips_near_duplicate_readings(first, again):
+    engine = FakeEngine(first)
+    session = _continuous_session(engine)
+    assert session.capture()[0] is not None
+    engine.text = again
+    assert session.capture() == (None, "same text as the previous capture")
+
+
+def test_continuous_capture_pushes_a_different_line():
     engine = FakeEngine("今天天氣很好我們一起去散步")
+    session = _continuous_session(engine)
+    session.capture()
+    engine.text = "明天見"
+    assert session.capture()[0].text == "明天見"
+
+
+def test_key_capture_only_skips_exact_repeats():
+    engine = FakeEngine("好的")
     session = _session(engine=engine)
     session.capture(force=True)
-    engine.text = "今天天氣很好我們一起去散歩"   # one OCR jitter character on a long line
     assert session.capture(force=True)[1] == "same text as the previous capture"
-
-    engine.text = "好的"
-    session.capture(force=True)
-    engine.text = "好吧"   # short lines: one character is a different line
+    engine.text = "好吧"   # close, but asked for with the key: a real new line
     assert session.capture(force=True)[0].text == "好吧"
+
+
+def test_repeats_are_compared_before_conversion_and_joining():
+    engine = FakeEngine("這是\n測試")
+    session = _session(engine=engine, convert_target="s")
+    assert session.capture(force=True)[0].text == "这是测试"
+    assert session.capture(force=True)[1] == "same text as the previous capture"
 
 
 def test_session_builds_ocr_engine_for_language_by_default():

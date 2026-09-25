@@ -4,6 +4,9 @@ import pytest
 if importlib.util.find_spec("_tkinter") is None:
     pytest.skip("tkinter not available", allow_module_level=True)
 
+# Opens Tk windows: excluded from `make test`, run with `make test-gui`.
+pytestmark = pytest.mark.gui
+
 import tkinter as tk
 
 from gui_components.video_panel import VideoPanel

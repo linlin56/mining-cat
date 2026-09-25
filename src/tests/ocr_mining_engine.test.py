@@ -124,3 +124,27 @@ def test_read_text_returns_empty_string_on_failure():
         text = ocr_engine.read_text("frame_000000.jpg")
 
     assert text == ""
+
+
+def test_read_text_passes_pil_images_through():
+    from PIL import Image
+    image = Image.new("RGB", (10, 10))
+    fake_impl = MagicMock(return_value=(True, _fake_ocr_result("in memory")))
+
+    with patch.object(engine, "_build_impl", return_value=fake_impl):
+        text = engine.OcrEngine(Language.FRENCH).read_text(image)
+
+    assert text == "in memory"
+    fake_impl.assert_called_once_with(image)
+
+
+def test_read_text_can_keep_narrow_lines():
+    # A game dialog box: the short last line must not be dropped like a hardsubs credit.
+    result = _fake_ocr_result(_fake_line("a long first line of dialogue", width=0.8, center_y=0.3),
+                              _fake_line("short.", width=0.1, center_y=0.6))
+    fake_impl = MagicMock(return_value=(True, result))
+
+    with patch.object(engine, "_build_impl", return_value=fake_impl):
+        text = engine.OcrEngine(Language.FRENCH).read_text("frame.jpg", drop_narrow_lines=False)
+
+    assert text == "a long first line of dialogue\nshort."

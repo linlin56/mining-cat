@@ -22,6 +22,10 @@ DIR_VIDEOS = ROOT / "output" / "videos"
 #  Scratch space for OCR frame extraction (per-video subdirectory, cleaned up after use)
 DIR_OCR_FRAMES = DIR_TEMP / "ocr_frames"
 
+#  Video game / screen share OCR: the selected window and areas.
+#  Kept in sources/ rather than output/, so that "Clear output" doesn't make you pick them again.
+GAME_OCR_SETTINGS = ROOT / "sources" / "game_ocr.json"
+
 #  Intermediate audio format
 AUDIO_FORMAT  = "mp3"
 AUDIO_BITRATE = "192k"

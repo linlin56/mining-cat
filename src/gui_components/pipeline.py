@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import threading
 from pathlib import Path
 from typing import Callable
 
@@ -184,13 +185,47 @@ def run_video_pipeline(
         schedule(0, on_finish)
 
 
-def _run_cmd(
-    args: list[str],
+# Starts the video game / screen share capture (`main.py game serve`) and returns right away: it runs until stopped.
+# Stop it with stop_game_server(). `on_exit(returncode)` is scheduled once the process has ended, whatever the reason.
+def start_game_server(
     *,
+    python_exe: str,
+    lang: Language,
+    convert_target: str | None,
+    continuous: bool,
+    hotkey: str,
     schedule: Callable,
     log: Callable[[str], None],
-) -> int:
-    proc = subprocess.Popen(
+    on_exit: Callable[[int], None],
+) -> subprocess.Popen:
+    cmd_args = [python_exe, str(SRC_DIR / "main.py"), "game", "serve", "--language", lang.name.lower()]
+    if convert_target is not None:
+        cmd_args += ["--convert-to", convert_target]
+    cmd_args += ["--continuous"] if continuous else ["--hotkey", hotkey]
+    proc = _popen(cmd_args)
+
+    def pump() -> None:
+        for line in proc.stdout:
+            schedule(0, log, line)
+        schedule(0, on_exit, proc.wait())
+
+    threading.Thread(target=pump, daemon=True).start()
+    return proc
+
+
+# SIGTERM lets aiohttp shut down cleanly (and close the capture session), kill if it doesn't in time.
+def stop_game_server(proc: subprocess.Popen, timeout: float = 5) -> None:
+    if proc.poll() is not None:
+        return
+    proc.terminate()
+    try:
+        proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
+def _popen(args: list[str]) -> subprocess.Popen:
+    return subprocess.Popen(
         args,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -199,6 +234,15 @@ def _run_cmd(
         env={**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONUTF8": "1"},
         encoding="utf-8",
     )
+
+
+def _run_cmd(
+    args: list[str],
+    *,
+    schedule: Callable,
+    log: Callable[[str], None],
+) -> int:
+    proc = _popen(args)
     for line in proc.stdout:
         schedule(0, log, line)
     proc.wait()

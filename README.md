@@ -59,6 +59,7 @@ The GUI has a **Source** dropdown that picks which screen you're working with:
 
 - **Audiobook / Ebook** : the original workflow described below (Modes, Precision, ebook/audio panels, frequency lists).
 - **Video** : download a video from a supported platform, or provide your own local video file, and generate mineable subtitles for it. See [Video](#video).
+- **Video game / Screen share** : OCR the text of a game window (or any window) and push each line, with a screenshot, to a local web page to mine from. See [Video game / Screen share](#video-game--screen-share).
 
 The rest of the header (Language, Convert to, Precision) applies to both screens.
 
@@ -128,6 +129,28 @@ make video FILE="<PATH>"
 Instagram-only: `--app-id` overrides the X-IG-App-ID header (`web` by default, or `ios`/a numeric id) if downloads start failing.
 
 `--audio-track` picks which 0-based audio stream to transcribe when the video has several (useful for local files with multiple dubs); omit it to use the container's default audio stream.
+
+## Video game / Screen share
+
+_Select "Video game / Screen share" in the Source dropdown._
+
+1. **Select window…** : pick the game window (GNOME's sharing dialog on Linux, a list of windows on macOS).
+2. **Select window's full size (for screenshot)…** : the part of the window shown in the web page.
+3. **Select text area (for OCR)…** : the game's dialog box, the only part read by OCR.
+4. Pick the **Capture key** (F9 by default), or check **Continuous capture** to capture whenever the text changes.
+5. **Start** : the page opens in your browser. Press the capture key (even with the game focused), and the line shows up in the page with its screenshot. **Stop** when you're done.
+
+Supported systems: Linux (tested on Ubuntu, Wayland) and macOS (tested on macOS 15). See the [documentation](https://linlin56.github.io/mining-cat/how-to-use/video-game/) for the setup of each system (Linux packages, macOS Screen Recording permission).
+
+#### CLI
+
+```
+python src/main.py game setup
+python src/main.py game serve --language japanese [--hotkey F9 | --continuous]
+# or
+make game-setup
+make game LANGUAGE=japanese
+```
 
 ## Precision
 

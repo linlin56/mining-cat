@@ -22,14 +22,18 @@ from gui_components.constants import (
     LARGE_ONLY_WHISPER_CODES,
     PYTHON,
 )
-# Reusable UI panels for audio files, epub file, video source, and log output
-from gui_components import AudioPanel, EpubPanel, LogPanel, VideoPanel
+# Reusable UI panels for audio files, epub file, video source, video game source, and log output
+from gui_components import AudioPanel, EpubPanel, GamePanel, LogPanel, VideoPanel
 # Orchestrates the full processing pipeline in a background thread
 from gui_components import pipeline
 from gui_components.utils import open_folder, srt_to_text
 
 PRECISION_LABEL = "Transcription Precision Level :"
 PRECISION_VALUES = ["Tiny", "Base (default)", "Small", "Medium", "Large", "Turbo (fast, large-v3)"]
+
+SOURCE_AUDIOBOOK = "Audiobook / Ebook"
+SOURCE_VIDEO = "Video"
+SOURCE_GAME = "Video game / Screen share"
 
 
 class App(tk.Tk):
@@ -39,6 +43,8 @@ class App(tk.Tk):
         self.configure(bg=COLORS["BG"])
 
         self._last_video_srt: Path | None = None
+        # `main.py game serve` subprocess, while the video game capture runs
+        self._game_proc: subprocess.Popen | None = None
 
         self._setup_style()
         self._build_ui()
@@ -50,6 +56,8 @@ class App(tk.Tk):
         self.update_idletasks()
         self.resizable(False, False)
         self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}+{int((self.winfo_screenwidth() - WINDOW_WIDTH) / 2)}+{int((self.winfo_screenheight() - WINDOW_HEIGHT) / 2)}")
+
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
         self.lift()
         self.attributes("-topmost", True)
@@ -144,11 +152,11 @@ class App(tk.Tk):
         source_row = tk.Frame(outer, bg=c["BG"])
         source_row.pack(fill="x", pady=(0, 12))
         ttk.Label(source_row, text="Source :").pack(side="left", padx=(0, 8))
-        self._source_var = tk.StringVar(value="Audiobook / Ebook")
+        self._source_var = tk.StringVar(value=SOURCE_AUDIOBOOK)
         self._source_combo = ttk.Combobox(
             source_row, textvariable=self._source_var,
-            values=["Audiobook / Ebook", "Video"],
-            state="readonly", width=22,
+            values=[SOURCE_AUDIOBOOK, SOURCE_VIDEO, SOURCE_GAME],
+            state="readonly", width=26,
         )
         self._source_combo.pack(side="left")
         self._source_combo.bind("<<ComboboxSelected>>", self._on_source_change)
@@ -271,6 +279,26 @@ class App(tk.Tk):
         ttk.Button(video_start_row, text="Clear output",
                    command=self._clear_output).pack(side="left", padx=(8, 0))
 
+        # Video game / screen share screen
+        self._game_screen = tk.Frame(outer, bg=c["BG"])
+
+        self._game_panel = GamePanel(self._game_screen, c)
+        self._game_panel.pack(fill="x", pady=(0, 14))
+
+        game_start_row = tk.Frame(self._game_screen, bg=c["BG"])
+        game_start_row.pack(fill="x", pady=(0, 10))
+        self._game_start_btn = ttk.Button(
+            game_start_row, text="Start",
+            style="Start.TButton", command=self._toggle_game,
+        )
+        self._game_start_btn.pack(side="left", fill="x", expand=True)
+        self._game_page_btn = ttk.Button(
+            game_start_row, text="Open page", command=self._open_game_page, state="disabled",
+        )
+        self._game_page_btn.pack(side="left", padx=(8, 0))
+        self._game_panel.on_change = self._update_game_start_button
+        self._update_game_start_button()
+
         # Progress bar + status label
         prog_frame = tk.Frame(outer, bg=c["BG"])
         self._progress_frame = prog_frame
@@ -329,15 +357,18 @@ class App(tk.Tk):
             self._precision_var.set(precisions[0])
         self._update_video_freq_buttons()
 
-    # Switches between the "Audiobook / Ebook" and "Video" screens
+    # Switches between the "Audiobook / Ebook", "Video" and "Video game / Screen share" screens
     def _on_source_change(self, *_) -> None:
         source = self._source_var.get()
-        if source == "Video":
-            self._audiobook_screen.pack_forget()
-            self._video_screen.pack(fill="x", before=self._progress_frame)
-        else:
-            self._video_screen.pack_forget()
-            self._audiobook_screen.pack(fill="x", before=self._progress_frame)
+        screens = {
+            SOURCE_AUDIOBOOK: self._audiobook_screen,
+            SOURCE_VIDEO: self._video_screen,
+            SOURCE_GAME: self._game_screen,
+        }
+        for screen in screens.values():
+            screen.pack_forget()
+        screens.get(source, self._audiobook_screen).pack(fill="x", before=self._progress_frame)
+        if source == SOURCE_AUDIOBOOK:
             self._on_mode_change()
 
     # Shown only when OCR is off, since Whisper never runs when it's on
@@ -617,6 +648,65 @@ class App(tk.Tk):
         self._video_char_freq_btn.config(
             state="normal" if has_srt and character_frequency.supports_language(lang) else "disabled"
         )
+
+    # ----- video game / screen share -----
+
+    def _update_game_start_button(self) -> None:
+        running = self._game_proc is not None
+        ready = self._game_panel.is_supported and self._game_panel.is_ready
+        self._game_start_btn.config(
+            text="Stop" if running else "Start",
+            state="normal" if running or ready else "disabled",
+        )
+        self._game_page_btn.config(state="normal" if running else "disabled")
+
+    def _toggle_game(self) -> None:
+        if self._game_proc is not None:
+            self._set_status("Stopping…", 100)
+            self._game_start_btn.config(state="disabled")
+            proc = self._game_proc
+            threading.Thread(target=pipeline.stop_game_server, args=(proc,), daemon=True).start()
+            return
+        if not self._game_panel.is_ready:
+            messagebox.showwarning("Missing selection", "Select the game window and its text area first.")
+            return
+
+        for w in (self._lang_combo, self._convert_combo, self._source_combo):
+            w.config(state="disabled")
+        self._game_panel.set_locked(True)
+        self._log_panel.clear()
+        self._set_status("Capturing - the page opens in your browser", 100)
+        self._game_proc = pipeline.start_game_server(
+            python_exe=PYTHON,
+            lang=Language.from_label(self._lang_var.get()),
+            convert_target=CONVERT_BY_LABEL.get(self._convert_var.get()),
+            continuous=self._game_panel.continuous,
+            hotkey=self._game_panel.hotkey,
+            schedule=self.after,
+            log=self._log_panel.write,
+            on_exit=self._on_game_exit,
+        )
+        self._update_game_start_button()
+
+    def _on_game_exit(self, returncode: int) -> None:
+        self._game_proc = None
+        self._log_panel.write(f"\nCapture stopped (code {returncode}).\n")
+        self._set_status("Capture stopped", 0)
+        self._lang_combo.config(state="readonly")
+        self._convert_combo.config(state="readonly")
+        self._source_combo.config(state="readonly")
+        self._game_panel.set_locked(False)
+        self._update_game_start_button()
+
+    def _open_game_page(self) -> None:
+        from game_ocr.server import page_url
+        webbrowser.open(page_url())
+
+    # Stops the capture subprocess with the window, so it doesn't keep the port and the window capture busy.
+    def _on_close(self) -> None:
+        if self._game_proc is not None:
+            pipeline.stop_game_server(self._game_proc)
+        self.destroy()
 
     # Called when the pipeline succeeds: prompts the user to open the output folder
     def _on_done(self) -> None:

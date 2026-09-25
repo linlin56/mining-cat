@@ -11,6 +11,7 @@ nav = [
     "how-to-use/index.md",
     "how-to-use/audiobook-ebook.md",
     "how-to-use/video.md",
+    "how-to-use/video-game.md",
     "how-to-use/frequency-lists.md",
     "how-to-use/cli.md",
     "how-to-use/files.md",
@@ -20,6 +21,7 @@ nav = [
     "how-to-contribute/project-structure.md",
     "how-to-contribute/add-language.md",
     "how-to-contribute/add-video-platform.md",
+    "how-to-contribute/add-capture-backend.md",
   ] },
   { "About" = "about-this-project/index.md" },
 ]

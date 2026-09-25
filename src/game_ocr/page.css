@@ -1,0 +1,150 @@
+:root {
+  --ink:        #f2efe9;
+  --ink-dim:    #7d8590;
+  --ground:     #14171c;
+  --panel:      #1b1f26;
+  --rule:       #2a3039;
+  --signal:     #6fb3a8;
+  --warn:       #d98b6f;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+}
+
+body {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  padding: 0 1.5rem 6rem;
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(var(--ground) 72%, transparent);
+  padding: 1.25rem 0 1rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+header b {
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+}
+
+#status::before {
+  content: "";
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-right: 0.45rem;
+  vertical-align: 0.1em;
+  background: var(--warn);
+}
+#status.live::before { background: var(--signal); }
+
+#count { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+#capture, #clear {
+  background: none;
+  border: none;
+  color: var(--ink-dim);
+  cursor: pointer;
+  padding: 0.2rem;
+  line-height: 0;
+  border-radius: 2px;
+}
+#capture:hover { color: var(--signal); }
+#clear:hover { color: var(--warn); }
+#capture:focus-visible, #clear:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+#capture svg, #clear svg { width: 15px; height: 15px; display: block; }
+
+/* capture */
+
+.capture {
+  border-top: 1px solid var(--rule);
+  padding: 1.75rem 0;
+  animation: rise 240ms ease-out;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .capture { animation: none; }
+}
+
+.meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+  margin-bottom: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.meta button {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--rule);
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.meta button:hover { color: var(--ink); border-color: var(--signal); }
+.meta button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+/* the screenshot is context: dimmed, it wakes up on hover */
+.shot {
+  display: block;
+  width: 100%;
+  border-radius: 3px;
+  border: 1px solid var(--rule);
+  filter: saturate(0.55) brightness(0.7);
+  transition: filter 180ms ease;
+  margin-bottom: 1.1rem;
+}
+.capture:hover .shot { filter: none; }
+
+/* the sentence is what we mine: it carries the page */
+.line {
+  font-family: "Noto Serif TC", "Noto Serif SC", "Noto Serif JP", "Noto Serif KR", serif;
+  font-size: 1.65rem;
+  line-height: 2.1;
+  letter-spacing: 0.02em;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+}
+
+.empty {
+  padding: 4rem 0;
+  color: var(--ink-dim);
+  font-size: 0.8rem;
+  line-height: 1.9;
+  border-top: 1px solid var(--rule);
+}
+.empty code {
+  color: var(--ink);
+  background: var(--panel);
+  padding: 0.15rem 0.4rem;
+  border-radius: 2px;
+}

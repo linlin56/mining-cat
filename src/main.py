@@ -7,6 +7,7 @@
 #   export  Render final MP4 files
 #   run     Run all steps in sequence
 #   video   Download an online video (e.g. Instagram reel) or use a local file, and generate subtitles
+#   game    Video game / screen share OCR: push a window's screenshot + OCR'd text to a local web page
 #
 # Usage:
 #   python main.py audio [--dry-run]
@@ -16,10 +17,13 @@
 #   python main.py run [--range 4-9]
 #   python main.py video --url <URL> [--model tiny] [--language mandarin_tw]
 #   python main.py video --file <PATH> [--model tiny] [--language mandarin_tw]
+#   python main.py game setup [--window TITLE] [--areas-only]
+#   python main.py game serve [--language mandarin_tw] [--convert-to s] [--port 6677] [--hotkey F9 | --continuous]
 
 import argparse
 import sys
 
+from game_ocr.hotkey import DEFAULT_HOTKEY, HOTKEYS
 from language import Language
 from ocr_mining.frames import OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
 
@@ -111,6 +115,11 @@ def cmd_video(args: argparse.Namespace) -> None:
         ocr_region=args.ocr_region,
         ocr_fps=args.ocr_fps,
     )
+
+
+def cmd_game(args: argparse.Namespace) -> None:
+    from game_ocr import cli
+    cli.main(args)
 
 
 def cmd_run(args: argparse.Namespace) -> None:
@@ -228,6 +237,30 @@ def main() -> None:
                          choices=range(OCR_FPS_MIN, OCR_FPS_MAX + 1), metavar=f"[{OCR_FPS_MIN}-{OCR_FPS_MAX}]",
                          help=f"OCR frame sampling rate in frames/second (default: {OCR_FPS_DEFAULT})")
 
+    # game
+    p_game = sub.add_parser("game", help="Video game / screen share OCR: push a window's screenshot + OCR'd text to a local web page")
+    game_sub = p_game.add_subparsers(dest="game_command", required=True)
+    p_game_setup = game_sub.add_parser("setup", help="Select the game window, then its screenshot area and text area")
+    p_game_setup.add_argument("--window", default=None, metavar="TITLE",
+                              help="macOS: pick the first window whose app name or title contains TITLE, instead of asking")
+    p_game_setup.add_argument("--areas-only", dest="areas_only", action="store_true",
+                              help="Keep the saved window, only select the areas again")
+    p_game_serve = game_sub.add_parser("serve", help="Start capturing and serve the web page (Ctrl+C to stop)")
+    p_game_serve.add_argument("--language", default="mandarin_tw", choices=Language.ids())
+    p_game_serve.add_argument("--convert-to", dest="convert_to", default=None, choices=["s", "tw", "t", "hk"],
+                              help="Convert the OCR'd text to this Chinese script (e.g. s=Simplified)")
+    p_game_serve.add_argument("--port", type=int, default=None, help="Web page port (default: 6677)")
+    p_game_serve.add_argument("--hotkey", default=DEFAULT_HOTKEY, choices=HOTKEYS,
+                              help=f"Global key that triggers a capture, even with the game focused (default: {DEFAULT_HOTKEY})")
+    p_game_serve.add_argument("--continuous", action="store_true",
+                              help="Capture continuously, whenever the text changes, instead of with the capture key")
+    p_game_serve.add_argument("--interval", type=float, default=None,
+                              help="Seconds between two looks at the text area in continuous mode (default: 0.5)")
+    p_game_serve.add_argument("--keep-line-breaks", dest="keep_line_breaks", action="store_true",
+                              help="Keep the text's line breaks instead of joining wrapped lines")
+    p_game_serve.add_argument("--no-browser", dest="no_browser", action="store_true",
+                              help="Don't open the web page in the browser")
+
     args = parser.parse_args()
 
     dispatch = {
@@ -240,6 +273,7 @@ def main() -> None:
         "export":     cmd_export,
         "run":        cmd_run,
         "video":      cmd_video,
+        "game":       cmd_game,
     }
     dispatch[args.command](args)
 

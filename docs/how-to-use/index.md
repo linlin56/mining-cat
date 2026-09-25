@@ -42,7 +42,7 @@ The window header has three settings shared by every workflow:
 
 | Setting        | What it does                                                                                                                        |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **Source**     | `Audiobook / Ebook` or `Video`. Picks which screen you're working with.                                                             |
+| **Source**     | `Audiobook / Ebook`, `Video` or `Video game / Screen share`. Picks which screen you're working with.                                |
 | **Language**   | The original language of your input files. It drives transcription, punctuation fixes, TTS voices and subtitle metadata.          |
 | **Convert to** | Only for Chinese variants: converts subtitles between simplified and traditional characters (e.g. read a mainland book in traditional). |
 
@@ -50,6 +50,7 @@ Then pick your workflow:
 
 - [Audiobooks & ebooks](audiobook-ebook.md): one video per chapter, from a book and/or its audiobook.
 - [Videos](video.md): subtitles for a YouTube, Instagram or Bilibili video, or a video file on your computer.
+- [Video games & screen share](video-game.md): OCR the text of a game window, and mine it from a web page.
 
 When you're done, the videos are in `output/final/`. Open them in your player, in asbplayer or Migaku and start mining!
 
@@ -60,5 +61,6 @@ When you're done, the videos are in `output/final/`. Open them in your player, i
 | Ebook      | `.epub` (recommended), `.txt` (one or several files)         |
 | Audiobook  | `.m4b` (split with its chapter markers), `.mp3`, `.m4a`, `.aac`, `.ogg`, `.wav`, `.flac`, `.opus` (one file per chapter) |
 | Video      | A URL from a [supported platform](video.md#from-the-web), or any local video file ffmpeg can read |
+| Video game | Any window on screen ([Linux and macOS](video-game.md#supported-systems)) |
 
 See [Files and folders](files.md) for where everything ends up.

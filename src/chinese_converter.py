@@ -38,18 +38,23 @@ _PUNCT_MAP: dict[tuple[str, str], dict[str, str]] = {
 }
 
 
-def convert_srt_file(srt_path: Path, source_script: str, target_script: str) -> None:
+def convert_text(text: str, source_script: str, target_script: str) -> str:
     if source_script == target_script:
-        return
+        return text
     config = _CONFIGS.get((source_script, target_script))
     if config is None:
         raise ValueError(f"No conversion path from {source_script!r} to {target_script!r}")
 
     converter = opencc.OpenCC(config)
     punct_table = str.maketrans(_PUNCT_MAP.get((source_script, target_script), {}))
+    return converter.convert(text).translate(punct_table)
+
+
+def convert_srt_file(srt_path: Path, source_script: str, target_script: str) -> None:
+    if source_script == target_script:
+        return
     text = srt_path.read_text(encoding="utf-8")
-    text = converter.convert(text).translate(punct_table)
-    srt_path.write_text(text, encoding="utf-8")
+    srt_path.write_text(convert_text(text, source_script, target_script), encoding="utf-8")
 
 
 def convert_srt_dir(source_script: str, target_script: str) -> None:

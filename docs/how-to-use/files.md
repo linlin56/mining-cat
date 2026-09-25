@@ -6,7 +6,8 @@ MiningCat works inside the project folder. Everything it generates goes to `outp
 mining-cat/
 ├── sources/                 # your input files (ignored by git)
 │   ├── ebook/               #   the .epub or .txt file(s)
-│   └── audiobook/           #   the audio file(s)
+│   ├── audiobook/           #   the audio file(s)
+│   └── game_ocr.json        #   the video game window and areas you selected
 └── output/
     ├── chapters_audio/      # one audio file per chapter
     ├── chapters_text/       # one text file per chapter (chapter_001.txt...)

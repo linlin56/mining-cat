@@ -186,6 +186,11 @@ So far I used Tiktok as it is not supported. **If you want to add TikTok** pleas
 - [ ] README's "Video from Web" > "Supported platforms" list updated
 - [ ] `make test` passes
 
+## Add a capture backend (video game / screen share)
+
+Window capture is OS-dependent: each OS has its own backend in `src/game_ocr/capture/` (`linux_wayland.py`, `macos.py`), picked from `sys.platform` by `src/game_ocr/capture/__init__.py`.
+To support another OS (e.g. Windows), see [Add a capture backend](https://linlin56.github.io/mining-cat/how-to-contribute/add-capture-backend/).
+
 ## GUI
 
 You can add to the GUI but try to keep a nice user experience and change as little as possible.
@@ -193,6 +198,7 @@ You can add to the GUI but try to keep a nice user experience and change as litt
 ### Tests for GUI
 
 There are tests files for the GUI currently, and they should pass for the PR to be merged.
+They're marked `gui` and excluded from `make test` (they create Tk windows): run them with `make test-gui`.
 However, they are ignored for the coverage calculation.
 
 ## Coverage

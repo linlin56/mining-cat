@@ -14,14 +14,20 @@ _PREVIEW_MAX_SIZE = (800, 450)
 # Shows a carousel of candidate frames from the video (in case the first one doesn't happen to have any dialogue on screen) 
 # the user drags a rectangle on whichever one they pick to define the subtitle region (normalized (x, y, w, h) fractions).
 class OcrRegionDialog(tk.Toplevel):
+    # Pre-drawn rectangle when there's no initial region, and the dialog's title: overridden by subclasses.
+    default_region: tuple[float, float, float, float] = frames.DEFAULT_REGION
+    window_title = "Select subtitle region"
+
     def __init__(
-        self, parent, video_file: Path,
+        self, parent, video_file: Path | None,
         initial_region: tuple[float, float, float, float] | None = None,
     ):
         super().__init__(parent)
-        self.title("Select subtitle region")
+        self.title(self.window_title)
         self.resizable(False, False)
-        self.transient(parent)
+        # A dialog transient to a withdrawn window (the CLI's hidden root) is never shown on macOS.
+        if parent.winfo_viewable():
+            self.transient(parent)
 
         self._video_file = video_file
         self._region: tuple[float, float, float, float] | None = initial_region
@@ -51,12 +57,16 @@ class OcrRegionDialog(tk.Toplevel):
         ttk.Button(self._btn_row, text="OK", command=self._on_ok).pack(side="right", padx=(0, 8))
 
         self.protocol("WM_DELETE_WINDOW", self._on_cancel)
-        threading.Thread(target=self._load_previews_bg, daemon=True).start()
+        self._start_loading()
 
     def show(self) -> tuple[float, float, float, float] | None:
         self.grab_set()
         self.wait_window(self)
         return self._result
+
+    # Extracting frames from the video is slow: done in the background. Overridden by subclasses whose images are already in memory.
+    def _start_loading(self) -> None:
+        threading.Thread(target=self._load_previews_bg, daemon=True).start()
 
     def _load_previews_bg(self) -> None:
         preview_dir = DIR_TEMP / "ocr_region_preview"
@@ -91,11 +101,13 @@ class OcrRegionDialog(tk.Toplevel):
         self._canvas.bind("<ButtonPress-1>", self._on_drag_start)
         self._canvas.bind("<B1-Motion>", self._on_drag_motion)
         self._canvas.bind("<ButtonRelease-1>", self._on_drag_end)
-        self._nav_row.pack(pady=(0, 10))
+
+        if len(images) > 1:
+            self._nav_row.pack(pady=(0, 10))
         self._btn_row.pack(fill="x", padx=10, pady=(0, 10))
 
         self._show_current_frame()
-        self._draw_region(self._region or frames.DEFAULT_REGION)
+        self._draw_region(self._region or self.default_region)
 
     def _show_current_frame(self) -> None:
         canvas_w, canvas_h = self._canvas_size

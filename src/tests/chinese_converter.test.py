@@ -101,3 +101,17 @@ def test_invalid_pair_raises():
     # Unsupported conversion pair must raise ValueError.
     with pytest.raises(ValueError):
         chinese_converter.convert_srt_dir("tw", "t")
+
+
+# convert_text
+def test_convert_text_s_to_tw_converts_characters_and_quotes():
+    assert chinese_converter.convert_text("“这里”", "s", "tw") == "「這裡」"
+
+
+def test_convert_text_same_script_is_unchanged():
+    assert chinese_converter.convert_text("這裡", "tw", "tw") == "這裡"
+
+
+def test_convert_text_invalid_pair_raises():
+    with pytest.raises(ValueError):
+        chinese_converter.convert_text("這裡", "tw", "t")

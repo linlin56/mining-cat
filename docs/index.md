@@ -6,6 +6,7 @@ MiningCat turns **audiobooks**, **ebooks** and **online or local videos** into _
 - Only the audiobook? Subtitles are generated with [Whisper](https://github.com/openai/whisper).
 - Only the ebook? The audio is generated with text-to-speech.
 - A YouTube video, an Instagram Reel, a movie on your disk? MiningCat transcribes it, keeps existing subtitles when there are some, and can even read burned-in subtitles with OCR.
+- Playing a video game? MiningCat reads its dialog boxes with OCR and sends every line, with a screenshot, to a web page you can mine from.
 
 On top of that, MiningCat can convert between simplified and traditional Chinese characters and build frequency lists from what you're watching.
 

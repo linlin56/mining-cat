@@ -8,6 +8,7 @@ Contributions are very welcome, whether it's a bug report, a new language, a new
 - **Proofread a language**: some languages were added by people who don't speak them. If you do, check the punctuation handling and the subtitles, and report what's wrong.
 - **Add a language**: see [Add a language](add-language.md).
 - **Add a video platform**: see [Add a video platform](add-video-platform.md).
+- **Support video game capture on another OS**: see [Add a capture backend](add-capture-backend.md).
 - **Improve the docs**: see [Documentation](#documentation) below.
 
 ## Development setup
@@ -25,7 +26,8 @@ The [Project structure](project-structure.md) page gives an overview of the code
 Tests use [pytest](https://docs.pytest.org/) and live in `src/tests/`. Test files are named `<module>.test.py` (e.g. `align.test.py` tests `align.py`).
 
 ```bash
-make test                              # run all the tests
+make test                              # run the tests (without the GUI tests)
+make test-gui                          # run the GUI tests
 make coverage                          # run the tests with a coverage report
 .venv/bin/python -m pytest src/tests/epub.test.py -k chapters   # run a subset
 ```
@@ -35,10 +37,11 @@ A few rules:
 - **No network in tests.** Mock `yt_dlp.YoutubeDL`, edge-tts, etc. Never point a test at a real URL.
 - **Keep mock files small and open.** Test books, texts and subtitles live in `src/tests/mock/`: a few sentences each, written by us, never copyrighted content. Document any new mock in `src/tests/mock/README.md`.
 - Shared mock paths and `skipif` markers are declared in `src/tests/shared.py`.
+- **Mark tests that create Tk windows** with `pytestmark = pytest.mark.gui`: they're excluded from `make test` (so it never opens windows), and run with `make test-gui`, windows hidden.
 
 ### Coverage
 
-The CI fails if coverage drops below **80%**. The rules are in `.coveragerc`: the GUI (`src/gui.py`, `src/gui_config.py`, `src/gui_components/`) is excluded from the coverage calculation, but its tests must still pass.
+The CI fails if coverage drops below **80%**. The rules are in `.coveragerc`: the GUI (`src/gui.py`, `src/gui_config.py`, `src/gui_components/`) is excluded from the coverage calculation, but its tests must still pass: run `make test-gui` before opening a pull request that touches the GUI.
 PR with a failed CI will not be merged.
 
 ## Continuous integration

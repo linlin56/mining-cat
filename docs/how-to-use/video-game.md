@@ -73,7 +73,10 @@ By default, MiningCat captures when you press the **capture key** (`F9`, or any 
 
 Check **Continuous capture** to capture without pressing anything (the capture key is then greyed out): MiningCat looks at the text area twice per second, and runs OCR when it changed. Games often draw text letter by letter, so it waits until the text area stops changing before reading it, to avoid half sentences. It works best when nothing moves behind the text.
 
-In both modes, a capture is only pushed to the page when the text differs from the previous one, and contains characters of the selected language (e.g. at least a Chinese character for Mandarin).
+A capture is only pushed to the page when its text contains characters of the selected language (e.g. at least a Chinese character for Mandarin), and differs from the previous capture:
+
+- with the **capture key**, it must not be exactly the same text (two real lines can differ by a single character);
+- in **continuous capture**, it must not be the same line read again either, with the same rules as for [burned-in subtitles](video.md#burned-in-subtitles-ocr): a few characters misread (in proportion to the line length), a line of the dialog box missing, or lines read run together or in another order.
 
 You can also capture at any time with the **camera button** at the top of the page, or with an HTTP request (e.g. from your own shortcut tool, or on a desktop where the capture key isn't supported):
 

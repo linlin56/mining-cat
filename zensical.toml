@@ -4,3 +4,31 @@ site_description = "Turn audiobooks, ebooks and online videos into mineable vide
 site_url = "https://linlin56.github.io/mining-cat/"
 repo_url = "https://github.com/linlin56/mining-cat"
 copyright = "Copyright &copy; MiningCat project"
+
+nav = [
+  { "Home" = "index.md" },
+  { "How to use" = [
+    "how-to-use/index.md",
+    "how-to-use/audiobook-ebook.md",
+    "how-to-use/video.md",
+    "how-to-use/frequency-lists.md",
+    "how-to-use/cli.md",
+    "how-to-use/files.md",
+  ] },
+  { "How to contribute" = [
+    "how-to-contribute/index.md",
+    "how-to-contribute/project-structure.md",
+    "how-to-contribute/add-language.md",
+    "how-to-contribute/add-video-platform.md",
+  ] },
+  { "About" = "about-this-project/index.md" },
+]
+
+[project.theme]
+features = [
+  "navigation.tabs",
+  "navigation.sections",
+  "navigation.indexes",
+  "navigation.footer",
+  "content.code.copy",
+]

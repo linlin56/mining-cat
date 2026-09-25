@@ -1,5 +1,7 @@
 # Contributing
 
+The full contributor guide (dev setup, tests, CI, project structure...) is on the [documentation site](https://linlin56.github.io/mining-cat/how-to-contribute/).
+
 ## Add a language
 
 The steps below cover places in the codebase you need to touch to add a new language.

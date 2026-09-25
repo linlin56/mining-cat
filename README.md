@@ -1,5 +1,7 @@
 # MiningCat
 
+📖 **Documentation: <https://linlin56.github.io/mining-cat/>**
+
 ## Description
 
 This project is meant to create _mineable_ videos, out of audiobooks, ebooks, and/or online videos (Instagram Reels, YouTube...), so that you can use it for language learning (with tools like Migaku or asbplayer).  

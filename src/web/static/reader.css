@@ -332,3 +332,5 @@ a.nav-link:hover { color: var(--accent); }
   .bar-title #chapter-title { display: none; }
   .zone { width: max(16px, calc(var(--margin) * .5)); }
 }
+
+.audio-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }

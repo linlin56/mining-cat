@@ -1,0 +1,54 @@
+/* MiningCat video game page: the captures of game_ocr, mined with the dictionary popup (mining.css). */
+
+:root {
+  --bg: #fdfbf7; --fg: #2d2d2d; --dim: #8a8580; --panel: #f5ede8; --field: #ebe4df;
+  --border: #e6dcd5; --link: #c4453f; --accent: #ff6b6b; --start: #ff8c42;
+  --ui-font: system-ui, -apple-system, "Segoe UI", "Helvetica Neue", "Noto Sans", sans-serif;
+  --text-font: "Noto Serif TC", "Noto Serif SC", "Noto Serif JP", "Noto Serif KR", "Songti TC", "Hiragino Mincho ProN", serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1d1a18; --fg: #ede6e1; --dim: #a39a94; --panel: #282321; --field: #36302d;
+    --border: #3a3330; --link: #ff8f87; --accent: #ff7b7b;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--ui-font); }
+[hidden] { display: none !important; }
+.dim { color: var(--dim); }
+.spacer { flex: 1; }
+
+.game-bar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border);
+}
+.brand { color: var(--fg); font-weight: 700; text-decoration: none; }
+.game-status { font-size: 13px; color: var(--dim); }
+.game-status.live { color: #2e9d57; }
+.game-count { font-size: 13px; }
+.btn {
+  border: 0; border-radius: 7px; padding: 6px 12px; cursor: pointer;
+  background: var(--field); color: var(--fg); font: inherit; font-size: 14px;
+}
+.btn:hover { filter: brightness(0.96); }
+
+.game-feed { max-width: 960px; margin: 0 auto; padding: 16px 16px 40vh; display: flex; flex-direction: column; gap: 22px; }
+.game-empty { color: var(--dim); text-align: center; margin-top: 18vh; line-height: 1.8; }
+.game-empty code { background: var(--field); padding: 1px 5px; border-radius: 4px; }
+
+.capture { border-bottom: 1px solid var(--border); padding-bottom: 18px; }
+.capture-meta { font-size: 12px; color: var(--dim); margin-bottom: 6px; }
+.capture-meta::before { content: attr(data-meta); }
+.capture-shot { width: 100%; border-radius: 8px; opacity: .55; transition: opacity .2s; display: block; }
+.capture-shot:hover { opacity: 1; }
+.capture-line { font-family: var(--text-font); font-size: 30px; line-height: 1.7; margin: 10px 0 0; }
+
+@media (max-width: 600px) {
+  .capture-line { font-size: 24px; }
+}

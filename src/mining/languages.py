@@ -140,33 +140,73 @@ def _opencc(config: str):
     return _converters[config]
 
 
-def to_traditional(text: str) -> str:
-    converter = _opencc("s2t")
+# Taiwan forms for Mandarin (裡, 台), Hong Kong forms for Cantonese.
+def _traditional_config(language: str) -> str:
+    return "s2hk" if language == "yue" else "s2tw"
+
+
+def to_traditional(text: str, language: str = "zh") -> str:
+    converter = _opencc(_traditional_config(language))
     return converter.convert(text) if converter else text
 
 
-def to_simplified(text: str) -> str:
+def to_simplified(text: str, language: str = "zh") -> str:
     converter = _opencc("t2s")
     return converter.convert(text) if converter else text
 
 
-def chinese_script(text: str) -> str:
-    """'both' when the characters are the same in both scripts, else 'traditional' or 'simplified'."""
-    simp, trad = to_simplified(text), to_traditional(text)
-    if simp == trad == text:
+# (simplified only, traditional only) characters, from OpenCC's character tables. A character that converts
+# to several candidates including itself (了 → 了 瞭, 台 → 臺 檯 颱 台, 里 → 裏 里) is valid in both scripts:
+# a round trip through the converters would wrongly call 了解 or 台灣 simplified.
+_script_tables: tuple[set[str], set[str]] | None = None
+
+
+def _load_script_tables() -> tuple[set[str], set[str]]:
+    global _script_tables
+    if _script_tables is None:
+        tables = []
+        try:
+            import opencc
+            from pathlib import Path
+            folder = Path(opencc.__file__).parent / "dictionary"
+            for name in ("STCharacters.txt", "TSCharacters.txt"):
+                only = set()
+                for line in (folder / name).read_text(encoding="utf-8").splitlines():
+                    char, _, candidates = line.partition("\t")
+                    if len(char) == 1 and char not in candidates.split():
+                        only.add(char)
+                tables.append(only)
+            _script_tables = (tables[0], tables[1])
+        except Exception:  # no character tables: fall back on the converters, character by character
+            _script_tables = (set(), set())
+    return _script_tables
+
+
+def _char_script(char: str) -> str:
+    simplified_only, traditional_only = _load_script_tables()
+    if simplified_only or traditional_only:
+        if char in simplified_only:
+            return "simplified"
+        return "traditional" if char in traditional_only else "both"
+    simp, trad = to_simplified(char), to_traditional(char)
+    if simp == trad == char:
         return "both"
-    if text == trad:
-        return "traditional"
-    if text == simp:
-        return "simplified"
-    return "mixed"
+    return "traditional" if char == trad else "simplified" if char == simp else "both"
 
 
-def chinese_counterpart(text: str) -> tuple[str, str] | None:
+def chinese_script(text: str) -> str:
+    """'both' when the characters are the same in both scripts, else 'traditional', 'simplified' or 'mixed'."""
+    scripts = {_char_script(c) for c in text} - {"both"}
+    if not scripts:
+        return "both"
+    return scripts.pop() if len(scripts) == 1 else "mixed"
+
+
+def chinese_counterpart(text: str, language: str = "zh") -> tuple[str, str] | None:
     """The same word in the other script, e.g. 說 -> ('simplified', '说'); None if identical."""
     script = chinese_script(text)
     if script == "traditional":
-        return "simplified", to_simplified(text)
+        return "simplified", to_simplified(text, language)
     if script == "simplified":
-        return "traditional", to_traditional(text)
+        return "traditional", to_traditional(text, language)
     return None

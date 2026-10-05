@@ -31,6 +31,7 @@ const R = {
   charsBefore: [],          // cumulative chapter sizes
   saveTimer: null,
   token: 0,
+  audio: null,              // {tracks, names} when the book has the audio of a MiningCat conversion
 };
 
 // ---------------------------------------------------------------- API
@@ -91,6 +92,7 @@ function placeholderColor(text) {
 
 async function showLibrary() {
   R.book = null;
+  if (window.MiningCatMining) MiningCatMining.clearColours();
   document.title = "MiningCat Reader";
   $("reading").hidden = true;
   $("library").hidden = false;
@@ -188,6 +190,9 @@ async function openBook(bookId) {
   const data = await api(`/reader/api/books/${bookId}`);
   if (token !== R.token) return;
   R.book = data.book;
+  R.audio = null;
+  renderAudio();
+  api(`/reader/api/books/${bookId}/audio`).then((d) => { if (R.book && R.book.id === bookId) { R.audio = d.audio; renderAudio(); } }).catch(() => {});
   R.prefs = data.prefs || {};
   R.progress = data.progress || {};
   R.chapterCache = new Map();
@@ -277,11 +282,19 @@ async function renderChapter(i) {
   decorate(content);
   R.index = null;
   layout();
+  colourWords();
   await waitForMedia(content);
   layout();
   // prefetch the neighbours
   if (i + 1 < R.book.chapters.length) chapterHtml(i + 1).catch(() => {});
   if (i > 0) chapterHtml(i - 1).catch(() => {});
+}
+
+// Colours the chapter's words by status (new, learning), unless turned off in the settings.
+function colourWords() {
+  if (!window.MiningCatMining) return;
+  if (R.settings.colors === "off" || !R.book) MiningCatMining.clearColours();
+  else MiningCatMining.colourWords($("content"), effectiveLanguage());
 }
 
 // Sizes the column layout to the viewport and counts the pages of the current chapter.
@@ -529,6 +542,7 @@ function syncSettingsForm() {
   $("out-margin").textContent = `${s.margin}px`;
   $("set-furigana").checked = s.furigana;
   $("set-lookup").value = s.lookup || "click";
+  $("set-colors").value = s.colors || "status";
   for (const b of $("set-font").children) b.setAttribute("aria-pressed", String(b.dataset.value === s.font));
   for (const b of $("set-theme").children) b.setAttribute("aria-pressed", String(b.dataset.value === s.theme));
   if (R.book) {
@@ -560,6 +574,9 @@ function wireSettings() {
   }
   $("set-furigana").addEventListener("change", (e) => { R.settings.furigana = e.target.checked; relayout(); saveSettings(); });
   $("set-lookup").addEventListener("change", (e) => { R.settings.lookup = e.target.value; saveSettings(); });
+  $("audio-link").addEventListener("click", linkAudio);
+  $("audio-remove").addEventListener("click", removeAudio);
+  $("set-colors").addEventListener("change", (e) => { R.settings.colors = e.target.value; colourWords(); saveSettings(); });
   for (const [id, key] of [["set-font", "font"], ["set-theme", "theme"]]) {
     for (const b of $(id).children) {
       b.addEventListener("click", () => {
@@ -576,7 +593,43 @@ function wireSettings() {
     await savePrefs({ language: e.target.value });
     decorate($("content"));
     relayout();
+    colourWords();
   });
+}
+
+// ---------------------------------------------------------------- audio
+
+function renderAudio() {
+  const has = Boolean(R.audio);
+  $("audio-status").textContent = has
+    ? `${R.audio.tracks} audio file${R.audio.tracks > 1 ? "s" : ""} linked: click a word, then ▶ Sentence to hear it.`
+    : "No audio. If you converted this book with MiningCat, link the conversion's audio.";
+  $("audio-link").textContent = has ? "Link the last conversion again" : "Link the last conversion's audio";
+  $("audio-remove").hidden = !has;
+}
+
+async function linkAudio() {
+  try {
+    R.audio = (await api(`/reader/api/books/${R.book.id}/audio/link`, {})).audio;
+    renderAudio();
+  } catch (err) { showError(err); }
+}
+
+async function removeAudio() {
+  const ok = await showDialog("Remove audio", "Remove the audio linked to this book? (The conversion's files in output/ are kept.)",
+    [{ label: "Cancel", value: false }, { label: "Remove", value: true, primary: true }]);
+  if (!ok) return;
+  try {
+    await api(`/reader/api/books/${R.book.id}/audio/delete`, {});
+    R.audio = null;
+    renderAudio();
+  } catch (err) { showError(err); }
+}
+
+async function sentenceAudio(sentence, kind) {
+  if (!R.book || !R.audio) return null;
+  const data = await api(`/reader/api/books/${R.book.id}/audio/${kind}`, { sentence, chapter: R.chapter });
+  return data.found ? data : null;
 }
 
 // ---------------------------------------------------------------- input
@@ -713,6 +766,9 @@ async function init() {
       getSource: () => (R.book ? R.book.title : ""),
       getMode: () => R.settings.lookup || "click",
       isVertical: () => R.vertical,
+      hasAudio: () => Boolean(R.audio),
+      sentenceAudio: (text) => sentenceAudio(text, "find"),
+      sentenceClip: (text) => sentenceAudio(text, "clip").then((d) => (d ? { data: d.data, name: d.name } : null)),
     });
   }
   window.addEventListener("popstate", () => { saveNow(); route(); });

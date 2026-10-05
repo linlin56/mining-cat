@@ -128,11 +128,29 @@
         <div class="row">
           <label class="field field-grow">
             <span class="field-label">Tags added to every card</span>
-            <input type="text" id="note-tags" placeholder="miningcat">
+            <input type="text" id="note-tags" placeholder="mining-cat">
+          </label>
+          <label class="field field-grow">
+            <span class="field-label">Voice reading sentences without audio</span>
+            <select id="note-voice"></select>
           </label>
           <button type="button" class="btn btn-primary" id="note-save">Save</button>
         </div>
         <p class="dim saved" id="note-saved"></p>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Sentence translation</h2>
+        <p class="help">New cards get a translation of their sentence, made offline with Argos Translate. The
+          first time a language is translated, its model (about 100 MB) is downloaded.</p>
+        <div class="row">
+          <label class="field">
+            <span class="field-label">Translate sentences to</span>
+            <select id="translation-language"></select>
+          </label>
+          <button type="button" class="btn btn-primary" id="translation-save">Save</button>
+        </div>
+        <p class="dim saved" id="translation-saved"></p>
       </div>
 
       <div class="panel">

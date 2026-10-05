@@ -197,8 +197,11 @@ def start_game_server(
     schedule: Callable,
     log: Callable[[str], None],
     on_exit: Callable[[int], None],
+    open_browser: bool = True,
 ) -> subprocess.Popen:
     cmd_args = [python_exe, str(SRC_DIR / "main.py"), "game", "serve", "--language", lang.name.lower()]
+    if not open_browser:
+        cmd_args += ["--no-browser"]
     if convert_target is not None:
         cmd_args += ["--convert-to", convert_target]
     cmd_args += ["--continuous"] if continuous else ["--hotkey", hotkey]

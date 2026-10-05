@@ -6,10 +6,13 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, render_template, request, send_file
 
-from mining import anki, dictionaries, lookup, words
+from mining import anki, dictionaries, lookup, segment, words
 from mining.languages import CHINESE_LANGUAGES, LANGUAGES, language_key
 
 bp = Blueprint("mining", __name__)
+
+# A long chapter is a few hundred thousand characters at most.
+SEGMENT_MAX_CHARS = 2_000_000
 
 
 class ApiError(Exception):
@@ -106,6 +109,18 @@ def api_word_statuses():
     return jsonify(statuses=words.statuses_for(_language(body.get("language")), [str(e) for e in expressions[:20000]]))
 
 
+# Splits a text (a reader chapter) into dictionary words, with their status, to colour them.
+@bp.post("/api/words/segment")
+def api_segment():
+    body = _body()
+    text = body.get("text")
+    if not isinstance(text, str):
+        raise ApiError("Expected a text.")
+    if len(text) > SEGMENT_MAX_CHARS:
+        raise ApiError(f"Texts are limited to {SEGMENT_MAX_CHARS} characters.")
+    return jsonify(segment.colour(_language(body.get("language")), text))
+
+
 # ---------------------------------------------------------------- dictionaries
 
 @bp.post("/api/dict/lookup")
@@ -113,6 +128,61 @@ def api_lookup():
     body = _body()
     text = str(body.get("text") or "")[:200]
     return jsonify(lookup.lookup(_language(body.get("language")), text))
+
+
+# Online recordings of a word (JapanesePod101, Wiktionary, Lingua Libre), fetched when the user asks for them.
+@bp.get("/api/dict/audio")
+def api_word_audio():
+    from mining import word_audio
+
+    expression = str(request.args.get("expression") or "").strip()[:100]
+    if not expression:
+        raise ApiError("Missing word.")
+    language = _language(request.args.get("language"))
+    return jsonify(sources=word_audio.sources(language, expression, str(request.args.get("reading") or "")[:100]))
+
+
+# Edge-TTS voices for a card's sentence audio, when the sentence has none.
+@bp.get("/api/tts/voices")
+def api_tts_voices():
+    from mining import sentence_tts
+
+    language = _language(request.args.get("language"))
+    return jsonify(**sentence_tts.voices(language), chosen=sentence_tts.default_voice(language))
+
+
+@bp.post("/api/tts")
+def api_tts():
+    import base64
+
+    from mining import sentence_tts
+
+    body = _body()
+    try:
+        audio = sentence_tts.synthesize(_language(body.get("language")), str(body.get("text") or ""), str(body.get("voice") or ""))
+    except sentence_tts.TtsError as exc:
+        raise ApiError(str(exc), title="Text-to-speech")
+    return jsonify(data="data:audio/mpeg;base64," + base64.b64encode(audio).decode("ascii"), name="sentence.mp3")
+
+
+# Offline translation of a card's sentence (Argos Translate), to the language chosen in the settings.
+@bp.get("/api/translate/languages")
+def api_translate_languages():
+    from mining import translate
+
+    return jsonify(languages=translate.targets(), chosen=translate.target_language())
+
+
+@bp.post("/api/translate")
+def api_translate():
+    from mining import translate
+
+    body = _body()
+    try:
+        translation = translate.translate(_language(body.get("language")), str(body.get("text") or ""))
+    except translate.TranslateError as exc:
+        raise ApiError(str(exc), title="Translation")
+    return jsonify(translation=translation, target=translate.target_language())
 
 
 @bp.get("/api/dict")

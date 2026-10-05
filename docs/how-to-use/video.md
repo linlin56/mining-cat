@@ -62,3 +62,4 @@ See the [CLI reference](cli.md#video) for all options (OCR, audio track, convers
 - **Instagram downloads start failing**: try another app id with `--app-id ios` (or a numeric id) in the CLI.
 - **YouTube captions are missing**: YouTube sometimes rate-limits caption downloads. MiningCat then continues without them and you still get the Whisper track. Try again later if you need the source captions.
 - **Wrong language in the transcript**: check the **Language** setting and, for local files with several dubs, the **Audio track**.
+- **"No subtitles read"** (OCR): nothing in the selected region was read as text in the selected language. Draw the subtitle region again (a bit larger), and check the **Language**. With no subtitles at all to add, the run stops with an error instead of making a video without subtitles.

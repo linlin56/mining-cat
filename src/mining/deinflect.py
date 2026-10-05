@@ -45,7 +45,10 @@ class Deinflection:
 
 
 class LanguageTransformer:
-    def __init__(self, descriptor: dict):
+    # `preprocess` / `postprocess`: what Yomitan's text processors do around the rules (Korean rules work on jamo).
+    def __init__(self, descriptor: dict, preprocess=None, postprocess=None):
+        self._preprocess = preprocess
+        self._postprocess = postprocess
         self._condition_flags = self._build_condition_flags(descriptor["conditions"])
         self._pos_flags = {
             name: flags for name, flags in self._condition_flags.items()
@@ -120,6 +123,12 @@ class LanguageTransformer:
         yield from self._other
 
     def transform(self, text: str) -> list[Deinflection]:
+        if self._preprocess is None:
+            return self._transform(text)
+        results = self._transform(self._preprocess(text))
+        return [Deinflection(self._postprocess(d.text), d.conditions, d.trace) for d in results]
+
+    def _transform(self, text: str) -> list[Deinflection]:
         results = [Deinflection(text, 0, ())]
         seen = {(text, 0)}
         i = 0
@@ -161,4 +170,8 @@ def transformer_for(language: str) -> LanguageTransformer | None:
     path = TRANSFORMS_DIR / f"{language}.json"
     if not path.exists():
         return None
-    return LanguageTransformer(json.loads(path.read_text(encoding="utf-8")))
+    descriptor = json.loads(path.read_text(encoding="utf-8"))
+    if language == "ko":
+        from mining.hangul import assemble, disassemble
+        return LanguageTransformer(descriptor, disassemble, assemble)
+    return LanguageTransformer(descriptor)

@@ -1,8 +1,8 @@
 # Video games & screen share
 
-Select **Video game / Screen share** in the **Source** dropdown to mine sentences from anything displayed in a window: a video game, a visual novel, a video call, a website...
+Select **Video game / Screen share** as the **Source** at the top of the GUI to mine sentences from anything displayed in a window: a video game, a visual novel, a video call, a website...
 
-MiningCat watches a window, reads its text with OCR, and pushes the **screenshot + text** to a local web page. Open that page next to your game, and mine the sentences from your browser with Migaku, Yomitan or any other browser extension.
+MiningCat watches a window, reads its text with OCR, and pushes the **screenshot + text** to a web page. Open that page next to your game, click a word to look it up in your [dictionaries](mining.md), and make an Anki card: the screenshot goes on the card. Migaku, Yomitan or any other browser extension work on the page too.
 
 Nothing is recorded in `output/`: everything lives in the page, while the capture runs.
 
@@ -50,14 +50,16 @@ The [capture key](#capture-key-or-continuous-capture) also needs the **Input Mon
 1. Pick the **Language** of the game (and **Convert to**, for Chinese).
 2. Click **Select window…** and pick the game window:
     - **Linux**: GNOME's sharing dialog opens, pick the window there.
-    - **macOS**: MiningCat lists the open windows. The game must be open and not minimized.
+    - **macOS**: MiningCat lists the open windows in a dialog (**Refresh** if the game isn't there yet). The game must be open and not minimized.
 3. Click **Select window's full size (for screenshot)…** and draw a box around the part of the window you want to see in the page. It's pre-selected on the whole capture.
     - On **Linux**, the portal captures a screen-sized image with the window pasted on a black background: draw the box around the window's edges.
     - On **macOS**, the capture already is the window: keep it as is, or leave out the title bar or black borders.
 4. Click **Select text area (for OCR)…** and draw a box around the game's dialog box, where the text appears. It's pre-selected on the whole screenshot area, and **Reset to bottom third** is a good start for most games. Only this part is read by OCR, which makes it faster and avoids reading menus or the HUD.
 5. Pick the **Capture key** (`F9` by default), or check **Continuous capture** (see [below](#capture-key-or-continuous-capture)).
-6. Click **Start**. The page opens in your browser (or click **Open page**).
+6. Click **Start**. The page opens in a new tab of your browser (or click **Open page**).
 7. Play, and press the capture key on each line you want to mine! Click **Stop** when you're done.
+
+While the capture runs, the selection is locked and its log shows in the GUI's **Log** panel. Stopping MiningCat (`Ctrl+C` in its terminal) also stops the capture.
 
 The window, the areas and the capture mode are remembered for next time, in `sources/game_ocr.json`. Selecting a new window resets the areas, and selecting a new screenshot area resets the text area (it's relative to the screenshot area).
 
@@ -88,11 +90,15 @@ curl -X POST http://127.0.0.1:6677/capture
 
 Each capture shows the time, the time it took, the screenshot (dimmed until you hover it) and the text in a large font, ready to be mined.
 
-- **copy image**: copies the screenshot to the clipboard, to paste it in your flashcard.
-- **Camera button**: capture now.
-- **Bin button**: clear the history, in every open tab.
+With **Start** in the GUI, the page is MiningCat's own (<http://127.0.0.1:5050/game/>):
 
-The page keeps the history while the capture runs: reloading it, or opening it in another tab, replays the last 20 captures.
+- the words are [coloured by status](mining.md#word-colours), and a click on a word opens the dictionary popup;
+- **+ Card** opens the card creator with the capture's screenshot as the card's image;
+- **Capture**: capture now. **Clear**: clear the history, in every open tab.
+
+From the terminal (`game serve`), the capture has its own simpler page at <http://127.0.0.1:6677/>, without the dictionary: mine it with a browser extension, or with **copy image** (copies the screenshot to the clipboard, to paste it in your flashcard).
+
+Both pages keep the history while the capture runs: reloading, or opening another tab, replays the last 20 captures.
 
 ## OCR
 

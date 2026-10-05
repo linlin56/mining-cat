@@ -1,5 +1,8 @@
 import io
+import base64
 import json
+import sys
+import types
 import zipfile
 
 import pytest
@@ -17,14 +20,16 @@ HEADERS = {"X-MiningCat": "1"}
 # A tiny two-script table so that the tests don't depend on OpenCC.
 T2S = dict(zip("說話們國時", "说话们国时"))
 S2T = {v: k for k, v in T2S.items()}
+REAL_CONVERTERS = {"to_simplified": languages.to_simplified, "to_traditional": languages.to_traditional}
 
 
 @pytest.fixture(autouse=True)
 def database(tmp_path, monkeypatch):
     monkeypatch.setattr(db, "DB_PATH", tmp_path / "library" / "miningcat.db")
     db.reset_cache()
-    monkeypatch.setattr(languages, "to_simplified", lambda t: "".join(T2S.get(c, c) for c in t))
-    monkeypatch.setattr(languages, "to_traditional", lambda t: "".join(S2T.get(c, c) for c in t))
+    monkeypatch.setattr(languages, "to_simplified", lambda t, language="zh": "".join(T2S.get(c, c) for c in t))
+    monkeypatch.setattr(languages, "to_traditional", lambda t, language="zh": "".join(S2T.get(c, c) for c in t))
+    monkeypatch.setattr(languages, "_script_tables", (set(S2T), set(T2S)))
     monkeypatch.setattr(words, "to_simplified", languages.to_simplified)
     monkeypatch.setattr(words, "to_traditional", languages.to_traditional)
     yield
@@ -99,9 +104,44 @@ def test_text_variants():
 def test_chinese_scripts():
     assert languages.chinese_script("說話") == "traditional"
     assert languages.chinese_script("说话") == "simplified"
+    assert languages.chinese_script("說话") == "mixed"
     assert languages.chinese_script("天氣") in ("both", "traditional")
     assert languages.chinese_counterpart("說話") == ("simplified", "说话")
     assert languages.chinese_counterpart("我") is None
+
+
+# With the real OpenCC tables: characters valid in both scripts don't make a word simplified.
+def test_chinese_scripts_with_opencc(monkeypatch):
+    pytest.importorskip("opencc")
+    for name, function in REAL_CONVERTERS.items():
+        monkeypatch.setattr(languages, name, function)
+    monkeypatch.setattr(languages, "_script_tables", None)
+    monkeypatch.setattr(languages, "_converters", {})
+    if not any(languages._load_script_tables()):
+        pytest.skip("OpenCC character tables not available")
+    assert languages.chinese_script("了解") == "both"
+    assert languages.chinese_script("里面") == "both"
+    assert languages.chinese_script("台灣") == "traditional"
+    assert languages.chinese_script("说话") == "simplified"
+    assert languages.chinese_counterpart("里边") == ("traditional", "裡邊")
+    assert languages.chinese_counterpart("说话", "yue") == ("traditional", "説話")
+
+
+def test_script_detection_without_tables(monkeypatch):
+    monkeypatch.setattr(languages, "_script_tables", (set(), set()))
+    assert languages.chinese_script("說話") == "traditional"
+    assert languages.chinese_script("说话") == "simplified"
+    assert languages.chinese_script("我") == "both"
+
+
+def test_words_in_both_scripts_keep_their_form():
+    words.set_chinese_script_preference("zh", "traditional")
+    assert words.preferred_form("zh", "说话") == "說話"
+    assert words.preferred_form("zh", "我們") == "我們"
+    assert words.preferred_form("zh", "天氣") == "天氣"
+    words.set_chinese_script_preference("zh", "simplified")
+    assert words.preferred_form("zh", "說話") == "说话"
+    assert words.preferred_form("zh", "天") == "天"
 
 
 # ---------------------------------------------------------------- deinflection
@@ -272,10 +312,22 @@ def setup_chinese_notes():
 
 def test_guess_field_templates():
     assert anki.guess_field_templates(["Hanzi", "Zhuyin", "Meaning", "Sentence", "Picture", "Sentence Audio"]) == {
-        "Hanzi": "{word}", "Zhuyin": "{reading}", "Meaning": "{definition}", "Sentence": "{sentence}",
+        "Hanzi": "{word}", "Zhuyin": "{zhuyin}", "Meaning": "{definition}", "Sentence": "{sentence}",
         "Picture": "{image}", "Sentence Audio": "{sentence_audio}"}
     assert anki.guess_field_templates(["Front", "Back"]) == {"Front": "{word}", "Back": "{definition}"}
     assert anki.guess_field_templates(["A", "B"]) == {"A": "{word}", "B": "{definition}"}
+    assert anki.guess_field_templates(["Word", "Translation"]) == {"Word": "{word}", "Translation": "{definition}"}
+
+
+# Migaku's note types: "Translation" is the sentence's, the definition goes to "Definitions".
+def test_guess_field_templates_for_migaku():
+    fields = ["Sentence", "Translation", "Target Word", "Definitions", "Screenshot", "Sentence Audio",
+              "Word Audio", "Images", "Example Sentences", "Zhuyin", "Is Vocabulary Card"]
+    assert anki.guess_field_templates(fields) == {
+        "Sentence": "{sentence}", "Translation": "{sentence_translation}", "Target Word": "{word}",
+        "Definitions": "{definition}", "Screenshot": "{image}", "Sentence Audio": "{sentence_audio}",
+        "Word Audio": "{audio}", "Images": "", "Example Sentences": "", "Zhuyin": "{zhuyin}",
+        "Is Vocabulary Card": ""}
 
 
 def test_status_reports_decks(fake_anki):
@@ -297,6 +349,15 @@ def test_card_is_sent_with_media(fake_anki):
     filename = card["media"]["image"]["filename"]
     assert filename in fake_anki.media
     assert words.status_of("zh", "公園", "gōngyuán")["status"] == "learning"
+
+
+# Word audio from Wiktionary is a link: Anki downloads it itself (storeMediaFile's "url" param).
+def test_card_is_sent_with_linked_audio(fake_anki):
+    setup_chinese_notes()
+    audio_url = "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/Zh-zh%C5%8Dngy%C4%81ng.oga/Zh-zh%C5%8Dngy%C4%81ng.oga.mp3"
+    card = anki.create_card("zh", {"word": "中央", "definition": "center"}, {"audio": {"url": audio_url}})
+    assert card["status"] == "sent", card["error"]
+    assert fake_anki.media[card["media"]["audio"]["filename"]] == {"url": audio_url}
 
 
 def test_duplicate_is_refused(fake_anki):
@@ -422,3 +483,397 @@ def test_http_dictionary_import(client, tmp_path):
         time.sleep(0.05)
     assert job["error"] is None
     assert client.get("/api/dict").get_json()["dictionaries"][0]["title"] == "Upload"
+
+
+# ---------------------------------------------------------------- word colours (segmentation)
+
+from mining import segment
+
+
+@pytest.fixture(autouse=True)
+def _fresh_segmentation():
+    segment.clear_cache()
+    yield
+    segment.clear_cache()
+
+
+def words_of(language, text):
+    return [(text[start:start + length], headword) for start, length, headword in segment.segment(language, text)]
+
+
+def test_chinese_longest_words(zh_dict):
+    assert words_of("zh", "我們說話，他說。") == [("我們", "我們"), ("說話", "說話"), ("他", None), ("說", "說")]
+
+
+def test_no_word_spans_two_paragraphs(zh_dict):
+    assert words_of("zh", "我\n們") == [("我", None), ("們", None)]
+
+
+def test_japanese_deinflection_and_rare_words(tmp_path):
+    terms = [
+        ["食べる", "たべる", "v1", "v1", 100, ["to eat"], 1, ""],
+        ["名前", "なまえ", "n", "", 100, ["name"], 2, ""],
+        ["は", "は", "prt", "", 100, ["topic"], 3, ""],
+        ["未だ", "まだ", "1 adv uk", "", 100, ["yet"], 4, ""],
+        ["浜", "はま", "1 n", "", 100, ["beach"], 5, ""],
+        ["浜", "はま", "2 n uk", "", 100, ["beach (kana)"], 5, ""],
+        ["はま", "はま", "n", "", -500, ["rare word"], 6, ""],
+        ["ハマ", "ハマ", "n", "", 100, ["Hama"], 7, ""],
+        ["無い", "ない", "adj-i", "adj-i", 100, ["nonexistent"], 8, ""],
+        ["だ", "だ", "cop", "", 100, ["copula"], 9, ""],
+    ]
+    dictionaries.import_dictionary(make_dictionary(tmp_path / "ja.zip", "JMdict", terms))
+    # まだ (usually kana) beats the rare はま, and hiragana は+ま isn't the katakana word ハマ
+    assert words_of("ja", "名前はまだ無い") == [("名前", "名前"), ("は", "は"), ("まだ", "未だ"), ("無い", "無い")]
+    assert words_of("ja", "食べていた")[0] == ("食べていた", "食べる")
+
+
+def test_words_with_spaces_and_expressions(tmp_path):
+    terms = [
+        ["manger", "", "v", "v", 0, ["to eat"], 1, ""],
+        ["pomme de terre", "", "n", "", 0, ["potato"], 2, ""],
+        ["pomme", "", "n", "", 0, ["apple"], 3, ""],
+    ]
+    dictionaries.import_dictionary(make_dictionary(tmp_path / "fr.zip", "Wiktionnaire", terms), language="fr")
+    assert words_of("fr", "Nous mangeons une pomme de terre. Pomme\nde terre") == [
+        ("Nous", None), ("mangeons", "manger"), ("une", None), ("pomme de terre", "pomme de terre"),
+        ("Pomme", "pomme"), ("de", None), ("terre", None)]
+
+
+def test_segmentation_follows_dictionary_changes(tmp_path, zh_dict):
+    assert words_of("zh", "說話") == [("說話", "說話")]
+    dictionaries.update_dictionary(zh_dict["id"], enabled=False)
+    assert words_of("zh", "說話") == []
+
+
+def test_colours_use_the_saved_form(zh_dict):
+    words.set_chinese_script_preference("zh", "traditional")
+    words.set_status("zh", "說話", "", "learning")
+    result = segment.colour("zh", "说话，说话")
+    assert result["words"] == [{"headword": "说话", "form": "說話", "status": "learning"}]
+    assert result["tokens"] == [[0, 2, 0], [3, 2, 0]]
+
+
+def test_http_segment(client, zh_dict):
+    words.set_status("zh", "我們", "", "known")
+    res = client.post("/api/words/segment", json={"language": "zh-Hant", "text": "我們說話"}, headers=HEADERS).get_json()
+    assert res["language"] == "zh"
+    assert [w["status"] for w in res["words"]] == ["known", "new"]
+    assert client.post("/api/words/segment", json={"language": "zh", "text": 3}, headers=HEADERS).status_code == 400
+    assert client.post("/api/words/segment", json={"language": "zh", "text": "x" * (2_000_001)}, headers=HEADERS).status_code == 400
+
+
+# ---------------------------------------------------------------- zhuyin
+
+from mining.zhuyin import pinyin_to_zhuyin
+
+
+@pytest.mark.parametrize("word, pinyin, zhuyin", [
+    ("中國", "zhōngguó", "ㄓㄨㄥ ㄍㄨㄛˊ"),
+    ("西安", "xī'ān", "ㄒㄧ ㄢ"),
+    ("先", "xiān", "ㄒㄧㄢ"),
+    ("綠", "lǜ", "ㄌㄩˋ"),
+    ("旅遊", "lǚyóu", "ㄌㄩˇ ㄧㄡˊ"),
+    ("學", "xué", "ㄒㄩㄝˊ"),
+    ("我們", "wǒmen", "ㄨㄛˇ ˙ㄇㄣ"),
+    ("知道", "zhīdào", "ㄓ ㄉㄠˋ"),
+    ("女兒", "nǚ'ér", "ㄋㄩˇ ㄦˊ"),
+    ("一會兒", "yīhuìr", "ㄧ ㄏㄨㄟˋㄦ"),
+    ("一下兒", "yīxiàr5", "ㄧ ㄒㄧㄚˋㄦ"),
+    ("說話", "shuo1 hua4", "ㄕㄨㄛ ㄏㄨㄚˋ"),
+    ("綠", "lu:4", "ㄌㄩˋ"),
+    ("說話", "ㄕㄨㄛ ㄏㄨㄚˋ", "ㄕㄨㄛ ㄏㄨㄚˋ"),
+    ("", "Zhōngguó", "ㄓㄨㄥ ㄍㄨㄛˊ"),
+])
+def test_pinyin_to_zhuyin(word, pinyin, zhuyin):
+    assert pinyin_to_zhuyin(pinyin, word) == zhuyin
+
+
+@pytest.mark.parametrize("pinyin", ["", "hello world!", "xx5", "qqq"])
+def test_not_pinyin(pinyin):
+    assert pinyin_to_zhuyin(pinyin, "字") == ""
+
+
+def test_zhuyin_field_of_a_card():
+    setup = {"fields": {"Hanzi": "{word}", "Zhuyin": "{zhuyin}"}}
+    fields = {"word": "說話", "reading": "shuōhuà"}
+    assert anki.note_fields(setup, fields, {}, "zh") == {"Hanzi": "說話", "Zhuyin": "ㄕㄨㄛ ㄏㄨㄚˋ"}
+    assert anki.note_fields(setup, fields, {}, "ja")["Zhuyin"] == ""
+
+
+# ---------------------------------------------------------------- Korean
+
+from mining import hangul
+
+
+@pytest.mark.parametrize("text, jamo", [
+    ("한글", "ㅎㅏㄴㄱㅡㄹ"), ("와", "ㅇㅗㅏ"), ("값", "ㄱㅏㅂㅅ"), ("먹었다", "ㅁㅓㄱㅇㅓㅆㄷㅏ"), ("ㄳ ㅘ a", "ㄱㅅ ㅗㅏ a"),
+])
+def test_hangul_round_trip(text, jamo):
+    assert hangul.disassemble(text) == jamo
+    assert hangul.assemble(jamo) == text
+
+
+def test_hangul_assembles_partial_jamo():
+    assert hangul.assemble("ㅁㅓㄱㄷㅏ") == "먹다"
+    assert hangul.assemble("ㄱㅏㅂㅅㅇㅣ") == "값이"
+    assert hangul.assemble("ㅗㅏ") == "ㅘ"
+    assert hangul.assemble("ㄹㄱ") == "ㄺ"
+
+
+def test_korean_deinflection():
+    transformer = transformer_for("ko")
+    for inflected, base in (("먹었다", "먹다"), ("갔어요", "가다"), ("예뻤다", "예쁘다"), ("공부했습니다", "공부하다")):
+        assert base in {d.text for d in transformer.transform(inflected)}
+
+
+@pytest.fixture
+def ko_dict(tmp_path):
+    terms = [
+        ["친구", "", "n", "n", 0, ["friend"], 1, ""],
+        ["밥", "", "n", "n", 0, ["rice"], 2, ""],
+        ["밥다", "", "v dialect", "v", 0, ["(dialect) a verb"], 3, ""],
+        ["먹다", "", "v", "v", 0, ["to eat"], 4, ""],
+        ["와", "", "intj", "intj", 0, ["wow"], 5, ""],
+    ]
+    return dictionaries.import_dictionary(make_dictionary(tmp_path / "ko.zip", "Korean", terms), language="ko")
+
+
+def test_korean_segmentation_splits_particles(ko_dict):
+    assert words_of("ko", "친구와 밥을 먹었어요") == [("친구", "친구"), ("밥", "밥"), ("먹었어요", "먹다")]
+
+
+def test_korean_lookup_finds_the_word_before_its_particle(ko_dict):
+    entries = lookup.lookup("ko", "친구와 같이")["entries"]
+    assert entries[0]["expression"] == "친구"
+    entries = lookup.lookup("ko", "먹었어요")["entries"]
+    assert entries[0]["expression"] == "먹다" and entries[0]["inflections"]
+
+
+# ---------------------------------------------------------------- character dictionaries
+
+def make_kanji_dictionary(path, title, rows, meta=None):
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("index.json", json.dumps({"title": title, "revision": "1", "format": 3}))
+        z.writestr("kanji_bank_1.json", json.dumps(rows, ensure_ascii=False))
+        if meta:
+            z.writestr("kanji_meta_bank_1.json", json.dumps(meta, ensure_ascii=False))
+    return path
+
+
+def test_kanji_dictionary_import_and_lookup(tmp_path, ja_dict):
+    path = make_kanji_dictionary(tmp_path / "kanji.zip", "KANJIDIC", [
+        ["食", "ショク ジキ", "く.う た.べる", "jouyou", ["eat", "food"], {"strokes": "9", "grade": "2", "skip": "2-2-7"}],
+        ["食べ物", "", "", "", ["a whole word: skipped"], {}],
+    ], meta=[["食", "freq", 328]])
+    info = dictionaries.import_dictionary(path)
+    assert info["language"] == "ja" and info["kanji_count"] == 1 and info["term_count"] == 0
+    entry = lookup.lookup("ja", "食べる")["entries"][0]
+    assert entry["characters"] == [{"character": "食", "entries": [{
+        "dictionary": "KANJIDIC", "onyomi": ["ショク", "ジキ"], "kunyomi": ["く.う", "た.べる"], "meanings": ["eat", "food"],
+        "stats": {"strokes": "9", "grade": "2"}, "frequencies": ["KANJIDIC 328"]}]}]
+    dictionaries.delete_dictionary(info["id"])
+    assert lookup.lookup("ja", "食べる")["entries"][0]["characters"] == []
+
+
+def test_hanzi_dictionary_language_from_pinyin(tmp_path):
+    path = make_kanji_dictionary(tmp_path / "hanzi.zip", "Hanzi", [["說", "shuō", "", "", ["to speak"], {}], ["話", "huà", "", "", ["speech"], {}]])
+    assert dictionaries.inspect(path)["language"] == "zh"
+
+
+def test_empty_dictionary_is_refused(tmp_path):
+    path = tmp_path / "empty.zip"
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("index.json", json.dumps({"title": "Empty", "revision": "1", "format": 3, "sourceLanguage": "ja"}))
+    with pytest.raises(dictionaries.DictionaryError, match="no terms"):
+        dictionaries.import_dictionary(path)
+
+
+def test_old_databases_get_new_columns(tmp_path, monkeypatch):
+    import sqlite3
+    path = tmp_path / "old.db"
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE dictionaries (id INTEGER PRIMARY KEY, title TEXT NOT NULL, revision TEXT, language TEXT NOT NULL,"
+                 " target_language TEXT, author TEXT, url TEXT, description TEXT, attribution TEXT, enabled INTEGER NOT NULL DEFAULT 1,"
+                 " priority INTEGER NOT NULL DEFAULT 0, term_count INTEGER NOT NULL DEFAULT 0, meta_count INTEGER NOT NULL DEFAULT 0,"
+                 " imported REAL NOT NULL)")
+    conn.commit()
+    conn.close()
+    with db.session(path) as conn:
+        assert "kanji_count" in {row[1] for row in conn.execute("PRAGMA table_info(dictionaries)")}
+
+
+# ---------------------------------------------------------------- pronunciations and word audio
+
+def test_pitch_and_ipa_in_lookups(tmp_path, ja_dict):
+    path = tmp_path / "pitch.zip"
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("index.json", json.dumps({"title": "Pitch", "revision": "1", "format": 3, "sourceLanguage": "ja"}))
+        z.writestr("term_meta_bank_1.json", json.dumps([
+            ["食べる", "pitch", {"reading": "たべる", "pitches": [{"position": 2}, {"position": "LHL"}]}],
+            ["食べる", "pitch", {"reading": "くべる", "pitches": [{"position": 0}]}],
+            ["食べる", "ipa", {"reading": "たべる", "transcriptions": [{"ipa": "[ta̠bɛ̝ɾɯ̟ᵝ]"}]}],
+        ], ensure_ascii=False))
+    dictionaries.import_dictionary(path)
+    entry = lookup.lookup("ja", "食べる")["entries"][0]
+    assert entry["pronunciations"] == [
+        {"dictionary": "Pitch", "reading": "たべる", "pitches": [2, "LHL"]},
+        {"dictionary": "Pitch", "reading": "たべる", "ipa": ["[ta̠bɛ̝ɾɯ̟ᵝ]"]},
+    ]
+
+
+import urllib.parse
+
+from mining import word_audio
+
+
+@pytest.fixture
+def fake_web(monkeypatch):
+    """Answers word_audio's requests from a table: {url prefix: bytes or dict}."""
+    word_audio._cache.clear()
+    answers = {}
+
+    def get(url, params=None):
+        full = f"{url}?{urllib.parse.urlencode(params)}" if params else url
+        for prefix, answer in answers.items():
+            if prefix in full:
+                if isinstance(answer, Exception):
+                    raise answer
+                return answer if isinstance(answer, bytes) else json.dumps(answer).encode()
+        return json.dumps({}).encode()
+
+    monkeypatch.setattr(word_audio, "_get", get)
+    yield answers
+    word_audio._cache.clear()
+
+
+def test_japanesepod101_skips_its_missing_clip(fake_web):
+    import hashlib
+    fake_web["languagepod101"] = b"real audio"
+    assert word_audio.sources("ja", "食べる", "たべる")[0]["name"] == "JapanesePod101"
+    word_audio._cache.clear()
+    missing = b"missing clip"
+    word_audio.JPOD_MISSING_SHA256, saved = hashlib.sha256(missing).hexdigest(), word_audio.JPOD_MISSING_SHA256
+    try:
+        fake_web["languagepod101"] = missing
+        assert word_audio.sources("ja", "食べる", "たべる") == []
+    finally:
+        word_audio.JPOD_MISSING_SHA256 = saved
+
+
+def test_wiktionary_and_lingua_libre(fake_web):
+    fake_web["prop=images"] = {"query": {"pages": {"1": {"images": [
+        {"title": "File:Fr-manger.ogg"}, {"title": "File:en-uk-manger.ogg"}, {"title": "File:Manger.jpg"}]}}}}
+    fake_web["list=search"] = {"query": {"search": [
+        {"title": "File:LL-Q150 (fra)-Pamputt-manger.wav"}, {"title": "File:LL-Q150 (fra)-Pamputt-manger des pommes.wav"},
+        {"title": "File:LL-Q1860 (eng)-X-manger.wav"}]}}
+    fake_web["prop=imageinfo"] = {"query": {"pages": {
+        "1": {"title": "File:Fr-manger.ogg", "imageinfo": [{"url": "https://upload.wikimedia.org/wikipedia/commons/9/90/Fr-manger.ogg"}]},
+        "2": {"title": "File:LL-Q150 (fra)-Pamputt-manger.wav",
+              "imageinfo": [{"url": "https://upload.wikimedia.org/wikipedia/commons/1/19/LL-Q150_%28fra%29-Pamputt-manger.wav?utm=x"}]}}}}
+    assert word_audio.sources("fr", "manger") == [
+        {"name": "Wiktionary", "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/9/90/Fr-manger.ogg/Fr-manger.ogg.mp3"},
+        {"name": "Lingua Libre (Pamputt)",
+         "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/19/LL-Q150_%28fra%29-Pamputt-manger.wav/LL-Q150_%28fra%29-Pamputt-manger.wav.mp3"},
+    ]
+
+
+def test_mandarin_audio_excludes_other_chinese_languages():
+    assert word_audio._language_file("File:Zh-xièxie.ogg", "zh")
+    assert not word_audio._language_file("File:Zh-wuu-謝謝.opus", "zh")
+    assert word_audio._language_file("File:Zh-yue-你好.opus", "yue")
+
+
+def test_offline_audio_is_retried(fake_web):
+    import urllib.error
+    fake_web["wiktionary"] = urllib.error.URLError("offline")
+    fake_web["commons"] = urllib.error.URLError("offline")
+    assert word_audio.sources("ko", "먹다") == []
+    assert ("ko", "먹다", "") not in word_audio._cache
+
+
+def test_http_word_audio(client, monkeypatch):
+    monkeypatch.setattr(word_audio, "sources", lambda language, expression, reading: [{"name": "X", "url": f"https://x/{expression}"}])
+    assert client.get("/api/dict/audio?language=fr&expression=manger").get_json() == {"sources": [{"name": "X", "url": "https://x/manger"}]}
+    assert client.get("/api/dict/audio?language=fr").status_code == 400
+
+
+def test_tts_voices_by_language():
+    from mining import sentence_tts
+    zh = sentence_tts.voices("zh")
+    assert zh["default"] == "zh-TW-HsiaoChenNeural" and "zh-CN-XiaoxiaoNeural" in [v["id"] for v in zh["voices"]]
+    assert [v["id"] for v in sentence_tts.voices("yue")["voices"]][0].startswith("zh-HK-")
+    assert sentence_tts.voices("ru") == {"voices": [], "default": ""}
+
+
+def test_http_sentence_tts(client, monkeypatch):
+    from mining import sentence_tts
+
+    async def fake_stream(text, voice):
+        return f"{voice}:{text}".encode()
+    monkeypatch.setattr(sentence_tts, "_stream", fake_stream)
+    assert client.get("/api/tts/voices?language=ja").get_json()["default"] == "ja-JP-NanamiNeural"
+    res = client.post("/api/tts", json={"language": "zh", "text": " 位處大陸\n中央 ", "voice": "zh-TW-YunJheNeural"}, headers=HEADERS)
+    assert res.status_code == 200
+    assert base64.b64decode(res.get_json()["data"].split(",", 1)[1]) == "zh-TW-YunJheNeural:位處大陸 中央".encode()
+    assert client.post("/api/tts", json={"language": "zh", "text": "x", "voice": "ja-JP-NanamiNeural"}, headers=HEADERS).status_code == 400
+    assert client.post("/api/tts", json={"language": "zh", "text": "  ", "voice": "zh-TW-YunJheNeural"}, headers=HEADERS).status_code == 400
+
+
+def test_default_tag_is_mining_cat():
+    anki.save_config({"notes": {"zh": {"deck": "D", "model": "M", "fields": {}}}})
+    assert anki.get_config()["notes"]["zh"]["tags"] == "mining-cat"
+    # cards set up with the old default tag get the new one
+    config = anki.get_config()
+    config["notes"]["zh"]["tags"] = "miningcat"
+    db.set_setting("anki", config)
+    assert anki.get_config()["notes"]["zh"]["tags"] == "mining-cat"
+
+
+def test_sentence_voice_from_settings(client):
+    from mining import sentence_tts
+    assert sentence_tts.default_voice("zh") == "zh-TW-HsiaoChenNeural"
+    anki.save_config({"tts_voices": {"zh": "zh-CN-YunxiNeural", "ja": ""}})
+    assert sentence_tts.default_voice("zh") == "zh-CN-YunxiNeural"
+    assert sentence_tts.default_voice("ja") == ""  # no automatic reading
+    anki.save_config({"tts_voices": {"zh": "fr-FR-HenriNeural"}})  # not a Mandarin voice
+    assert sentence_tts.default_voice("zh") == "zh-TW-HsiaoChenNeural"
+    assert client.get("/api/tts/voices?language=ja").get_json()["chosen"] == ""
+
+
+@pytest.fixture
+def fake_argos(monkeypatch):
+    from mining import translate
+    installed, downloads = {("zh", "en")}, []
+    monkeypatch.setattr(translate, "_index", [{"from_code": a, "to_code": b, "code": f"translate-{a}_{b}", "links": [f"https://x/{a}_{b}"]}
+                                              for a, b in [("zh", "en"), ("zt", "en"), ("en", "fr"), ("ja", "en")]])
+    monkeypatch.setattr(translate, "_installed", lambda: set(installed))
+    monkeypatch.setattr(translate, "_install", lambda a, b: (downloads.append((a, b)), installed.add((a, b))))
+    fake = types.ModuleType("argostranslate.translate")
+    fake.translate = lambda text, source, target: f"[{source}>{target}] {text}"
+    monkeypatch.setitem(sys.modules, "argostranslate", types.SimpleNamespace(translate=fake))
+    monkeypatch.setitem(sys.modules, "argostranslate.translate", fake)
+    return downloads
+
+
+def test_sentence_translation(fake_argos):
+    from mining import translate
+    assert translate.translate("zh", " 我们去\n公园 ") == "[zh>en] 我们去 公园"
+    assert translate.translate("zh", "我們去公園") == "[zt>en] 我們去公園"  # traditional characters
+    assert fake_argos == [("zt", "en")]
+    anki.save_config({"translation_language": "fr"})
+    assert translate.translate("ja", "公園") == "[ja>fr] 公園"
+    assert fake_argos[1:] == [("ja", "en"), ("en", "fr")]  # through English
+    assert translate.translate("fr", "le parc") is None  # already in French
+    anki.save_config({"translation_language": ""})
+    assert translate.translate("zh", "公园") is None
+    with pytest.raises(translate.TranslateError):
+        anki.save_config({"translation_language": "en"})
+        translate.translate("yue", "公園")
+
+
+def test_http_translate(client, fake_argos):
+    assert client.get("/api/translate/languages").get_json()["chosen"] == "en"
+    res = client.post("/api/translate", json={"language": "zh", "text": "公园"}, headers=HEADERS).get_json()
+    assert res == {"translation": "[zh>en] 公园", "target": "en"}
+    assert client.post("/api/translate", json={"language": "yue", "text": "公園"}, headers=HEADERS).status_code == 400

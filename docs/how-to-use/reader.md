@@ -1,6 +1,6 @@
 # Ebook reader
 
-MiningCat includes a reader for your books. Click a word to look it up in your dictionaries and make an Anki card (see [Dictionaries & Anki cards](mining.md)). The text is plain text in a web page, so [Yomitan](https://github.com/yomidevs/yomitan) works on it too if you prefer it.
+MiningCat includes a reader for your books. Words are coloured by status (new, learning), and a click on a word looks it up in your dictionaries to make an Anki card (see [Dictionaries & Anki cards](mining.md)). The text is plain text in a web page, so [Yomitan](https://github.com/yomidevs/yomitan) works on it too if you prefer it.
 
 ```bash
 make reader
@@ -40,7 +40,20 @@ Per book:
 - **Text direction**: automatic, horizontal or vertical (縦書き). Automatic uses vertical text for Japanese and Chinese EPUBs laid out from right to left, and horizontal text otherwise.
 - **Language**: detected from the book's metadata and checked against its text (some tools tag every book in the same language). It picks the right fonts for Japanese, Traditional or Simplified Chinese, and Korean.
 
-For all books: font size, line spacing, margins, serif or sans-serif font, theme (light, sepia, dark, or following your system), and showing or hiding furigana.
+For all books: font size, line spacing, margins, serif or sans-serif font, theme (light, sepia, dark, or following your system), showing or hiding furigana, how to look up words, and [word colours](mining.md#word-colours).
+
+## Audio of a converted book
+
+When you convert a book with its audiobook (or generate its audio with a voice), MiningCat can bring the audio to the reader:
+
+- after the conversion, click **Read with audio** in the *Done* dialog: the book opens in the reader, with its audio;
+- or, for a book already in the library, open **Aa** › *Audio* › **Link the last conversion's audio** (the conversion's files must still be in `output/`).
+
+The audio and subtitles are copied next to the book in `library/`, so you can clear `output/` or convert another book afterwards.
+
+Then, click a word: **▶ Sentence** in the popup plays its sentence, and the card creator gets the sentence's audio by itself (*Sentence audio*).
+
+The sentence is found in the subtitles by its text, so it works even when the reader's chapters don't match the converted ones. With subtitles transcribed by Whisper (*Generate subtitles* mode), the transcription may differ a little from the book: the closest subtitle is used, and a sentence too different isn't found.
 
 ## Progress
 

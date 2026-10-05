@@ -6,6 +6,7 @@
 # which the browser follows through Server-Sent Events (/api/events).
 
 import itertools
+import subprocess
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -85,6 +86,10 @@ class JobBusyError(RuntimeError):
 class AppState:
     bus: EventBus = field(default_factory=EventBus)
     last_video_srt: Path | None = None
+    # `main.py game serve` subprocess, while the video game capture runs (see web/game.py)
+    game_proc: subprocess.Popen | None = None
+    # BCP-47 tag of the game's language while it runs, for the /game/ page's dictionary popup
+    game_language: str | None = None
     _lock: threading.Lock = field(default_factory=threading.Lock)
     _job: JobSnapshot = field(default_factory=JobSnapshot)
 

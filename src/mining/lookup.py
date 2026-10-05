@@ -17,6 +17,9 @@ MAX_RESULTS = 12
 STRICT_PART_OF_SPEECH = {"ja", "ko"}
 
 _WORD_END = re.compile(r"[\w’'\-]+", re.UNICODE)
+_HAN_CHAR = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U0002ffff]")
+# Character details kept for the popup: the rest of a kanji dictionary's stats are reference numbers.
+_KANJI_STATS = ("strokes", "grade", "jlpt", "freq")
 
 
 def _sources(text: str, language: str) -> list[str]:
@@ -31,6 +34,9 @@ def _sources(text: str, language: str) -> list[str]:
         if len(ends) >= MAX_WORDS:
             break
     candidates = [text[:end].rstrip("-’'") for end in reversed(ends)]
+    # Korean words carry their particles and endings (친구와): the start of the word is a word too.
+    if language == "ko" and ends:
+        candidates += [text[:end] for end in range(ends[0] - 1, 0, -1)]
     return [c for c in dict.fromkeys(candidates) if c]
 
 
@@ -79,6 +85,32 @@ def _frequencies(conn, dict_ids: dict[int, dict], expressions: list[str]) -> dic
     return result
 
 
+# Pitch accents and IPA transcriptions (term_meta "pitch" / "ipa"): {expression: [{dictionary, reading, ...}]}.
+def _pronunciations(conn, dict_ids: dict[int, dict], expressions: list[str]) -> dict[str, list]:
+    if not expressions or not dict_ids:
+        return {}
+    ids = list(dict_ids)
+    result: dict[str, list] = {}
+    for r in conn.execute(
+        f"SELECT dict_id, expression, mode, data FROM term_meta WHERE mode IN ('pitch', 'ipa')"
+        f" AND dict_id IN ({','.join('?' * len(ids))}) AND expression IN ({','.join('?' * len(expressions))})",
+        [*ids, *expressions],
+    ):
+        data = json.loads(r["data"])
+        if not isinstance(data, dict):
+            continue
+        item = {"dictionary": dict_ids[r["dict_id"]]["title"], "priority": dict_ids[r["dict_id"]]["priority"],
+                "reading": str(data.get("reading") or "")}
+        if r["mode"] == "pitch":
+            positions = [p.get("position") for p in data.get("pitches") or [] if isinstance(p, dict)]
+            # a pattern written as "HLL" instead of a downstep position is kept as text
+            item["pitches"] = [p for p in positions if isinstance(p, (int, str))]
+        else:
+            item["ipa"] = [t.get("ipa") for t in data.get("transcriptions") or [] if isinstance(t, dict) and t.get("ipa")]
+        result.setdefault(r["expression"], []).append(item)
+    return result
+
+
 def _tag_notes(conn, dict_id: int, names: set[str]) -> dict[str, dict]:
     if not names:
         return {}
@@ -87,6 +119,37 @@ def _tag_notes(conn, dict_id: int, names: set[str]) -> dict[str, dict]:
         r["name"]: {"category": r["category"], "notes": r["notes"]}
         for r in conn.execute(f"SELECT name, category, notes FROM tags WHERE dict_id = ? AND name IN ({marks})", [dict_id, *names])
     }
+
+
+# Character dictionary entries of the Chinese characters / kanji of `expressions`: {character: [entries]}.
+def characters(conn, dict_ids: dict[int, dict], expressions: list[str]) -> dict[str, list[dict]]:
+    chars = list(dict.fromkeys(c for e in expressions for c in _HAN_CHAR.findall(e)))
+    if not chars or not dict_ids:
+        return {}
+    ids = list(dict_ids)
+    id_marks, char_marks = ",".join("?" * len(ids)), ",".join("?" * len(chars))
+    freqs: dict[str, list] = {}
+    for r in conn.execute(
+        f"SELECT dict_id, character, data FROM kanji_meta WHERE mode = 'freq' AND dict_id IN ({id_marks})"
+        f" AND character IN ({char_marks})", [*ids, *chars],
+    ):
+        data = json.loads(r["data"])
+        value = data.get("displayValue", data.get("value")) if isinstance(data, dict) else data
+        freqs.setdefault(r["character"], []).append(f"{dict_ids[r['dict_id']]['title'].split(' [')[0]} {value}")
+    result: dict[str, list[dict]] = {}
+    rows = conn.execute(
+        f"SELECT * FROM kanji WHERE dict_id IN ({id_marks}) AND character IN ({char_marks})", [*ids, *chars],
+    ).fetchall()
+    for r in sorted(rows, key=lambda r: dict_ids[r["dict_id"]]["priority"]):
+        stats = json.loads(r["stats"])
+        result.setdefault(r["character"], []).append({
+            "dictionary": dict_ids[r["dict_id"]]["title"],
+            "onyomi": r["onyomi"].split(), "kunyomi": r["kunyomi"].split(),
+            "meanings": json.loads(r["meanings"]),
+            "stats": {k: stats[k] for k in _KANJI_STATS if k in stats},
+            "frequencies": freqs.get(r["character"], []),
+        })
+    return result
 
 
 def lookup(language: str, text: str) -> dict:
@@ -150,10 +213,15 @@ def lookup(language: str, text: str) -> dict:
             group["score"] = max(group["score"], row["score"])
 
         freqs = _frequencies(conn, dicts, list({g["expression"] for g in groups.values()}))
+        sounds = _pronunciations(conn, dicts, list({g["expression"] for g in groups.values()}))
         for g in groups.values():
             g["frequencies"] = [
                 f for f in sorted(freqs.get(g["expression"], []), key=lambda f: f["priority"])
                 if not f["reading"] or normalize_reading(f["reading"], language) == normalize_reading(g["reading"], language)
+            ]
+            g["pronunciations"] = [
+                {k: v for k, v in p.items() if k != "priority"} for p in sorted(sounds.get(g["expression"], []), key=lambda p: p["priority"])
+                if not p["reading"] or normalize_reading(p["reading"], language) == normalize_reading(g["reading"], language)
             ]
             # rank in the first frequency list that has the word (smaller = more frequent)
             g["frequency_rank"] = next((f["value"] for f in g["frequencies"] if isinstance(f["value"], (int, float))), float("inf"))
@@ -175,12 +243,17 @@ def lookup(language: str, text: str) -> dict:
             del g["rank"]
             del g["frequency_rank"]
 
+        found = characters(conn, dicts, [g["expression"] for g in ordered])
+        for g in ordered:
+            g["characters"] = [{"character": c, "entries": found[c]}
+                               for c in dict.fromkeys(_HAN_CHAR.findall(g["expression"])) if c in found]
+
     for g in ordered:
         form = words_mod.preferred_form(language, g["expression"])
         g["form"] = form
         g["status"] = words_mod.status_of(language, form, g["reading"])
         if language in CHINESE_LANGUAGES:
             g["script"] = words_mod.chinese_script(g["expression"])
-            other = chinese_counterpart(g["expression"])
+            other = chinese_counterpart(g["expression"], language)
             g["counterpart"] = {"script": other[0], "expression": other[1]} if other else None
     return {"entries": ordered, "dictionaries": len(dicts), "language": language}

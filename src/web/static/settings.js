@@ -86,6 +86,7 @@ async function loadDictionaries() {
         try { await api("/api/dict/reorder", { ids: [...ids, ...others] }); loadDictionaries(); } catch (err) { showError(err); }
       };
       const counts = [d.term_count ? `${d.term_count.toLocaleString()} terms` : null,
+        d.kanji_count ? `${d.kanji_count.toLocaleString()} characters` : null,
         d.meta_count ? `${d.meta_count.toLocaleString()} frequency/pitch entries` : null].filter(Boolean).join(" · ");
       return el("div", { class: `dict-item${d.enabled ? "" : " disabled"}` },
         el("label", { class: "check" }, enabled),
@@ -123,7 +124,7 @@ async function importDictionary(file) {
       $("dict-progress-bar").style.width = `${Math.round(job.progress * 100)}%`;
       if (!job.done) { $("dict-progress-text").textContent = `Importing “${data.title}”: ${job.message}`; continue; }
       if (job.error) throw Object.assign(new Error(job.error), { title: "Import failed" });
-      $("dict-progress-text").textContent = `“${data.title}” imported: ${job.dictionary.term_count.toLocaleString()} terms.`;
+      $("dict-progress-text").textContent = `“${data.title}” imported: ${(job.dictionary.term_count || job.dictionary.kanji_count).toLocaleString()} ${job.dictionary.term_count ? "terms" : "characters"}.`;
       break;
     }
     loadDictionaries();
@@ -197,6 +198,7 @@ async function refreshAnki() {
   S.cardFields = card_fields;
   $("anki-url").value = config.url;
   $("known-interval").value = config.known_interval;
+  renderTranslation();
   $("anki-state").textContent = "Checking Anki…";
   $("anki-state").className = "connection-state";
   S.anki = await api("/api/anki/status");
@@ -222,16 +224,43 @@ function selectWith(values, value, placeholder) {
 
 async function renderNoteSetup() {
   const language = $("note-language").value;
-  const setup = (S.config.notes || {})[language] || { deck: "", model: "", fields: {}, tags: "miningcat" };
+  const setup = (S.config.notes || {})[language] || { deck: "", model: "", fields: {}, tags: "mining-cat" };
   const deck = selectWith(S.anki.decks, setup.deck, S.anki.connected ? "Choose a deck" : "Open Anki to list decks");
   const model = selectWith(S.anki.models, setup.model, S.anki.connected ? "Choose a note type" : "Open Anki to list note types");
   deck.id = "note-deck";
   model.id = "note-model";
   $("note-deck").replaceWith(deck);
   $("note-model").replaceWith(model);
-  $("note-tags").value = setup.tags || "miningcat";
+  $("note-tags").value = setup.tags || "mining-cat";
+  renderVoices(language);
   model.addEventListener("change", () => renderMapping(model.value, {}));
   await renderMapping(setup.model, setup.fields);
+}
+
+async function renderVoices(language) {
+  const select = $("note-voice");
+  select.replaceChildren();
+  try {
+    const { voices, chosen } = await api(`/api/tts/voices?language=${encodeURIComponent(language)}`);
+    if ($("note-language").value !== language) return;
+    options(select, [["", voices.length ? "None: generate by hand" : "No voice for this language"], ...voices.map((v) => [v.id, v.label])], chosen);
+    select.disabled = !voices.length;
+  } catch (err) { showError(err); }
+}
+
+async function renderTranslation() {
+  try {
+    const { languages, chosen } = await api("/api/translate/languages");
+    options($("translation-language"), [["", "None: no translation"], ...languages.map((l) => [l.id, l.name])], chosen);
+  } catch (err) { showError(err); }
+}
+
+async function saveTranslation() {
+  try {
+    S.config = (await api("/api/anki/config", { translation_language: $("translation-language").value })).config;
+    $("translation-saved").textContent = "Saved.";
+    setTimeout(() => { $("translation-saved").textContent = ""; }, 3000);
+  } catch (err) { showError(err); }
 }
 
 async function renderMapping(model, saved) {
@@ -267,6 +296,7 @@ async function saveNoteSetup() {
     const { config } = await api("/api/anki/config", {
       url: $("anki-url").value,
       notes: { [language]: { deck: $("note-deck").value, model: $("note-model").value, fields, tags: $("note-tags").value } },
+      ...($("note-voice").disabled ? {} : { tts_voices: { [language]: $("note-voice").value } }),
     });
     S.config = config;
     $("note-saved").textContent = `Saved for ${langName(language)}.`;
@@ -411,6 +441,7 @@ async function init() {
     });
     $("note-language").addEventListener("change", renderNoteSetup);
     $("note-save").addEventListener("click", saveNoteSetup);
+    $("translation-save").addEventListener("click", saveTranslation);
     $("sync-add").addEventListener("click", () => {
       $("sync-sources").querySelector(".empty")?.remove();
       $("sync-sources").append(syncRow());

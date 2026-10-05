@@ -20,6 +20,7 @@ import uuid
 from pathlib import Path
 
 from mining import db
+from mining.word_audio import _ssl_context
 from mining import words as words_mod
 from mining.languages import LANGUAGES
 
@@ -30,6 +31,7 @@ ANKICONNECT_VERSION = 6
 CARD_FIELDS = {
     "word": "Word",
     "reading": "Reading",
+    "zhuyin": "Zhuyin (Mandarin, from the reading)",
     "definition": "Definition",
     "sentence": "Sentence",
     "sentence_translation": "Sentence translation",
@@ -41,19 +43,26 @@ CARD_FIELDS = {
 }
 MEDIA_FIELDS = ("image", "audio", "sentence_audio")
 
-# Field names guessed from the user's note type, first match wins.
+# Field names guessed from the user's note type. Each marker goes to the first unused field matching its pattern,
+# patterns being tried in this order: a clear "Definitions" field wins over a "Translation" one (in Migaku's note
+# types, "Translation" is the sentence's), which only gets the definition when there's nothing better.
 _GUESSES = [
     (re.compile(r"sentence.*(audio|sound)|(audio|sound).*sentence", re.I), "{sentence_audio}"),
     (re.compile(r"(audio|sound|pronunciation)", re.I), "{audio}"),
     (re.compile(r"(image|picture|screenshot|photo)", re.I), "{image}"),
     (re.compile(r"(translation|english|meaning).*sentence|sentence.*(translation|meaning|english)", re.I), "{sentence_translation}"),
     (re.compile(r"(sentence|example|context|phrase)", re.I), "{sentence}"),
-    (re.compile(r"(reading|pinyin|zhuyin|bopomofo|furigana|kana|jyutping|pronunciation|romaji)", re.I), "{reading}"),
-    (re.compile(r"(definition|meaning|gloss|glossary|translation|english|back)", re.I), "{definition}"),
+    (re.compile(r"(zhuyin|bopomofo)", re.I), "{zhuyin}"),
+    (re.compile(r"(reading|pinyin|furigana|kana|jyutping|pronunciation|romaji)", re.I), "{reading}"),
+    (re.compile(r"(definition|meaning|gloss)", re.I), "{definition}"),
     (re.compile(r"(word|expression|vocab|term|hanzi|kanji|front|target|key)", re.I), "{word}"),
+    (re.compile(r"(translation|english|back)", re.I), "{definition}"),
+    (re.compile(r"(translation|english)", re.I), "{sentence_translation}"),
     (re.compile(r"(source|book|reference)", re.I), "{source}"),
     (re.compile(r"(note|comment|remark)", re.I), "{notes}"),
 ]
+# Flags of some note types ("Is Vocabulary Card", "Is Audio Card"): never filled with content.
+_FLAG_FIELD = re.compile(r"^is\b", re.I)
 
 MEDIA_DIR_NAME = "card_media"
 
@@ -68,12 +77,21 @@ class AnkiUnavailable(AnkiError):
 
 # ---------------------------------------------------------------- settings
 
+DEFAULT_TAG = "mining-cat"
+OLD_DEFAULT_TAG = "miningcat"
+
+
 def get_config() -> dict:
     config = db.get_setting("anki", {}) or {}
     config.setdefault("url", DEFAULT_URL)
     config.setdefault("known_interval", words_mod.DEFAULT_KNOWN_INTERVAL)
     config.setdefault("notes", {})   # language -> {deck, model, fields: {note field: template}, tags}
     config.setdefault("sync", {})    # language -> [{deck, field, reading_field}]
+    config.setdefault("tts_voices", {})  # language -> Edge-TTS voice reading the sentences, "" = none
+    config.setdefault("translation_language", "en")  # sentences are translated to it, "" = not translated
+    for setup in config["notes"].values():
+        if setup.get("tags") == OLD_DEFAULT_TAG:  # the default tag was "miningcat" before
+            setup["tags"] = DEFAULT_TAG
     return config
 
 
@@ -99,8 +117,16 @@ def save_config(values: dict) -> dict:
             "deck": str(setup.get("deck") or ""),
             "model": str(setup.get("model") or ""),
             "fields": {str(k): str(v) for k, v in (setup.get("fields") or {}).items()},
-            "tags": str(setup.get("tags") or "miningcat"),
+            "tags": str(setup.get("tags") or DEFAULT_TAG),
         }
+    if "translation_language" in values:
+        target = str(values["translation_language"] or "")
+        if target and target not in LANGUAGES:
+            raise AnkiError(f"Unknown language: {target!r}")
+        config["translation_language"] = target
+    for language, voice in (values.get("tts_voices") or {}).items():
+        if language in LANGUAGES:
+            config["tts_voices"][language] = str(voice or "")
     for language, sources in (values.get("sync") or {}).items():
         if language not in LANGUAGES:
             continue
@@ -114,11 +140,14 @@ def save_config(values: dict) -> dict:
 
 def guess_field_templates(field_names: list[str]) -> dict[str, str]:
     """Proposes a marker for each field of a note type, from the field names."""
-    templates, used = {}, set()
-    for name in field_names:
-        template = next((t for pattern, t in _GUESSES if pattern.search(name) and t not in used), "")
-        templates[name] = template
-        if template:
+    templates = {name: "" for name in field_names}
+    used = set()
+    for pattern, template in _GUESSES:
+        if template in used:
+            continue
+        name = next((n for n in field_names if not templates[n] and not _FLAG_FIELD.match(n) and pattern.search(n)), None)
+        if name is not None:
+            templates[name] = template
             used.add(template)
     if not used and field_names:  # nothing recognised: word on the front, definition on the back
         templates[field_names[0]] = "{word}"
@@ -129,8 +158,9 @@ def guess_field_templates(field_names: list[str]) -> dict[str, str]:
 
 # ---------------------------------------------------------------- AnkiConnect
 
-def invoke(action: str, url: str | None = None, timeout: float = 10, **params):
-    url = url or get_config()["url"]
+# The endpoint isn't called "url": storeMediaFile has a "url" param of its own.
+def invoke(action: str, endpoint: str | None = None, timeout: float = 10, **params):
+    url = endpoint or get_config()["url"]
     payload = json.dumps({"action": action, "version": ANKICONNECT_VERSION, "params": params}).encode("utf-8")
     request = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
     try:
@@ -227,7 +257,18 @@ def render_template(template: str, fields: dict, media: dict) -> str:
     return _MARKER.sub(replace, template or "")
 
 
-def note_fields(setup: dict, fields: dict, media: dict) -> dict[str, str]:
+# Fields computed from the card's: the zhuyin of a Mandarin word, from its pinyin reading (CC-CEDICT has no zhuyin).
+def derived_fields(language: str, fields: dict) -> dict:
+    derived = {}
+    if language == "zh" and not fields.get("zhuyin"):
+        from mining.zhuyin import pinyin_to_zhuyin
+        word = re.sub(r"<[^>]+>", "", fields.get("word", ""))
+        derived["zhuyin"] = pinyin_to_zhuyin(re.sub(r"<[^>]+>", "", fields.get("reading", "")), word)
+    return derived
+
+
+def note_fields(setup: dict, fields: dict, media: dict, language: str = "") -> dict[str, str]:
+    fields = {**fields, **derived_fields(language, fields)}
     return {name: render_template(template, fields, media) for name, template in setup["fields"].items()}
 
 
@@ -331,7 +372,7 @@ def send_card(card_id: int) -> dict:
         note = {
             "deckName": setup["deck"],
             "modelName": setup["model"],
-            "fields": note_fields(setup, card["fields"], card["media"]),
+            "fields": note_fields(setup, card["fields"], card["media"], card["language"]),
             "tags": [t for t in re.split(r"[\s,]+", f"{setup.get('tags', '')} {card['tags']}") if t],
             "options": {"allowDuplicate": False, "duplicateScope": "deck"},
         }
@@ -484,7 +525,7 @@ def export_apkg(card_ids: list[int] | None = None, mark_exported: bool = True) -
             path = folder / media["filename"]
             if media.get("url") and not path.exists():
                 try:
-                    with urllib.request.urlopen(media["url"], timeout=20) as response:
+                    with urllib.request.urlopen(media["url"], timeout=20, context=_ssl_context()) as response:
                         path.write_bytes(response.read())
                 except (urllib.error.URLError, OSError):
                     continue
@@ -497,7 +538,7 @@ def export_apkg(card_ids: list[int] | None = None, mark_exported: bool = True) -
             else:
                 values.append(card["fields"].get(key, ""))
         guid = genanki.guid_for("miningcat", card["language"], card["expression"], card["reading"], card["id"])
-        tags = [re.sub(r"\s", "_", t) for t in re.split(r"[\s,]+", f"miningcat {card['tags']}") if t]
+        tags = [re.sub(r"\s", "_", t) for t in re.split(r"[\s,]+", f"{DEFAULT_TAG} {card['tags']}") if t]
         deck.add_note(genanki.Note(model=model, fields=values, guid=guid, tags=tags))
     out_dir = db.DB_PATH.parent / "exports"
     out_dir.mkdir(parents=True, exist_ok=True)

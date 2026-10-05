@@ -1,5 +1,6 @@
 import ast
 import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -78,6 +79,9 @@ class MacOSHotkey(Hotkey):
         ready = threading.Event()
 
         def run():
+            # Leaves SIGTERM/SIGINT to the main thread: delivered to this run loop, they never reach the server's loop,
+            # and the Stop button had to kill the process.
+            signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT, signal.SIGTERM})
             self._run_loop = Q.CFRunLoopGetCurrent()
             source = Q.CFMachPortCreateRunLoopSource(None, self._tap, 0)
             Q.CFRunLoopAddSource(self._run_loop, source, Q.kCFRunLoopCommonModes)

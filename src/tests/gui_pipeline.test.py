@@ -129,6 +129,12 @@ def test_start_game_server_passes_convert_and_continuous_without_key():
     assert "--hotkey" not in args
 
 
+def test_start_game_server_without_its_own_page():
+    _proc, args, _kwargs = _start_game_server(open_browser=False)
+    assert "--no-browser" in args
+    assert "--no-browser" not in _start_game_server()[1]
+
+
 def test_stop_game_server_terminates_running_process():
     proc = MagicMock(**{"poll.return_value": None})
     pipeline.stop_game_server(proc)

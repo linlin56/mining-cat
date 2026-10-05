@@ -27,6 +27,7 @@ const S = {
     ocr: false, region: null, fps: 4,
   },
   running: false,
+  jobKind: null,              // kind of the running job ("audiobook", "video" or "game")
   lastVideoSrt: null,
   replayUntil: 0,             // events up to this id are a replay (page reload): no dialogs
 };
@@ -103,6 +104,11 @@ function showDialog(title, message, buttons = [{ label: "OK", value: true, prima
   });
 }
 
+// Like showDialog, but resolves to the value of the button that was clicked ("" if the dialog was dismissed).
+function chooseDialog(title, message, buttons) {
+  return showDialog(title, message, buttons).then(() => $("dialog").returnValue);
+}
+
 const alertBox = (title, message) => showDialog(title, message);
 const askYesNo = (title, message) => showDialog(title, message, [
   { label: "No", value: false },
@@ -114,6 +120,20 @@ async function offerOpenFolder(title, message, which) {
   if (await askYesNo(title, `${message}\n\nOpen the output folder?`)) {
     try { await api("/api/open-folder", { which }); } catch (err) { showError(err); }
   }
+}
+
+// A converted book can be read in the reader, with each sentence's audio at hand.
+async function offerReader() {
+  const choice = await chooseDialog("Done",
+    "Processing complete!\n\nRead the book in MiningCat's reader, with its audio? Click a word to hear its sentence, and get the sentence's audio on your cards.",
+    [{ label: "Close", value: "" }, { label: "Open output folder", value: "folder" }, { label: "Read with audio", value: "reader", primary: true }]);
+  try {
+    if (choice === "folder") await api("/api/open-folder", { which: "final" });
+    if (choice === "reader") {
+      const { id } = await api("/api/reader/from-output", { ebook: S.ebook.map((f) => f.path) });
+      location.href = `/reader/${id}`;
+    }
+  } catch (err) { showError(err); }
 }
 
 // ---------------------------------------------------------------- helpers
@@ -140,6 +160,8 @@ function renderSource() {
   for (const btn of $("source").children) btn.setAttribute("aria-checked", String(btn.dataset.value === S.source));
   $("screen-audiobook").hidden = S.source !== "Audiobook / Ebook";
   $("screen-video").hidden = S.source !== "Video";
+  $("screen-game").hidden = S.source !== "Video game / Screen share";
+  $("game-actions").hidden = S.source !== "Video game / Screen share";
 }
 
 function renderMode() {
@@ -348,7 +370,8 @@ async function selectVideo(fileList) {
 
 // ---------------------------------------------------------------- OCR region picker
 
-const ocr = { frames: [], index: 0, region: null, drag: null, token: 0 };
+// The same picker serves the subtitle region and the video game areas: `open` describes what to load and where to save.
+const ocr = { frames: [], index: 0, region: null, drag: null, token: 0, onOk: null };
 
 function drawOcrRect(region) {
   const [x, y, w, h] = region;
@@ -362,23 +385,26 @@ function showOcrFrame() {
   $("ocr-nav-label").textContent = `Frame ${ocr.index + 1}/${ocr.frames.length}`;
 }
 
-async function openOcrDialog() {
+// `load()` resolves to {frames, region?}. `onOk(region)` is called with the drawn region.
+async function openRegionDialog({ title, help, loading, region, load, onOk }) {
   const dlg = $("ocr-dialog");
   const token = ++ocr.token;
-  const local = S.video.mode === "Local file";
-  ocr.region = S.video.region || S.opts.ocr.default_region;
+  ocr.region = region;
+  ocr.onOk = onOk;
   ocr.frames = [];
   ocr.index = 0;
+  $("ocr-title").textContent = title;
+  $("ocr-help").textContent = help;
   $("ocr-loading").hidden = false;
-  $("ocr-loading").textContent = local ? "Loading preview frames…" : "Downloading the video for preview, please wait…";
+  $("ocr-loading").textContent = loading;
   $("ocr-stage").hidden = true;
   $("ocr-nav").hidden = true;
   dlg.showModal();
   try {
-    const body = local ? { path: S.video.file.path } : { url: S.video.url };
-    const data = await api("/api/ocr/preview", body);
+    const data = await load();
     if (token !== ocr.token || !dlg.open) return;
     ocr.frames = data.frames;
+    if (data.region) ocr.region = data.region;
     $("ocr-loading").hidden = true;
     $("ocr-stage").hidden = false;
     $("ocr-nav").hidden = ocr.frames.length <= 1;
@@ -389,6 +415,18 @@ async function openOcrDialog() {
     dlg.close();
     showError(err);
   }
+}
+
+function openOcrDialog() {
+  const local = S.video.mode === "Local file";
+  openRegionDialog({
+    title: "Select subtitle region",
+    help: "Drag a rectangle around the subtitles. Browse frames to find one with dialogue on screen.",
+    loading: local ? "Loading preview frames…" : "Downloading the video for preview, please wait…",
+    region: S.video.region || S.opts.ocr.default_region,
+    load: () => api("/api/ocr/preview", local ? { path: S.video.file.path } : { url: S.video.url }),
+    onOk: (region) => { S.video.region = region; renderVideo(); },
+  });
 }
 
 function ocrPoint(e) {
@@ -444,12 +482,155 @@ function setupOcrDialog() {
   $("ocr-full").addEventListener("click", () => { ocr.region = [0, 0, 1, 1]; drawOcrRect(ocr.region); });
   $("ocr-cancel").addEventListener("click", () => { ocr.token++; $("ocr-dialog").close(); });
   $("ocr-ok").addEventListener("click", () => {
-    if (ocr.frames.length) S.video.region = ocr.region;
+    const { onOk, region, frames } = ocr;
     ocr.token++;
     $("ocr-dialog").close();
-    renderVideo();
+    if (frames.length && onOk) onOk(region);
   });
   $("ocr-dialog").addEventListener("cancel", () => { ocr.token++; });
+}
+
+// ---------------------------------------------------------------- video game / screen share
+
+const GAME_AREAS = {
+  screenshot: {
+    title: "Select the window's full size (screenshot sent to the page)",
+    help: "Drag a rectangle around the part of the window you want to see in the page.",
+  },
+  text: {
+    title: "Select the text area (read by OCR)",
+    help: "Drag a rectangle around the game's dialog box, where the text appears. Only this part is read by OCR.",
+  },
+};
+
+// Server-side state of the capture panel: {supported, backend_label, hotkeys, page_url, running, settings}
+const G = { info: null, busy: false, windows: [] };
+
+function setLabel(el, text, selected) {
+  el.textContent = text;
+  el.className = selected ? "selected" : "dim";
+  el.title = text;
+}
+
+function renderGame() {
+  const info = G.info;
+  if (!info) return;
+  const s = info.settings;
+  $("game-backend").textContent = info.backend_label;
+  setLabel($("game-window-label"), s.window_label || "No window selected", s.has_window);
+  setLabel($("game-screenshot-label"), s.screenshot_region ? "Selected" : (s.has_window ? "Whole capture" : "Not selected"), !!s.screenshot_region);
+  setLabel($("game-text-label"), s.text_region ? "Selected" : "Not selected", !!s.text_region);
+  const idle = info.supported && !G.busy;
+  $("game-window-btn").disabled = !idle;
+  $("game-screenshot-btn").disabled = !(idle && s.has_window);
+  $("game-text-btn").disabled = !(idle && s.has_window);
+  $("game-continuous").checked = s.continuous;
+  const hotkey = $("game-hotkey");
+  if (hotkey.options.length !== info.hotkeys.length) fillSelect(hotkey, info.hotkeys, s.hotkey);
+  hotkey.value = s.hotkey;
+  hotkey.disabled = s.continuous;
+  $("game-hotkey-hint").hidden = s.continuous;
+
+  const running = S.running && S.jobKind === "game";
+  const start = $("game-start");
+  start.textContent = running ? "Stop" : "Start";
+  start.disabled = running ? false : (S.running || G.busy || !(info.supported && s.is_ready));
+  $("game-page").disabled = !running;
+}
+
+async function refreshGame() {
+  try {
+    G.info = await api("/api/game/state");
+    renderGame();
+  } catch (err) { showError(err); }
+}
+
+// Runs a request with the selection buttons disabled (portal dialogs and captures can take a while).
+async function gameRequest(path, body) {
+  G.busy = true;
+  renderGame();
+  try {
+    const data = await api(path, body);
+    if (data.settings) G.info.settings = data.settings;
+    return data;
+  } finally {
+    G.busy = false;
+    renderGame();
+  }
+}
+
+async function loadWindowList() {
+  const { system_picker, windows } = await api("/api/game/windows");
+  G.windows = windows;
+  $("window-list").replaceChildren(...windows.map((w) => new Option(w.label, String(w.id))));
+  return system_picker;
+}
+
+async function selectGameWindow() {
+  try {
+    // Wayland: the OS shows its own dialog, which this request waits for.
+    if (await loadWindowList()) return await gameRequest("/api/game/window", {});
+  } catch (err) { return showError(err); }
+  $("window-dialog").showModal();
+}
+
+async function confirmGameWindow() {
+  const value = $("window-list").value;
+  if (!value) return;
+  $("window-dialog").close();
+  try { await gameRequest("/api/game/window", { id: Number(value) }); } catch (err) { showError(err); }
+}
+
+function selectGameArea(area) {
+  openRegionDialog({
+    ...GAME_AREAS[area],
+    loading: "Capturing the window…",
+    region: [0, 0, 1, 1],
+    load: async () => {
+      const data = await api("/api/game/frame", { area });
+      return { frames: [data.frame], region: data.region };
+    },
+    onOk: async (region) => {
+      try { await gameRequest("/api/game/area", { area, region }); } catch (err) { showError(err); }
+    },
+  });
+}
+
+async function setGameTrigger(change) {
+  try { await gameRequest("/api/game/trigger", change); } catch (err) { showError(err); renderGame(); }
+}
+
+async function toggleGame() {
+  if (S.running && S.jobKind === "game") {
+    $("game-start").disabled = true;
+    setStatus("Stopping…", 100);
+    try { await api("/api/game/stop", {}); } catch (err) { showError(err); }
+    return;
+  }
+  // Opened right away: a tab opened after waiting for the server would be blocked as a pop-up.
+  const tab = window.open("/game/", "miningcat-game");
+  try {
+    setRunning(true, "game");
+    await api("/api/game/start", { language: S.lang.id, convert: $("convert").value });
+  } catch (err) {
+    if (tab) tab.close();
+    setRunning(false);
+    showError(err);
+  }
+}
+
+function setupGame() {
+  $("game-window-btn").addEventListener("click", selectGameWindow);
+  $("game-screenshot-btn").addEventListener("click", () => selectGameArea("screenshot"));
+  $("game-text-btn").addEventListener("click", () => selectGameArea("text"));
+  $("game-hotkey").addEventListener("change", (e) => setGameTrigger({ hotkey: e.target.value }));
+  $("game-continuous").addEventListener("change", (e) => setGameTrigger({ continuous: e.target.checked }));
+  $("game-start").addEventListener("click", toggleGame);
+  $("game-page").addEventListener("click", () => window.open("/game/", "miningcat-game"));
+  $("window-refresh").addEventListener("click", () => loadWindowList().catch(showError));
+  $("window-cancel").addEventListener("click", () => $("window-dialog").close());
+  $("window-ok").addEventListener("click", confirmGameWindow);
+  $("window-list").addEventListener("dblclick", confirmGameWindow);
 }
 
 // ---------------------------------------------------------------- frequency lists
@@ -486,10 +667,12 @@ function refreshBusy() {
   const blocked = S.running || S.uploads > 0;
   $("start").disabled = blocked;
   $("video-start").disabled = blocked;
+  renderGame();
 }
 
-function setRunning(running) {
+function setRunning(running, kind = null) {
   S.running = running;
+  S.jobKind = running ? kind : null;
   refreshBusy();
 }
 
@@ -507,7 +690,7 @@ async function startAudiobook() {
     chapters: [...S.selected],
   };
   try {
-    setRunning(true);
+    setRunning(true, "audiobook");
     await api("/api/run/audiobook", body);
   } catch (err) {
     setRunning(false);
@@ -535,7 +718,7 @@ async function startVideo() {
     ocr_fps: v.fps,
   };
   try {
-    setRunning(true);
+    setRunning(true, "video");
     await api("/api/run/video", body);
   } catch (err) {
     setRunning(false);
@@ -575,7 +758,7 @@ function handleEvent(id, ev) {
   switch (ev.type) {
     case "start":
       $("log").textContent = "";
-      setRunning(true);
+      setRunning(true, ev.kind);
       break;
     case "log":
       appendLog(ev.text);
@@ -589,13 +772,17 @@ function handleEvent(id, ev) {
         S.lastVideoSrt = ev.has_srt ? true : null;
         updateFreqButtons();
       }
-      if (!replay) {
+      if (!replay && ev.kind === "audiobook" && S.ebook.length && $("mode").value !== "Generate subtitles") {
+        offerReader();
+      } else if (!replay && ev.kind !== "game") {
         const msg = ev.kind === "video" ? "Video processing complete!" : "Processing complete!";
         offerOpenFolder("Done", msg, "final");
       }
       break;
     case "finish":
       setRunning(false);
+      // The capture subprocess may have saved a new Wayland restore token.
+      if (ev.kind === "game") refreshGame();
       break;
   }
 }
@@ -720,6 +907,7 @@ function wire() {
   for (const btn of document.querySelectorAll('[data-action="clear-output"]')) btn.addEventListener("click", clearOutput);
 
   setupOcrDialog();
+  setupGame();
   setupDropzones();
 }
 
@@ -735,13 +923,14 @@ async function init() {
     const { job, files } = await api("/api/state");
     S.replayUntil = job.last_event_id || 0;
     S.lastVideoSrt = job.last_video_srt;
-    setRunning(job.running);
+    setRunning(job.running, job.kind);
     setStatus(job.status || "", job.pct || 0);
     updateFreqButtons();
     S.audio = files.audio;
     S.ebook = files.ebook;
     renderAudio();
     connectEvents();
+    await refreshGame();
     await loadChapters();
   } catch (err) {
     showError(err);

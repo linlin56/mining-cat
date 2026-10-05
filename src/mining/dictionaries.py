@@ -5,7 +5,8 @@
 #   term_bank_N.json        [expression, reading, definitionTags, rules, score, glossary, sequence, termTags]
 #   term_meta_bank_N.json   [expression, "freq" | "pitch" | "ipa", data]
 #   tag_bank_N.json         [name, category, order, notes, score]
-#   kanji_bank_N.json       single characters (not used yet)
+#   kanji_bank_N.json       [character, onyomi, kunyomi, tags, meanings, stats]: single characters
+#   kanji_meta_bank_N.json  [character, "freq", data]
 #   any other file          images referenced by structured-content glossaries
 # Format 1 dictionaries (older) use [expression, reading, definitionTags, rules, score, *glossary].
 
@@ -71,6 +72,12 @@ def inspect(path: Path) -> dict:
             for row in json.loads(zf.read(meta_banks[0]))[:2000]:
                 if isinstance(row, list) and row:
                     samples.append((str(row[0]), ""))
+        kanji_banks = _bank_files(zf, "kanji_bank")
+        if not samples and kanji_banks:
+            # the readings tell the language: on'yomi in katakana for Japanese, pinyin for Chinese
+            for row in json.loads(zf.read(kanji_banks[0]))[:2000]:
+                if isinstance(row, list) and len(row) >= 3:
+                    samples.append((str(row[0]), f"{row[1]} {row[2]}"))
     source_language = index.get("sourceLanguage")
     guess = source_language if source_language else guess_dictionary_language(samples)
     return {
@@ -79,6 +86,7 @@ def inspect(path: Path) -> dict:
         "language": guess,
         "has_terms": bool(banks),
         "has_meta": bool(meta_banks),
+        "has_kanji": bool(kanji_banks),
     }
 
 
@@ -100,6 +108,17 @@ def _term_rows(rows: list, dict_id: int, version: int):
                json.dumps(glossary, ensure_ascii=False, separators=(",", ":")), sequence, term_tags)
 
 
+# Only single characters are kept: some dictionaries (CC-CEDICT Hanzi) also put whole words in their kanji banks.
+def _kanji_rows(rows: list, dict_id: int):
+    for row in rows:
+        if not isinstance(row, list) or len(row) < 5 or len(str(row[0])) != 1:
+            continue
+        meanings = [str(m) for m in row[4]] if isinstance(row[4], list) else [str(row[4])]
+        stats = row[5] if len(row) > 5 and isinstance(row[5], dict) else {}
+        yield (dict_id, str(row[0]), str(row[1] or ""), str(row[2] or ""), str(row[3] or ""),
+               json.dumps(meanings, ensure_ascii=False), json.dumps(stats, ensure_ascii=False))
+
+
 def import_dictionary(path: Path, language: str = "", progress=None) -> dict:
     """Imports a dictionary zip. `progress(fraction, message)` is called along the way."""
     progress = progress or (lambda fraction, message: None)
@@ -116,8 +135,10 @@ def import_dictionary(path: Path, language: str = "", progress=None) -> dict:
         term_banks = _bank_files(zf, "term_bank")
         meta_banks = _bank_files(zf, "term_meta_bank")
         tag_banks = _bank_files(zf, "tag_bank")
-        if not term_banks and not meta_banks:
-            raise DictionaryError("This dictionary has neither terms nor frequency data (kanji-only dictionaries aren't supported yet).")
+        kanji_banks = _bank_files(zf, "kanji_bank")
+        kanji_meta_banks = _bank_files(zf, "kanji_meta_bank")
+        if not term_banks and not meta_banks and not kanji_banks and not kanji_meta_banks:
+            raise DictionaryError("This dictionary has no terms, characters or frequency data.")
 
         with db.session() as conn:
             duplicate = conn.execute(
@@ -137,9 +158,9 @@ def import_dictionary(path: Path, language: str = "", progress=None) -> dict:
             dict_id = cur.lastrowid
 
         try:
-            total_steps = max(1, len(term_banks) + len(meta_banks) + 1)
+            total_steps = max(1, len(term_banks) + len(meta_banks) + len(kanji_banks) + 1)
             step = 0
-            term_count = meta_count = 0
+            term_count = meta_count = kanji_count = 0
             with db.session() as conn:
                 for name in tag_banks:
                     rows = [
@@ -165,8 +186,22 @@ def import_dictionary(path: Path, language: str = "", progress=None) -> dict:
                     ]
                     conn.executemany("INSERT INTO term_meta(dict_id, expression, mode, data) VALUES (?, ?, ?, ?)", rows)
                     meta_count += len(rows)
-                conn.execute("UPDATE dictionaries SET term_count = ?, meta_count = ? WHERE id = ?",
-                             (term_count, meta_count, dict_id))
+                for name in kanji_banks:
+                    step += 1
+                    progress(step / total_steps, "Characters")
+                    rows = list(_kanji_rows(json.loads(zf.read(name)), dict_id))
+                    conn.executemany(
+                        "INSERT INTO kanji(dict_id, character, onyomi, kunyomi, tags, meanings, stats) VALUES (?, ?, ?, ?, ?, ?, ?)", rows)
+                    kanji_count += len(rows)
+                for name in kanji_meta_banks:
+                    rows = [
+                        (dict_id, str(r[0]), str(r[1]), json.dumps(r[2], ensure_ascii=False, separators=(",", ":")))
+                        for r in json.loads(zf.read(name)) if isinstance(r, list) and len(r) >= 3 and len(str(r[0])) == 1
+                    ]
+                    conn.executemany("INSERT INTO kanji_meta(dict_id, character, mode, data) VALUES (?, ?, ?, ?)", rows)
+                    meta_count += len(rows)
+                conn.execute("UPDATE dictionaries SET term_count = ?, meta_count = ?, kanji_count = ? WHERE id = ?",
+                             (term_count, meta_count, kanji_count, dict_id))
 
             # Images used by structured-content glossaries.
             target = media_dir(dict_id)
@@ -225,6 +260,8 @@ def delete_dictionary(dict_id: int) -> None:
         conn.execute("DELETE FROM terms WHERE dict_id = ?", (dict_id,))
         conn.execute("DELETE FROM term_meta WHERE dict_id = ?", (dict_id,))
         conn.execute("DELETE FROM tags WHERE dict_id = ?", (dict_id,))
+        conn.execute("DELETE FROM kanji WHERE dict_id = ?", (dict_id,))
+        conn.execute("DELETE FROM kanji_meta WHERE dict_id = ?", (dict_id,))
         conn.execute("DELETE FROM dictionaries WHERE id = ?", (dict_id,))
     shutil.rmtree(media_dir(dict_id), ignore_errors=True)
 

@@ -66,6 +66,9 @@
         <p class="help">Choose the characters you learn. Words are saved in that script; a word whose characters are the
           same in both scripts counts for both. When you know a word in the other script, the dictionary tells you.</p>
         <div id="script-settings"></div>
+        <p class="help">Readings: how Mandarin pronunciation is shown in the popup and written in the cards' reading
+          field. Your words keep the same status whichever you choose.</p>
+        <div id="reading-settings"></div>
       </div>
       <div class="panel">
         <h2 class="panel-title">Your words</h2>
@@ -151,6 +154,21 @@
           <button type="button" class="btn btn-primary" id="translation-save">Save</button>
         </div>
         <p class="dim saved" id="translation-saved"></p>
+        <h3 class="panel-subtitle">Models</h3>
+        <p class="help">Download a language's models ahead of time, so that its first card doesn't wait for them.
+          For Chinese, the models of the characters you learn (traditional, simplified or both) are downloaded.</p>
+        <div class="row">
+          <label class="field">
+            <span class="field-label">Language</span>
+            <select id="model-language"></select>
+          </label>
+          <button type="button" class="btn" id="model-download">Download</button>
+        </div>
+        <div class="model-progress" id="model-progress" hidden>
+          <progress id="model-progress-bar" max="1"></progress>
+          <span class="dim" id="model-progress-text"></span>
+        </div>
+        <div id="model-list"></div>
       </div>
 
       <div class="panel">

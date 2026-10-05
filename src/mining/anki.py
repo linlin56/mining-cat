@@ -288,15 +288,17 @@ def _card_row(row) -> dict:
     return card
 
 
-def create_card(language: str, fields: dict, media_input: dict, tags: str = "", send: bool = True) -> dict:
-    """Saves a card from the card creator, marks its word as learning, and tries to send it to Anki."""
+def create_card(language: str, fields: dict, media_input: dict, tags: str = "", send: bool = True,
+                key_reading: str = "") -> dict:
+    """Saves a card from the card creator, marks its word as learning, and tries to send it to Anki.
+    key_reading identifies the word when the reading field shows another system (zhuyin for pinyin)."""
     if language not in LANGUAGES:
         raise AnkiError(f"Unknown language: {language}")
     clean = {key: str(fields.get(key) or "") for key in CARD_FIELDS if key not in MEDIA_FIELDS}
     expression = re.sub(r"<[^>]+>", "", clean["word"]).strip()
     if not expression:
         raise AnkiError("The card has no word.")
-    reading = re.sub(r"<[^>]+>", "", clean["reading"]).strip()
+    reading = key_reading.strip() or re.sub(r"<[^>]+>", "", clean["reading"]).strip()
     media = {kind: store_media(kind, (media_input or {}).get(kind)) for kind in MEDIA_FIELDS}
     media = {k: v for k, v in media.items() if v}
     now = time.time()

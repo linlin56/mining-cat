@@ -75,3 +75,7 @@ input[type="number"] {
 .connection-state.bad { color: #c4453f; }
 
 .empty { color: var(--fg-dim); font-size: 13px; margin: 4px 0; }
+
+.panel-subtitle { margin: 18px 0 4px; font-size: 14px; }
+.model-progress { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 13px; }
+.model-progress progress { flex: 1; max-width: 320px; }

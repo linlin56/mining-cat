@@ -472,7 +472,7 @@
       word.append(entry.expression);
     }
     const parts = [word];
-    if (language !== "ja" && entry.reading && entry.reading !== entry.expression) parts.push(el("span", { class: "mc-reading", text: entry.reading }));
+    if (language !== "ja" && entry.reading && entry.reading !== entry.expression) parts.push(el("span", { class: "mc-reading", text: entry.display_reading || entry.reading }));
     return el("div", { class: "mc-head" }, ...parts);
   }
 
@@ -768,7 +768,7 @@
     const selected = new Set(entry.definitions.length ? [entry.definitions[0].dictionary] : []);
 
     const word = el("input", { type: "text", value: entry.form, lang: displayLang(language) });
-    const reading = el("input", { type: "text", value: entry.reading !== entry.expression ? entry.reading : "", lang: displayLang(language) });
+    const reading = el("input", { type: "text", value: entry.reading !== entry.expression ? entry.display_reading || entry.reading : "", lang: displayLang(language) });
     const definition = el("div", { class: "mc-editable", contenteditable: "true", role: "textbox", "aria-multiline": "true" });
     definition.innerHTML = definitionHtml(entry, selected);
     const sentenceBox = el("div", { class: "mc-editable", contenteditable: "true", role: "textbox", lang: displayLang(language) });
@@ -861,7 +861,7 @@
       if (sentenceAudio.state.value) media.sentence_audio = sentenceAudio.state.value;
       try {
         const { card } = await api("/api/cards", {
-          language, send: sendNow, tags: tags.value,
+          language, send: sendNow, tags: tags.value, key_reading: entry.reading !== entry.expression ? entry.reading : "",
           fields: {
             word: word.value.trim(), reading: reading.value.trim(), definition: definition.innerHTML,
             sentence: sentenceBox.innerHTML, sentence_translation: translation.value, notes: notes.value, source: source.value,
@@ -890,9 +890,18 @@
       if (shot) image.setValue(shot);
     }
 
-    // A recording of the word, when an online source has one.
+    // A recording of the word, when an online source has one; the others can be picked instead.
     wordAudio(entry, language).then((sources) => {
-      if (sources.length && !audio.state.value && dialog.isConnected) audio.setValue({ url: sources[0].url });
+      if (!sources.length || !dialog.isConnected) return;
+      if (!audio.state.value) audio.setValue({ url: sources[0].url });
+      if (sources.length < 2) return;
+      const pick = el("select", { class: "mc-audio-source", "aria-label": "Recording" });
+      sources.forEach((source, i) => pick.append(el("option", { value: String(i), text: `${i + 1}. ${source.name}` })));
+      pick.addEventListener("change", () => {
+        audio.setValue({ url: sources[Number(pick.value)].url });
+        audio.preview.querySelector("audio")?.play().catch(() => {});
+      });
+      audio.zone.insertBefore(el("div", { class: "mc-media-row mc-tts" }, el("span", { class: "mc-label", text: "Recording" }), pick), audio.preview);
     }).catch(() => {});
 
     // A translation of the sentence, made offline in the language of the settings.

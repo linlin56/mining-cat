@@ -145,17 +145,23 @@ async function loadLanguages() {
   options($("words-language"), [["", "All languages"], ...S.languages.map((l) => [l.id, l.name])], "");
   options($("note-language"), S.languages.map((l) => [l.id, l.name]), "zh");
 
-  const box = $("script-settings");
-  box.replaceChildren(...S.languages.filter((l) => l.chinese).map((l) => {
-    const name = `script-${l.id}`;
-    const row = el("div", { class: "script-row", role: "radiogroup", "aria-label": l.name }, el("span", { text: l.name }));
-    for (const [value, label] of [["traditional", "Traditional 繁體"], ["simplified", "Simplified 简体"], ["both", "Both"]]) {
-      const radio = el("input", { type: "radio", name, value, checked: data.scripts[l.id] === value });
-      radio.addEventListener("change", () => api("/api/mining/script", { language: l.id, script: value }).catch(showError));
+  // Only the languages studied (with a dictionary or words) get settings; Mandarin when there's none yet.
+  const chinese = S.languages.filter((l) => l.chinese);
+  const shown = chinese.some((l) => l.studied) ? chinese.filter((l) => l.studied) : chinese.filter((l) => l.id === "zh");
+  const radios = (language, choices, current, path, key) => {
+    const row = el("div", { class: "script-row", role: "radiogroup", "aria-label": language.name }, el("span", { text: language.name }));
+    for (const [value, label] of choices) {
+      const radio = el("input", { type: "radio", name: `${key}-${language.id}`, value, checked: current === value });
+      radio.addEventListener("change", () => api(path, { language: language.id, [key]: value }).catch(showError));
       row.append(el("label", { class: "check" }, radio, label));
     }
     return row;
-  }));
+  };
+  $("script-settings").replaceChildren(...shown.map((l) => radios(l,
+    [["traditional", "Traditional 繁體"], ["simplified", "Simplified 简体"], ["both", "Both"]], data.scripts[l.id], "/api/mining/script", "script")));
+  const mandarin = S.languages.find((l) => l.id === "zh");
+  $("reading-settings").replaceChildren(radios(mandarin,
+    [["pinyin", "Pinyin (hànyǔ)"], ["zhuyin", "Zhuyin (ㄏㄢˋ ㄩˇ)"]], data.readings.zh, "/api/mining/reading", "system"));
 
   const counts = $("word-counts");
   const entries = Object.entries(data.counts);
@@ -252,12 +258,58 @@ async function renderTranslation() {
   try {
     const { languages, chosen } = await api("/api/translate/languages");
     options($("translation-language"), [["", "None: no translation"], ...languages.map((l) => [l.id, l.name])], chosen);
+    const studied = new Set([...S.languages.filter((l) => l.studied).map((l) => l.id)]);
+    const sources = languages.filter((l) => l.id !== chosen);
+    const first = sources.find((l) => studied.has(l.id)) || sources[0];
+    options($("model-language"), sources.map((l) => [l.id, l.name]), first && first.id);
+    $("model-download").disabled = !chosen;
+    renderModels(await api("/api/translate/models"));
   } catch (err) { showError(err); }
+}
+
+const megabytes = (bytes) => `${Math.round(bytes / 1e6)} MB`;
+
+let modelPoll = null;
+function renderModels({ available, installed, job }) {
+  const list = $("model-list");
+  if (!available) {
+    list.replaceChildren(el("p", { class: "empty", text: "Translation needs the argostranslate package (pip install argostranslate)." }));
+    $("model-download").disabled = true;
+    return;
+  }
+  list.replaceChildren(installed.length
+    ? el("table", { class: "mapping" }, el("tbody", {}, ...installed.map((m) => el("tr", {},
+      el("td", { text: m.name }), el("td", { class: "dim", text: megabytes(m.size) }),
+      el("td", {}, el("button", { type: "button", class: "icon-btn danger", "aria-label": `Remove ${m.name}`, text: "×",
+        onclick: async () => {
+          try { renderModels(await api(`/api/translate/models/${m.from}/${m.to}/delete`, {})); } catch (err) { showError(err); }
+        } }))))))
+    : el("p", { class: "empty", text: "No model yet: they're downloaded the first time a language is translated." }));
+
+  const running = job.state === "running";
+  $("model-progress").hidden = !running && job.state !== "error";
+  $("model-download").disabled = running || !$("translation-language").value;
+  if (running) {
+    $("model-progress-bar").value = job.total ? job.done / job.total : 0;
+    $("model-progress-bar").max = 1;
+    $("model-progress-text").textContent = `${langName(job.language)}${job.step ? ` (model ${job.step})` : ""}: `
+      + (job.total ? `${megabytes(job.done)} / ${megabytes(job.total)}` : "starting…");
+  } else if (job.state === "error") {
+    $("model-progress-bar").value = 0;
+    $("model-progress-text").textContent = `Download failed: ${job.error}`;
+  }
+  clearTimeout(modelPoll);
+  if (running) modelPoll = setTimeout(async () => { try { renderModels(await api("/api/translate/models")); } catch (err) { showError(err); } }, 700);
+}
+
+async function downloadModels() {
+  try { renderModels(await api("/api/translate/models", { language: $("model-language").value })); } catch (err) { showError(err); }
 }
 
 async function saveTranslation() {
   try {
     S.config = (await api("/api/anki/config", { translation_language: $("translation-language").value })).config;
+    renderTranslation();
     $("translation-saved").textContent = "Saved.";
     setTimeout(() => { $("translation-saved").textContent = ""; }, 3000);
   } catch (err) { showError(err); }
@@ -442,6 +494,7 @@ async function init() {
     $("note-language").addEventListener("change", renderNoteSetup);
     $("note-save").addEventListener("click", saveNoteSetup);
     $("translation-save").addEventListener("click", saveTranslation);
+    $("model-download").addEventListener("click", downloadModels);
     $("sync-add").addEventListener("click", () => {
       $("sync-sources").querySelector(".empty")?.remove();
       $("sync-sources").append(syncRow());

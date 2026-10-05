@@ -39,6 +39,31 @@ def set_chinese_script_preference(language: str, script: str) -> None:
     db.set_setting("chinese_scripts", prefs)
 
 
+# How Mandarin readings are shown in the popup and written on cards. Words stay identified by their pinyin.
+READING_SYSTEMS = ("pinyin", "zhuyin")
+
+
+def reading_system(language: str) -> str:
+    return (db.get_setting("reading_systems", {}) or {}).get(language, "pinyin") if language == "zh" else ""
+
+
+def set_reading_system(language: str, system: str) -> None:
+    if language != "zh" or system not in READING_SYSTEMS:
+        raise WordError("Invalid reading setting.")
+    prefs = db.get_setting("reading_systems", {}) or {}
+    prefs[language] = system
+    db.set_setting("reading_systems", prefs)
+
+
+def display_reading(language: str, expression: str, reading: str) -> str:
+    """The reading as the user wants to see it: zhuyin instead of pinyin when chosen."""
+    if reading and reading_system(language) == "zhuyin":
+        from mining.zhuyin import pinyin_to_zhuyin
+
+        return pinyin_to_zhuyin(reading, expression) or reading
+    return reading
+
+
 def preferred_form(language: str, expression: str) -> str:
     """The form under which a word is saved, given the script the user learns."""
     if language not in CHINESE_LANGUAGES:

@@ -63,9 +63,9 @@ In the reader's settings (Aa), *Colour words* can be turned *Off*. The colours d
 
 - tick other dictionaries to add their definitions;
 - add an image: *Choose a file*, drop one on the window, paste one with Ctrl+V, or paste a link;
-- add the word's audio or the sentence's audio the same way. The word's audio is filled in when an online recording exists, and for a book [converted with its audio](reader.md#audio-of-a-converted-book), so is the sentence's;
+- add the word's audio or the sentence's audio the same way. The word's audio is filled in when an online recording exists (when there are several, pick another one under *Recording*), and for a book [converted with its audio](reader.md#audio-of-a-converted-book), so is the sentence's;
 - when the sentence has no audio, it is read by the voice chosen for its language in **Settings › Anki** (*Voice reading sentences without audio*), with the same Edge-TTS voices as for generating a book's audio (an Internet connection is needed). Pick another voice under *Sentence audio* and click **Generate** to try it; choose *None* in the settings to only generate by hand;
-- the sentence's translation is filled in, offline, in the language chosen in **Settings › Anki** (*Sentence translation*, English by default, *None* to turn it off). It uses [Argos Translate](https://github.com/argosopentech/argos-translate): the first time a language is translated, its model (about 100 MB) is downloaded. Cantonese and Taiwanese Hokkien have no model;
+- the sentence's translation is filled in, offline, in the language chosen in **Settings › Anki** (*Sentence translation*, English by default, *None* to turn it off). It uses [Argos Translate](https://github.com/argosopentech/argos-translate): the first time a language is translated, its model (about 100 MB) is downloaded; to download it ahead of time, or to remove models, use *Models* in the same panel. Cantonese and Taiwanese Hokkien have no model;
 - edit the translation, add notes and tags.
 
 **Add to Anki** sends the card straight away. **Save for later** keeps it in MiningCat.
@@ -101,12 +101,14 @@ Words you marked *known* or *ignored* yourself are never changed by a sync.
 
 Each language has its own words: knowing 說 in Mandarin says nothing about Cantonese. Settings › **Languages & words** lists them.
 
-For Mandarin and Cantonese, choose the characters you learn: **Traditional**, **Simplified** or **Both**.
+For the Chinese languages you study (the ones with a dictionary or saved words), choose the characters you learn: **Traditional**, **Simplified** or **Both**.
 
 - Words whose characters are the same in both scripts count for both.
 - If you learn Traditional and look up 说话 in a simplified book, the word is saved as 說話, with Taiwan's characters for Mandarin (里面 is saved as 裡面) and Hong Kong's for Cantonese.
 - Words written the same way in both scripts are saved as they are: 了解 and 台灣 are already traditional.
 - When you know a word in the other script, the popup tells you (“You know this word in Simplified: 说话”).
+
+For Mandarin, also choose how readings are shown: **Pinyin** or **Zhuyin**. With Zhuyin, the popup and the card's *Reading* field show ㄕㄨㄛ ㄏㄨㄚˋ instead of shuōhuà. Words keep their status whichever you choose.
 
 ## Current limits
 

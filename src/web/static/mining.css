@@ -135,7 +135,7 @@ div.mc-senses { padding-left: 0; }
 .mc-media.dragover { border-color: var(--accent); background: rgba(255, 107, 107, .08); }
 .mc-media-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .mc-tts { justify-content: flex-start; }
-.mc-tts .mc-tts-voice { flex: 1; min-width: 0; }
+.mc-tts .mc-tts-voice, .mc-tts .mc-audio-source { flex: 1; min-width: 0; }
 .mc-media-preview { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .mc-media-preview:empty { display: none; }
 .mc-media-preview img { max-width: 100%; max-height: 180px; border-radius: 6px; }

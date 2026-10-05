@@ -1,0 +1,5837 @@
+{
+ "language": "es",
+ "source": "Exported from Yomitan (https://github.com/yomidevs/yomitan), GPL-3.0-or-later, by tools/export_yomitan_transforms.mjs",
+ "conditions": {
+  "n": {
+   "name": "Noun",
+   "isDictionaryForm": true,
+   "subConditions": [
+    "ns",
+    "np"
+   ]
+  },
+  "np": {
+   "name": "Noun plural",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "ns": {
+   "name": "Noun singular",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "v": {
+   "name": "Verb",
+   "isDictionaryForm": true,
+   "subConditions": [
+    "v_ar",
+    "v_er",
+    "v_ir"
+   ]
+  },
+  "v_ar": {
+   "name": "-ar verb",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "v_er": {
+   "name": "-er verb",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "v_ir": {
+   "name": "-ir verb",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "adj": {
+   "name": "Adjective",
+   "isDictionaryForm": true,
+   "subConditions": []
+  }
+ },
+ "transforms": {
+  "plural": {
+   "name": "plural",
+   "description": "Plural form of a noun",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "s",
+     "to": "",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "es",
+     "to": "",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ces",
+     "to": "z",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ases",
+     "to": "ás",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "eses",
+     "to": "és",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ises",
+     "to": "ís",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "oses",
+     "to": "ós",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "uses",
+     "to": "ús",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "anes",
+     "to": "án",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "enes",
+     "to": "én",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ines",
+     "to": "ín",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ones",
+     "to": "ón",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "unes",
+     "to": "ún",
+     "conditionsIn": [
+      "np"
+     ],
+     "conditionsOut": [
+      "ns"
+     ]
+    }
+   ]
+  },
+  "feminine adjective": {
+   "name": "feminine adjective",
+   "description": "feminine form of an adjective",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "a",
+     "to": "o",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "adj"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "a",
+     "to": "",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "adj"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ana",
+     "to": "án",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "adj"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ena",
+     "to": "én",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "adj"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ina",
+     "to": "ín",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "adj"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ona",
+     "to": "ón",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "adj"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "asa",
+     "to": "ás",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "adj"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "esa",
+     "to": "és",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "adj"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "isa",
+     "to": "ís",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "adj"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "osa",
+     "to": "ós",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "adj"
+     ]
+    }
+   ]
+  },
+  "present indicative": {
+   "name": "present indicative",
+   "description": "Present indicative form of a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "o",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "as",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "a",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "amos",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "áis",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "an",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "o",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "es",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "e",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "emos",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "éis",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "en",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "o",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "es",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "e",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "imos",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ís",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "en",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "uyo",
+     "to": "uir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "uyes",
+     "to": "uir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "uye",
+     "to": "uir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "uyen",
+     "to": "uir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tengo",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tienes",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tiene",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tenemos",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tenéis",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tienen",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "oigo",
+     "to": "oír",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "oyes",
+     "to": "oír",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "oye",
+     "to": "oír",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "oímos",
+     "to": "oír",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "oís",
+     "to": "oír",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "oyen",
+     "to": "oír",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vengo",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vienes",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "viene",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "venimos",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "venís",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vienen",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "go",
+     "to": "guir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "jo",
+     "to": "ger",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "jo",
+     "to": "gir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "aigo",
+     "to": "aer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "zco",
+     "to": "cer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "zco",
+     "to": "cir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "hago",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "pongo",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "lgo",
+     "to": "lir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "lgo",
+     "to": "ler",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "quepo",
+     "to": "caber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "doy",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sé",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "veo",
+     "to": "ver",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "soy",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "eres",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "es",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "somos",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sois",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "son",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estoy",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estás",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "está",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estamos",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estáis",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "están",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "voy",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vas",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "va",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vamos",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vais",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "van",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "he",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "has",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "ha",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "hemos",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "habéis",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "han",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "preterite": {
+   "name": "preterite",
+   "description": "Preterite (past) form of a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "é",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "aste",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ó",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "amos",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "asteis",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "aron",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "í",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iste",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ió",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "imos",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "isteis",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ieron",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "í",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iste",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ió",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "imos",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "isteis",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ieron",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "qué",
+     "to": "car",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "gué",
+     "to": "gar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "cé",
+     "to": "zar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "í",
+     "to": "uir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fui",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuiste",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fue",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuimos",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuisteis",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fueron",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fui",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuiste",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fue",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuimos",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuisteis",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fueron",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "di",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "diste",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "dio",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "dimos",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "disteis",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "dieron",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "hice",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "hiciste",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "hizo",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "hicimos",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "hicisteis",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "hicieron",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "puse",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "pusiste",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "puso",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "pusimos",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "pusisteis",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "pusieron",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "dije",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "dijiste",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "dijo",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "dijimos",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "dijisteis",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "dijeron",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vine",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "viniste",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vino",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vinimos",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vinisteis",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vinieron",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "quise",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "quisiste",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "quiso",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "quisimos",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "quisisteis",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "quisieron",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tuve",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tuviste",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tuvo",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tuvimos",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tuvisteis",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tuvieron",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pude",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pudiste",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pudo",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pudimos",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pudisteis",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pudieron",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "supe",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "supiste",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "supo",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "supimos",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "supisteis",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "supieron",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estuve",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estuviste",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estuvo",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estuvimos",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estuvisteis",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estuvieron",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "anduve",
+     "to": "andar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "anduviste",
+     "to": "andar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "anduvo",
+     "to": "andar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "anduvimos",
+     "to": "andar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "anduvisteis",
+     "to": "andar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "anduvieron",
+     "to": "andar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "imperfect": {
+   "name": "imperfect",
+   "description": "Imperfect form of a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "aba",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "abas",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "aba",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ábamos",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "abais",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "aban",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ía",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ías",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ía",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "íamos",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "íais",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ían",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ía",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ías",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ía",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "íamos",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "íais",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ían",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "eía",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "eías",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "eía",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "eíamos",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "eíais",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "eían",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "era",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "eras",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "era",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "éramos",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "erais",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "eran",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "iba",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "ibas",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "iba",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "íbamos",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "ibais",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "iban",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "veía",
+     "to": "ver",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "veías",
+     "to": "ver",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "veía",
+     "to": "ver",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "veíamos",
+     "to": "ver",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "veíais",
+     "to": "ver",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "veían",
+     "to": "ver",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "progressive": {
+   "name": "progressive",
+   "description": "Progressive form of a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ando",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iendo",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iendo",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ayendo",
+     "to": "aer",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "eyendo",
+     "to": "eer",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "uyendo",
+     "to": "uir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "oyendo",
+     "to": "oír",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "yendo",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "imperative": {
+   "name": "imperative",
+   "description": "Imperative form of a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "a",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "emos",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ad",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "e",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "amos",
+     "to": "ar",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ed",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "e",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "amos",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "id",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "diga",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sé",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "ve",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "ten",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "ven",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "haz",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "di",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pon",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sal",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "es",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "emos",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "éis",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "as",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "amos",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "áis",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "as",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "amos",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "áis",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    }
+   ]
+  },
+  "conditional": {
+   "name": "conditional",
+   "description": "Conditional form of a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ía",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ías",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ía",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "íamos",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "íais",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ían",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "diría",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "dirías",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "diría",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "diríamos",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "diríais",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "dirían",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "haría",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "harías",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "haría",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "haríamos",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "haríais",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "harían",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pondría",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pondrías",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pondría",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pondríamos",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pondríais",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "pondrían",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldría",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldrías",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldría",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldríamos",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldríais",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldrían",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "tendría",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "tendrías",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "tendría",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "tendríamos",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "tendríais",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "tendrían",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vendría",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vendrías",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vendría",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vendríamos",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vendríais",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vendrían",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "querría",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "querrías",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "querría",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "querríamos",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "querríais",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "querrían",
+     "to": "querer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "podría",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "podrías",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "podría",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "podríamos",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "podríais",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "podrían",
+     "to": "poder",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sabría",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sabrías",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sabría",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sabríamos",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sabríais",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sabrían",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "future": {
+   "name": "future",
+   "description": "Future form of a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "é",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ás",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "á",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "emos",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "éis",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "án",
+     "to": "",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "diré",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "dirás",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "dirá",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "diremos",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "diréis",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "dirán",
+     "to": "decir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "haré",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "harás",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "hará",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "haremos",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "haréis",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "harán",
+     "to": "hacer",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "pondré",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "pondrás",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "pondrá",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "pondremos",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "pondréis",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "pondrán",
+     "to": "poner",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldré",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldrás",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldrá",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldremos",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldréis",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "saldrán",
+     "to": "salir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tendré",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tendrás",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tendrá",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tendremos",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tendréis",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "tendrán",
+     "to": "tener",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vendré",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vendrás",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vendrá",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vendremos",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vendréis",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "vendrán",
+     "to": "venir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "present subjunctive": {
+   "name": "present subjunctive",
+   "description": "Present subjunctive form of a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "e",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "es",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "e",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "emos",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "éis",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "en",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "a",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "as",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "a",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "amos",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "áis",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "an",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "a",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "as",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "a",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "amos",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "áis",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "an",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "dé",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "des",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "dé",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "demos",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "deis",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "den",
+     "to": "dar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "esté",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estés",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "esté",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estemos",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estéis",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "estén",
+     "to": "estar",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sea",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "seas",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sea",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "seamos",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "seáis",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sean",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vaya",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vayas",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vaya",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vayamos",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vayáis",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vayan",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "haya",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "hayas",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "haya",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "hayamos",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "hayáis",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "hayan",
+     "to": "haber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sepa",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sepas",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sepa",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sepamos",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sepáis",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "sepan",
+     "to": "saber",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "imperfect subjunctive": {
+   "name": "imperfect subjunctive",
+   "description": "Imperfect subjunctive form of a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ara",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ase",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "aras",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ases",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ara",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ase",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "áramos",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ásemos",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "arais",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "aseis",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "aran",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "asen",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iera",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iese",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ieras",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ieses",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iera",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iese",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iéramos",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iésemos",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ierais",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ieseis",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ieran",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iesen",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iera",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iese",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ieras",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ieses",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iera",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iese",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iéramos",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iésemos",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ierais",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ieseis",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ieran",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "iesen",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuera",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuese",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fueras",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fueses",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuera",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuese",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuéramos",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuésemos",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuerais",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fueseis",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fueran",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuesen",
+     "to": "ser",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuera",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuese",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fueras",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fueses",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuera",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuese",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuéramos",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuésemos",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuerais",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fueseis",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fueran",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "fuesen",
+     "to": "ir",
+     "conditionsIn": [
+      "v"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "participle": {
+   "name": "participle",
+   "description": "Participle form of a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ado",
+     "to": "ar",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ido",
+     "to": "er",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ido",
+     "to": "ir",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "oído",
+     "to": "oír",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "dicho",
+     "to": "decir",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "escrito",
+     "to": "escribir",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "hecho",
+     "to": "hacer",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "muerto",
+     "to": "morir",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "puesto",
+     "to": "poner",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "roto",
+     "to": "romper",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "visto",
+     "to": "ver",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "vuelto",
+     "to": "volver",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "reflexive": {
+   "name": "reflexive",
+   "description": "Reflexive form of a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "arse",
+     "to": "ar",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "erse",
+     "to": "er",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "irse",
+     "to": "ir",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    }
+   ]
+  },
+  "pronoun substitution": {
+   "name": "pronoun substitution",
+   "description": "Substituted pronoun of a reflexive verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "arme",
+     "to": "arse",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "arte",
+     "to": "arse",
+     "conditionsIn": [
+      "v_ar"
+     ],
+     "conditionsOut": [
+      "v_ar"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "arnos",
+     "to": "arse",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "erme",
+     "to": "erse",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "erte",
+     "to": "erse",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ernos",
+     "to": "erse",
+     "conditionsIn": [
+      "v_er"
+     ],
+     "conditionsOut": [
+      "v_er"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "irme",
+     "to": "irse",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "irte",
+     "to": "irse",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "irnos",
+     "to": "irse",
+     "conditionsIn": [
+      "v_ir"
+     ],
+     "conditionsOut": [
+      "v_ir"
+     ]
+    }
+   ]
+  }
+ }
+}

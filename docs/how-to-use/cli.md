@@ -182,7 +182,9 @@ The Makefile wraps the most common commands. Variables can be overridden on the 
 
 | Command                          | Equivalent                                       |
 | -------------------------------- | ------------------------------------------------ |
-| `make gui`                       | Launch the GUI                                   |
+| `make gui [PORT=5050]`           | Launch the GUI in your browser                   |
+| `make reader [PORT=5050]`        | Open the ebook reader in your browser            |
+| `make gui-tk`                    | Launch the previous Tkinter GUI                  |
 | `make audio`                     | `audio`                                          |
 | `make epub [RANGE=4-9]`          | `epub [--range 4-9]`                             |
 | `make align [CHAPTER=1\|all]`    | `align --only 1` (or all chapters)               |

@@ -74,7 +74,7 @@ from . import bilibili, instagram, your_site, youtube
 _HANDLER_MODULES = (bilibili, instagram, your_site, youtube)
 ```
 
-`get_handler()` now dispatches URLs of your domains to your handler. To show the platform in the GUI, add it to `TARGET_WEBSITES` in `src/gui_components/video_panel.py`, with an example URL in the placeholder mapping below it.
+`get_handler()` now dispatches URLs of your domains to your handler. To show the platform in the GUI, add it to `TARGET_WEBSITES` in `src/gui_components/constants.py`, with an example URL in `URL_HINT_BY_WEBSITE` below it, and to the `handler_by_website` mapping of `validate_video_url()` in `src/web/options.py`.
 
 ## 4. Tests
 
@@ -93,7 +93,7 @@ Add the platform to the [supported platforms table](../how-to-use/video.md#from-
 
 - [ ] Handler module in `src/video_handlers/` with `DOMAINS` and `download(url, output_dir, **_ignored)`
 - [ ] Registered in `_HANDLER_MODULES` in `src/video_handlers/__init__.py`
-- [ ] Added to `TARGET_WEBSITES` in `src/gui_components/video_panel.py`
+- [ ] Added to `TARGET_WEBSITES` and `URL_HINT_BY_WEBSITE` in `src/gui_components/constants.py`, and to `validate_video_url()` in `src/web/options.py`
 - [ ] Subtitle reuse implemented if the platform provides subtitles (optional)
 - [ ] Handler tests added (mocked `yt_dlp.YoutubeDL`, no network)
 - [ ] `get_handler()` tests added in `src/tests/video_handlers.test.py`

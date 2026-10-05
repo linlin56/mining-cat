@@ -13,6 +13,8 @@ nav = [
     "how-to-use/video.md",
     "how-to-use/video-game.md",
     "how-to-use/frequency-lists.md",
+    "how-to-use/reader.md",
+    "how-to-use/mining.md",
     "how-to-use/cli.md",
     "how-to-use/files.md",
   ] },

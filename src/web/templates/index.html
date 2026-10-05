@@ -179,7 +179,41 @@
           <button type="button" class="btn" data-action="clear-output">Clear output</button>
         </section>
       </div>
+      <!-- ===== Video game / Screen share screen ===== -->
+      <div id="screen-game" class="screen" hidden>
+        <section class="panel">
+          <h2 class="panel-title">Video game / Screen share</h2>
+          <p class="game-backend">Capture: <span id="game-backend" class="dim"></span></p>
+          <div class="game-steps">
+            <button type="button" class="btn" id="game-window-btn">Select window…</button>
+            <span id="game-window-label" class="dim">No window selected</span>
+            <button type="button" class="btn" id="game-screenshot-btn">Select window's full size (for screenshot)…</button>
+            <span id="game-screenshot-label" class="dim">Not selected</span>
+            <button type="button" class="btn" id="game-text-btn">Select text area (for OCR)…</button>
+            <span id="game-text-label" class="dim">Not selected</span>
+          </div>
+          <div class="ocr-block">
+            <div class="row">
+              <label class="field">
+                <span class="field-label">Capture key</span>
+                <select id="game-hotkey"></select>
+              </label>
+              <span class="dim game-hint" id="game-hotkey-hint">works even with the game focused</span>
+            </div>
+            <label class="check">
+              <input type="checkbox" id="game-continuous">
+              <span>Continuous capture (whenever the text changes, instead of the capture key)</span>
+            </label>
+          </div>
+        </section>
+      </div>
     </fieldset>
+
+    <!-- Outside the fieldset: Stop must stay usable while the capture runs. -->
+    <section class="row start-row" id="game-actions" hidden>
+      <button type="button" class="btn btn-start" id="game-start" disabled>Start</button>
+      <button type="button" class="btn" id="game-page" disabled>Open page</button>
+    </section>
 
     <!-- Progress -->
     <section class="progress-block" aria-live="polite">
@@ -206,13 +240,13 @@
     </form>
   </dialog>
 
-  <!-- Subtitle region picker (replaces ocr_region_dialog.py) -->
+  <!-- Region picker (replaces ocr_region_dialog.py): subtitle region, and the video game areas -->
   <dialog id="ocr-dialog" class="dialog dialog-wide">
-    <h3>Select subtitle region</h3>
-    <p class="dim">Drag a rectangle around the subtitles. Browse frames to find one with dialogue on screen.</p>
+    <h3 id="ocr-title">Select subtitle region</h3>
+    <p class="dim" id="ocr-help">Drag a rectangle around the subtitles. Browse frames to find one with dialogue on screen.</p>
     <p id="ocr-loading">Loading preview frames…</p>
     <div class="ocr-stage" id="ocr-stage" hidden>
-      <img id="ocr-frame" alt="Video frame preview" draggable="false">
+      <img id="ocr-frame" alt="Frame preview" draggable="false">
       <div class="ocr-rect" id="ocr-rect"></div>
     </div>
     <div class="ocr-nav" id="ocr-nav" hidden>
@@ -226,6 +260,19 @@
       <span class="spacer"></span>
       <button type="button" class="btn" id="ocr-cancel">Cancel</button>
       <button type="button" class="btn btn-primary" id="ocr-ok">OK</button>
+    </div>
+  </dialog>
+
+  <!-- Game window picker (replaces game_dialogs.WindowPickerDialog), for OSes without a system picker -->
+  <dialog id="window-dialog" class="dialog">
+    <h3>Select the game window</h3>
+    <p class="dim">Pick the window to capture (it must be open, and not minimized):</p>
+    <select id="window-list" class="window-list" size="12"></select>
+    <div class="dialog-actions">
+      <button type="button" class="btn" id="window-refresh">Refresh</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="window-cancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="window-ok">OK</button>
     </div>
   </dialog>
 </body>

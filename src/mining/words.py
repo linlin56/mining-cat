@@ -44,10 +44,12 @@ def preferred_form(language: str, expression: str) -> str:
     if language not in CHINESE_LANGUAGES:
         return expression
     preference = chinese_script_preference(language)
-    if preference == "traditional":
-        return to_traditional(expression)
-    if preference == "simplified":
-        return to_simplified(expression)
+    script = chinese_script(expression)
+    # A word written the same way in both scripts (了解, 台灣's 台...) is kept as it is.
+    if preference == "traditional" and script in ("simplified", "mixed"):
+        return to_traditional(expression, language)
+    if preference == "simplified" and script in ("traditional", "mixed"):
+        return to_simplified(expression, language)
     return expression
 
 
@@ -74,7 +76,7 @@ def status_of(language: str, expression: str, reading: str = "") -> dict:
         word = find(conn, language, expression, reading)
         result = {"status": word["status"] if word else "new", "source": word["source"] if word else None}
         if language in CHINESE_LANGUAGES:
-            other = chinese_counterpart(expression)
+            other = chinese_counterpart(expression, language)
             if other is not None:
                 script, other_expression = other
                 linked = find(conn, language, other_expression, reading)

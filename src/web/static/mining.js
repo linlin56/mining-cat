@@ -3,6 +3,10 @@
 // MiningCatMining.attach(container, {getLanguage, getSource, getMode}) makes the text of `container`
 // searchable: a click (or Shift + hover) on a word looks it up in the imported dictionaries and shows
 // a popup with the definitions, the word's status and a "+ Card" button that opens the card creator.
+// Optional: hasAudio(), sentenceAudio(text) -> {url, start, end} and sentenceClip(text) -> {data, name}
+// when the text has audio (a book converted by MiningCat): the popup can then play the sentence, and
+// the card creator gets the sentence's audio. getImage(node) -> {data, name}: an image for the card, from
+// the text node that was looked up (e.g. the screenshot of a video game capture).
 "use strict";
 
 (() => {
@@ -140,12 +144,114 @@
     const range = document.createRange();
     range.setStart(a.node, a.offset);
     range.setEnd(b.node, b.offset + 1);
-    CSS.highlights.set("mc-lookup", new Highlight(range));
+    const lookup = new Highlight(range);
+    lookup.priority = 10;  // above the status colours
+    CSS.highlights.set("mc-lookup", lookup);
     return range;
   }
 
   function clearHighlight() {
     if (window.CSS && CSS.highlights) CSS.highlights.delete("mc-lookup");
+  }
+
+  // ------------------------------------------------------------ word colours
+
+  // Words are coloured with CSS highlights: the DOM isn't touched, so the reader's character offsets,
+  // its pagination and other tools reading the page (Yomitan) see the same text.
+  const COLOURED = ["new", "learning"];
+  // Two touching words of the same colour would read as one: every other one gets the "-alt" shade.
+  const COLOUR_HIGHLIGHTS = COLOURED.flatMap((status) => [`mc-${status}`, `mc-${status}-alt`]);
+  let colours = null;       // {language, words: [{headword, form, status}], tokens: [{index, start, end, range}]}
+  let colourToken = 0;
+
+  // Text of `root` sent for segmentation: its text nodes (ruby annotations excluded), with a line break
+  // between blocks so that no word spans two paragraphs. `starts[k]` is where node k begins in `text`.
+  function segmentText(root) {
+    const nodes = [], starts = [];
+    let text = "", lastBlock = null;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(n) { return n.parentElement.closest("rt, rp") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; },
+    });
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const block = node.parentElement.closest(BLOCK);
+      if (text && block !== lastBlock) text += "\n";
+      lastBlock = block;
+      nodes.push(node);
+      starts.push(text.length);
+      text += node.data;
+    }
+    return { text, nodes, starts };
+  }
+
+  function nodeAt(seg, offset) {
+    let lo = 0, hi = seg.nodes.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (seg.starts[mid] <= offset) lo = mid; else hi = mid - 1;
+    }
+    const node = seg.nodes[lo];
+    return { node, at: Math.min(offset - seg.starts[lo], node.data.length) };
+  }
+
+  function paintColours() {
+    if (!colours) return;
+    const groups = Object.fromEntries(COLOUR_HIGHLIGHTS.map((name) => [name, []]));
+    let previous = null;  // {status, end, alt} of the last coloured word
+    for (const token of colours.tokens) {
+      const status = colours.words[token.index].status;
+      if (!COLOURED.includes(status)) { previous = null; continue; }
+      const alt = Boolean(previous && previous.status === status && previous.end === token.start && !previous.alt);
+      groups[`mc-${status}${alt ? "-alt" : ""}`].push(token.range);
+      previous = { status, end: token.end, alt };
+    }
+    for (const name of COLOUR_HIGHLIGHTS) CSS.highlights.set(name, new Highlight(...groups[name]));
+  }
+
+  function clearColours() {
+    colourToken++;
+    colours = null;
+    if (window.CSS && CSS.highlights) for (const name of COLOUR_HIGHLIGHTS) CSS.highlights.delete(name);
+  }
+
+  // Colours the words of `root` (e.g. a reader chapter) by status. Words missing from the dictionaries stay as they are.
+  async function colourWords(root, language) {
+    clearColours();
+    if (!window.CSS || !CSS.highlights || !window.Highlight) return;
+    const token = colourToken;
+    const seg = segmentText(root);
+    if (!seg.text.trim()) return;
+    let data;
+    try {
+      data = await api("/api/words/segment", { language, text: seg.text });
+    } catch {
+      return;  // e.g. no dictionary language: the text simply stays uncoloured
+    }
+    if (token !== colourToken) return;
+    const tokens = [];
+    for (const [start, length, index] of data.tokens) {
+      if (index < 0) continue;
+      const a = nodeAt(seg, start), b = nodeAt(seg, start + length);
+      const range = document.createRange();
+      range.setStart(a.node, a.at);
+      range.setEnd(b.node, b.at);
+      tokens.push({ index, start, end: start + length, range });
+    }
+    colours = { language: data.language, words: data.words, tokens };
+    paintColours();
+  }
+
+  // A status changed in the popup or through a new card: recolour that word everywhere in the text.
+  function updateColour(form, status) {
+    if (!colours) return;
+    let changed = false;
+    for (const word of colours.words) {
+      if (word.form === form && word.status !== status) {
+        word.status = status;
+        changed = true;
+      }
+    }
+    if (changed) paintColours();
   }
 
   // ------------------------------------------------------------ dictionary content
@@ -222,6 +328,69 @@
     return list;
   }
 
+  // ------------------------------------------------------------ sentence audio
+
+  let player = null;
+  let playerEnd = 0;
+
+  async function playSentence(text, button) {
+    if (button) button.disabled = true;
+    try {
+      const span = await options.sentenceAudio(text);
+      if (!span) { toast("This sentence wasn't found in the book's audio.", "info"); return; }
+      if (!player) {
+        player = new Audio();
+        player.addEventListener("timeupdate", () => { if (player.currentTime >= playerEnd) player.pause(); });
+      }
+      if (!player.src.endsWith(span.url)) player.src = span.url;
+      playerEnd = span.end;
+      player.currentTime = span.start;
+      await player.play();
+    } catch (err) {
+      toast(err.message || "Couldn't play the audio.", "error");
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  function stopSentence() {
+    if (player) player.pause();
+  }
+
+  // Recordings of a word (online sources), fetched once per word.
+  const wordAudioCache = new Map();
+  function wordAudio(entry, language) {
+    const key = `${language}|${entry.expression}|${entry.reading}`;
+    if (!wordAudioCache.has(key)) {
+      const query = new URLSearchParams({ language, expression: entry.expression, reading: entry.reading || "" });
+      wordAudioCache.set(key, api(`/api/dict/audio?${query}`).then((d) => d.sources).catch((err) => { wordAudioCache.delete(key); throw err; }));
+    }
+    return wordAudioCache.get(key);
+  }
+
+  // Plays the word's recordings in turn, one per click.
+  async function playWord(entry, language, button) {
+    button.disabled = true;
+    try {
+      const sources = await wordAudio(entry, language);
+      if (!sources.length) { toast("No recording found for this word.", "info"); return; }
+      const index = (Number(button.dataset.next) || 0) % sources.length;
+      button.dataset.next = String(index + 1);
+      button.title = `${sources[index].name}${sources.length > 1 ? ` (${index + 1}/${sources.length}, click for the next one)` : ""}`;
+      if (!player) {
+        player = new Audio();
+        player.addEventListener("timeupdate", () => { if (player.currentTime >= playerEnd) player.pause(); });
+      }
+      playerEnd = Infinity;
+      player.src = sources[index].url;
+      await player.play();
+    } catch (err) {
+      toast(err.message || "Couldn't play the recording.", "error");
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   // ------------------------------------------------------------ popup
 
   function ensurePopup() {
@@ -240,6 +409,7 @@
 
   function hidePopup() {
     lookupToken++;
+    stopSentence();
     if (popup) popup.hidden = true;
     clearHighlight();
     current = null;
@@ -278,6 +448,7 @@
             await api("/api/words/status", { language, expression: entry.form, reading: entry.reading, status: value });
             entry.status.status = value;
             render();
+            updateColour(entry.form, value);
             if (options.onStatusChange) options.onStatusChange(entry.form, value);
           } catch (err) { toast(err.message, "error"); }
         },
@@ -320,6 +491,12 @@
       return;
     }
     box.append(close);
+    const sentence = current && current.sentence && current.sentence.text;
+    if (sentence && options.sentenceAudio && options.hasAudio && options.hasAudio()) {
+      const play = el("button", { type: "button", class: "mc-play", title: "Play the sentence", text: "▶ Sentence" });
+      play.addEventListener("click", () => playSentence(sentence, play));
+      box.append(play);
+    }
     for (const entry of data.entries) {
       const meta = el("div", { class: "mc-meta" });
       if (entry.inflections.length) {
@@ -327,6 +504,11 @@
           `« ${entry.inflections.map((i) => i.name).join(" « ")}`));
       }
       for (const f of entry.frequencies.slice(0, 3)) meta.append(el("span", { class: "mc-chip", title: f.dictionary, text: `${f.dictionary.split(/[\s[(]/)[0]} ${f.display}` }));
+      if (entry.frequencies.length > 3) {
+        const rest = entry.frequencies.slice(3);
+        meta.append(el("span", { class: "mc-chip", title: rest.map((f) => `${f.dictionary}: ${f.display}`).join("\n"), text: `+${rest.length}` }));
+      }
+      for (const p of entry.pronunciations || []) meta.append(pronunciation(p, entry, language));
 
       const notes = [];
       if (entry.form !== entry.expression) notes.push(el("p", { class: "mc-note" }, "Saved as ", el("strong", { lang: displayLang(language), text: entry.form }), " (the script you learn)."));
@@ -351,14 +533,71 @@
         defs.append(el("section", { class: "mc-def" }, el("div", { class: "mc-dict", text: dictionary }), list));
       }
 
+      const chars = characterSection(entry, language);
       const add = el("button", { type: "button", class: "mc-add", text: "+ Card", onclick: () => openCreator(entry, language) });
+      const listen = el("button", { type: "button", class: "mc-listen", title: "Play the word (online recordings)", "aria-label": "Play the word", text: "🔊" });
+      listen.addEventListener("click", () => playWord(entry, language, listen));
       box.append(el("article", { class: "mc-entry" },
-        el("div", { class: "mc-entry-top" }, headword(entry, language), add),
+        el("div", { class: "mc-entry-top" }, headword(entry, language), listen, add),
         meta.childNodes.length ? meta : null,
         ...notes,
         statusControl(entry, language),
-        defs));
+        defs,
+        chars));
     }
+  }
+
+  // The word's characters, from the character (kanji / hanzi) dictionaries: folded, opened on demand.
+  function characterSection(entry, language) {
+    if (!entry.characters || !entry.characters.length) return null;
+    const lang = displayLang(language);
+    const box = el("details", { class: "mc-chars" }, el("summary", { text: `Characters (${entry.characters.map((c) => c.character).join("")})` }));
+    for (const { character, entries } of entry.characters) {
+      const body = el("div", { class: "mc-char-body" });
+      for (const k of entries) {
+        const readings = [k.onyomi.join("、"), k.kunyomi.join("、")].filter(Boolean).join(" · ");
+        const stats = [k.stats.strokes && `${k.stats.strokes} strokes`, k.stats.grade && `grade ${k.stats.grade}`,
+          k.stats.jlpt && `JLPT N${k.stats.jlpt}`, k.stats.freq && `#${k.stats.freq}`, ...k.frequencies].filter(Boolean);
+        body.append(el("div", { class: "mc-char-entry" },
+          readings ? el("div", { class: "mc-char-readings", lang, text: readings }) : null,
+          el("div", { class: "mc-char-meanings", text: k.meanings.join("; ") }),
+          stats.length ? el("div", { class: "mc-char-stats", text: stats.join(" · ") }) : null));
+      }
+      box.append(el("div", { class: "mc-char" }, el("span", { class: "mc-char-glyph", lang, text: character }), body));
+    }
+    return box;
+  }
+
+  // Morae of a kana reading: small kana belong to the previous one (きょう = きょ + う).
+  function morae(kana) {
+    const out = [];
+    for (const ch of kana) {
+      if (/[ゃゅょぁぃぅぇぉゎャュョァィゥェォヮ]/.test(ch) && out.length) out[out.length - 1] += ch;
+      else out.push(ch);
+    }
+    return out;
+  }
+
+  // Pitch accent with the downstep position (0: heiban, 1: atamadaka...): high morae are overlined, ꜜ marks the drop.
+  function pitchGraph(reading, position) {
+    if (typeof position !== "number") return el("span", { class: "mc-pitch", text: `${reading} ${position}` });
+    const box = el("span", { class: "mc-pitch", title: `Pitch accent [${position}]`, lang: "ja" });
+    morae(reading).forEach((mora, i) => {
+      const n = i + 1;
+      const high = position === 0 ? n > 1 : position === 1 ? n === 1 : n > 1 && n <= position;
+      box.append(el("span", { class: high ? "mc-high" : "mc-low", text: mora }));
+      if (n === position) box.append(el("span", { class: "mc-drop", text: "ꜜ" }));
+    });
+    box.append(el("span", { class: "mc-pitch-num", text: `[${position}]` }));
+    return box;
+  }
+
+  function pronunciation(p, entry, language) {
+    const reading = p.reading || (entry.reading !== entry.expression ? entry.reading : entry.expression);
+    const wrap = el("span", { class: "mc-pron", title: p.dictionary });
+    if (p.pitches) for (const position of p.pitches) wrap.append(pitchGraph(reading, position));
+    if (p.ipa) for (const ipa of p.ipa) wrap.append(el("span", { class: "mc-ipa", text: ipa }));
+    return wrap;
   }
 
   function groupByDictionary(definitions) {
@@ -387,6 +626,7 @@
     current = {
       language: data.language, entries: data.entries, anchorRect: rect,
       sentence: sentenceAround(scan.text, scan.start, length),
+      node: scan.chars[scan.start].node,
     };
     renderEntries(data, data.language);
     placePopup(rect);
@@ -400,7 +640,7 @@
     const token = ++lookupToken;
     const data = await api("/api/dict/lookup", { language, text }).catch((err) => { toast(err.message, "error"); return null; });
     if (!data || token !== lookupToken) return;
-    current = { language: data.language, entries: data.entries, anchorRect, sentence };
+    current = { language: data.language, entries: data.entries, anchorRect, sentence, node: current ? current.node : null };
     renderEntries(data, data.language);
     placePopup(anchorRect);
   }
@@ -461,6 +701,7 @@
       render();
     };
     input.addEventListener("change", () => { set(input.files[0]); input.value = ""; });
+    const setValue = (value) => { state.value = value; render(); };
     url.addEventListener("change", () => {
       const value = url.value.trim();
       state.value = /^https?:\/\//.test(value) ? { url: value } : null;
@@ -484,7 +725,39 @@
         if (/^https?:\/\//.test(link)) { url.value = link.trim(); url.dispatchEvent(new Event("change")); }
       }
     });
-    return { zone, state, set };
+    return { zone, state, set, setValue, preview };
+  }
+
+  // A voice reading the card's sentence (Edge-TTS), for sentences without audio. The voice set in the
+  // settings is picked first; ready resolves to it ("" when sentences aren't read automatically).
+  function ttsRow(language, getText, slot) {
+    const select = el("select", { class: "mc-tts-voice", "aria-label": "Voice", disabled: true });
+    const button = el("button", { type: "button", class: "mc-btn", text: "Generate", disabled: true });
+    const row = el("div", { class: "mc-media-row mc-tts" }, el("span", { class: "mc-label", text: "Read by" }), select, button);
+    const ready = api(`/api/tts/voices?language=${encodeURIComponent(language)}`).then(({ voices, default: fallback, chosen }) => {
+      if (!voices.length) { row.hidden = true; return ""; }
+      for (const v of voices) select.append(el("option", { value: v.id, text: v.label }));
+      select.value = chosen || fallback;
+      select.disabled = button.disabled = false;
+      return chosen;
+    }).catch(() => { row.hidden = true; return ""; });
+    const generate = async () => {
+      const text = getText().trim();
+      if (!text) return toast("There's no sentence to read.", "info");
+      button.disabled = true;
+      button.textContent = "Generating…";
+      try {
+        const audio = await api("/api/tts", { language, text, voice: select.value });
+        if (row.isConnected) slot.setValue(audio);
+      } catch (err) {
+        toast(err.message, "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = "Generate";
+      }
+    };
+    button.addEventListener("click", generate);
+    return { row, ready, generate };
   }
 
   async function openCreator(entry, language) {
@@ -508,6 +781,8 @@
     const image = mediaSlot("image", "Image", "image/*");
     const audio = mediaSlot("audio", "Word audio", "audio/*");
     const sentenceAudio = mediaSlot("sentence_audio", "Sentence audio", "audio/*,video/*");
+    const tts = ttsRow(language, () => sentenceBox.textContent, sentenceAudio);
+    sentenceAudio.zone.insertBefore(tts.row, sentenceAudio.preview);
 
     const dictChoice = el("div", { class: "mc-dict-choice" });
     for (const name of [...new Set(entry.definitions.map((d) => d.dictionary))]) {
@@ -594,6 +869,7 @@
           media,
         });
         dialog.close();
+        updateColour(card.expression, "learning");
         if (options.onStatusChange) options.onStatusChange(card.expression, "learning");
         if (card.status === "sent") toast("Added to Anki ✓", "success");
         else if (card.status === "failed") toast(`Anki refused the card: ${card.error}`, "error");
@@ -608,7 +884,71 @@
     later.addEventListener("click", () => submit(false));
     dialog.showModal();
     word.focus();
+
+    if (options.getImage && ctx && ctx.node) {
+      const shot = options.getImage(ctx.node);
+      if (shot) image.setValue(shot);
+    }
+
+    // A recording of the word, when an online source has one.
+    wordAudio(entry, language).then((sources) => {
+      if (sources.length && !audio.state.value && dialog.isConnected) audio.setValue({ url: sources[0].url });
+    }).catch(() => {});
+
+    // A translation of the sentence, made offline in the language of the settings.
+    if (sentence.text) {
+      translation.placeholder = "Translating…";
+      api("/api/translate", { language, text: sentenceBox.textContent }).then(({ translation: text }) => {
+        if (text && !translation.value) translation.value = text;
+        translation.placeholder = "Optional";
+      }).catch((err) => { translation.placeholder = `Optional (no translation: ${err.message})`; });
+    }
+
+    // The sentence's audio, cut from the book's audio when there is one, else read by the settings' voice.
+    const bookClip = sentence.text && options.sentenceClip && options.hasAudio && options.hasAudio()
+      ? (() => {
+        const wait = el("p", { class: "mc-hint", text: "Cutting the sentence's audio…" });
+        sentenceAudio.preview.append(wait);
+        return options.sentenceClip(sentence.text).then((clipped) => {
+          wait.remove();
+          if (clipped && !sentenceAudio.state.value) sentenceAudio.setValue(clipped);
+          else if (!clipped) sentenceAudio.preview.append(el("p", { class: "mc-hint", text: "This sentence wasn't found in the book's audio." }));
+          return clipped;
+        }).catch((err) => { wait.textContent = err.message; return null; });
+      })()
+      : Promise.resolve(null);
+    Promise.all([bookClip, tts.ready]).then(([clipped, voice]) => {
+      if (!clipped && voice && sentence.text && !sentenceAudio.state.value && dialog.isConnected) tts.generate();
+    });
   }
+
+  // ------------------------------------------------------------ keyboard
+
+  // While the popup is open: ↑ ↓ (or K J) pick a result, Enter or C makes a card, A plays the word,
+  // P plays the sentence, 1-4 set the status, Esc closes.
+  function selectedEntry() {
+    return popup.querySelector(".mc-entry.mc-selected") || popup.querySelector(".mc-entry");
+  }
+
+  function moveSelection(step) {
+    const entries = [...popup.querySelectorAll(".mc-entry")];
+    if (!entries.length) return;
+    const current = entries.indexOf(selectedEntry());
+    const next = entries[Math.max(0, Math.min(entries.length - 1, current + step))];
+    for (const e of entries) e.classList.toggle("mc-selected", e === next);
+    next.scrollIntoView({ block: "nearest" });
+  }
+
+  const clickIn = (selector) => () => { const target = selectedEntry() && selectedEntry().querySelector(selector); if (target) target.click(); };
+  const popupKeys = {
+    Escape: hidePopup,
+    ArrowDown: () => moveSelection(1), j: () => moveSelection(1),
+    ArrowUp: () => moveSelection(-1), k: () => moveSelection(-1),
+    Enter: clickIn(".mc-add"), c: clickIn(".mc-add"),
+    a: clickIn(".mc-listen"),
+    p: () => { const play = popup.querySelector(".mc-play"); if (play) play.click(); },
+    1: clickIn(".mc-status-new"), 2: clickIn(".mc-status-learning"), 3: clickIn(".mc-status-known"), 4: clickIn(".mc-status-ignored"),
+  };
 
   // ------------------------------------------------------------ wiring
 
@@ -641,13 +981,18 @@
       if (popup && !popup.hidden && !popup.contains(e.target) && !container.contains(e.target)) hidePopup();
     });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && popup && !popup.hidden) {
-        e.stopImmediatePropagation();
-        e.preventDefault();
-        hidePopup();
-      }
+      if (!popup || popup.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.target.closest && e.target.closest("input, select, textarea, [contenteditable], dialog")) return;
+      const action = popupKeys[e.key];
+      if (!action) return;
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      action();
     }, true);
   }
 
-  window.MiningCatMining = { attach, hide: hidePopup, isOpen: () => Boolean(popup && !popup.hidden), renderGlossary, api };
+  window.MiningCatMining = {
+    attach, hide: hidePopup, isOpen: () => Boolean(popup && !popup.hidden), renderGlossary, api,
+    colourWords, clearColours, updateColour,
+  };
 })();

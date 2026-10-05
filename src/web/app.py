@@ -89,8 +89,11 @@ def create_app(state: AppState | None = None) -> Flask:
     app.extensions["miningcat"] = state
     from web.reader import bp as reader_bp
     from web.mining_api import bp as mining_bp
+    from web.game import bp as game_bp
     app.register_blueprint(reader_bp)
     app.register_blueprint(mining_bp)
+    app.register_blueprint(game_bp)
+    app.extensions["miningcat-game-frame"] = {"data": None, "version": 0}
     ocr_preview: dict = {"frames": [], "version": 0}
 
     @app.before_request
@@ -110,6 +113,11 @@ def create_app(state: AppState | None = None) -> Flask:
     @app.get("/")
     def index():
         return render_template("index.html")
+
+    # Video game captures, with the dictionary popup and the card creator (see web/game.py).
+    @app.get("/game/")
+    def game_page():
+        return render_template("game.html")
 
     @app.get("/api/options")
     def api_options():
@@ -399,6 +407,26 @@ def create_app(state: AppState | None = None) -> Flask:
             raise UserError(f"{label} error", str(exc), 500)
         return jsonify(message=message, path=str(out_path))
 
+    # ---------- reader ----------
+
+    # After a conversion: imports its book into the reader's library, with the chapters' audio and subtitles.
+    @app.post("/api/reader/from-output")
+    def api_reader_from_output():
+        from web import book_audio, books
+
+        if state.running:
+            raise UserError("Busy", "Wait for the current job to finish.", 409)
+        ebook_files = files.normalize_ebook_selection(_paths(_body().get("ebook")))
+        if not ebook_files:
+            raise UserError("No book", "This conversion has no book to open in the reader.")
+        source = ebook_files[0]
+        try:
+            meta = books.import_book(source.name, source.read_bytes())
+            audio = book_audio.attach_from_output(meta["id"])
+        except (books.BookError, book_audio.AudioError) as exc:
+            raise UserError("Reader", str(exc))
+        return jsonify(id=meta["id"], audio=audio)
+
     # ---------- output folder ----------
 
     @app.post("/api/clear-output")
@@ -433,4 +461,11 @@ def main(port: int = 5050, open_browser: bool = True, page: str = "") -> None:
     if open_browser:
         import webbrowser
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
-    app.run(host="127.0.0.1", port=port, threaded=True, debug=False, use_reloader=False)
+    try:
+        app.run(host="127.0.0.1", port=port, threaded=True, debug=False, use_reloader=False)
+    finally:
+        # Stops the video game capture with the server, so it doesn't keep its port and the window capture busy.
+        proc = app.extensions["miningcat"].game_proc
+        if proc is not None:
+            from gui_components import pipeline
+            pipeline.stop_game_server(proc)

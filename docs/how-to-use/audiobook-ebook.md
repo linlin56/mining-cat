@@ -75,5 +75,6 @@ For Mandarin and Cantonese, **Convert to** converts the subtitles between simpli
 
 ## Next steps
 
+- Read the book in MiningCat's [reader, with its audio](reader.md#audio-of-a-converted-book): click **Read with audio** when the conversion is done.
 - Build a [frequency list](frequency-lists.md) of the words or characters of the selected chapters.
 - Prefer the terminal? Everything is also available in the [CLI](cli.md).

@@ -1,6 +1,8 @@
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
+import pytest
+
 import video
 from language import Language
 
@@ -261,7 +263,7 @@ def _make_pipeline_mocks(tmp_path, call_order):
 
     def fake_transcribe_chapter(model, audio_file, lang):
         call_order.append("transcribe")
-        return []
+        return ["segment"]
     mock_align.transcribe_chapter.side_effect = fake_transcribe_chapter
 
     def fake_save_srt(segs, path):
@@ -566,7 +568,7 @@ def test_run_ocr_skips_whisper_and_produces_ocr_track(tmp_path, monkeypatch):
     local_video = local_dir / "movie.mp4"
     local_video.touch()
 
-    mock_generate_segments = MagicMock(return_value=[])
+    mock_generate_segments = MagicMock(return_value=["segment"])
     fake_ocr_pipeline_module = MagicMock(generate_segments=mock_generate_segments)
 
     with patch("video_downloader.download_video", m["download"]), \
@@ -605,7 +607,7 @@ def test_run_ocr_passes_custom_fps(tmp_path, monkeypatch):
     local_video = local_dir / "movie.mp4"
     local_video.touch()
 
-    mock_generate_segments = MagicMock(return_value=[])
+    mock_generate_segments = MagicMock(return_value=["segment"])
     fake_ocr_pipeline_module = MagicMock(generate_segments=mock_generate_segments)
 
     with patch("video_downloader.download_video", m["download"]), \
@@ -622,3 +624,31 @@ def test_run_ocr_passes_custom_fps(tmp_path, monkeypatch):
     mock_generate_segments.assert_called_once_with(
         local_video, language=Language.MANDARIN_TW, region=(0.0, 0.5, 1.0, 0.5), fps=8,
     )
+
+
+# An empty transcription isn't muxed (ffmpeg can't read an empty .srt): with nothing else to add, the run fails.
+def test_run_fails_without_any_subtitles(tmp_path, monkeypatch, capsys):
+    for name in ("DIR_VIDEOS", "DIR_TEMP", "DIR_SRT", "DIR_FINAL"):
+        monkeypatch.setattr(video, name, tmp_path / name.lower())
+    m = _make_pipeline_mocks(tmp_path, [])
+    m["align"].transcribe_chapter.side_effect = lambda model, audio_file, lang: []
+    with patch("video_downloader.download_video", m["download"]), \
+         patch("video.extract_audio", m["extract_audio"]), \
+         patch("video.mux_subtitles", m["mux"]), \
+         patch("video.extract_embedded_subtitles", m["extract_embedded_subtitles"]), \
+         _patched_modules(m), pytest.raises(RuntimeError, match="No subtitles"):
+        video.run("https://www.instagram.com/reel/xxx/", language=Language.MANDARIN_TW)
+    m["mux"].assert_not_called()
+    assert "Nothing transcribed" in capsys.readouterr().out
+
+
+def test_run_fails_when_muxing_fails(tmp_path, monkeypatch):
+    for name in ("DIR_VIDEOS", "DIR_TEMP", "DIR_SRT", "DIR_FINAL"):
+        monkeypatch.setattr(video, name, tmp_path / name.lower())
+    m = _make_pipeline_mocks(tmp_path, [])
+    with patch("video_downloader.download_video", m["download"]), \
+         patch("video.extract_audio", m["extract_audio"]), \
+         patch("video.mux_subtitles", MagicMock(return_value=False)), \
+         patch("video.extract_embedded_subtitles", m["extract_embedded_subtitles"]), \
+         _patched_modules(m), pytest.raises(RuntimeError, match="Could not add"):
+        video.run("https://www.instagram.com/reel/xxx/", language=Language.MANDARIN_TW)

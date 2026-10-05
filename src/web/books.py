@@ -816,6 +816,8 @@ DEFAULT_SETTINGS = {
     "margin": 48, "furigana": True,
     # MiningCat's dictionary popup: "click" a word, "shift" + hover like Yomitan, or "off" to use Yomitan.
     "lookup": "click",
+    # Words coloured by their status ("status"), or not at all ("off").
+    "colors": "status",
 }
 
 
@@ -843,6 +845,8 @@ def save_settings(values: dict) -> dict:
         elif key == "theme" and value in ("light", "sepia", "dark", "auto"):
             settings[key] = value
         elif key == "lookup" and value in ("click", "shift", "off"):
+            settings[key] = value
+        elif key == "colors" and value in ("status", "off"):
             settings[key] = value
     _write_json(DIR_LIBRARY / "reader_settings.json", settings)
     return settings

@@ -3,7 +3,7 @@
 
 from flask import Blueprint, jsonify, render_template, request, send_file
 
-from web import books
+from web import book_audio, books
 
 bp = Blueprint("reader", __name__, url_prefix="/reader")
 
@@ -11,6 +11,11 @@ bp = Blueprint("reader", __name__, url_prefix="/reader")
 @bp.errorhandler(books.BookError)
 def _book_error(exc: books.BookError):
     return jsonify(title="Reader", error=str(exc)), 400
+
+
+@bp.errorhandler(book_audio.AudioError)
+def _audio_error(exc: book_audio.AudioError):
+    return jsonify(title="Audio", error=str(exc)), 400
 
 
 def _body() -> dict:
@@ -85,3 +90,61 @@ def api_get_settings():
 @bp.post("/api/settings")
 def api_save_settings():
     return jsonify(books.save_settings(_body()))
+
+
+# ---------- audio of a converted book (see book_audio.py) ----------
+
+def _book_language(book_id: str) -> str:
+    from mining.languages import language_key
+    return language_key(books.get_prefs(book_id).get("language") or books.get_meta(book_id).get("language"))
+
+
+def _chapter(value) -> int | None:
+    return value if isinstance(value, int) else None
+
+
+@bp.get("/api/books/<book_id>/audio")
+def api_audio_info(book_id: str):
+    return jsonify(audio=book_audio.info(book_id))
+
+
+@bp.post("/api/books/<book_id>/audio/link")
+def api_audio_link(book_id: str):
+    return jsonify(audio=book_audio.attach_from_output(book_id))
+
+
+@bp.post("/api/books/<book_id>/audio/delete")
+def api_audio_delete(book_id: str):
+    book_audio.remove(book_id)
+    return jsonify(audio=None)
+
+
+@bp.get("/api/books/<book_id>/audio/<int:track>")
+def api_audio_track(book_id: str, track: int):
+    return send_file(book_audio.track_path(book_id, track), conditional=True, max_age=3600)
+
+
+# Where a sentence is in the audio: {"track", "start", "end", "url"}, or {"found": false}.
+@bp.post("/api/books/<book_id>/audio/find")
+def api_audio_find(book_id: str):
+    body = _body()
+    span = book_audio.find_sentence(book_id, str(body.get("sentence") or ""), _chapter(body.get("chapter")),
+                                    _book_language(book_id))
+    if span is None:
+        return jsonify(found=False)
+    return jsonify(found=True, url=f"/reader/api/books/{book_id}/audio/{span['track']}", **span)
+
+
+# The sentence's audio cut as MP3, as a data URL for the card creator's "Sentence audio".
+@bp.post("/api/books/<book_id>/audio/clip")
+def api_audio_clip(book_id: str):
+    import base64
+
+    body = _body()
+    span = book_audio.find_sentence(book_id, str(body.get("sentence") or ""), _chapter(body.get("chapter")),
+                                    _book_language(book_id))
+    if span is None:
+        return jsonify(found=False)
+    data = book_audio.clip(book_id, span["track"], span["start"], span["end"])
+    return jsonify(found=True, data="data:audio/mpeg;base64," + base64.b64encode(data).decode("ascii"),
+                   name="sentence.mp3", **span)

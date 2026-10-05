@@ -20,14 +20,14 @@ if (!yomitanDir || !outDir) {
 }
 
 // language code -> [module path, exported name]
-// Korean is left out for now: its rules work on Hangul split into jamo (Yomitan's disassembleHangul),
-// which src/mining/languages.py doesn't do yet.
+// Korean rules work on Hangul split into jamo (먹었다 -> ㅁㅓㄱㅇㅓㅆㄷㅏ): src/mining/hangul.py does the same split.
 const LANGUAGES = {
     ja: ['ja/japanese-transforms.js', 'japaneseTransforms'],
     en: ['en/english-transforms.js', 'englishTransforms'],
     fr: ['fr/french-transforms.js', 'frenchTransforms'],
     de: ['de/german-transforms.js', 'germanTransforms'],
     es: ['es/spanish-transforms.js', 'spanishTransforms'],
+    ko: ['ko/korean-transforms.js', 'koreanTransforms'],
 };
 
 const PROBE = '';

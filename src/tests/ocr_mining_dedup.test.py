@@ -37,6 +37,16 @@ def test_frames_are_similar_slightly_perturbed_image():
     assert dedup.frames_are_similar(a, b) is True
 
 
+# A subtitle line appearing on a plain background (black bars, a game's dialog box): a small share of
+# the pixels, so a small mean difference, but those pixels change completely.
+def test_frames_differ_when_a_line_appears_on_a_plain_background():
+    blank = Image.new("RGB", (1280, 240), color=(20, 20, 20))
+    subtitle = blank.copy()
+    subtitle.paste((255, 255, 255), (440, 100, 840, 112))
+    assert dedup.frames_are_similar(subtitle, blank) is False
+    assert dedup.frames_are_similar(subtitle, subtitle.copy()) is True
+
+
 # _downscale_for_diff - a subtitle crop is wide and short; squashing it into a
 # fixed small square destroys the character-stroke detail needed to tell two
 # different lines of text apart (see dedup.py's docstring for the incident).

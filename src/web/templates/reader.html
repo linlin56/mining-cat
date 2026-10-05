@@ -91,6 +91,13 @@
         <select id="set-language"></select>
       </label>
 
+      <h3>Audio</h3>
+      <p class="dim small-note" id="audio-status"></p>
+      <div class="audio-actions">
+        <button type="button" class="btn" id="audio-link">Link the last conversion's audio</button>
+        <button type="button" class="btn" id="audio-remove" hidden>Remove</button>
+      </div>
+
       <h3>Text</h3>
       <label class="setting">
         <span>Font size <output id="out-font-size"></output></span>
@@ -132,6 +139,13 @@
           <option value="click">Click on a word</option>
           <option value="shift">Shift + hover (like Yomitan)</option>
           <option value="off">Off (use Yomitan instead)</option>
+        </select>
+      </label>
+      <label class="setting">
+        <span>Colour words</span>
+        <select id="set-colors">
+          <option value="status">By status (new, learning)</option>
+          <option value="off">Off</option>
         </select>
       </label>
       <p class="dim small-note">Dictionaries, Anki and the script you learn are set in <a href="/settings/" target="_blank">Settings</a>.</p>

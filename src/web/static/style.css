@@ -390,6 +390,33 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius
 .hint-warn { margin: 0; color: var(--warn); font-size: 13px; }
 #ocr-region-summary { margin: 0; font-size: 13px; }
 
+/* ---------- video game ---------- */
+
+.game-backend { margin: 0 0 12px; }
+.game-steps {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.game-steps .btn { text-align: left; }
+.game-steps span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.game-steps span.selected { color: var(--fg); font-weight: 500; }
+.game-hint { font-size: 13px; }
+#screen-game .ocr-block .row { align-items: flex-end; }
+.window-list {
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 4px;
+  font: inherit;
+  background: var(--field);
+  color: var(--fg);
+  border: 0;
+  border-radius: 7px;
+}
+.window-list option { padding: 4px 6px; border-radius: 4px; }
+
 /* ---------- progress & log ---------- */
 
 .progress-block { display: flex; flex-direction: column; gap: 4px; }
@@ -493,4 +520,5 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius
   #language, #convert { min-width: 0; width: 100%; }
   .settings .field { flex: 1 1 100%; }
   .start-row { flex-direction: column; }
+  .game-steps { grid-template-columns: 1fr; }
 }

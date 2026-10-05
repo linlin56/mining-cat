@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS dictionaries (
     priority        INTEGER NOT NULL DEFAULT 0,
     term_count      INTEGER NOT NULL DEFAULT 0,
     meta_count      INTEGER NOT NULL DEFAULT 0,
+    kanji_count     INTEGER NOT NULL DEFAULT 0,
     imported        REAL NOT NULL
 );
 
@@ -64,6 +65,29 @@ CREATE TABLE IF NOT EXISTS term_meta (
 );
 CREATE INDEX IF NOT EXISTS term_meta_expression ON term_meta(expression);
 CREATE INDEX IF NOT EXISTS term_meta_dict ON term_meta(dict_id);
+
+-- Single characters (kanji_bank): readings and meanings of 字 / 漢字. For Chinese dictionaries,
+-- `onyomi` holds the pinyin (or jyutping) and `kunyomi` is empty.
+CREATE TABLE IF NOT EXISTS kanji (
+    dict_id   INTEGER NOT NULL REFERENCES dictionaries(id) ON DELETE CASCADE,
+    character TEXT NOT NULL,
+    onyomi    TEXT NOT NULL DEFAULT '',
+    kunyomi   TEXT NOT NULL DEFAULT '',
+    tags      TEXT NOT NULL DEFAULT '',
+    meanings  TEXT NOT NULL,              -- JSON list of strings
+    stats     TEXT NOT NULL DEFAULT '{}'  -- JSON: stroke count, grade, JLPT level...
+);
+CREATE INDEX IF NOT EXISTS kanji_character ON kanji(character);
+CREATE INDEX IF NOT EXISTS kanji_dict ON kanji(dict_id);
+
+-- Character frequencies (kanji_meta_bank).
+CREATE TABLE IF NOT EXISTS kanji_meta (
+    dict_id   INTEGER NOT NULL REFERENCES dictionaries(id) ON DELETE CASCADE,
+    character TEXT NOT NULL,
+    mode      TEXT NOT NULL,
+    data      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS kanji_meta_character ON kanji_meta(character);
 
 CREATE TABLE IF NOT EXISTS tags (
     dict_id  INTEGER NOT NULL REFERENCES dictionaries(id) ON DELETE CASCADE,
@@ -126,9 +150,21 @@ def _initialize(conn: sqlite3.Connection, path: Path) -> None:
         if str(path) in _initialized:
             return
         conn.executescript(SCHEMA)
+        _migrate(conn)
         conn.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', ?)", (str(SCHEMA_VERSION),))
         conn.commit()
         _initialized.add(str(path))
+
+
+# Columns added after a database was created (CREATE TABLE IF NOT EXISTS doesn't add them).
+_ADDED_COLUMNS = [("dictionaries", "kanji_count", "INTEGER NOT NULL DEFAULT 0")]
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    for table, column, definition in _ADDED_COLUMNS:
+        columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if column not in columns:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
 
 def connect(path: Path | None = None) -> sqlite3.Connection:

@@ -136,6 +136,20 @@ async function offerReader() {
   } catch (err) { showError(err); }
 }
 
+// A converted video can be watched in the player, with its subtitles to mine from.
+async function offerPlayer() {
+  const choice = await chooseDialog("Done",
+    "Video processing complete!\n\nWatch it in MiningCat's player? Click a word in the subtitles to look it up, and make cards with the screenshot and the line's audio.",
+    [{ label: "Close", value: "" }, { label: "Open output folder", value: "folder" }, { label: "Watch in the player", value: "player", primary: true }]);
+  try {
+    if (choice === "folder") await api("/api/open-folder", { which: "final" });
+    if (choice === "player") {
+      const { id } = await api("/api/player/from-output", { language: $("language").value });
+      location.href = `/player/${id}`;
+    }
+  } catch (err) { showError(err); }
+}
+
 // ---------------------------------------------------------------- helpers
 
 function fillSelect(select, values, value) {
@@ -774,9 +788,10 @@ function handleEvent(id, ev) {
       }
       if (!replay && ev.kind === "audiobook" && S.ebook.length && $("mode").value !== "Generate subtitles") {
         offerReader();
+      } else if (!replay && ev.kind === "video") {
+        offerPlayer();
       } else if (!replay && ev.kind !== "game") {
-        const msg = ev.kind === "video" ? "Video processing complete!" : "Processing complete!";
-        offerOpenFolder("Done", msg, "final");
+        offerOpenFolder("Done", "Processing complete!", "final");
       }
       break;
     case "finish":

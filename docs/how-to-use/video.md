@@ -32,6 +32,8 @@ If the file has several audio tracks (e.g. several dubs), an **Audio track** dro
     - Instagram and Bilibili don't provide usable subtitles, so their videos only get the Whisper track.
 4. The final video contains one subtitle track per source, labelled **Source**, **Whisper** (or **OCR**) in players like VLC.
 
+When it's done, **Watch in the player** opens the video in MiningCat's [video player](player.md): click a word in the subtitles to look it up, and make Anki cards with a screenshot and the line's audio.
+
 Subtitle files are saved in `output/srt/`, so **Convert to** and the [frequency lists](frequency-lists.md) work just like for audiobooks (computed from the Whisper transcript).
 
 ## Burned-in subtitles (OCR)

@@ -3,10 +3,15 @@
 // MiningCatMining.attach(container, {getLanguage, getSource, getMode}) makes the text of `container`
 // searchable: a click (or Shift + hover) on a word looks it up in the imported dictionaries and shows
 // a popup with the definitions, the word's status and a "+ Card" button that opens the card creator.
-// Optional: hasAudio(), sentenceAudio(text) -> {url, start, end} and sentenceClip(text) -> {data, name}
+// Optional: hasAudio(), sentenceAudio(text, node) -> {url, start, end} and sentenceClip(text, node) -> {data, name}
 // when the text has audio (a book converted by MiningCat): the popup can then play the sentence, and
-// the card creator gets the sentence's audio. getImage(node) -> {data, name}: an image for the card, from
-// the text node that was looked up (e.g. the screenshot of a video game capture).
+// the card creator gets the sentence's audio. playSentence(text, node) plays it instead of the popup's own player
+// (e.g. in the video). getImage(node) -> {data, name} (or a promise of it): an image for the card, from
+// the text node that was looked up (e.g. the screenshot of a video game capture). blockSentence: the sentence
+// is the whole block that was clicked (a subtitle), not the sentence around the word. onLookup(): a word was
+// looked up. Elements marked data-mc-ignore aren't looked up (e.g. a translation under a subtitle).
+// expandSentence(node, sentence) -> sentence: the sentence of a lookup made longer (e.g. the subtitle lines selected
+// around the clicked one), {text, before, word, after}. onCard(card): a card was made.
 "use strict";
 
 (() => {
@@ -107,6 +112,10 @@
   }
 
   function sentenceAround(text, start, length) {
+    if (options.blockSentence) {
+      const before = text.slice(0, start), word = text.slice(start, start + length), after = text.slice(start + length);
+      return { text: text.trim(), before: before.replace(/^\s+/, ""), word, after: after.trimEnd() };
+    }
     let from = start;
     while (from > 0 && !SENTENCE_END.test(text[from - 1])) from--;
     let to = start + length;
@@ -120,7 +129,7 @@
   function scanAt(x, y, container) {
     const caret = caretAt(x, y);
     if (!caret || caret.node.nodeType !== Node.TEXT_NODE || !container.contains(caret.node)) return null;
-    if (caret.node.parentElement.closest("rt, rp, a[data-chapter]")) return null;
+    if (caret.node.parentElement.closest("rt, rp, a[data-chapter], [data-mc-ignore]")) return null;
     const offset = charUnder(caret.node, caret.offset, x, y);
     if (offset < 0) return null;
     const block = caret.node.parentElement.closest(BLOCK) || container;
@@ -161,8 +170,10 @@
   const COLOURED = ["new", "learning"];
   // Two touching words of the same colour would read as one: every other one gets the "-alt" shade.
   const COLOUR_HIGHLIGHTS = COLOURED.flatMap((status) => [`mc-${status}`, `mc-${status}-alt`]);
-  let colours = null;       // {language, words: [{headword, form, status}], tokens: [{index, start, end, range}]}
-  let colourToken = 0;
+  // One set per coloured area (a reader chapter; the subtitle over a video and the subtitle list...), by key:
+  // key -> {language, words: [{headword, form, status}], tokens: [{index, start, end, range}]}
+  const colourSets = new Map();
+  const colourTokens = new Map();  // key -> number of the latest request
 
   // Text of `root` sent for segmentation: its text nodes (ruby annotations excluded), with a line break
   // between blocks so that no word spans two paragraphs. `starts[k]` is where node k begins in `text`.
@@ -195,30 +206,37 @@
   }
 
   function paintColours() {
-    if (!colours) return;
+    if (!window.CSS || !CSS.highlights || !window.Highlight) return;
     const groups = Object.fromEntries(COLOUR_HIGHLIGHTS.map((name) => [name, []]));
-    let previous = null;  // {status, end, alt} of the last coloured word
-    for (const token of colours.tokens) {
-      const status = colours.words[token.index].status;
-      if (!COLOURED.includes(status)) { previous = null; continue; }
-      const alt = Boolean(previous && previous.status === status && previous.end === token.start && !previous.alt);
-      groups[`mc-${status}${alt ? "-alt" : ""}`].push(token.range);
-      previous = { status, end: token.end, alt };
+    for (const colours of colourSets.values()) {
+      let previous = null;  // {status, end, alt} of the last coloured word
+      for (const token of colours.tokens) {
+        const status = colours.words[token.index].status;
+        if (!COLOURED.includes(status)) { previous = null; continue; }
+        const alt = Boolean(previous && previous.status === status && previous.end === token.start && !previous.alt);
+        groups[`mc-${status}${alt ? "-alt" : ""}`].push(token.range);
+        previous = { status, end: token.end, alt };
+      }
     }
     for (const name of COLOUR_HIGHLIGHTS) CSS.highlights.set(name, new Highlight(...groups[name]));
   }
 
-  function clearColours() {
-    colourToken++;
-    colours = null;
-    if (window.CSS && CSS.highlights) for (const name of COLOUR_HIGHLIGHTS) CSS.highlights.delete(name);
+  // Without a key: removes every set.
+  function clearColours(key) {
+    const keys = key === undefined ? [...new Set([...colourSets.keys(), ...colourTokens.keys()])] : [key];
+    for (const k of keys) {
+      colourTokens.set(k, (colourTokens.get(k) || 0) + 1);
+      colourSets.delete(k);
+    }
+    paintColours();
   }
 
   // Colours the words of `root` (e.g. a reader chapter) by status. Words missing from the dictionaries stay as they are.
-  async function colourWords(root, language) {
-    clearColours();
+  // Areas coloured under different keys keep their colours side by side.
+  async function colourWords(root, language, key = "main") {
+    clearColours(key);
     if (!window.CSS || !CSS.highlights || !window.Highlight) return;
-    const token = colourToken;
+    const token = colourTokens.get(key);
     const seg = segmentText(root);
     if (!seg.text.trim()) return;
     let data;
@@ -227,7 +245,7 @@
     } catch {
       return;  // e.g. no dictionary language: the text simply stays uncoloured
     }
-    if (token !== colourToken) return;
+    if (token !== colourTokens.get(key)) return;
     const tokens = [];
     for (const [start, length, index] of data.tokens) {
       if (index < 0) continue;
@@ -237,18 +255,19 @@
       range.setEnd(b.node, b.at);
       tokens.push({ index, start, end: start + length, range });
     }
-    colours = { language: data.language, words: data.words, tokens };
+    colourSets.set(key, { language: data.language, words: data.words, tokens });
     paintColours();
   }
 
   // A status changed in the popup or through a new card: recolour that word everywhere in the text.
   function updateColour(form, status) {
-    if (!colours) return;
     let changed = false;
-    for (const word of colours.words) {
-      if (word.form === form && word.status !== status) {
-        word.status = status;
-        changed = true;
+    for (const colours of colourSets.values()) {
+      for (const word of colours.words) {
+        if (word.form === form && word.status !== status) {
+          word.status = status;
+          changed = true;
+        }
       }
     }
     if (changed) paintColours();
@@ -333,10 +352,11 @@
   let player = null;
   let playerEnd = 0;
 
-  async function playSentence(text, button) {
+  async function playSentence(text, node, button) {
     if (button) button.disabled = true;
     try {
-      const span = await options.sentenceAudio(text);
+      if (options.playSentence) { await options.playSentence(text, node); return; }
+      const span = await options.sentenceAudio(text, node);
       if (!span) { toast("This sentence wasn't found in the book's audio.", "info"); return; }
       if (!player) {
         player = new Audio();
@@ -492,9 +512,10 @@
     }
     box.append(close);
     const sentence = current && current.sentence && current.sentence.text;
-    if (sentence && options.sentenceAudio && options.hasAudio && options.hasAudio()) {
+    if (sentence && (options.sentenceAudio || options.playSentence) && options.hasAudio && options.hasAudio()) {
       const play = el("button", { type: "button", class: "mc-play", title: "Play the sentence", text: "▶ Sentence" });
-      play.addEventListener("click", () => playSentence(sentence, play));
+      const node = current.node;
+      play.addEventListener("click", () => playSentence(sentence, node, play));
       box.append(play);
     }
     for (const entry of data.entries) {
@@ -628,9 +649,11 @@
       sentence: sentenceAround(scan.text, scan.start, length),
       node: scan.chars[scan.start].node,
     };
+    if (options.expandSentence) current.sentence = options.expandSentence(current.node, current.sentence);
     renderEntries(data, data.language);
     placePopup(rect);
     popup.scrollTop = 0;
+    if (options.onLookup) options.onLookup();
   }
 
   // Lookup of a word clicked inside a definition (cross reference).
@@ -776,7 +799,7 @@
       ? `${escapeHtml(sentence.before)}<b>${escapeHtml(sentence.word)}</b>${escapeHtml(sentence.after)}` : "";
     const translation = el("textarea", { rows: "2", placeholder: "Optional" });
     const notes = el("textarea", { rows: "2", placeholder: "Optional" });
-    const source = el("input", { type: "text", value: options.getSource ? options.getSource() : "" });
+    const source = el("input", { type: "text", value: options.getSource ? options.getSource(ctx && ctx.node) : "" });
     const tags = el("input", { type: "text", placeholder: "space separated" });
     const image = mediaSlot("image", "Image", "image/*");
     const audio = mediaSlot("audio", "Word audio", "audio/*");
@@ -871,6 +894,7 @@
         dialog.close();
         updateColour(card.expression, "learning");
         if (options.onStatusChange) options.onStatusChange(card.expression, "learning");
+        if (options.onCard) options.onCard(card);
         if (card.status === "sent") toast("Added to Anki ✓", "success");
         else if (card.status === "failed") toast(`Anki refused the card: ${card.error}`, "error");
         else if (card.error && !/reachable/.test(card.error)) toast(`Saved, not sent yet: ${card.error}`, "info");
@@ -886,8 +910,9 @@
     word.focus();
 
     if (options.getImage && ctx && ctx.node) {
-      const shot = options.getImage(ctx.node);
-      if (shot) image.setValue(shot);
+      Promise.resolve(options.getImage(ctx.node)).then((shot) => {
+        if (shot && !image.state.value && dialog.isConnected) image.setValue(shot);
+      }).catch(() => {});
     }
 
     // A recording of the word, when an online source has one; the others can be picked instead.
@@ -918,10 +943,10 @@
       ? (() => {
         const wait = el("p", { class: "mc-hint", text: "Cutting the sentence's audio…" });
         sentenceAudio.preview.append(wait);
-        return options.sentenceClip(sentence.text).then((clipped) => {
+        return options.sentenceClip(sentence.text, ctx && ctx.node).then((clipped) => {
           wait.remove();
           if (clipped && !sentenceAudio.state.value) sentenceAudio.setValue(clipped);
-          else if (!clipped) sentenceAudio.preview.append(el("p", { class: "mc-hint", text: "This sentence wasn't found in the book's audio." }));
+          else if (!clipped) sentenceAudio.preview.append(el("p", { class: "mc-hint", text: "This sentence wasn't found in the audio." }));
           return clipped;
         }).catch((err) => { wait.textContent = err.message; return null; });
       })()

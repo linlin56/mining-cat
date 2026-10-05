@@ -46,6 +46,8 @@ The simplest way to use :
 
 `make reader` opens the ebook reader (EPUB, TXT…, horizontal or vertical text). Click a word to look it up in your dictionaries (Yomitan format) and make an Anki card, without installing Yomitan. See the [reader](https://linlin56.github.io/mining-cat/how-to-use/reader/) and [dictionaries & Anki](https://linlin56.github.io/mining-cat/how-to-use/mining/) documentation.
 
+`make player` opens the video player, like asbplayer: local videos with their subtitles (.srt, .vtt, .ass, or the tracks inside the file), or YouTube / Instagram / Bilibili links, downloaded with their captions. Click a word in the subtitles to look it up, and make Anki cards with a screenshot and the line's audio. See the [player](https://linlin56.github.io/mining-cat/how-to-use/player/) documentation.
+
 The previous Tkinter GUI is still available with `make gui-tk` for now (it needs the Tk bindings for Python, `python3-tk`).
 
 You can use an ebook in .epub and .txt format, and/or audiobook in .mp3 or .m4b, and/or a video downloaded from the web (see [Video from Web](#video-from-web)).

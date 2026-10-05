@@ -241,17 +241,21 @@ def find_sentence(book_id: str, sentence: str, chapter: int | None = None, langu
 
 
 def clip(book_id: str, track: int, start: float, end: float) -> bytes:
-    """The span of a track as MP3, cut with ffmpeg. Constant bitrate: written to a pipe, a variable bitrate MP3
-    has no header giving its length, and players would show a wrong duration."""
-    source = track_path(book_id, track)
-    start = max(0.0, float(start) - CLIP_PADDING_S)
-    end = float(end) + CLIP_PADDING_S
+    return cut_mp3(track_path(book_id, track), start, end)
+
+
+def cut_mp3(source: Path, start: float, end: float, audio_stream: int = 0,
+            before: float = CLIP_PADDING_S, after: float = CLIP_PADDING_S) -> bytes:
+    """The span of an audio (or video) file as MP3, cut with ffmpeg. Constant bitrate: written to a pipe, a variable
+    bitrate MP3 has no header giving its length, and players would show a wrong duration."""
+    start = max(0.0, float(start) - before)
+    end = float(end) + after
     if end <= start:
         raise AudioError("Invalid time span.")
     try:
         result = subprocess.run(
             ["ffmpeg", "-hide_banner", "-loglevel", "error", "-ss", f"{start:.3f}", "-to", f"{end:.3f}",
-             "-i", str(source), "-vn", "-ac", "1", "-c:a", "libmp3lame", "-b:a", "96k", "-f", "mp3", "pipe:1"],
+             "-i", str(source), "-map", f"0:a:{audio_stream}", "-vn", "-ac", "1", "-c:a", "libmp3lame", "-b:a", "96k", "-f", "mp3", "pipe:1"],
             capture_output=True, check=True, timeout=60,
         )
     except FileNotFoundError:

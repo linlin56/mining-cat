@@ -1,4 +1,4 @@
-.PHONY: help gui reader gui-tk install test test-gui coverage audio epub align export chapter1 chapter run clean video game-setup game
+.PHONY: help gui reader player gui-tk install test test-gui coverage audio epub align export chapter1 chapter run clean video game-setup game
 
 # Defaults
 CHAPTER  ?= 1
@@ -33,6 +33,10 @@ gui:
 reader:
 	$(PYTHON) src/web_gui.py --port $(PORT) --reader
 
+# Video player (same server, opens the video library)
+player:
+	$(PYTHON) src/web_gui.py --port $(PORT) --player
+
 # Previous Tkinter GUI, kept until the web GUI has been validated
 gui-tk:
 	$(PYTHON) src/gui.py
@@ -44,6 +48,7 @@ help:
 	@echo "  make install                    Install dependencies"
 	@echo "  make gui [PORT=5050]            Open the GUI in your browser"
 	@echo "  make reader                     Open the ebook reader in your browser"
+	@echo "  make player                     Open the video player in your browser"
 	@echo "  make gui-tk                     Open the previous Tkinter GUI"
 	@echo "  make test                       Run tests (without the GUI tests, which open windows)"
 	@echo "  make test-gui                   Run the GUI tests"

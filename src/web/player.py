@@ -1,0 +1,161 @@
+import base64
+
+from flask import Blueprint, jsonify, render_template, request, send_file
+
+from web import videos
+
+bp = Blueprint("player", __name__, url_prefix="/player")
+
+# Matroska is served as WebM: browsers that play Matroska only recognise that type.
+_MIMETYPES = {"mkv": "video/webm", "webm": "video/webm", "mov": "video/mp4", "m4v": "video/mp4", "mp4": "video/mp4"}
+
+
+@bp.errorhandler(videos.VideoError)
+def _video_error(exc: videos.VideoError):
+    return jsonify(title="Player", error=str(exc)), 400
+
+
+def _body() -> dict:
+    data = request.get_json(silent=True)
+    return data if isinstance(data, dict) else {}
+
+
+@bp.get("/")
+@bp.get("/<video_id>")
+def page(video_id: str | None = None):
+    return render_template("player.html")
+
+
+# ---------- library ----------
+
+@bp.get("/api/videos")
+def api_videos():
+    return jsonify(videos=videos.list_videos(), downloads=videos.downloads(),
+                   extensions=list(videos.VIDEO_EXTENSIONS), subtitle_extensions=list(videos.SUBTITLE_EXTENSIONS))
+
+
+# The video is the request's body (not a form): it's written to the library as it arrives.
+@bp.post("/api/videos")
+def api_import():
+    name = request.args.get("name") or ""
+    return jsonify(video=videos.import_stream(name, request.stream))
+
+
+@bp.post("/api/videos/url")
+def api_import_url():
+    import video_handlers
+    from language import Language
+
+    body = _body()
+    url = str(body.get("url") or "").strip()
+    if not url:
+        raise videos.VideoError("Enter a video URL.")
+    try:
+        video_handlers.get_handler(url)
+    except ValueError:
+        raise videos.VideoError("This site isn't supported: YouTube, Instagram (Reels) and Bilibili are.")
+    try:
+        language = Language.from_id(str(body.get("language"))) if body.get("language") else None
+    except ValueError:
+        raise videos.VideoError(f"Unknown language: {body.get('language')!r}")
+    return jsonify(job=videos.start_download(url, language))
+
+
+@bp.post("/api/downloads/<job_id>/dismiss")
+def api_dismiss_download(job_id: str):
+    videos.dismiss_download(job_id)
+    return jsonify(ok=True)
+
+
+@bp.get("/api/videos/<video_id>")
+def api_video(video_id: str):
+    meta = videos.get_meta(video_id)
+    return jsonify(video=meta, audio_tracks=videos.audio_tracks(meta),
+                   progress=videos.get_progress(video_id), prefs=videos.get_prefs(video_id))
+
+
+@bp.get("/api/videos/<video_id>/file")
+def api_file(video_id: str):
+    path = videos.file_path(video_id)
+    ext = path.suffix.lower().lstrip(".")
+    return send_file(path, mimetype=_MIMETYPES.get(ext), conditional=True, max_age=0)
+
+
+@bp.get("/api/videos/<video_id>/thumb")
+def api_thumb(video_id: str):
+    return send_file(videos.thumb_path(video_id), max_age=86400)
+
+
+@bp.post("/api/videos/<video_id>/delete")
+def api_delete(video_id: str):
+    videos.delete_video(video_id)
+    return jsonify(deleted=True)
+
+
+# Prepares the video again: after another audio track was chosen, or with a `level` ("remux", "encode")
+# when the browser can't play what it got.
+@bp.post("/api/videos/<video_id>/prepare")
+def api_prepare(video_id: str):
+    videos.start_prepare(video_id, _body().get("level"))
+    return jsonify(video=videos.get_meta(video_id))
+
+
+# ---------- subtitles ----------
+
+@bp.get("/api/videos/<video_id>/subtitles/<track_id>")
+def api_cues(video_id: str, track_id: str):
+    return jsonify(cues=videos.cues(video_id, track_id))
+
+
+@bp.post("/api/videos/<video_id>/subtitles")
+def api_add_subtitles(video_id: str):
+    added, errors = [], []
+    for upload in request.files.getlist("files"):
+        name = upload.filename or "subtitles"
+        try:
+            added.append(videos.add_subtitles(video_id, name, upload.read()))
+        except videos.VideoError as exc:
+            errors.append(f"{name}: {exc}")
+    return jsonify(added=added, errors=errors, tracks=videos.get_meta(video_id).get("tracks", []))
+
+
+@bp.post("/api/videos/<video_id>/subtitles/<track_id>/delete")
+def api_remove_subtitles(video_id: str, track_id: str):
+    return jsonify(tracks=videos.remove_subtitles(video_id, track_id), prefs=videos.get_prefs(video_id))
+
+
+# A subtitle's audio as MP3, as a data URL for the card creator's "Sentence audio".
+@bp.post("/api/videos/<video_id>/clip")
+def api_clip(video_id: str):
+    body = _body()
+    data = videos.clip(video_id, body.get("start"), body.get("end"))
+    return jsonify(data="data:audio/mpeg;base64," + base64.b64encode(data).decode("ascii"), name="sentence.mp3")
+
+
+# A screenshot for the card creator, as a data URL.
+@bp.post("/api/videos/<video_id>/frame")
+def api_frame(video_id: str):
+    data = videos.frame(video_id, _body().get("time"))
+    return jsonify(data="data:image/jpeg;base64," + base64.b64encode(data).decode("ascii"), name="screenshot.jpg")
+
+
+# ---------- progress, preferences, settings ----------
+
+@bp.post("/api/videos/<video_id>/progress")
+def api_progress(video_id: str):
+    return jsonify(videos.save_progress(video_id, _body().get("time")))
+
+
+@bp.post("/api/videos/<video_id>/prefs")
+def api_prefs(video_id: str):
+    return jsonify(videos.save_prefs(video_id, _body()))
+
+
+@bp.get("/api/settings")
+def api_get_settings():
+    return jsonify(videos.get_settings())
+
+
+@bp.post("/api/settings")
+def api_save_settings():
+    return jsonify(videos.save_settings(_body()))

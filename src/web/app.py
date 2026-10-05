@@ -90,9 +90,11 @@ def create_app(state: AppState | None = None) -> Flask:
     from web.reader import bp as reader_bp
     from web.mining_api import bp as mining_bp
     from web.game import bp as game_bp
+    from web.player import bp as player_bp
     app.register_blueprint(reader_bp)
     app.register_blueprint(mining_bp)
     app.register_blueprint(game_bp)
+    app.register_blueprint(player_bp)
     app.extensions["miningcat-game-frame"] = {"data": None, "version": 0}
     ocr_preview: dict = {"frames": [], "version": 0}
 
@@ -426,6 +428,26 @@ def create_app(state: AppState | None = None) -> Flask:
         except (books.BookError, book_audio.AudioError) as exc:
             raise UserError("Reader", str(exc))
         return jsonify(id=meta["id"], audio=audio)
+
+    # After a video conversion: imports its video, with the subtitles it now carries, into the player's library.
+    @app.post("/api/player/from-output")
+    def api_player_from_output():
+        from config import DIR_FINAL
+        from web import videos
+        from web.game import language_tag
+
+        if state.running:
+            raise UserError("Busy", "Wait for the current job to finish.", 409)
+        body = _body()
+        finals = sorted(DIR_FINAL.glob("*.mp4"), key=lambda p: p.stat().st_mtime, reverse=True) if DIR_FINAL.exists() else []
+        if not finals:
+            raise UserError("No video", "No converted video found in output/final: generate one first.")
+        language = language_tag(_language(body["language"])) if body.get("language") else None
+        try:
+            meta = videos.import_file(finals[0], language=language)
+        except videos.VideoError as exc:
+            raise UserError("Player", str(exc))
+        return jsonify(id=meta["id"])
 
     # ---------- output folder ----------
 

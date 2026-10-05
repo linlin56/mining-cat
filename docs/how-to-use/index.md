@@ -8,9 +8,7 @@
 - **ffmpeg**, used to split, convert and render audio and video
     - macOS: `brew install ffmpeg`
     - Debian/Ubuntu: `sudo apt install ffmpeg`
-- **Tk bindings for Python** (`tkinter`), needed for the GUI
-    - macOS: bundled with the official python.org installer (Homebrew's `python` also needs `brew install python-tk`)
-    - Debian/Ubuntu: `sudo apt install python3-tk`
+- **A web browser**: the GUI is a local web page (nothing is sent online)
 - **make**, to use the shortcuts below (you can also call `python src/main.py` directly, see [CLI reference](cli.md))
 
 Everything else (Whisper, yt-dlp, edge-tts, OpenCC, [owocr](https://pypi.org/project/owocr/)...) is installed by `make install`.
@@ -38,7 +36,14 @@ make install
 make gui
 ```
 
-The window header has three settings shared by every workflow:
+MiningCat starts a small local server and opens the GUI in your browser at <http://127.0.0.1:5050/>. Keep the terminal open while you use it, and press `Ctrl+C` there to stop it. Use `make gui PORT=8080` if the port is already taken.
+
+You can drag and drop files on the audio, book and video panels. The files you pick are copied into the project's `sources/` folder, like before.
+
+!!! note
+    The previous Tkinter window is still available with `make gui-tk` for now. It needs the Tk bindings for Python (`sudo apt install python3-tk` on Debian/Ubuntu, `brew install python-tk` with Homebrew's Python).
+
+The page header has three settings shared by every workflow:
 
 | Setting        | What it does                                                                                                                        |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |

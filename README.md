@@ -34,17 +34,19 @@ This project is fairly recent and has only been tested with a handful of books.
 
 - Python (tested with 3.14.5)
 - `venv` (bundled with Python) to create an isolated environment
-- Tk bindings for Python (`tkinter`), needed for the GUI :
-  - Debian/Ubuntu : `sudo apt install python3-tk`
-  - macOS : bundled with the official python.org installer (Homebrew's `python` also needs `brew install python-tk`)
+- A web browser: the GUI runs locally and opens in your browser (nothing is sent online)
 - [owocr](https://pypi.org/project/owocr/) for hardsubs OCR (video mode) — installed automatically by `make install`, no separate step needed
 
 The simplest way to use :
 
 1. Create and activate a virtual environment, e.g. `python3 -m venv .venv`
 2. Run `make install`
-3. Run `make gui`
+3. Run `make gui`: the GUI opens in your browser at <http://127.0.0.1:5050/>
 4. Follow the instructions.
+
+`make reader` opens the ebook reader (EPUB, TXT…, horizontal or vertical text). Click a word to look it up in your dictionaries (Yomitan format) and make an Anki card, without installing Yomitan. See the [reader](https://linlin56.github.io/mining-cat/how-to-use/reader/) and [dictionaries & Anki](https://linlin56.github.io/mining-cat/how-to-use/mining/) documentation.
+
+The previous Tkinter GUI is still available with `make gui-tk` for now (it needs the Tk bindings for Python, `python3-tk`).
 
 You can use an ebook in .epub and .txt format, and/or audiobook in .mp3 or .m4b, and/or a video downloaded from the web (see [Video from Web](#video-from-web)).
 

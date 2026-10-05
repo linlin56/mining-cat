@@ -1,0 +1,9374 @@
+{
+ "language": "ja",
+ "source": "Exported from Yomitan (https://github.com/yomidevs/yomitan), GPL-3.0-or-later, by tools/export_yomitan_transforms.mjs",
+ "conditions": {
+  "v": {
+   "name": "Verb",
+   "isDictionaryForm": false,
+   "subConditions": [
+    "v1",
+    "v5",
+    "vk",
+    "vs",
+    "vz"
+   ]
+  },
+  "v1": {
+   "name": "Ichidan verb",
+   "isDictionaryForm": true,
+   "subConditions": [
+    "v1d",
+    "v1p"
+   ]
+  },
+  "v1d": {
+   "name": "Ichidan verb, dictionary form",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "v1p": {
+   "name": "Ichidan verb, progressive or perfect form",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "v5": {
+   "name": "Godan verb",
+   "isDictionaryForm": true,
+   "subConditions": [
+    "v5d",
+    "v5s"
+   ]
+  },
+  "v5d": {
+   "name": "Godan verb, dictionary form",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "v5s": {
+   "name": "Godan verb, short causative form",
+   "isDictionaryForm": false,
+   "subConditions": [
+    "v5ss",
+    "v5sp"
+   ]
+  },
+  "v5ss": {
+   "name": "Godan verb, short causative form having さす ending (cannot conjugate with passive form)",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "v5sp": {
+   "name": "Godan verb, short causative form not having さす ending (can conjugate with passive form)",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "vk": {
+   "name": "Kuru verb",
+   "isDictionaryForm": true,
+   "subConditions": []
+  },
+  "vs": {
+   "name": "Suru verb",
+   "isDictionaryForm": true,
+   "subConditions": []
+  },
+  "vz": {
+   "name": "Zuru verb",
+   "isDictionaryForm": true,
+   "subConditions": []
+  },
+  "adj-i": {
+   "name": "Adjective with i ending",
+   "isDictionaryForm": true,
+   "subConditions": []
+  },
+  "-ます": {
+   "name": "Polite -ます ending",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "-ません": {
+   "name": "Polite negative -ません ending",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "-て": {
+   "name": "Intermediate -て endings for progressive or perfect tense",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "-ば": {
+   "name": "Intermediate -ば endings for conditional contraction",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "-く": {
+   "name": "Intermediate -く endings for adverbs",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "-た": {
+   "name": "-た form ending",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "-ん": {
+   "name": "-ん negative ending",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "-なさい": {
+   "name": "Intermediate -なさい ending (polite imperative)",
+   "isDictionaryForm": false,
+   "subConditions": []
+  },
+  "-ゃ": {
+   "name": "Intermediate -や ending (conditional contraction)",
+   "isDictionaryForm": false,
+   "subConditions": []
+  }
+ },
+ "transforms": {
+  "-ば": {
+   "name": "-ば",
+   "description": "1. Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur.\n2. Shows a trigger for a latter stated perception or judgment.\nUsage: Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ければ",
+     "to": "い",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "えば",
+     "to": "う",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "へば",
+     "to": "う",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "けば",
+     "to": "く",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "げば",
+     "to": "ぐ",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せば",
+     "to": "す",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "てば",
+     "to": "つ",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ねば",
+     "to": "ぬ",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "べば",
+     "to": "ぶ",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "めば",
+     "to": "む",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "れば",
+     "to": "る",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v1",
+      "v5",
+      "vk",
+      "vs",
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "れば",
+     "to": "",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "-ます"
+     ]
+    }
+   ]
+  },
+  "-ゃ": {
+   "name": "-ゃ",
+   "description": "Contraction of -ば.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "けりゃ",
+     "to": "ければ",
+     "conditionsIn": [
+      "-ゃ"
+     ],
+     "conditionsOut": [
+      "-ば"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きゃ",
+     "to": "ければ",
+     "conditionsIn": [
+      "-ゃ"
+     ],
+     "conditionsOut": [
+      "-ば"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "や",
+     "to": "えば",
+     "conditionsIn": [
+      "-ゃ"
+     ],
+     "conditionsOut": [
+      "-ば"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きゃ",
+     "to": "けば",
+     "conditionsIn": [
+      "-ゃ"
+     ],
+     "conditionsOut": [
+      "-ば"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぎゃ",
+     "to": "げば",
+     "conditionsIn": [
+      "-ゃ"
+     ],
+     "conditionsOut": [
+      "-ば"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しゃ",
+     "to": "せば",
+     "conditionsIn": [
+      "-ゃ"
+     ],
+     "conditionsOut": [
+      "-ば"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちゃ",
+     "to": "てば",
+     "conditionsIn": [
+      "-ゃ"
+     ],
+     "conditionsOut": [
+      "-ば"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "にゃ",
+     "to": "ねば",
+     "conditionsIn": [
+      "-ゃ"
+     ],
+     "conditionsOut": [
+      "-ば"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "びゃ",
+     "to": "べば",
+     "conditionsIn": [
+      "-ゃ"
+     ],
+     "conditionsOut": [
+      "-ば"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "みゃ",
+     "to": "めば",
+     "conditionsIn": [
+      "-ゃ"
+     ],
+     "conditionsOut": [
+      "-ば"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "りゃ",
+     "to": "れば",
+     "conditionsIn": [
+      "-ゃ"
+     ],
+     "conditionsOut": [
+      "-ば"
+     ]
+    }
+   ]
+  },
+  "-ちゃ": {
+   "name": "-ちゃ",
+   "description": "Contraction of ～ては.\n1. Explains how something always happens under the condition that it marks.\n2. Expresses the repetition (of a series of) actions.\n3. Indicates a hypothetical situation in which the speaker gives a (negative) evaluation about the other party's intentions.\n4. Used in \"Must Not\" patterns like ～てはいけない.\nUsage: Attach は after the て-form of verbs, contract ては into ちゃ.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ちゃ",
+     "to": "る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いじゃ",
+     "to": "ぐ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いちゃ",
+     "to": "く",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しちゃ",
+     "to": "す",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちゃ",
+     "to": "う",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちゃ",
+     "to": "く",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちゃ",
+     "to": "つ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちゃ",
+     "to": "る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んじゃ",
+     "to": "ぬ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んじゃ",
+     "to": "ぶ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んじゃ",
+     "to": "む",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じちゃ",
+     "to": "ずる",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しちゃ",
+     "to": "する",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為ちゃ",
+     "to": "為る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きちゃ",
+     "to": "くる",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来ちゃ",
+     "to": "来る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來ちゃ",
+     "to": "來る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-ちゃう": {
+   "name": "-ちゃう",
+   "description": "Contraction of -しまう.\n1. Shows a sense of regret/surprise when you did have volition in doing something, but it turned out to be bad to do.\n2. Shows perfective/punctual achievement. This shows that an action has been completed.\n3. Shows unintentional action–“accidentally”.\nUsage: Attach しまう after the て-form of verbs, contract てしまう into ちゃう.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ちゃう",
+     "to": "る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いじゃう",
+     "to": "ぐ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いちゃう",
+     "to": "く",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しちゃう",
+     "to": "す",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちゃう",
+     "to": "う",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちゃう",
+     "to": "く",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちゃう",
+     "to": "つ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちゃう",
+     "to": "る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んじゃう",
+     "to": "ぬ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んじゃう",
+     "to": "ぶ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んじゃう",
+     "to": "む",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じちゃう",
+     "to": "ずる",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しちゃう",
+     "to": "する",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為ちゃう",
+     "to": "為る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きちゃう",
+     "to": "くる",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来ちゃう",
+     "to": "来る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來ちゃう",
+     "to": "來る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-ちまう": {
+   "name": "-ちまう",
+   "description": "Contraction of -しまう.\n1. Shows a sense of regret/surprise when you did have volition in doing something, but it turned out to be bad to do.\n2. Shows perfective/punctual achievement. This shows that an action has been completed.\n3. Shows unintentional action–“accidentally”.\nUsage: Attach しまう after the て-form of verbs, contract てしまう into ちまう.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ちまう",
+     "to": "る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いじまう",
+     "to": "ぐ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いちまう",
+     "to": "く",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しちまう",
+     "to": "す",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちまう",
+     "to": "う",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちまう",
+     "to": "く",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちまう",
+     "to": "つ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っちまう",
+     "to": "る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んじまう",
+     "to": "ぬ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んじまう",
+     "to": "ぶ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んじまう",
+     "to": "む",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じちまう",
+     "to": "ずる",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しちまう",
+     "to": "する",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為ちまう",
+     "to": "為る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きちまう",
+     "to": "くる",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来ちまう",
+     "to": "来る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來ちまう",
+     "to": "來る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-しまう": {
+   "name": "-しまう",
+   "description": "1. Shows a sense of regret/surprise when you did have volition in doing something, but it turned out to be bad to do.\n2. Shows perfective/punctual achievement. This shows that an action has been completed.\n3. Shows unintentional action–“accidentally”.\nUsage: Attach しまう after the て-form of verbs.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "てしまう",
+     "to": "て",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "でしまう",
+     "to": "で",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    }
+   ]
+  },
+  "-なさい": {
+   "name": "-なさい",
+   "description": "Polite imperative suffix.\nUsage: Attach なさい after the continuative form (連用形) of verbs.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "なさい",
+     "to": "る",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いなさい",
+     "to": "う",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きなさい",
+     "to": "く",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぎなさい",
+     "to": "ぐ",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しなさい",
+     "to": "す",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちなさい",
+     "to": "つ",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "になさい",
+     "to": "ぬ",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "びなさい",
+     "to": "ぶ",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "みなさい",
+     "to": "む",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "りなさい",
+     "to": "る",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じなさい",
+     "to": "ずる",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しなさい",
+     "to": "する",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為なさい",
+     "to": "為る",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きなさい",
+     "to": "くる",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来なさい",
+     "to": "来る",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來なさい",
+     "to": "來る",
+     "conditionsIn": [
+      "-なさい"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-そう": {
+   "name": "-そう",
+   "description": "Appearing that; looking like.\nUsage: Attach そう to the continuative form (連用形) of verbs, or to the stem of adjectives.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "そう",
+     "to": "い",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さう",
+     "to": "い",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "そう",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さう",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いそう",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ひさう",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きそう",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きさう",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぎそう",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぎさう",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しそう",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しさう",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちそう",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちさう",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "にそう",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "にさう",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "びそう",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "びさう",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "みそう",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "みさう",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "りそう",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "りさう",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じそう",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じさう",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しそう",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しさう",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為そう",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為さう",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きそう",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きさう",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来そう",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来さう",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來そう",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來さう",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-すぎる": {
+   "name": "-すぎる",
+   "description": "Shows something \"is too...\" or someone is doing something \"too much\".\nUsage: Attach すぎる to the continuative form (連用形) of verbs, or to the stem of adjectives.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "すぎる",
+     "to": "い",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "すぎる",
+     "to": "る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いすぎる",
+     "to": "う",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きすぎる",
+     "to": "く",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぎすぎる",
+     "to": "ぐ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しすぎる",
+     "to": "す",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちすぎる",
+     "to": "つ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "にすぎる",
+     "to": "ぬ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "びすぎる",
+     "to": "ぶ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "みすぎる",
+     "to": "む",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "りすぎる",
+     "to": "る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じすぎる",
+     "to": "ずる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しすぎる",
+     "to": "する",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為すぎる",
+     "to": "為る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きすぎる",
+     "to": "くる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来すぎる",
+     "to": "来る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來すぎる",
+     "to": "來る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-過ぎる": {
+   "name": "-過ぎる",
+   "description": "Shows something \"is too...\" or someone is doing something \"too much\".\nUsage: Attach 過ぎる to the continuative form (連用形) of verbs, or to the stem of adjectives.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "過ぎる",
+     "to": "い",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "過ぎる",
+     "to": "る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "い過ぎる",
+     "to": "う",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "き過ぎる",
+     "to": "く",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぎ過ぎる",
+     "to": "ぐ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "し過ぎる",
+     "to": "す",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ち過ぎる",
+     "to": "つ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "に過ぎる",
+     "to": "ぬ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "び過ぎる",
+     "to": "ぶ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "み過ぎる",
+     "to": "む",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "り過ぎる",
+     "to": "る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じ過ぎる",
+     "to": "ずる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "し過ぎる",
+     "to": "する",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為過ぎる",
+     "to": "為る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "き過ぎる",
+     "to": "くる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来過ぎる",
+     "to": "来る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來過ぎる",
+     "to": "來る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-たい": {
+   "name": "-たい",
+   "description": "1. Expresses the feeling of desire or hope.\n2. Used in ...たいと思います, an indirect way of saying what the speaker intends to do.\nUsage: Attach たい to the continuative form (連用形) of verbs. たい itself conjugates as i-adjective.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "たい",
+     "to": "る",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いたい",
+     "to": "う",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きたい",
+     "to": "く",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぎたい",
+     "to": "ぐ",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "したい",
+     "to": "す",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちたい",
+     "to": "つ",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "にたい",
+     "to": "ぬ",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "びたい",
+     "to": "ぶ",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "みたい",
+     "to": "む",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "りたい",
+     "to": "る",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じたい",
+     "to": "ずる",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "したい",
+     "to": "する",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為たい",
+     "to": "為る",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きたい",
+     "to": "くる",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来たい",
+     "to": "来る",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來たい",
+     "to": "來る",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-たら": {
+   "name": "-たら",
+   "description": "1. Denotes the latter stated event is a continuation of the previous stated event.\n2. Assumes that a matter has been completed or concluded.\nUsage: Attach たら to the continuative form (連用形) of verbs after euphonic change form, かったら to the stem of i-adjectives.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "かったら",
+     "to": "い",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たら",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いたら",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いだら",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "したら",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ったら",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ったら",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ったら",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んだら",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んだら",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んだら",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じたら",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "したら",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為たら",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きたら",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来たら",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來たら",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いったら",
+     "to": "いく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "行ったら",
+     "to": "行く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "逝ったら",
+     "to": "逝く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "往ったら",
+     "to": "往く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こうたら",
+     "to": "こう",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とうたら",
+     "to": "とう",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "請うたら",
+     "to": "請う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "乞うたら",
+     "to": "乞う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "恋うたら",
+     "to": "恋う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "問うたら",
+     "to": "問う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "訪うたら",
+     "to": "訪う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "宣うたら",
+     "to": "宣う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "曰うたら",
+     "to": "曰う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "給うたら",
+     "to": "給う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "賜うたら",
+     "to": "賜う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "揺蕩うたら",
+     "to": "揺蕩う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "のたもうたら",
+     "to": "のたまう",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たもうたら",
+     "to": "たまう",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たゆとうたら",
+     "to": "たゆたう",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ましたら",
+     "to": "ます",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-ます"
+     ]
+    }
+   ]
+  },
+  "-たり": {
+   "name": "-たり",
+   "description": "1. Shows two actions occurring back and forth (when used with two verbs).\n2. Shows examples of actions and states (when used with multiple verbs and adjectives).\nUsage: Attach たり to the continuative form (連用形) of verbs after euphonic change form, かったり to the stem of i-adjectives",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "かったり",
+     "to": "い",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たり",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いたり",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いだり",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "したり",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ったり",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ったり",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ったり",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んだり",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んだり",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んだり",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じたり",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "したり",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為たり",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きたり",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来たり",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來たり",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いったり",
+     "to": "いく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "行ったり",
+     "to": "行く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "逝ったり",
+     "to": "逝く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "往ったり",
+     "to": "往く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こうたり",
+     "to": "こう",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とうたり",
+     "to": "とう",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "請うたり",
+     "to": "請う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "乞うたり",
+     "to": "乞う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "恋うたり",
+     "to": "恋う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "問うたり",
+     "to": "問う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "訪うたり",
+     "to": "訪う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "宣うたり",
+     "to": "宣う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "曰うたり",
+     "to": "曰う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "給うたり",
+     "to": "給う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "賜うたり",
+     "to": "賜う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "揺蕩うたり",
+     "to": "揺蕩う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "のたもうたり",
+     "to": "のたまう",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たもうたり",
+     "to": "たまう",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たゆとうたり",
+     "to": "たゆたう",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    }
+   ]
+  },
+  "-て": {
+   "name": "-て",
+   "description": "て-form.\nIt has a myriad of meanings. Primarily, it is a conjunctive particle that connects two clauses together.\nUsage: Attach て to the continuative form (連用形) of verbs after euphonic change form, くて to the stem of i-adjectives.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "くて",
+     "to": "い",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "て",
+     "to": "る",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いて",
+     "to": "く",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いで",
+     "to": "ぐ",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "して",
+     "to": "す",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "って",
+     "to": "う",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "って",
+     "to": "つ",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "って",
+     "to": "る",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んで",
+     "to": "ぬ",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んで",
+     "to": "ぶ",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んで",
+     "to": "む",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じて",
+     "to": "ずる",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "して",
+     "to": "する",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為て",
+     "to": "為る",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きて",
+     "to": "くる",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来て",
+     "to": "来る",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來て",
+     "to": "來る",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いって",
+     "to": "いく",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "行って",
+     "to": "行く",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "逝って",
+     "to": "逝く",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "往って",
+     "to": "往く",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こうて",
+     "to": "こう",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とうて",
+     "to": "とう",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "請うて",
+     "to": "請う",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "乞うて",
+     "to": "乞う",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "恋うて",
+     "to": "恋う",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "問うて",
+     "to": "問う",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "訪うて",
+     "to": "訪う",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "宣うて",
+     "to": "宣う",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "曰うて",
+     "to": "曰う",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "給うて",
+     "to": "給う",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "賜うて",
+     "to": "賜う",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "揺蕩うて",
+     "to": "揺蕩う",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "のたもうて",
+     "to": "のたまう",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たもうて",
+     "to": "たまう",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たゆとうて",
+     "to": "たゆたう",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まして",
+     "to": "ます",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-ます"
+     ]
+    }
+   ]
+  },
+  "-ず": {
+   "name": "-ず",
+   "description": "1. Negative form of verbs.\n2. Continuative form (連用形) of the particle ぬ (nu).\nUsage: Attach ず to the irrealis form (未然形) of verbs.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ず",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かず",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がず",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さず",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たず",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なず",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばず",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まず",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らず",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "わず",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はず",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜず",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せず",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為ず",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こず",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来ず",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來ず",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-ぬ": {
+   "name": "-ぬ",
+   "description": "Negative form of verbs.\nUsage: Attach ぬ to the irrealis form (未然形) of verbs.\nする becomes せぬ",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ぬ",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かぬ",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がぬ",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さぬ",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たぬ",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なぬ",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばぬ",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まぬ",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らぬ",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "わぬ",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はぬ",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜぬ",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せぬ",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為ぬ",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こぬ",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来ぬ",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來ぬ",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-ん": {
+   "name": "-ん",
+   "description": "Negative form of verbs; a sound change of ぬ.\nUsage: Attach ん to the irrealis form (未然形) of verbs.\nする becomes せん",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ん",
+     "to": "る",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かん",
+     "to": "く",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がん",
+     "to": "ぐ",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さん",
+     "to": "す",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たん",
+     "to": "つ",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なん",
+     "to": "ぬ",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばん",
+     "to": "ぶ",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まん",
+     "to": "む",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らん",
+     "to": "る",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "わん",
+     "to": "う",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はん",
+     "to": "う",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜん",
+     "to": "ずる",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せん",
+     "to": "する",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為ん",
+     "to": "為る",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こん",
+     "to": "くる",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来ん",
+     "to": "来る",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來ん",
+     "to": "來る",
+     "conditionsIn": [
+      "-ん"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-んばかり": {
+   "name": "-んばかり",
+   "description": "Shows an action or condition is on the verge of occurring, or an excessive/extreme degree.\nUsage: Attach んばかり to the irrealis form (未然形) of verbs.\nする becomes せんばかり",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "んばかり",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かんばかり",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がんばかり",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さんばかり",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たんばかり",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なんばかり",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばんばかり",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まんばかり",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らんばかり",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "わんばかり",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はんばかり",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜんばかり",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せんばかり",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為んばかり",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こんばかり",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来んばかり",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來んばかり",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-んとする": {
+   "name": "-んとする",
+   "description": "1. Shows the speaker's will or intention.\n2. Shows an action or condition is on the verge of occurring.\nUsage: Attach んとする to the irrealis form (未然形) of verbs.\nする becomes せんとする",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "んとする",
+     "to": "る",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かんとする",
+     "to": "く",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がんとする",
+     "to": "ぐ",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さんとする",
+     "to": "す",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たんとする",
+     "to": "つ",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なんとする",
+     "to": "ぬ",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばんとする",
+     "to": "ぶ",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まんとする",
+     "to": "む",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らんとする",
+     "to": "る",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "わんとする",
+     "to": "う",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はんとする",
+     "to": "う",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜんとする",
+     "to": "ずる",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せんとする",
+     "to": "する",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為んとする",
+     "to": "為る",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こんとする",
+     "to": "くる",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来んとする",
+     "to": "来る",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來んとする",
+     "to": "來る",
+     "conditionsIn": [
+      "vs"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-む": {
+   "name": "-む",
+   "description": "Archaic.\n1. Shows an inference of a certain matter.\n2. Shows speaker's intention.\nUsage: Attach む to the irrealis form (未然形) of verbs.\nする becomes せむ",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "む",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かむ",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がむ",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さむ",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たむ",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なむ",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばむ",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まむ",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らむ",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "わむ",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はむ",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜむ",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せむ",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為む",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こむ",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来む",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來む",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-ざる": {
+   "name": "-ざる",
+   "description": "Negative form of verbs.\nUsage: Attach ざる to the irrealis form (未然形) of verbs.\nする becomes せざる",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ざる",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かざる",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がざる",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さざる",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たざる",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なざる",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばざる",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まざる",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らざる",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "わざる",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はざる",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜざる",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せざる",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為ざる",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こざる",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来ざる",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來ざる",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-ねば": {
+   "name": "-ねば",
+   "description": "1. Shows a hypothetical negation; if not ...\n2. Shows a must. Used with or without ならぬ.\nUsage: Attach ねば to the irrealis form (未然形) of verbs.\nする becomes せねば",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ねば",
+     "to": "る",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かねば",
+     "to": "く",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がねば",
+     "to": "ぐ",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さねば",
+     "to": "す",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たねば",
+     "to": "つ",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なねば",
+     "to": "ぬ",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばねば",
+     "to": "ぶ",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まねば",
+     "to": "む",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らねば",
+     "to": "る",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "わねば",
+     "to": "う",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はねば",
+     "to": "う",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜねば",
+     "to": "ずる",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せねば",
+     "to": "する",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為ねば",
+     "to": "為る",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こねば",
+     "to": "くる",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来ねば",
+     "to": "来る",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來ねば",
+     "to": "來る",
+     "conditionsIn": [
+      "-ば"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-く": {
+   "name": "-く",
+   "description": "Adverbial form of i-adjectives.\n",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "く",
+     "to": "い",
+     "conditionsIn": [
+      "-く"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  },
+  "causative": {
+   "name": "causative",
+   "description": "Describes the intention to make someone do something.\nUsage: Attach させる to the irrealis form (未然形) of ichidan verbs and くる.\nAttach せる to the irrealis form (未然形) of godan verbs and する.\nIt itself conjugates as an ichidan verb.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "させる",
+     "to": "る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かせる",
+     "to": "く",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がせる",
+     "to": "ぐ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "させる",
+     "to": "す",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たせる",
+     "to": "つ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なせる",
+     "to": "ぬ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばせる",
+     "to": "ぶ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ませる",
+     "to": "む",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らせる",
+     "to": "る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "わせる",
+     "to": "う",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はせる",
+     "to": "う",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じさせる",
+     "to": "ずる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜさせる",
+     "to": "ずる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "させる",
+     "to": "する",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為せる",
+     "to": "為る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せさせる",
+     "to": "する",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為させる",
+     "to": "為る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こさせる",
+     "to": "くる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来させる",
+     "to": "来る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來させる",
+     "to": "來る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "short causative": {
+   "name": "short causative",
+   "description": "Contraction of the causative form.\nDescribes the intention to make someone do something.\nUsage: Attach す to the irrealis form (未然形) of godan verbs.\nAttach さす to the dictionary form (終止形) of ichidan verbs.\nする becomes さす, くる becomes こさす.\nIt itself conjugates as an godan verb.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "さす",
+     "to": "る",
+     "conditionsIn": [
+      "v5ss"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かす",
+     "to": "く",
+     "conditionsIn": [
+      "v5sp"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がす",
+     "to": "ぐ",
+     "conditionsIn": [
+      "v5sp"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さす",
+     "to": "す",
+     "conditionsIn": [
+      "v5ss"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たす",
+     "to": "つ",
+     "conditionsIn": [
+      "v5sp"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なす",
+     "to": "ぬ",
+     "conditionsIn": [
+      "v5sp"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばす",
+     "to": "ぶ",
+     "conditionsIn": [
+      "v5sp"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ます",
+     "to": "む",
+     "conditionsIn": [
+      "v5sp"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らす",
+     "to": "る",
+     "conditionsIn": [
+      "v5sp"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "わす",
+     "to": "う",
+     "conditionsIn": [
+      "v5sp"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はす",
+     "to": "う",
+     "conditionsIn": [
+      "v5sp"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じさす",
+     "to": "ずる",
+     "conditionsIn": [
+      "v5ss"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜさす",
+     "to": "ずる",
+     "conditionsIn": [
+      "v5ss"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さす",
+     "to": "する",
+     "conditionsIn": [
+      "v5ss"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為す",
+     "to": "為る",
+     "conditionsIn": [
+      "v5ss"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こさす",
+     "to": "くる",
+     "conditionsIn": [
+      "v5ss"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来さす",
+     "to": "来る",
+     "conditionsIn": [
+      "v5ss"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來さす",
+     "to": "來る",
+     "conditionsIn": [
+      "v5ss"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "imperative": {
+   "name": "imperative",
+   "description": "1. To give orders.\n2. (As あれ) Represents the fact that it will never change no matter the circumstances.\n3. Express a feeling of hope.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ろ",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "よ",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "え",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "へ",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "け",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "げ",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せ",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "て",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ね",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "べ",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "め",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "れ",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じろ",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜよ",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しろ",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せよ",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為ろ",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為よ",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こい",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来い",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來い",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "continuative": {
+   "name": "continuative",
+   "description": "Used to indicate actions that are (being) carried out.\nRefers to 連用形, the part of the verb after conjugating with -ます and dropping ます.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "い",
+     "to": "いる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "え",
+     "to": "える",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "き",
+     "to": "きる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぎ",
+     "to": "ぎる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "け",
+     "to": "ける",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "げ",
+     "to": "げる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じ",
+     "to": "じる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せ",
+     "to": "せる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜ",
+     "to": "ぜる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ち",
+     "to": "ちる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "て",
+     "to": "てる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "で",
+     "to": "でる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "に",
+     "to": "にる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ね",
+     "to": "ねる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ひ",
+     "to": "ひる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "び",
+     "to": "びる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "へ",
+     "to": "へる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "べ",
+     "to": "べる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "み",
+     "to": "みる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "め",
+     "to": "める",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "り",
+     "to": "りる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "れ",
+     "to": "れる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "い",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ひ",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "き",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぎ",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "し",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ち",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "に",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "び",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "み",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "り",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "き",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "し",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "negative": {
+   "name": "negative",
+   "description": "1. Negative form of verbs.\n2. Expresses a feeling of solicitation to the other party.\nUsage: Attach ない to the irrealis form (未然形) of verbs, くない to the stem of i-adjectives. ない itself conjugates as i-adjective. ます becomes ません.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "くない",
+     "to": "い",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ない",
+     "to": "る",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かない",
+     "to": "く",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がない",
+     "to": "ぐ",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さない",
+     "to": "す",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たない",
+     "to": "つ",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なない",
+     "to": "ぬ",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばない",
+     "to": "ぶ",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まない",
+     "to": "む",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らない",
+     "to": "る",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "わない",
+     "to": "う",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はない",
+     "to": "う",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じない",
+     "to": "ずる",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しない",
+     "to": "する",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為ない",
+     "to": "為る",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こない",
+     "to": "くる",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来ない",
+     "to": "来る",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來ない",
+     "to": "來る",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ません",
+     "to": "ます",
+     "conditionsIn": [
+      "-ません"
+     ],
+     "conditionsOut": [
+      "-ます"
+     ]
+    }
+   ]
+  },
+  "-さ": {
+   "name": "-さ",
+   "description": "Nominalizing suffix of i-adjectives indicating nature, state, mind or degree.\nUsage: Attach さ to the stem of i-adjectives.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "さ",
+     "to": "い",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  },
+  "passive": {
+   "name": "passive",
+   "description": "1. Indicates an action received from an action performer.\n2. Expresses respect for the subject of action performer.\nUsage: Attach れる to the irrealis form (未然形) of godan verbs.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "かれる",
+     "to": "く",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がれる",
+     "to": "ぐ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "される",
+     "to": "す",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5d",
+      "v5sp"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たれる",
+     "to": "つ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なれる",
+     "to": "ぬ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばれる",
+     "to": "ぶ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まれる",
+     "to": "む",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "われる",
+     "to": "う",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はれる",
+     "to": "う",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "られる",
+     "to": "る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じされる",
+     "to": "ずる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜされる",
+     "to": "ずる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "される",
+     "to": "する",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為れる",
+     "to": "為る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こられる",
+     "to": "くる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来られる",
+     "to": "来る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來られる",
+     "to": "來る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-た": {
+   "name": "-た",
+   "description": "1. Indicates a reality that has happened in the past.\n2. Indicates the completion of an action.\n3. Indicates the confirmation of a matter.\n4. Indicates the speaker's confidence that the action will definitely be fulfilled.\n5. Indicates the events that occur before the main clause are represented as relative past.\n6. Indicates a mild imperative/command.\nUsage: Attach た to the continuative form (連用形) of verbs after euphonic change form, かった to the stem of i-adjectives.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "かった",
+     "to": "い",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "た",
+     "to": "る",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いた",
+     "to": "く",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いだ",
+     "to": "ぐ",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "した",
+     "to": "す",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "った",
+     "to": "う",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "った",
+     "to": "つ",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "った",
+     "to": "る",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んだ",
+     "to": "ぬ",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んだ",
+     "to": "ぶ",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んだ",
+     "to": "む",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じた",
+     "to": "ずる",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "した",
+     "to": "する",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為た",
+     "to": "為る",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きた",
+     "to": "くる",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来た",
+     "to": "来る",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來た",
+     "to": "來る",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いった",
+     "to": "いく",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "行った",
+     "to": "行く",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "逝った",
+     "to": "逝く",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "往った",
+     "to": "往く",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こうた",
+     "to": "こう",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とうた",
+     "to": "とう",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "請うた",
+     "to": "請う",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "乞うた",
+     "to": "乞う",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "恋うた",
+     "to": "恋う",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "問うた",
+     "to": "問う",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "訪うた",
+     "to": "訪う",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "宣うた",
+     "to": "宣う",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "曰うた",
+     "to": "曰う",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "給うた",
+     "to": "給う",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "賜うた",
+     "to": "賜う",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "揺蕩うた",
+     "to": "揺蕩う",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "のたもうた",
+     "to": "のたまう",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たもうた",
+     "to": "たまう",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たゆとうた",
+     "to": "たゆたう",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ました",
+     "to": "ます",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-ます"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "でした",
+     "to": "",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-ません"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かった",
+     "to": "",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-ません",
+      "-ん"
+     ]
+    }
+   ]
+  },
+  "-ます": {
+   "name": "-ます",
+   "description": "Polite conjugation of verbs and adjectives.\nUsage: Attach ます to the continuative form (連用形) of verbs.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ます",
+     "to": "る",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "いらっしゃいます",
+     "to": "いらっしゃる",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "ございます",
+     "to": "ござる",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "なさいます",
+     "to": "なさる",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "くださいます",
+     "to": "くださる",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "下さいます",
+     "to": "下さる",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "おっしゃいます",
+     "to": "おっしゃる",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "仰います",
+     "to": "仰る",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "whole",
+     "from": "仰有います",
+     "to": "仰有る",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "います",
+     "to": "う",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ひます",
+     "to": "う",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きます",
+     "to": "く",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぎます",
+     "to": "ぐ",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "します",
+     "to": "す",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d",
+      "v5s"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちます",
+     "to": "つ",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "にます",
+     "to": "ぬ",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "びます",
+     "to": "ぶ",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "みます",
+     "to": "む",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ります",
+     "to": "る",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じます",
+     "to": "ずる",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "します",
+     "to": "する",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為ます",
+     "to": "為る",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きます",
+     "to": "くる",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来ます",
+     "to": "来る",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來ます",
+     "to": "來る",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "くあります",
+     "to": "い",
+     "conditionsIn": [
+      "-ます"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  },
+  "potential": {
+   "name": "potential",
+   "description": "Indicates a state of being (naturally) capable of doing an action.\nUsage: Attach (ら)れる to the irrealis form (未然形) of ichidan verbs.\nAttach る to the imperative form (命令形) of godan verbs.\nする becomes できる, くる becomes こ(ら)れる",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "れる",
+     "to": "る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v1",
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "える",
+     "to": "う",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ける",
+     "to": "く",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "げる",
+     "to": "ぐ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せる",
+     "to": "す",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "てる",
+     "to": "つ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ねる",
+     "to": "ぬ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "べる",
+     "to": "ぶ",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "める",
+     "to": "む",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v5d"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "できる",
+     "to": "する",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "出来る",
+     "to": "する",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "これる",
+     "to": "くる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来れる",
+     "to": "来る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來れる",
+     "to": "來る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "potential or passive": {
+   "name": "potential or passive",
+   "description": "1. Indicates an action received from an action performer.\n2. Expresses respect for the subject of action performer.\n3. Indicates a state of being (naturally) capable of doing an action.\nUsage: Attach られる to the irrealis form (未然形) of ichidan verbs.\nする becomes せられる, くる becomes こられる",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "られる",
+     "to": "る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ざれる",
+     "to": "ずる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜられる",
+     "to": "ずる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せられる",
+     "to": "する",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為られる",
+     "to": "為る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こられる",
+     "to": "くる",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来られる",
+     "to": "来る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來られる",
+     "to": "來る",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "volitional": {
+   "name": "volitional",
+   "description": "1. Expresses speaker's will or intention.\n2. Expresses an invitation to the other party.\n3. (Used in …ようとする) Indicates being on the verge of initiating an action or transforming a state.\n4. Indicates an inference of a matter.\nUsage: Attach よう to the irrealis form (未然形) of ichidan verbs.\nAttach う to the irrealis form (未然形) of godan verbs after -o euphonic change form.\nAttach かろう to the stem of i-adjectives (4th meaning only).",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "よう",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "やう",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "おう",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "はう",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こう",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かう",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ごう",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "がう",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "そう",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "さう",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とう",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "たう",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "のう",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "なう",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぼう",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ばう",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "もう",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まう",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ろう",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らう",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じよう",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じやう",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しよう",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しやう",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為よう",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為やう",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こよう",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こやう",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来よう",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来やう",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來よう",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來やう",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ましょう",
+     "to": "ます",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-ます"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ませう",
+     "to": "ます",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-ます"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "かろう",
+     "to": "い",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "からう",
+     "to": "い",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  },
+  "volitional slang": {
+   "name": "volitional slang",
+   "description": "Contraction of volitional form + か\n1. Expresses speaker's will or intention.\n2. Expresses an invitation to the other party.\nUsage: Replace final う with っ of volitional form then add か.\nFor example: 行こうか -> 行こっか.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "よっか",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "おっか",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こっか",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ごっか",
+     "to": "ぐ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "そっか",
+     "to": "す",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とっか",
+     "to": "つ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "のっか",
+     "to": "ぬ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぼっか",
+     "to": "ぶ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "もっか",
+     "to": "む",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ろっか",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じよっか",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しよっか",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為よっか",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こよっか",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来よっか",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來よっか",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ましょっか",
+     "to": "ます",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-ます"
+     ]
+    }
+   ]
+  },
+  "-まい": {
+   "name": "-まい",
+   "description": "Negative volitional form of verbs.\n1. Expresses speaker's assumption that something is likely not true.\n2. Expresses speaker's will or intention not to do something.\nUsage: Attach まい to the dictionary form (終止形) of verbs.\nAttach まい to the irrealis form (未然形) of ichidan verbs.\nする becomes しまい, くる becomes こまい",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "まい",
+     "to": "",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まい",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じまい",
+     "to": "ずる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しまい",
+     "to": "する",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為まい",
+     "to": "為る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こまい",
+     "to": "くる",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来まい",
+     "to": "来る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來まい",
+     "to": "來る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "まい",
+     "to": "",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-ます"
+     ]
+    }
+   ]
+  },
+  "-おく": {
+   "name": "-おく",
+   "description": "To do certain things in advance in preparation (or in anticipation) of latter needs.\nUsage: Attach おく to the て-form of verbs.\nAttach でおく after ない negative form of verbs.\nContracts to とく・どく in speech.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ておく",
+     "to": "て",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "でおく",
+     "to": "で",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とく",
+     "to": "て",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "どく",
+     "to": "で",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ないでおく",
+     "to": "ない",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ないどく",
+     "to": "ない",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  },
+  "-いる": {
+   "name": "-いる",
+   "description": "1. Indicates an action continues or progresses to a point in time.\n2. Indicates an action is completed and remains as is.\n3. Indicates a state or condition that can be taken to be the result of undergoing some change.\nUsage: Attach いる to the て-form of verbs. い can be dropped in speech.\nAttach でいる after ない negative form of verbs.\n(Slang) Attach おる to the て-form of verbs. Contracts to とる・でる in speech.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ている",
+     "to": "て",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "てゐる",
+     "to": "て",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ておる",
+     "to": "て",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "てる",
+     "to": "て",
+     "conditionsIn": [
+      "v1p"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "でいる",
+     "to": "で",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "でゐる",
+     "to": "で",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "でおる",
+     "to": "で",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "でる",
+     "to": "で",
+     "conditionsIn": [
+      "v1p"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とる",
+     "to": "て",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ないでいる",
+     "to": "ない",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ないでゐる",
+     "to": "ない",
+     "conditionsIn": [
+      "v1"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  },
+  "-ふ": {
+   "name": "-ふ",
+   "description": "Historical kana orthography (歴史的仮名遣い) for the dictionary/terminal form of ワ行五段 verbs, used in pre-1946 and literary/classical Japanese (e.g. 思ふ for 思う).",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ふ",
+     "to": "う",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v5"
+     ]
+    }
+   ]
+  },
+  "-き": {
+   "name": "-き",
+   "description": "Attributive form (連体形) of i-adjectives. An archaic form that remains in modern Japanese.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "き",
+     "to": "い",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  },
+  "-げ": {
+   "name": "-げ",
+   "description": "Describes a person's appearance. Shows feelings of the person.\nUsage: Attach げ or 気 to the stem of i-adjectives",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "げ",
+     "to": "い",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "気",
+     "to": "い",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  },
+  "-がる": {
+   "name": "-がる",
+   "description": "1. Shows subject’s feelings contrast with what is thought/known about them.\n2. Indicates subject's behavior (stands out).\nUsage: Attach がる to the stem of i-adjectives. It itself conjugates as a godan verb.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "がる",
+     "to": "い",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  },
+  "-やがる": {
+   "name": "-やがる",
+   "description": "Vulgar auxiliary showing contempt, irritation, or hostility toward the subject.\nUsage: Attach やがる to the continuative form (連用形) of verbs. It itself conjugates as a godan verb.",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "やがる",
+     "to": "る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v1"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いやがる",
+     "to": "う",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きやがる",
+     "to": "く",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぎやがる",
+     "to": "ぐ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しやがる",
+     "to": "す",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちやがる",
+     "to": "つ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "にやがる",
+     "to": "ぬ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "びやがる",
+     "to": "ぶ",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "みやがる",
+     "to": "む",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "りやがる",
+     "to": "る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "v5"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "じやがる",
+     "to": "ずる",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vz"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しやがる",
+     "to": "する",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "為やがる",
+     "to": "為る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vs"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "きやがる",
+     "to": "くる",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "来やがる",
+     "to": "来る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "來やがる",
+     "to": "來る",
+     "conditionsIn": [
+      "v5"
+     ],
+     "conditionsOut": [
+      "vk"
+     ]
+    }
+   ]
+  },
+  "-え": {
+   "name": "-え",
+   "description": "Slang. A sound change of i-adjectives.\nai：やばい → やべぇ\nui：さむい → さみぃ/さめぇ\noi：すごい → すげぇ",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ねえ",
+     "to": "ない",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "めえ",
+     "to": "むい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "みい",
+     "to": "むい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちぇえ",
+     "to": "つい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちい",
+     "to": "つい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せえ",
+     "to": "すい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ええ",
+     "to": "いい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ええ",
+     "to": "わい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ええ",
+     "to": "よい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "いぇえ",
+     "to": "よい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "うぇえ",
+     "to": "わい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "けえ",
+     "to": "かい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "げえ",
+     "to": "がい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "げえ",
+     "to": "ごい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せえ",
+     "to": "さい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "めえ",
+     "to": "まい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜえ",
+     "to": "ずい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っぜえ",
+     "to": "ずい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "れえ",
+     "to": "らい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "れえ",
+     "to": "らい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちぇえ",
+     "to": "ちゃい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "でえ",
+     "to": "どい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "れえ",
+     "to": "れい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "べえ",
+     "to": "ばい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "てえ",
+     "to": "たい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ねぇ",
+     "to": "ない",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "めぇ",
+     "to": "むい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "みぃ",
+     "to": "むい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ちぃ",
+     "to": "つい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せぇ",
+     "to": "すい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "けぇ",
+     "to": "かい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "げぇ",
+     "to": "がい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "げぇ",
+     "to": "ごい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せぇ",
+     "to": "さい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "めぇ",
+     "to": "まい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぜぇ",
+     "to": "ずい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "っぜぇ",
+     "to": "ずい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "れぇ",
+     "to": "らい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "でぇ",
+     "to": "どい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "れぇ",
+     "to": "れい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "べぇ",
+     "to": "ばい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "てぇ",
+     "to": "たい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  },
+  "n-slang": {
+   "name": "n-slang",
+   "description": "Slang sound change of r-column syllables to n (when before an n-sound, usually の or な)",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "んなさい",
+     "to": "りなさい",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-なさい"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "らんない",
+     "to": "られない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んない",
+     "to": "らない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んなきゃ",
+     "to": "らなきゃ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-ゃ"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "んなきゃ",
+     "to": "れなきゃ",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-ゃ"
+     ]
+    }
+   ]
+  },
+  "imperative negative slang": {
+   "name": "imperative negative slang",
+   "description": "",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "んな",
+     "to": "る",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "kansai-ben negative": {
+   "name": "kansai-ben",
+   "description": "Negative form of kansai-ben verbs",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "へん",
+     "to": "ない",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ひん",
+     "to": "ない",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "せえへん",
+     "to": "しない",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "へんかった",
+     "to": "なかった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ひんかった",
+     "to": "なかった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "うてへん",
+     "to": "ってない",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  },
+  "kansai-ben -て": {
+   "name": "kansai-ben",
+   "description": "-て form of kansai-ben verbs",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "うて",
+     "to": "って",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "おうて",
+     "to": "あって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こうて",
+     "to": "かって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ごうて",
+     "to": "がって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "そうて",
+     "to": "さって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぞうて",
+     "to": "ざって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とうて",
+     "to": "たって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "どうて",
+     "to": "だって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "のうて",
+     "to": "なって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ほうて",
+     "to": "はって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぼうて",
+     "to": "ばって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "もうて",
+     "to": "まって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ろうて",
+     "to": "らって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ようて",
+     "to": "やって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ゆうて",
+     "to": "いって",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    }
+   ]
+  },
+  "kansai-ben -た": {
+   "name": "kansai-ben",
+   "description": "-た form of kansai-ben terms",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "うた",
+     "to": "った",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "おうた",
+     "to": "あった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こうた",
+     "to": "かった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ごうた",
+     "to": "がった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "そうた",
+     "to": "さった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぞうた",
+     "to": "ざった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とうた",
+     "to": "たった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "どうた",
+     "to": "だった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "のうた",
+     "to": "なった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ほうた",
+     "to": "はった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぼうた",
+     "to": "ばった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "もうた",
+     "to": "まった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ろうた",
+     "to": "らった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ようた",
+     "to": "やった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ゆうた",
+     "to": "いった",
+     "conditionsIn": [
+      "-た"
+     ],
+     "conditionsOut": [
+      "-た"
+     ]
+    }
+   ]
+  },
+  "kansai-ben -たら": {
+   "name": "kansai-ben",
+   "description": "-たら form of kansai-ben terms",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "うたら",
+     "to": "ったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "おうたら",
+     "to": "あったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "こうたら",
+     "to": "かったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ごうたら",
+     "to": "がったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "そうたら",
+     "to": "さったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ぞうたら",
+     "to": "ざったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "とうたら",
+     "to": "たったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "どうたら",
+     "to": "だったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "のうたら",
+     "to": "なったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ほうたら",
+     "to": "はったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ぼうたら",
+     "to": "ばったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "もうたら",
+     "to": "まったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ろうたら",
+     "to": "らったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ようたら",
+     "to": "やったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ゆうたら",
+     "to": "いったら",
+     "conditionsIn": [],
+     "conditionsOut": []
+    }
+   ]
+  },
+  "kansai-ben -たり": {
+   "name": "kansai-ben",
+   "description": "-たり form of kansai-ben terms",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "うたり",
+     "to": "ったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "おうたり",
+     "to": "あったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "こうたり",
+     "to": "かったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ごうたり",
+     "to": "がったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "そうたり",
+     "to": "さったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ぞうたり",
+     "to": "ざったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "とうたり",
+     "to": "たったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "どうたり",
+     "to": "だったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "のうたり",
+     "to": "なったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ほうたり",
+     "to": "はったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ぼうたり",
+     "to": "ばったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "もうたり",
+     "to": "まったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ろうたり",
+     "to": "らったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ようたり",
+     "to": "やったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    },
+    {
+     "kind": "suffix",
+     "from": "ゆうたり",
+     "to": "いったり",
+     "conditionsIn": [],
+     "conditionsOut": []
+    }
+   ]
+  },
+  "kansai-ben -く": {
+   "name": "kansai-ben",
+   "description": "-く stem of kansai-ben adjectives",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "う",
+     "to": "く",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-く"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こう",
+     "to": "かく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-く"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ごう",
+     "to": "がく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-く"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "そう",
+     "to": "さく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-く"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とう",
+     "to": "たく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-く"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "のう",
+     "to": "なく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-く"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぼう",
+     "to": "ばく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-く"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "もう",
+     "to": "まく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-く"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ろう",
+     "to": "らく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-く"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "よう",
+     "to": "よく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-く"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しゅう",
+     "to": "しく",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "-く"
+     ]
+    }
+   ]
+  },
+  "kansai-ben adjective -て": {
+   "name": "kansai-ben",
+   "description": "-て form of kansai-ben adjectives",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "うて",
+     "to": "くて",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こうて",
+     "to": "かくて",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ごうて",
+     "to": "がくて",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "そうて",
+     "to": "さくて",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とうて",
+     "to": "たくて",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "のうて",
+     "to": "なくて",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぼうて",
+     "to": "ばくて",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "もうて",
+     "to": "まくて",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ろうて",
+     "to": "らくて",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ようて",
+     "to": "よくて",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しゅうて",
+     "to": "しくて",
+     "conditionsIn": [
+      "-て"
+     ],
+     "conditionsOut": [
+      "-て"
+     ]
+    }
+   ]
+  },
+  "kansai-ben adjective negative": {
+   "name": "kansai-ben",
+   "description": "Negative form of kansai-ben adjectives",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "うない",
+     "to": "くない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "こうない",
+     "to": "かくない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ごうない",
+     "to": "がくない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "そうない",
+     "to": "さくない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "とうない",
+     "to": "たくない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "のうない",
+     "to": "なくない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ぼうない",
+     "to": "ばくない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "もうない",
+     "to": "まくない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ろうない",
+     "to": "らくない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "ようない",
+     "to": "よくない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "しゅうない",
+     "to": "しくない",
+     "conditionsIn": [
+      "adj-i"
+     ],
+     "conditionsOut": [
+      "adj-i"
+     ]
+    }
+   ]
+  }
+ }
+}

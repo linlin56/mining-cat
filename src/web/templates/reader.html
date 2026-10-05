@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MiningCat Reader</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='reader.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mining.css') }}">
+  <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='reader.js') }}" defer></script>
+</head>
+<body class="theme-light">
+
+  <!-- ===================== Library ===================== -->
+  <main id="library" class="library" hidden>
+    <header class="lib-header">
+      <h1 class="brand"><span aria-hidden="true">🐱</span> Reader</h1>
+      <nav class="lib-nav">
+        <a href="/" class="nav-link">Converter</a>
+        <a href="/settings/" class="nav-link">Settings</a>
+        <button type="button" class="btn btn-primary" id="add-books">+ Add books</button>
+      </nav>
+    </header>
+    <p class="lib-hint dim" id="lib-formats"></p>
+    <div class="lib-drop" id="lib-drop">
+      <div class="book-grid" id="book-grid"></div>
+      <div class="lib-empty" id="lib-empty" hidden>
+        <p class="lib-empty-title">Your library is empty</p>
+        <p class="dim">Drop EPUB or TXT files here, or use “Add books”.</p>
+      </div>
+    </div>
+    <p class="upload-status dim" id="lib-status"></p>
+    <input type="file" id="book-input" multiple hidden>
+  </main>
+
+  <!-- ===================== Reading ===================== -->
+  <div id="reading" class="reading" hidden>
+    <header class="bar bar-top">
+      <a href="/reader/" class="bar-btn" id="back" title="Library (Esc)" aria-label="Back to library">←</a>
+      <div class="bar-title">
+        <span id="book-title"></span>
+        <span class="dim" id="chapter-title"></span>
+      </div>
+      <button type="button" class="bar-btn" id="toc-btn" title="Contents (T)" aria-label="Contents">☰</button>
+      <button type="button" class="bar-btn" id="settings-btn" title="Settings (S)" aria-label="Settings">Aa</button>
+    </header>
+
+    <div class="stage" id="stage">
+      <div class="zone zone-left" id="zone-left" aria-hidden="true"></div>
+      <div class="viewport" id="viewport">
+        <article class="content" id="content"></article>
+      </div>
+      <div class="zone zone-right" id="zone-right" aria-hidden="true"></div>
+      <div class="loading" id="loading" hidden>Loading…</div>
+    </div>
+
+    <footer class="bar bar-bottom">
+      <span class="dim" id="page-info"></span>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+      <span class="dim" id="percent-info"></span>
+    </footer>
+
+    <!-- Contents -->
+    <aside class="panel panel-left" id="toc-panel" hidden>
+      <div class="panel-head">
+        <h2>Contents</h2>
+        <button type="button" class="bar-btn" data-close aria-label="Close">×</button>
+      </div>
+      <ol class="toc" id="toc"></ol>
+    </aside>
+
+    <!-- Settings -->
+    <aside class="panel panel-right" id="settings-panel" hidden>
+      <div class="panel-head">
+        <h2>Settings</h2>
+        <button type="button" class="bar-btn" data-close aria-label="Close">×</button>
+      </div>
+
+      <h3>This book</h3>
+      <label class="setting">
+        <span>Text direction</span>
+        <select id="set-writing">
+          <option value="auto">Automatic</option>
+          <option value="horizontal">Horizontal</option>
+          <option value="vertical">Vertical (縦書き)</option>
+        </select>
+      </label>
+      <label class="setting">
+        <span>Language</span>
+        <select id="set-language"></select>
+      </label>
+
+      <h3>Text</h3>
+      <label class="setting">
+        <span>Font size <output id="out-font-size"></output></span>
+        <input type="range" id="set-font-size" min="12" max="40" step="1">
+      </label>
+      <label class="setting">
+        <span>Line spacing <output id="out-line-height"></output></span>
+        <input type="range" id="set-line-height" min="1.2" max="2.6" step="0.1">
+      </label>
+      <label class="setting">
+        <span>Margins <output id="out-margin"></output></span>
+        <input type="range" id="set-margin" min="8" max="120" step="4">
+      </label>
+      <div class="setting">
+        <span>Font</span>
+        <div class="segmented" id="set-font">
+          <button type="button" data-value="serif">Serif</button>
+          <button type="button" data-value="sans">Sans</button>
+        </div>
+      </div>
+      <div class="setting">
+        <span>Theme</span>
+        <div class="segmented" id="set-theme">
+          <button type="button" data-value="light">Light</button>
+          <button type="button" data-value="sepia">Sepia</button>
+          <button type="button" data-value="dark">Dark</button>
+          <button type="button" data-value="auto">Auto</button>
+        </div>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="set-furigana">
+        <span>Show furigana / ruby</span>
+      </label>
+
+      <h3>Dictionary</h3>
+      <label class="setting">
+        <span>Look up words</span>
+        <select id="set-lookup">
+          <option value="click">Click on a word</option>
+          <option value="shift">Shift + hover (like Yomitan)</option>
+          <option value="off">Off (use Yomitan instead)</option>
+        </select>
+      </label>
+      <p class="dim small-note">Dictionaries, Anki and the script you learn are set in <a href="/settings/" target="_blank">Settings</a>.</p>
+
+      <p class="dim shortcuts">← → / Space: turn pages · T: contents · S: settings · Esc: library.<br>
+        Click the side margins or swipe to turn pages; clicks on the text are for the dictionary.</p>
+    </aside>
+  </div>
+
+  <dialog id="dialog" class="dialog">
+    <form method="dialog">
+      <h3 id="dialog-title"></h3>
+      <p id="dialog-message"></p>
+      <div class="dialog-actions" id="dialog-actions"></div>
+    </form>
+  </dialog>
+</body>
+</html>

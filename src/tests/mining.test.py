@@ -848,7 +848,7 @@ def fake_argos(monkeypatch):
     monkeypatch.setattr(translate, "_index", [{"from_code": a, "to_code": b, "code": f"translate-{a}_{b}", "links": [f"https://x/{a}_{b}"]}
                                               for a, b in [("zh", "en"), ("zt", "en"), ("en", "fr"), ("ja", "en")]])
     monkeypatch.setattr(translate, "_installed", lambda: set(installed))
-    monkeypatch.setattr(translate, "_install", lambda a, b: (downloads.append((a, b)), installed.add((a, b))))
+    monkeypatch.setattr(translate, "_install", lambda a, b, progress=None: (downloads.append((a, b)), installed.add((a, b))))
     fake = types.ModuleType("argostranslate.translate")
     fake.translate = lambda text, source, target: f"[{source}>{target}] {text}"
     monkeypatch.setitem(sys.modules, "argostranslate", types.SimpleNamespace(translate=fake))
@@ -877,3 +877,45 @@ def test_http_translate(client, fake_argos):
     res = client.post("/api/translate", json={"language": "zh", "text": "公园"}, headers=HEADERS).get_json()
     assert res == {"translation": "[zh>en] 公园", "target": "en"}
     assert client.post("/api/translate", json={"language": "yue", "text": "公園"}, headers=HEADERS).status_code == 400
+
+
+def test_zhuyin_readings(client, zh_dict, fake_anki):
+    lookup_entry = lambda: client.post("/api/dict/lookup", json={"language": "zh", "text": "說話"}, headers=HEADERS).get_json()["entries"][0]
+    assert lookup_entry()["display_reading"] == "shuōhuà"
+    assert client.post("/api/mining/reading", json={"language": "zh", "system": "zhuyin"}, headers=HEADERS).status_code == 200
+    assert client.get("/api/mining/languages").get_json()["readings"] == {"zh": "zhuyin"}
+    entry = lookup_entry()
+    assert entry["reading"] == "shuōhuà" and entry["display_reading"] == "ㄕㄨㄛ ㄏㄨㄚˋ"
+    assert client.post("/api/mining/reading", json={"language": "ja", "system": "zhuyin"}, headers=HEADERS).status_code == 400
+
+    # the card shows zhuyin, the word stays identified by its pinyin
+    setup_chinese_notes()
+    card = client.post("/api/cards", json={"language": "zh", "key_reading": "shuōhuà",
+                                           "fields": {"word": "說話", "reading": "ㄕㄨㄛ ㄏㄨㄚˋ", "definition": "to talk"}},
+                       headers=HEADERS).get_json()["card"]
+    assert card["reading"] == "shuōhuà" and card["fields"]["reading"] == "ㄕㄨㄛ ㄏㄨㄚˋ"
+    assert fake_anki.notes[card["anki_note_id"]]["fields"]["Zhuyin"] == "ㄕㄨㄛ ㄏㄨㄚˋ"
+    assert words.status_of("zh", "說話", "shuōhuà")["status"] == "learning"
+
+
+def test_script_settings_only_for_studied_languages(client, zh_dict):
+    languages = {l["id"]: l for l in client.get("/api/mining/languages").get_json()["languages"]}
+    assert languages["zh"]["studied"] and not languages["yue"]["studied"] and not languages["nan"]["studied"]
+
+
+def test_translation_models(client, fake_argos, monkeypatch):
+    from mining import translate
+    monkeypatch.setattr(translate, "_job", {"state": "idle", "language": "", "done": 0, "total": 0, "error": None})
+    monkeypatch.setattr(translate.threading, "Thread", lambda target, **kw: types.SimpleNamespace(start=target))
+    fake_package = types.SimpleNamespace(get_installed_packages=lambda: [], uninstall=lambda p: None)
+    sys.modules["argostranslate"].package = fake_package
+    monkeypatch.setitem(sys.modules, "argostranslate.package", fake_package)
+    words.set_chinese_script_preference("zh", "traditional")
+    res = client.post("/api/translate/models", json={"language": "zh"}, headers=HEADERS).get_json()
+    assert res["job"]["state"] == "done", res
+    assert fake_argos == [("zt", "en")]  # only the script the user reads
+    words.set_chinese_script_preference("zh", "both")
+    translate.start_download("ja")
+    assert fake_argos[1:] == [("ja", "en")]
+    assert client.post("/api/translate/models", json={"language": "en"}, headers=HEADERS).status_code == 400
+    assert client.post("/api/translate/models/zt/en/delete", json={}, headers=HEADERS).status_code == 400  # not installed here

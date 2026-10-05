@@ -69,10 +69,14 @@ def settings_page():
 
 @bp.get("/api/mining/languages")
 def api_languages():
+    counts = words.counts()
+    # a language is studied once it has a dictionary or saved words: only those get script settings
+    studied = set(counts) | {d["language"] for d in dictionaries.list_dictionaries()}
     return jsonify(
-        languages=[{"id": k, "name": v, "chinese": k in CHINESE_LANGUAGES} for k, v in LANGUAGES.items()],
+        languages=[{"id": k, "name": v, "chinese": k in CHINESE_LANGUAGES, "studied": k in studied} for k, v in LANGUAGES.items()],
         scripts={lang: words.chinese_script_preference(lang) for lang in CHINESE_LANGUAGES},
-        counts=words.counts(),
+        readings={"zh": words.reading_system("zh")},
+        counts=counts,
     )
 
 
@@ -80,6 +84,13 @@ def api_languages():
 def api_script():
     body = _body()
     words.set_chinese_script_preference(_language(body.get("language")), str(body.get("script")))
+    return jsonify(ok=True)
+
+
+@bp.post("/api/mining/reading")
+def api_reading_system():
+    body = _body()
+    words.set_reading_system(_language(body.get("language")), str(body.get("system")))
     return jsonify(ok=True)
 
 
@@ -127,7 +138,11 @@ def api_segment():
 def api_lookup():
     body = _body()
     text = str(body.get("text") or "")[:200]
-    return jsonify(lookup.lookup(_language(body.get("language")), text))
+    language = _language(body.get("language"))
+    result = lookup.lookup(language, text)
+    for entry in result["entries"]:
+        entry["display_reading"] = words.display_reading(language, entry["expression"], entry.get("reading") or "")
+    return jsonify(result)
 
 
 # Online recordings of a word (JapanesePod101, Wiktionary, Lingua Libre), fetched when the user asks for them.
@@ -183,6 +198,35 @@ def api_translate():
     except translate.TranslateError as exc:
         raise ApiError(str(exc), title="Translation")
     return jsonify(translation=translation, target=translate.target_language())
+
+
+@bp.get("/api/translate/models")
+def api_translate_models():
+    from mining import translate
+
+    return jsonify(translate.models())
+
+
+@bp.post("/api/translate/models")
+def api_download_translate_models():
+    from mining import translate
+
+    try:
+        translate.start_download(_language(_body().get("language")))
+    except translate.TranslateError as exc:
+        raise ApiError(str(exc), title="Translation")
+    return jsonify(translate.models())
+
+
+@bp.post("/api/translate/models/<source>/<target>/delete")
+def api_delete_translate_model(source: str, target: str):
+    from mining import translate
+
+    try:
+        translate.delete_model(source, target)
+    except translate.TranslateError as exc:
+        raise ApiError(str(exc), title="Translation")
+    return jsonify(translate.models())
 
 
 @bp.get("/api/dict")
@@ -281,7 +325,8 @@ def api_anki_sync():
 def api_create_card():
     body = _body()
     card = anki.create_card(_language(body.get("language")), body.get("fields") or {}, body.get("media") or {},
-                            str(body.get("tags") or ""), send=body.get("send", True) is not False)
+                            str(body.get("tags") or ""), send=body.get("send", True) is not False,
+                            key_reading=str(body.get("key_reading") or ""))
     return jsonify(card=card)
 
 

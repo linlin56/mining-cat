@@ -1,3 +1,5 @@
+import subprocess
+import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -85,3 +87,63 @@ def test_run_video_pipeline_adds_ocr_fps_flag():
     assert "--ocr-fps" in args
     idx = args.index("--ocr-fps")
     assert args[idx + 1] == "8"
+
+
+# start_game_server / stop_game_server
+def _start_game_server(**overrides):
+    fake_proc = MagicMock()
+    fake_proc.stdout = iter(["Page: http://127.0.0.1:6677/\n"])
+    fake_proc.wait.return_value = 0
+    kwargs = dict(
+        python_exe="python3",
+        lang=Language.JAPANESE,
+        convert_target=None,
+        continuous=False,
+        hotkey="F9",
+        schedule=lambda delay, fn, *a: fn(*a),
+        log=MagicMock(),
+        on_exit=MagicMock(),
+    )
+    kwargs.update(overrides)
+    with patch("gui_components.pipeline._popen", return_value=fake_proc) as popen:
+        proc = pipeline.start_game_server(**kwargs)
+        # the output pump runs in a thread: wait for it to report the exit
+        for _ in range(100):
+            if kwargs["on_exit"].called:
+                break
+            time.sleep(0.01)
+    return proc, popen.call_args[0][0], kwargs
+
+
+def test_start_game_server_runs_game_serve_and_pumps_output():
+    proc, args, kwargs = _start_game_server()
+    assert args[-6:] == ["game", "serve", "--language", "japanese", "--hotkey", "F9"]
+    kwargs["log"].assert_called_once_with("Page: http://127.0.0.1:6677/\n")
+    kwargs["on_exit"].assert_called_once_with(0)
+
+
+def test_start_game_server_passes_convert_and_continuous_without_key():
+    _proc, args, _kwargs = _start_game_server(lang=Language.MANDARIN_TW, convert_target="s", continuous=True)
+    assert args[args.index("--convert-to") + 1] == "s"
+    assert "--continuous" in args
+    assert "--hotkey" not in args
+
+
+def test_stop_game_server_terminates_running_process():
+    proc = MagicMock(**{"poll.return_value": None})
+    pipeline.stop_game_server(proc)
+    proc.terminate.assert_called_once()
+    proc.kill.assert_not_called()
+
+
+def test_stop_game_server_kills_when_terminate_times_out():
+    proc = MagicMock(**{"poll.return_value": None})
+    proc.wait.side_effect = subprocess.TimeoutExpired("game", 1)
+    pipeline.stop_game_server(proc, timeout=0.01)
+    proc.kill.assert_called_once()
+
+
+def test_stop_game_server_ignores_finished_process():
+    proc = MagicMock(**{"poll.return_value": 0})
+    pipeline.stop_game_server(proc)
+    proc.terminate.assert_not_called()

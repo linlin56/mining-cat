@@ -1,4 +1,4 @@
-.PHONY: help gui install test coverage audio epub align export chapter1 chapter run clean video
+.PHONY: help gui install test test-gui coverage audio epub align export chapter1 chapter run clean video game-setup game
 
 # Defaults
 CHAPTER  ?= 1
@@ -10,6 +10,7 @@ RANGE    ?=
 URL      ?=
 FILE     ?=
 APP_ID   ?= web
+HOTKEY   ?= F9
 ifeq ($(OS),Windows_NT)
   _VENV_PYTHON := .venv/Scripts/python.exe
 else
@@ -30,7 +31,8 @@ help:
 	@echo ""
 	@echo "Usage:"
 	@echo "  make install                    Install dependencies"
-	@echo "  make test                       Run tests"
+	@echo "  make test                       Run tests (without the GUI tests, which open windows)"
+	@echo "  make test-gui                   Run the GUI tests"
 	@echo "  make audio                      Step 1: prepare audio chapters"
 	@echo "  make epub [RANGE=4-9]           Step 2: extract epub text"
 	@echo "  make align [CHAPTER=1|all]      Step 3: align chapter(s)"
@@ -40,6 +42,8 @@ help:
 	@echo "  make run [RANGE=4-9]            Run all steps in sequence"
 	@echo "  make video URL=...              Download an online video and generate subtitles"
 	@echo "  make video FILE=...             Use a local video file and generate subtitles"
+	@echo "  make game-setup                 Select the game window, screenshot area and text area"
+	@echo "  make game [HOTKEY=F9]           Start the video game / screen share OCR page (capture with the key)"
 	@echo "  make clean                      Clean temp and output files"
 	@echo ""
 	@echo "Examples:"
@@ -56,6 +60,9 @@ install:
 
 test:
 	$(PYTHON) -m pytest
+
+test-gui:
+	$(PYTHON) -m pytest -m gui
 
 coverage:
 	$(PYTHON) -m pytest --cov=src --cov-report=xml --cov-report=term-missing
@@ -111,6 +118,12 @@ video:
 		echo "Error: URL or FILE is required, e.g. make video URL=https://www.instagram.com/reel/xxxxx/"; \
 		exit 1; \
 	fi
+
+game-setup:
+	$(MAIN) game setup
+
+game:
+	$(MAIN) game serve --language $(LANGUAGE) --hotkey $(HOTKEY)
 
 clean:
 	rm -rf temp/*.mp3 temp/*.txt temp/*.srt output/*

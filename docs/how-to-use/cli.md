@@ -122,6 +122,41 @@ python src/main.py video --file <PATH> [options]
 | `--ocr-fps`         | `4`           | Frames sampled per second for OCR (2 to 12)                                                  |
 | `--app-id`          | `web`         | Instagram only: `X-IG-App-ID` header (`web`, `ios` or a numeric id), if downloads start failing |
 
+## `game`
+
+Video game / screen share OCR: captures a window, reads its text area with OCR, and pushes the screenshot + text to a local web page. See [Video games & screen share](video-game.md) for the details.
+
+```bash
+python src/main.py game setup [options]   # 1. pick the window, then draw the screenshot and text areas
+python src/main.py game serve [options]   # 2. capture until Ctrl+C
+```
+
+The selection is saved in `sources/game_ocr.json`, so `setup` is only needed once per game.
+
+### `game setup`
+
+Asks for the window (GNOME's sharing dialog on Linux, a numbered list on macOS), then opens two windows to draw the screenshot area and the text area.
+
+| Option         | Description                                                                                     |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| `--window TEXT`| macOS: pick the first window whose app name or title contains `TEXT`, instead of asking          |
+| `--areas-only` | Keep the saved window, only draw the areas again                                                |
+
+### `game serve`
+
+Serves the page on <http://127.0.0.1:6677/> and opens it in the browser. Captures when the capture key is pressed, or continuously with `--continuous`. `curl -X POST http://127.0.0.1:6677/capture` also captures right away.
+
+| Option               | Default       | Description                                                                         |
+| -------------------- | ------------- | ----------------------------------------------------------------------------------- |
+| `--language`         | `mandarin_tw` | See [language ids](#language-ids)                                                   |
+| `--convert-to`       |               | Convert the text to `s`, `tw`, `t` or `hk` (Chinese only)                            |
+| `--port`             | `6677`        | Port of the web page                                                                |
+| `--hotkey`           | `F9`          | Global capture key, `F1` to `F12` (works even with the game focused)                |
+| `--continuous`       |               | Capture whenever the text changes, instead of with the capture key                  |
+| `--interval`         | `0.5`         | Seconds between two looks at the text area, in continuous mode                      |
+| `--keep-line-breaks` |               | Keep the text's line breaks instead of joining the lines of the dialog box          |
+| `--no-browser`       |               | Don't open the page in the browser                                                  |
+
 ## Language ids
 
 | Id             | Language                              |
@@ -157,9 +192,11 @@ The Makefile wraps the most common commands. Variables can be overridden on the 
 | `make run [RANGE=4-9]`           | `run [--range 4-9]`                              |
 | `make video URL=...`             | `video --url ...`                                |
 | `make video FILE=...`            | `video --file ...`                               |
+| `make game-setup`                | `game setup`                                     |
+| `make game [HOTKEY=F9]`          | `game serve --language ... --hotkey F9`          |
 | `make clean`                     | Delete generated files in `output/` and `temp/`  |
 
-Available variables and their defaults: `MODEL=tiny`, `LANGUAGE=mandarin_tw`, `PRESET=ultrafast`, `CHAPTER=1`, `APP_ID=web`.
+Available variables and their defaults: `MODEL=tiny`, `LANGUAGE=mandarin_tw`, `PRESET=ultrafast`, `CHAPTER=1`, `APP_ID=web`, `HOTKEY=F9`.
 
 ```bash
 make align CHAPTER=all MODEL=base LANGUAGE=japanese

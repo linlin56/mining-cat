@@ -53,6 +53,51 @@ def test_main_dispatches_convert():
     mock.assert_called_once()
 
 
+def test_main_dispatches_game_serve():
+    with patch.object(sys, "argv", ["main.py", "game", "serve", "--language", "japanese", "--continuous"]):
+        with patch("main.cmd_game") as mock:
+            main.main()
+    args = mock.call_args[0][0]
+    assert args.game_command == "serve"
+    assert args.language == "japanese"
+    assert args.continuous is True
+
+
+def test_main_game_serve_defaults_to_f9_capture_key():
+    with patch.object(sys, "argv", ["main.py", "game", "serve"]):
+        with patch("main.cmd_game") as mock:
+            main.main()
+    args = mock.call_args[0][0]
+    assert args.hotkey == "F9"
+    assert args.continuous is False
+
+
+def test_main_game_serve_rejects_unknown_key():
+    with patch.object(sys, "argv", ["main.py", "game", "serve", "--hotkey", "F13"]):
+        with pytest.raises(SystemExit):
+            main.main()
+
+
+def test_main_dispatches_game_setup():
+    with patch.object(sys, "argv", ["main.py", "game", "setup", "--window", "Zelda"]):
+        with patch("main.cmd_game") as mock:
+            main.main()
+    assert mock.call_args[0][0].window == "Zelda"
+
+
+def test_main_game_requires_a_subcommand():
+    with patch.object(sys, "argv", ["main.py", "game"]):
+        with pytest.raises(SystemExit):
+            main.main()
+
+
+def test_cmd_game_delegates_to_game_cli():
+    args = argparse.Namespace(game_command="serve")
+    with patch("game_ocr.cli.main") as cli_main:
+        main.cmd_game(args)
+    cli_main.assert_called_once_with(args)
+
+
 def test_main_dispatches_run():
     with patch.object(sys, "argv", ["main.py", "run"]):
         with patch("main.cmd_run") as mock:

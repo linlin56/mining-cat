@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="{{LANG}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MiningCat - Game OCR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&family=Noto+Serif+SC:wght@400;600&family=Noto+Serif+JP:wght@400;600&family=Noto+Serif+KR:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/page.css">
+</head>
+<body>
+
+<header>
+  <b>MiningCat</b>
+  <span id="status">connecting…</span>
+  <span id="count">0</span>
+  <button id="capture" title="Capture now">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>
+  </button>
+  <button id="clear" title="Clear history">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+      <path d="M10 11v6"/><path d="M14 11v6"/>
+    </svg>
+  </button>
+</header>
+
+<main id="feed"></main>
+
+<script>
+const AUTO    = {{AUTO}};
+const HOTKEY  = "{{HOTKEY}}";
+const LANG    = document.documentElement.lang;
+const feed    = document.getElementById("feed");
+const status  = document.getElementById("status");
+const count   = document.getElementById("count");
+const capture = document.getElementById("capture");
+const clear   = document.getElementById("clear");
+let n = 0;
+
+function resetFeed() {
+  const how = AUTO
+    ? "New lines are captured automatically when the text area changes."
+    : HOTKEY
+      ? `Press <code>${HOTKEY}</code> to capture, even with the game focused.`
+      : "Continuous capture is off.";
+  feed.innerHTML = `<p class="empty">
+    Waiting for a capture.<br>
+    ${how}<br>
+    You can also capture with the camera button above, or <code>curl -X POST ${location.origin}/capture</code>.
+  </p>`;
+  n = 0;
+  count.textContent = n;
+}
+resetFeed();
+
+capture.onclick = () => fetch("/capture", { method: "POST" });
+
+// Clears the server side too (the history replayed to new connections, and the other open tabs).
+// resetFeed() runs when the server sends back its "clear" message, not here, to stay consistent across tabs.
+clear.onclick = () => fetch("/clear", { method: "POST" });
+
+function addCapture(data) {
+  const empty = feed.querySelector(".empty");
+  if (empty) empty.remove();
+
+  const el = document.createElement("article");
+  el.className = "capture";
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.innerHTML = `<span>${data.ts}</span><span>${data.ms} ms</span>`;
+
+  const copy = document.createElement("button");
+  copy.textContent = "copy image";
+  copy.onclick = async () => {
+    const blob = await (await fetch(data.image)).blob();
+    const png = await toPng(blob);
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+    copy.textContent = "copied";
+    setTimeout(() => (copy.textContent = "copy image"), 1400);
+  };
+  meta.appendChild(copy);
+
+  const img = document.createElement("img");
+  img.className = "shot";
+  img.src = data.image;
+  img.alt = "";
+
+  const line = document.createElement("p");
+  line.className = "line";
+  line.lang = LANG;
+  line.textContent = data.text;
+
+  el.append(meta, img, line);
+  const stick = isNearBottom();
+  feed.append(el);
+
+  count.textContent = ++n;
+  if (stick) el.scrollIntoView({ behavior: "smooth", block: "end" });
+}
+
+// only sticks to the bottom if the user didn't scroll up to read the history
+function isNearBottom() {
+  return window.innerHeight + window.scrollY >= document.body.offsetHeight - 80;
+}
+
+// the clipboard only accepts PNG: go through a canvas
+function toPng(blob) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.width; c.height = img.height;
+      c.getContext("2d").drawImage(img, 0, 0);
+      c.toBlob(resolve, "image/png");
+    };
+    img.src = URL.createObjectURL(blob);
+  });
+}
+
+function connect() {
+  const ws = new WebSocket(`ws://${location.host}/ws`);
+
+  ws.onopen = () => {
+    status.textContent = "listening";
+    status.classList.add("live");
+  };
+
+  ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === "clear") resetFeed();
+    else addCapture(data);
+  };
+
+  ws.onclose = () => {
+    status.textContent = "server stopped - retrying";
+    status.classList.remove("live");
+    setTimeout(connect, 2000);
+  };
+}
+
+connect();
+</script>
+</body>
+</html>

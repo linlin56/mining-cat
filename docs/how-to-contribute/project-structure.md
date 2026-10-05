@@ -23,6 +23,8 @@ src/
 ├── video_downloader.py     # picks the right handler for a URL
 ├── video_handlers/         # one module per platform (yt-dlp based)
 ├── ocr_mining/             # hardsubs OCR: frames : text : deduplicated segments
+├── game_ocr/               # video game / screen share OCR: window : text : web page
+│   └── capture/            #   one window capture backend per OS
 │
 └── tests/                  # pytest tests (*.test.py) and mock files
 ```
@@ -56,6 +58,17 @@ The GUI runs the same steps through `gui_components/pipeline.py`, after copying 
 2. builds subtitles, either with Whisper on the extracted audio, or with `ocr_mining.pipeline.generate_segments()` for hardsubs;
 3. collects existing subtitles (platform captions, sidecar `.srt`, embedded text tracks);
 4. muxes every subtitle track into the final MP4.
+
+## Video game / screen share
+
+`main.py game serve` (run by the GUI in a subprocess, so that **Stop** can end it):
+
+1. reopens the window saved in `sources/game_ocr.json` with the capture backend of the current OS (`game_ocr/capture/`);
+2. on each press of the capture key (`game_ocr/hotkey.py`), or about twice per second in continuous mode, grabs a frame and crops the screenshot area and the text area (`game_ocr/session.py`);
+3. reads the text area with `ocr_mining.engine.OcrEngine` (in continuous mode, only once it changed and settled);
+4. pushes the screenshot + text to the page through a websocket (`game_ocr/server.py`).
+
+See [Add a capture backend](add-capture-backend.md) to support another OS.
 
 ## Language-specific code
 

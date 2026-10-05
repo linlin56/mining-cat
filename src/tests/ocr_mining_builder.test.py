@@ -1,5 +1,5 @@
 from align import Segment
-from ocr_mining.builder import _consensus_text, _lines_are_near_duplicate, build_segments, merge_near_duplicates
+from ocr_mining.builder import _consensus_text, lines_are_near_duplicate, build_segments, merge_near_duplicates
 
 
 def test_continuous_line_becomes_one_segment():
@@ -237,34 +237,34 @@ def test_merge_near_duplicates_default_max_gap_is_one_second():
     assert DEFAULT_MAX_MERGE_GAP == 1.0
 
 
-# _lines_are_near_duplicate - multi-line ("\n") aware comparison
+# lines_are_near_duplicate - multi-line ("\n") aware comparison
 def test_lines_are_near_duplicate_reduces_to_single_line_comparison():
-    assert _lines_are_near_duplicate("hello", "hallo", max_edits=1, is_contiguous=False) is True
-    assert _lines_are_near_duplicate("hello", "xyz", max_edits=1, is_contiguous=False) is False
+    assert lines_are_near_duplicate("hello", "hallo", max_edits=1, is_contiguous=False) is True
+    assert lines_are_near_duplicate("hello", "xyz", max_edits=1, is_contiguous=False) is False
 
 
 def test_lines_are_near_duplicate_tolerates_a_missing_line():
     # Real case from Layer8_ocr.srt: second line dropped out entirely for a frame.
     anchor = "會對電膦綱絡造成\n非带大的报街"
     candidate = "會對電膦綱絡造成"  # second line missing this frame
-    assert _lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is True
+    assert lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is True
 
 
 def test_lines_are_near_duplicate_tolerates_the_other_line_missing():
     # Same as above but the FIRST line is the one missing this time.
     anchor = "會對電膦綱絡造成\n非带大的报街"
     candidate = "非常大的报街"  # first line missing, second line present (noisy)
-    assert _lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is True
+    assert lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is True
 
 
 def test_lines_are_near_duplicate_false_when_no_line_matches():
     anchor = "會對電膦綱絡造成\n非带大的报街"
     candidate = "completely unrelated content here"
-    assert _lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is False
+    assert lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is False
 
 
 def test_lines_are_near_duplicate_tolerates_swapped_line_order():
-    assert _lines_are_near_duplicate("不會的\n不是", "不是\n不會的", max_edits=1, is_contiguous=True) is True
+    assert lines_are_near_duplicate("不會的\n不是", "不是\n不會的", max_edits=1, is_contiguous=True) is True
 
 
 # merge_near_duplicates - multi-line clustering + reconstruction
@@ -296,24 +296,24 @@ def test_consensus_text_multiline_votes_per_line_independently():
     assert _consensus_text(texts) == "line one\nline two"
 
 
-# _lines_are_near_duplicate joined-lines fallback (OCR sometimes reads a multi-line subtitle's lines run together as one, with no line break)
+# lines_are_near_duplicate joined-lines fallback (OCR sometimes reads a multi-line subtitle's lines run together as one, with no line break)
 def test_lines_are_near_duplicate_matches_joined_lines_same_order():
     anchor = "line one\nline two"
     candidate = "line oneline two"  # both lines read together, no break
-    assert _lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is True
+    assert lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is True
 
 
 def test_lines_are_near_duplicate_matches_joined_lines_reversed_order():
     # the two lines get read in reverse order and joined together as a single line in the same frame.
     anchor = "直在然視我\n思不到你"
     candidate = "思不到你一直在然視我"  # reversed order, joined, +1 stray character
-    assert _lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is True
+    assert lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is True
 
 
 def test_lines_are_near_duplicate_rejects_unrelated_single_line():
     anchor = "line one\nline two"
     candidate = "completely unrelated content here"
-    assert _lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is False
+    assert lines_are_near_duplicate(anchor, candidate, max_edits=1, is_contiguous=True) is False
 
 
 def test_merge_near_duplicates_recovers_multiline_subtitle_with_joined_and_reordered_reading():

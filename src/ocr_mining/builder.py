@@ -82,7 +82,7 @@ def _cluster_max_edits(anchor_text: str, max_edits: int, is_contiguous: bool) ->
 # Only requiring each line of the SHORTER reading to match some line of the longer one tolerates a missing line without having to guess which position it dropped from
 # it also incidentally tolerates the rarer case of two lines swapping order.
 # Reduces to a plain single-line comparison when neither text has a "\n".
-def _lines_are_near_duplicate(anchor_text: str, candidate_text: str, max_edits: int, is_contiguous: bool) -> bool:
+def lines_are_near_duplicate(anchor_text: str, candidate_text: str, max_edits: int, is_contiguous: bool) -> bool:
     anchor_lines = anchor_text.split("\n")
     candidate_lines = candidate_text.split("\n")
     shorter, longer = (
@@ -148,7 +148,7 @@ def merge_near_duplicates(
         anchor = cluster[0]
         gap = seg.start - cluster[-1].end
         is_contiguous = gap <= _CONTIGUOUS_EPSILON
-        if gap <= max_gap and _lines_are_near_duplicate(anchor.text, seg.text, max_edits, is_contiguous):
+        if gap <= max_gap and lines_are_near_duplicate(anchor.text, seg.text, max_edits, is_contiguous):
             cluster.append(seg)
         else:
             clusters.append([seg])

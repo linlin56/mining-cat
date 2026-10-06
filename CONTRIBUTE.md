@@ -187,8 +187,8 @@ So far I used Tiktok as it is not supported. **If you want to add TikTok** pleas
 
 ## Add a capture backend (video game / screen share)
 
-Window capture is OS-dependent: each OS has its own backend in `src/game_ocr/capture/` (`linux_wayland.py`, `macos.py`), picked from `sys.platform` by `src/game_ocr/capture/__init__.py`.
-To support another OS (e.g. Windows), see [Add a capture backend](https://linlin56.github.io/mining-cat/how-to-contribute/add-capture-backend/).
+Window capture is OS-dependent: each OS has its own backend in `src/game_ocr/capture/` (`linux_wayland.py`, `macos.py`, `windows.py`), picked from `sys.platform` by `src/game_ocr/capture/__init__.py`.
+To support another OS, see [Add a capture backend](https://linlin56.github.io/mining-cat/how-to-contribute/add-capture-backend/).
 
 ## GUI
 

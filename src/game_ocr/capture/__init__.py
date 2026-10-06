@@ -29,6 +29,13 @@ BACKENDS: tuple[BackendInfo, ...] = (
         module="game_ocr.capture.macos",
         class_name="MacOSCapture",
     ),
+    BackendInfo(
+        id="windows",
+        label="Windows",
+        platforms=("win32",),
+        module="game_ocr.capture.windows",
+        class_name="WindowsCapture",
+    ),
 )
 
 

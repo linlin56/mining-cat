@@ -1,15 +1,8 @@
 # About this project
 
-MiningCat makes language learning through immersion and sentence mining easier.
+MiningCat makes language learning through immersion and sentence mining easier, in one free and open source tool that runs on your computer.
 
-There are already great tools that let you create flashcards from videos, books and websites, for example:
-
-- [Yomitan](https://github.com/yomidevs/yomitan): a pop-up dictionary browser extension
-- [asbplayer](https://github.com/killergerbah/asbplayer): a video player that works with Yomitan
-- [Migaku](https://migaku.com/): a paid all-in-one solution
-
-The goal is not to replace those.
-However, they all need good videos with clean subtitles to work. Your favorite video may have none, or you may be reading an ebook alongside its audiobook and wish you could have both in one place. That's what MiningCat is for.
+Sentence mining needs a lot of pieces: content with clean subtitles, a reader, a video player, dictionaries, a way to know which words you already know, and flashcards. MiningCat brings them together: it reads your books, comics, videos and games, looks words up in your dictionaries, tells you which sentences are worth mining, and sends the cards to [Anki](https://apps.ankiweb.net/). And when your favorite video has no subtitles, or your ebook and its audiobook live apart, it makes a mineable video out of them.
 
 It started as a personal tool, a handful of scripts to feed my own sentence mining. Then it kept growing, and I realized it could be useful to others: many sentence miners follow the same workflow, each with their own pile of messy scripts. So why not build a clean version and share it?
 

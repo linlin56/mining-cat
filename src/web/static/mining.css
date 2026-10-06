@@ -2,6 +2,10 @@
 
 ::highlight(mc-lookup) { background-color: rgba(255, 140, 66, .35); }
 
+/* Recommended sentences (i+1): every word known but one new word. */
+::highlight(mc-i1) { text-decoration: underline 2px rgba(40, 160, 90, .75); text-underline-offset: .28em; }
+::highlight(mc-i1-focus) { background-color: rgba(40, 160, 90, .22); }
+
 /* Words coloured by status (known and ignored words stay plain). */
 /* Two touching words of the same status alternate between both shades, so that each word stands out. */
 ::highlight(mc-new) { background-color: rgba(70, 130, 240, .15); }
@@ -58,6 +62,10 @@
   background: var(--field); color: var(--fg); font-size: 11px; line-height: 18px; white-space: nowrap;
 }
 .mc-tag { background: var(--panel); color: var(--dim); }
+/* Rank in the frequency list: highlighted when the word is frequent enough to be recommended now */
+.mc-freq { font-variant-numeric: tabular-nums; }
+.mc-freq-now { background: rgba(40, 160, 90, .18); color: rgb(25, 120, 65); font-weight: 600; }
+.theme-dark .mc-freq-now { color: rgb(120, 210, 150); }
 
 .mc-note { margin: 4px 0; font-size: 13px; color: var(--dim); }
 .mc-linked { color: var(--fg); background: var(--panel); border-radius: 6px; padding: 3px 8px; }
@@ -112,6 +120,7 @@ div.mc-senses { padding-left: 0; }
 @media (max-width: 760px) { .mc-creator-body { grid-template-columns: 1fr; } }
 .mc-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .mc-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mc-row3 { display: grid; grid-template-columns: 1fr 1fr 7em; gap: 10px; }
 .mc-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .mc-label { font-size: 12px; font-weight: 600; color: var(--dim); display: flex; gap: 6px; align-items: baseline; }
 .mc-label small { font-weight: 400; }
@@ -124,6 +133,17 @@ div.mc-senses { padding-left: 0; }
 .mc-editable:focus, .mc-creator input:focus, .mc-creator textarea:focus { outline: 2px solid var(--start, #ff8c42); outline-offset: 0; }
 .mc-editable ul { margin: 0; padding-left: 18px; }
 .mc-editable b { color: var(--accent); }
+.mc-readings { min-height: 40px; line-height: 2.4; padding: 4px 10px; border-radius: 7px; background: var(--field); font-size: 18px; }
+.mc-readings:empty::before { content: attr(data-empty); font-size: 13px; color: var(--dim); }
+.mc-readings ruby { ruby-position: over; }
+.mc-readings rt { font-size: 11px; color: var(--dim); }
+.mc-readings b { color: var(--accent); }
+.mc-readings button {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer;
+  border-bottom: 1.5px dotted var(--dim); line-height: inherit;
+}
+.mc-readings button:hover, .mc-readings button:focus-visible { border-bottom-color: var(--accent); outline: none; }
+.mc-readings .mc-changed rt { color: var(--accent); }
 .mc-dict-choice { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; margin-top: -4px; }
 .mc-check { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
 .mc-check input { accent-color: var(--accent); }
@@ -196,3 +216,30 @@ div.mc-senses { padding-left: 0; }
 .mc-listen:hover:not(:disabled) { background: rgba(128, 128, 128, .15); }
 .mc-listen:disabled { opacity: .5; cursor: progress; }
 .mc-entry.mc-selected { box-shadow: inset 3px 0 0 var(--accent); padding-left: 8px; }
+
+/* The sentence's audio chosen on its waveform (videos). */
+.mc-wave { display: flex; flex-direction: column; gap: 6px; }
+.mc-wave-box {
+  position: relative; height: 72px; border-radius: 7px; background: var(--field);
+  cursor: crosshair; touch-action: none; user-select: none;
+}
+.mc-wave-box[hidden] { display: none; }
+.mc-wave-canvas { display: block; width: 100%; height: 100%; }
+.mc-wave-box.loading { animation: mc-wave-pulse 1.2s ease-in-out infinite alternate; }
+.mc-wave-box.loading .mc-wave-handle { display: none; }
+@keyframes mc-wave-pulse { from { opacity: 1; } to { opacity: .55; } }
+.mc-wave-handle {
+  position: absolute; top: 0; bottom: 0; width: 16px; margin-left: -8px; cursor: ew-resize;
+  will-change: left;
+}
+.mc-wave-handle::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 7px; width: 2px; background: var(--accent);
+}
+.mc-wave-handle::after {
+  content: ""; position: absolute; top: 50%; left: 4px; width: 8px; height: 20px; margin-top: -10px;
+  border-radius: 3px; background: var(--accent);
+}
+.mc-wave-handle:hover::after, .mc-wave-handle:focus-visible::after { transform: scaleX(1.25); }
+.mc-wave-handle:focus-visible { outline: 2px solid var(--start, #ff8c42); outline-offset: 1px; border-radius: 3px; }
+.mc-wave-row { justify-content: flex-start; flex-wrap: wrap; }
+.mc-wave-info { flex: 1; min-width: 9em; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }

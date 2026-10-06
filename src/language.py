@@ -1,5 +1,3 @@
-# language.py -- Supported languages and their associated constants.
-
 from dataclasses import dataclass
 from enum import Enum
 

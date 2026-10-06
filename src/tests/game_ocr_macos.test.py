@@ -1,4 +1,3 @@
-# MacOSCapture against fake pyobjc modules (Quartz / ScreenCaptureKit / objc), so it runs on any OS.
 import contextlib
 import os
 from types import SimpleNamespace

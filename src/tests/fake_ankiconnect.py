@@ -1,6 +1,3 @@
-# fake_ankiconnect.py - A tiny in-memory AnkiConnect server for tests (and for trying MiningCat
-# without Anki): python src/tests/fake_ankiconnect.py [port]
-
 import json
 import re
 import threading

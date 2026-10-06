@@ -1,13 +1,10 @@
-# lookup.py - Finds the dictionary entries for the text at the cursor, like Yomitan does:
-# try the longest text first, deinflect it, and keep the entries whose part of speech fits.
-
 import json
 import re
 
 from mining import db
 from mining.deinflect import Deinflection, transformer_for
 from mining.languages import (
-    CHINESE_LANGUAGES, chinese_counterpart, is_no_space, normalize_reading, text_variants,
+    CHINESE_LANGUAGES, chinese_counterpart, is_no_space, reading_key, text_variants,
 )
 from mining import words as words_mod
 
@@ -152,6 +149,46 @@ def characters(conn, dict_ids: dict[int, dict], expressions: list[str]) -> dict[
     return result
 
 
+# Whether reading `a` should be shown rather than `b` for the same pronunciation: tone marks (xíng) over numbers (xing2).
+def _readable(a: str, b: str) -> bool:
+    return bool(re.search(r"\d", b)) and not re.search(r"\d", a)
+
+
+def _gloss_key(item) -> str:
+    if isinstance(item, str):
+        return " ".join(item.casefold().split())
+    if isinstance(item, dict) and item.get("type") == "text":
+        return " ".join(str(item.get("text", "")).casefold().split())
+    return json.dumps(item, ensure_ascii=False, sort_keys=True)
+
+
+def merge_definitions(definitions: list[dict]) -> list[dict]:
+    """The definitions of one entry without repeats: rows of a dictionary with the same tags become one sense
+    (行 xíng: "walk, OK" and "walk, go" -> "walk, OK, go"), and a gloss already given (by this dictionary or one shown
+    before it) isn't repeated. Senses tagged differently (JMdict's numbered senses, parts of speech) stay apart."""
+    merged: list[dict] = []
+    by_tags: dict[tuple, dict] = {}
+    seen: set[str] = set()
+    for definition in definitions:
+        glossary = definition["glossary"] if isinstance(definition["glossary"], list) else [definition["glossary"]]
+        fresh = []
+        for item in glossary:
+            key = _gloss_key(item)
+            if key and key not in seen:
+                seen.add(key)
+                fresh.append(item)
+        if not fresh:
+            continue
+        same = (definition["dict_id"], tuple(definition["tags"]), tuple(definition["term_tags"]))
+        if same in by_tags:
+            by_tags[same]["glossary"].extend(fresh)
+        else:
+            definition = {**definition, "glossary": fresh}
+            by_tags[same] = definition
+            merged.append(definition)
+    return merged
+
+
 def lookup(language: str, text: str) -> dict:
     """Entries for `text` (the text from the cursor onwards), longest match first."""
     sources = _sources(text, language)
@@ -188,14 +225,17 @@ def lookup(language: str, text: str) -> dict:
                     if best is None or rank > best[0]:
                         matches[row["id"]] = (rank, source, d, row)
 
-        # group the rows of every dictionary by headword
+        # group the rows of every dictionary by headword and pronunciation: 行 xíng and 行 háng are two entries,
+        # 行 xíng from two dictionaries (or two rows of one) is one, whether written xíng or xing2
         groups: dict[tuple, dict] = {}
         for rank, source, d, row in matches.values():
             reading = row["reading"] or row["expression"]
-            key = (row["expression"], normalize_reading(reading, language))
+            key = (row["expression"], reading_key(reading, language))
             group = groups.get(key)
             if group is None or rank > group["rank"]:
                 kept = group["definitions"] if group else []
+                if group and _readable(group["reading"], reading):
+                    reading = group["reading"]
                 group = {
                     "rank": rank, "expression": row["expression"], "reading": reading,
                     "source": source, "length": len(source),
@@ -203,6 +243,8 @@ def lookup(language: str, text: str) -> dict:
                     "definitions": kept, "score": row["score"],
                 }
                 groups[key] = group
+            elif _readable(reading, group["reading"]):
+                group["reading"] = reading
             dictionary = dicts[row["dict_id"]]
             group["definitions"].append({
                 "dictionary": dictionary["title"], "dict_id": dictionary["id"], "priority": dictionary["priority"],
@@ -217,11 +259,11 @@ def lookup(language: str, text: str) -> dict:
         for g in groups.values():
             g["frequencies"] = [
                 f for f in sorted(freqs.get(g["expression"], []), key=lambda f: f["priority"])
-                if not f["reading"] or normalize_reading(f["reading"], language) == normalize_reading(g["reading"], language)
+                if not f["reading"] or reading_key(f["reading"], language) == reading_key(g["reading"], language)
             ]
             g["pronunciations"] = [
                 {k: v for k, v in p.items() if k != "priority"} for p in sorted(sounds.get(g["expression"], []), key=lambda p: p["priority"])
-                if not p["reading"] or normalize_reading(p["reading"], language) == normalize_reading(g["reading"], language)
+                if not p["reading"] or reading_key(p["reading"], language) == reading_key(g["reading"], language)
             ]
             # rank in the first frequency list that has the word (smaller = more frequent)
             g["frequency_rank"] = next((f["value"] for f in g["frequencies"] if isinstance(f["value"], (int, float))), float("inf"))
@@ -235,6 +277,7 @@ def lookup(language: str, text: str) -> dict:
         tag_cache: dict[int, dict] = {}
         for g in ordered:
             g["definitions"].sort(key=lambda x: (x["priority"], x["row"]))  # senses keep the dictionary's order
+            g["definitions"] = merge_definitions(g["definitions"])
             for definition in g["definitions"]:
                 names = set(definition["tags"]) | set(definition["term_tags"])
                 notes = _tag_notes(conn, definition["dict_id"], names - set(tag_cache.get(definition["dict_id"], {})))

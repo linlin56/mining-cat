@@ -82,6 +82,25 @@ def api_video(video_id: str):
                    progress=videos.get_progress(video_id), prefs=videos.get_prefs(video_id))
 
 
+# Share of the words of the video's subtitles the user knows, and its recommended (i+1) lines
+# (see mining/comprehension.py). Each subtitle line is a sentence, as in the subtitle list.
+@bp.get("/api/videos/<video_id>/comprehension")
+def api_comprehension(video_id: str):
+    from mining import comprehension
+    from mining.languages import language_key
+
+    meta = videos.get_meta(video_id)
+    prefs = videos.get_prefs(video_id)
+    language = language_key(prefs.get("language") or meta.get("language") or profile.default_tag(profile.current()))
+    tracks = {t["id"]: t for t in meta.get("tracks", [])}
+    track_id = prefs.get("primary") if "primary" in prefs else next(iter(tracks), "")
+    if not language or track_id not in tracks:
+        return jsonify(comprehension=None)
+    path = videos._video_dir(video_id) / "comprehension.json"
+    lines = lambda: [cue["text"].replace("\n", " ") for cue in videos.cues(video_id, track_id)]
+    return jsonify(comprehension=comprehension.cached(path, language, [track_id, tracks[track_id].get("sha")], lines, whole=True))
+
+
 @bp.get("/api/videos/<video_id>/file")
 def api_file(video_id: str):
     path = videos.file_path(video_id)
@@ -132,12 +151,15 @@ def api_remove_subtitles(video_id: str, track_id: str):
     return jsonify(tracks=videos.remove_subtitles(video_id, track_id), prefs=videos.get_prefs(video_id))
 
 
-# A subtitle's audio as MP3, as a data URL for the card creator's "Sentence audio".
+# A subtitle's audio as MP3, as a data URL for the card creator's "Sentence audio". With `exact`, the span chosen on
+# the waveform, without the settings' margins; `format` "wav" for the waveform itself.
 @bp.post("/api/videos/<video_id>/clip")
 def api_clip(video_id: str):
     body = _body()
-    data = videos.clip(video_id, body.get("start"), body.get("end"))
-    return jsonify(data="data:audio/mpeg;base64," + base64.b64encode(data).decode("ascii"), name="sentence.mp3")
+    fmt = "wav" if body.get("format") == "wav" else "mp3"
+    data = videos.clip(video_id, body.get("start"), body.get("end"), exact=bool(body.get("exact")), fmt=fmt)
+    mime = "audio/wav" if fmt == "wav" else "audio/mpeg"
+    return jsonify(data=f"data:{mime};base64," + base64.b64encode(data).decode("ascii"), name=f"sentence.{fmt}")
 
 
 # A screenshot for the card creator, as a data URL.

@@ -1,8 +1,3 @@
-# db.py - The SQLite database of MiningCat's mining features (library/miningcat.db):
-# imported dictionaries, the user's words and their status, cards waiting for Anki, and settings.
-#
-# SQLite is a single file inside the project: nothing to install or run for the user.
-
 import json
 import sqlite3
 import threading
@@ -157,7 +152,11 @@ def _initialize(conn: sqlite3.Connection, path: Path) -> None:
 
 
 # Columns added after a database was created (CREATE TABLE IF NOT EXISTS doesn't add them).
-_ADDED_COLUMNS = [("dictionaries", "kanji_count", "INTEGER NOT NULL DEFAULT 0")]
+_ADDED_COLUMNS = [
+    ("dictionaries", "kanji_count", "INTEGER NOT NULL DEFAULT 0"),
+    # Yomitan's frequencyMode: "rank-based" (1 = most frequent, also JSON and text lists) or "occurrence-based" (a count)
+    ("dictionaries", "freq_mode", "TEXT NOT NULL DEFAULT ''"),
+]
 
 
 def _migrate(conn: sqlite3.Connection) -> None:

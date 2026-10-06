@@ -29,7 +29,7 @@
       <div class="book-grid" id="book-grid"></div>
       <div class="lib-empty" id="lib-empty" hidden>
         <p class="lib-empty-title">Your library is empty</p>
-        <p class="dim">Drop EPUB or TXT files here, or use “Add books”.</p>
+        <p class="dim">Drop EPUB or TXT files here, or use “Add books”. Comics and manga too (.cbz, .cbr, .zip…).</p>
       </div>
     </div>
     <p class="upload-status dim" id="lib-status"></p>
@@ -44,6 +44,7 @@
         <span id="book-title"></span>
         <span class="dim" id="chapter-title"></span>
       </div>
+      <button type="button" class="bar-btn" id="i1-btn" title="Recommended sentences (R)" aria-label="Recommended sentences">i+1</button>
       <button type="button" class="bar-btn" id="toc-btn" title="Contents (T)" aria-label="Contents">☰</button>
       <button type="button" class="bar-btn" id="settings-btn" title="Settings (S)" aria-label="Settings">Aa</button>
     </header>
@@ -59,6 +60,7 @@
 
     <footer class="bar bar-bottom">
       <span class="dim" id="page-info"></span>
+      <span class="dim comp-info" id="comp-info" title="Words of this chapter you know (from your cards and word statuses)"></span>
       <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
       <span class="dim" id="percent-info"></span>
     </footer>
@@ -70,6 +72,18 @@
         <button type="button" class="bar-btn" data-close aria-label="Close">×</button>
       </div>
       <ol class="toc" id="toc"></ol>
+    </aside>
+
+    <!-- Recommended sentences (i+1) -->
+    <aside class="panel panel-left" id="i1-panel" hidden>
+      <div class="panel-head">
+        <h2>Recommended sentences</h2>
+        <button type="button" class="bar-btn" data-close aria-label="Close">×</button>
+      </div>
+      <p class="dim small-note">Sentences of this chapter where you know every word but one new word, a frequent one: the
+        best ones to make a card with (i+1). Click one to go to it, then click its word.</p>
+      <p class="dim small-note" id="i1-summary"></p>
+      <ol class="i1-list" id="i1-list"></ol>
     </aside>
 
     <!-- Settings -->
@@ -150,9 +164,13 @@
           <option value="off">Off</option>
         </select>
       </label>
+      <label class="check">
+        <input type="checkbox" id="set-i1">
+        <span>Underline recommended sentences (i+1)</span>
+      </label>
       <p class="dim small-note">Dictionaries, Anki and the script you learn are set in <a href="/settings/" target="_blank">Settings</a>.</p>
 
-      <p class="dim shortcuts">← → / Space: turn pages · T: contents · S: settings · Esc: library.<br>
+      <p class="dim shortcuts">← → / Space: turn pages · T: contents · R: recommended sentences · S: settings · Esc: library.<br>
         Click the side margins or swipe to turn pages; clicks on the text are for the dictionary.</p>
     </aside>
   </div>

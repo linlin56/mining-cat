@@ -1,11 +1,3 @@
-# files.py - Files picked in the browser.
-#
-# A browser can't hand a file path to the server, so picked files are uploaded into a staging
-# folder (sources/.staging/<kind>/). The browser then refers to every file by its path relative
-# to the project root, and the pipeline copies them where it needs them, exactly as it does with
-# files picked in the Tkinter GUI. Files already sitting in sources/audiobook or sources/ebook are
-# preloaded, like in the Tkinter GUI.
-
 import shutil
 import threading
 from pathlib import Path

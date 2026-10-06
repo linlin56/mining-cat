@@ -195,10 +195,11 @@ def test_embedded_subtitles_and_language(client, tmp_path):
     assert cues[0]["text"] == "吾輩は猫である。"
 
 
-def clip_seconds(client, video_id, start, end, tmp_path):
+def clip_seconds(client, video_id, start, end, tmp_path, **extra):
     import base64
-    data = client.post(f"/player/api/videos/{video_id}/clip", json={"start": start, "end": end}, headers=HEADERS).get_json()
-    assert data["data"].startswith("data:audio/mpeg;base64,")
+    data = client.post(f"/player/api/videos/{video_id}/clip", json={"start": start, "end": end, **extra}, headers=HEADERS).get_json()
+    mime = "audio/wav" if extra.get("format") == "wav" else "audio/mpeg"
+    assert data["data"].startswith(f"data:{mime};base64,")
     mp3 = tmp_path / "clip.mp3"
     mp3.write_bytes(base64.b64decode(data["data"].split(",", 1)[1]))
     return float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(mp3)],
@@ -239,6 +240,11 @@ def test_clip(client, tmp_path):
     # several lines: one span
     assert clip_seconds(client, video_id, 0.5, 1.9, tmp_path) == pytest.approx(2.4, abs=0.1)
     res = client.post(f"/player/api/videos/{video_id}/clip", json={"start": "x"}, headers=HEADERS)
+    assert res.status_code == 400
+    # the span chosen on the card creator's waveform: as is, without the margins; the waveform itself as WAV
+    assert clip_seconds(client, video_id, 0.3, 1.8, tmp_path, exact=True) == pytest.approx(1.5, abs=0.1)
+    assert clip_seconds(client, video_id, 0.3, 1.8, tmp_path, exact=True, format="wav") == pytest.approx(1.5, abs=0.01)
+    res = client.post(f"/player/api/videos/{video_id}/clip", json={"start": 0, "end": 600}, headers=HEADERS)
     assert res.status_code == 400
 
 

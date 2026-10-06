@@ -1,14 +1,3 @@
-# deinflect.py - Finds the dictionary forms an inflected word may come from (食べなかった -> 食べる).
-#
-# Python port of Yomitan's LanguageTransformer (https://github.com/yomidevs/yomitan,
-# ext/js/language/language-transformer.js, GPL-3.0-or-later). The rules themselves are Yomitan's,
-# exported to transforms/<language>.json by tools/export_yomitan_transforms.mjs.
-#
-# Each rule turns a text ending (or starting, or equal to) `from` into `to`. Conditions are parts of
-# speech: a rule only applies to a text whose current conditions match its `conditionsIn`, and the
-# result carries `conditionsOut`. A dictionary entry is only a valid match if its parts of speech
-# match the conditions of the deinflected text (an empty condition set matches anything).
-
 import json
 from dataclasses import dataclass, field
 from functools import lru_cache

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from mining import db
 from mining import words as words_mod
 from mining.deinflect import transformer_for
-from mining.languages import hiragana_to_katakana, is_no_space, katakana_to_hiragana, text_variants
+from mining.languages import CHINESE_LANGUAGES, hiragana_to_katakana, is_no_space, katakana_to_hiragana, text_variants
 
 # Longest headword tried, in characters (no-space languages) or words (other languages).
 MAX_CHARS = 16
@@ -250,22 +250,33 @@ def segment(language: str, text: str) -> list[tuple[int, int, str | None]]:
 
 def statuses(language: str, headwords: list[str]) -> dict[str, dict]:
     """{headword: {"form", "status"}}: the form a word is saved under (the script the user learns), and its status."""
-    forms = {h: words_mod.preferred_form(language, h) for h in dict.fromkeys(headwords)}
+    preference = words_mod.chinese_script_preference(language) if language in CHINESE_LANGUAGES else None
+    forms = {h: words_mod.preferred_form(language, h, preference) for h in dict.fromkeys(headwords)}
     found = words_mod.statuses_for(language, list(set(forms.values())))
     return {h: {"form": form, "status": found.get(form, "new")} for h, form in forms.items()}
 
 
 def colour(language: str, text: str) -> dict:
-    """Words of `text` with their status: {"words": [{headword, form, status}], "tokens": [[start, length, word index]]}.
-    Words missing from the dictionaries have the index -1."""
+    """Words of `text` with their status: {"words": [{headword, form, status}], "tokens": [[start, length, word index]],
+    "sentences": [[start, end]]}. Words missing from the dictionaries have the index -1. The sentences are for the
+    comprehension and the recommended sentences (see comprehension.py)."""
+    from mining.comprehension import sentence_spans
+
     tokens = segment(language, text)
     headwords = list(dict.fromkeys(t[2] for t in tokens if t[2] is not None))
     index = {h: i for i, h in enumerate(headwords)}
     info = statuses(language, headwords)
+    from mining.frequency import Ranker
+
+    ranker = Ranker(language)
     return {
         "language": language,
-        "words": [{"headword": h, **info[h]} for h in headwords],
+        # rank: in the language's frequency list (None without one, or for a word it doesn't have)
+        "words": [{"headword": h, **info[h], "rank": ranker.rank(h, info[h]["form"])} for h in headwords],
+        # the recommended sentences only teach words ranked up to frequency["limit"] (see frequency.py)
+        "frequency": ranker.frontier,
         "tokens": [[start, length, index[h] if h is not None else -1] for start, length, h in tokens],
+        "sentences": [list(span) for span in sentence_spans(text)] if tokens else [],
     }
 
 

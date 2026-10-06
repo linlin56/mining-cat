@@ -1,4 +1,3 @@
-# The "Video game / Screen share" screen of the main window.
 import importlib.util
 from unittest.mock import MagicMock, patch
 

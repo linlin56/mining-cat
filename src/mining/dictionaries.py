@@ -1,15 +1,3 @@
-# dictionaries.py - Imports dictionaries in Yomitan's format into the SQLite database.
-#
-# A Yomitan dictionary is a zip file with:
-#   index.json              title, revision, format (3), optional sourceLanguage/targetLanguage...
-#   term_bank_N.json        [expression, reading, definitionTags, rules, score, glossary, sequence, termTags]
-#   term_meta_bank_N.json   [expression, "freq" | "pitch" | "ipa", data]
-#   tag_bank_N.json         [name, category, order, notes, score]
-#   kanji_bank_N.json       [character, onyomi, kunyomi, tags, meanings, stats]: single characters
-#   kanji_meta_bank_N.json  [character, "freq", data]
-#   any other file          images referenced by structured-content glossaries
-# Format 1 dictionaries (older) use [expression, reading, definitionTags, rules, score, *glossary].
-
 import json
 import re
 import shutil
@@ -53,8 +41,17 @@ def _read_index(zf: zipfile.ZipFile) -> dict:
     return index
 
 
-def inspect(path: Path) -> dict:
-    """Title and guessed language of a dictionary zip, without importing it."""
+FREQUENCY_LIST_SUFFIXES = (".json", ".txt", ".csv", ".tsv")
+
+
+def inspect(path: Path, filename: str = "") -> dict:
+    """Title and guessed language of a dictionary zip (or a frequency list), without importing it."""
+    if path.suffix.lower() in FREQUENCY_LIST_SUFFIXES:
+        entries = _frequency_entries(path)
+        return {
+            "title": Path(filename or path.name).stem, "revision": "", "has_terms": False, "has_meta": True,
+            "has_kanji": False, "language": guess_dictionary_language([(w, r) for w, r in entries[:2000]]),
+        }
     try:
         zf = zipfile.ZipFile(path)
     except zipfile.BadZipFile:
@@ -119,10 +116,76 @@ def _kanji_rows(rows: list, dict_id: int):
                json.dumps(meanings, ensure_ascii=False), json.dumps(stats, ensure_ascii=False))
 
 
-def import_dictionary(path: Path, language: str = "", progress=None) -> dict:
-    """Imports a dictionary zip. `progress(fraction, message)` is called along the way."""
+def _frequency_entries(path: Path) -> list[tuple[str, str]]:
+    """(word, reading) of a JSON frequency list or a text list, most frequent first."""
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError:
+        raise DictionaryError("A frequency list must be a UTF-8 text or JSON file.")
+    entries: list[tuple[str, str]] = []
+    if path.suffix.lower() == ".json":
+        try:
+            data = json.loads(text)
+        except ValueError:
+            raise DictionaryError("This file isn't valid JSON.")
+        if isinstance(data, dict):  # {"words": [...]} or a similar wrapper
+            data = next((v for v in data.values() if isinstance(v, list)), [])
+        if not isinstance(data, list):
+            raise DictionaryError("A JSON frequency list is an array of words, most frequent first.")
+        for item in data:
+            if isinstance(item, list) and item:
+                entries.append((str(item[0]).strip(), str(item[1]).strip() if len(item) > 1 and item[1] else ""))
+            elif isinstance(item, str):
+                entries.append((item.strip(), ""))
+    else:
+        for line in text.splitlines():
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            parts = re.split(r"[\t,;]", line.strip())
+            entries.append((parts[0].strip(), parts[1].strip() if len(parts) > 1 and not parts[1].strip().isdigit() else ""))
+    entries = [(w, r) for w, r in entries if w]
+    if not entries:
+        raise DictionaryError("This frequency list has no words.")
+    return entries
+
+
+def import_frequency_list(path: Path, language: str, title: str, progress=None) -> dict:
+    """Imports a JSON (or plain text) frequency list as a dictionary of frequencies: each word gets its rank."""
     progress = progress or (lambda fraction, message: None)
-    info = inspect(path)
+    if language not in LANGUAGES:
+        raise DictionaryError(f"Unsupported language: {language}")
+    entries = _frequency_entries(path)
+    rows, seen = [], set()
+    for rank, (word, reading) in enumerate(entries, start=1):
+        if (word, reading) in seen:
+            continue
+        seen.add((word, reading))
+        data = {"reading": reading, "frequency": rank} if reading else rank
+        rows.append((word, "freq", json.dumps(data, ensure_ascii=False, separators=(",", ":"))))
+    with db.session() as conn:
+        if conn.execute("SELECT 1 FROM dictionaries WHERE title = ? AND COALESCE(revision, '') = ''", (title,)).fetchone():
+            raise DictionaryError(f"“{title}” is already imported.")
+        priority = conn.execute("SELECT COALESCE(MAX(priority), -1) + 1 FROM dictionaries").fetchone()[0]
+        dict_id = conn.execute(
+            "INSERT INTO dictionaries(title, revision, language, priority, imported, freq_mode, meta_count)"
+            " VALUES (?, '', ?, ?, ?, 'rank-based', ?)", (title, language, priority, time.time(), len(rows)),
+        ).lastrowid
+        progress(0.5, f"{len(rows)} words")
+        conn.executemany("INSERT INTO term_meta(dict_id, expression, mode, data) VALUES (?, ?, ?, ?)",
+                         [(dict_id, *row) for row in rows])
+    progress(1.0, "Done")
+    return get_dictionary(dict_id)
+
+
+def import_dictionary(path: Path, language: str = "", progress=None, filename: str = "") -> dict:
+    """Imports a dictionary zip, or a frequency list. `progress(fraction, message)` is called along the way."""
+    progress = progress or (lambda fraction, message: None)
+    info = inspect(path, filename)
+    if path.suffix.lower() in FREQUENCY_LIST_SUFFIXES:
+        language = language or info["language"]
+        if not language:
+            raise DictionaryError("Couldn't tell which language this frequency list is for.")
+        return import_frequency_list(path, language, info["title"], progress)
     language = language or info["language"]
     if not language:
         raise DictionaryError("Couldn't tell which language this dictionary is for: pick it in the list.")
@@ -150,10 +213,10 @@ def import_dictionary(path: Path, language: str = "", progress=None) -> dict:
             priority = conn.execute("SELECT COALESCE(MAX(priority), -1) + 1 FROM dictionaries").fetchone()[0]
             cur = conn.execute(
                 "INSERT INTO dictionaries(title, revision, language, target_language, author, url, description,"
-                " attribution, priority, imported) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                " attribution, priority, imported, freq_mode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (index["title"], str(index.get("revision", "")), language, index.get("targetLanguage"),
                  index.get("author"), index.get("url"), index.get("description"), index.get("attribution"),
-                 priority, time.time()),
+                 priority, time.time(), str(index.get("frequencyMode") or "")),
             )
             dict_id = cur.lastrowid
 
@@ -292,7 +355,7 @@ def start_import(path: Path, language: str, filename: str) -> str:
 
     def run():
         try:
-            result = import_dictionary(path, language, update)
+            result = import_dictionary(path, language, update, filename)
             with _jobs_lock:
                 _jobs[job_id].update(done=True, progress=1.0, message="Imported", dictionary=result)
         except Exception as exc:

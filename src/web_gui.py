@@ -1,6 +1,3 @@
-# web_gui.py - Entry point of the web GUI: starts a local server and opens it in the browser.
-#   python src/web_gui.py [--port 5050] [--no-browser]
-
 import argparse
 import os
 

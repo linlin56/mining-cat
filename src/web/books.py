@@ -1,17 +1,3 @@
-# books.py - Reader library: imports EPUB / TXT / HTML books into library/, renders their chapters
-# to clean HTML (no publisher scripts or styles, so the reader controls the typography and Yomitan
-# sees plain text), and keeps each book's reading progress and preferences.
-#
-# library/
-#   reader_settings.json          global reader settings (font size, theme...)
-#   books/<id>/
-#     source.<ext>                the original file
-#     meta.json                   title, author, language, table of contents, chapter sizes...
-#     chapters/0000.html          one sanitized HTML fragment per chapter
-#     res/...                     images extracted from an EPUB
-#     progress.json               last position (chapter + character offset)
-#     prefs.json                  per-book overrides (writing mode, language)
-
 import hashlib
 import html
 import json
@@ -751,6 +737,16 @@ def list_books() -> list[dict]:
     return books
 
 
+_BLOCK_END = re.compile(r"<(?:br\b[^>]*|/(?:p|div|li|h[1-6]|tr|blockquote|dd|dt|figcaption))>", re.IGNORECASE)
+_RUBY_TEXT = re.compile(r"<(rt|rp)\b[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL)
+
+
+def chapter_text(book_id: str, index: int) -> str:
+    """Plain text of a chapter, a line per paragraph, ruby annotations left out (as the reader reads it)."""
+    fragment = _BLOCK_END.sub("\n", _RUBY_TEXT.sub("", chapter_html(book_id, index)))
+    return html.unescape(re.sub(r"<[^>]+>", "", fragment))
+
+
 def chapter_html(book_id: str, index: int) -> str:
     meta = get_meta(book_id)
     if not 0 <= index < len(meta["chapters"]):
@@ -818,6 +814,8 @@ DEFAULT_SETTINGS = {
     "lookup": "click",
     # Words coloured by their status ("status"), or not at all ("off").
     "colors": "status",
+    # Recommended (i+1) sentences underlined in the text.
+    "i1": True,
 }
 
 

@@ -142,8 +142,35 @@ function videoCard(v) {
       showLibrary();
     } catch (err) { showError(err); }
   });
-  card.append(thumb, title, meta, progress, del);
+  const comp = document.createElement("div");
+  comp.className = "book-comp";
+  comp.dataset.video = v.id;
+  card.append(thumb, title, meta, progress, comp, del);
   return card;
+}
+
+// Each video's comprehension, one after the other (subtitles never analysed take a moment). Kept while the library
+// refreshes itself during a download, fetched again when the library is opened.
+let comprehensionToken = 0;
+const comprehensionCache = new Map();
+async function loadComprehension(list) {
+  const token = ++comprehensionToken;
+  for (const v of list) {
+    if (token !== comprehensionToken) return;
+    const box = document.querySelector(`.book-comp[data-video="${v.id}"]`);
+    if (!box || v.status !== "ready" || !v.tracks) continue;
+    if (!comprehensionCache.has(v.id)) {
+      box.textContent = "…";
+      try { comprehensionCache.set(v.id, (await api(`/player/api/videos/${v.id}/comprehension`)).comprehension); }
+      catch { comprehensionCache.set(v.id, null); }
+      if (token !== comprehensionToken) return;
+    }
+    const c = comprehensionCache.get(v.id);
+    box.textContent = c && c.total ? `${percentText(c.percent)}${c.recommended ? ` · ${c.recommended} i+1` : ""}` : "";
+    if (c && c.total) box.title = `${c.known} known, ${c.learning} learning and ${c.new} new words (${c.unique_new} different new words). `
+      + `${c.i1} of ${c.sentences} subtitle lines have only one new word`
+      + (c.frequency ? `, ${c.recommended} of them a frequent one (up to #${c.frequency.limit.toLocaleString()}).` : ".");
+  }
 }
 
 function downloadCard(job) {
@@ -177,7 +204,8 @@ function downloadCard(job) {
   return card;
 }
 
-async function showLibrary() {
+async function showLibrary(refresh = false) {
+  if (!refresh) comprehensionCache.clear();
   clearTimeout(P.libraryTimer);
   closeVideo();
   $("watch").hidden = true;
@@ -191,8 +219,9 @@ async function showLibrary() {
   $("video-input").accept = [...data.extensions, ...data.subtitle_extensions].map((e) => `.${e}`).join(",");
   $("video-grid").replaceChildren(...data.downloads.map(downloadCard), ...data.videos.map(videoCard));
   $("lib-empty").hidden = data.videos.length + data.downloads.length > 0;
+  loadComprehension(data.videos);
   const busy = data.downloads.some((j) => j.status === "downloading") || data.videos.some((v) => v.status === "queued" || v.status === "preparing");
-  if (busy) P.libraryTimer = setTimeout(() => { if (!$("library").hidden) showLibrary().catch(() => {}); }, POLL_MS);
+  if (busy) P.libraryTimer = setTimeout(() => { if (!$("library").hidden) showLibrary(true).catch(() => {}); }, POLL_MS);
 }
 
 // Raw upload with progress: a movie is sent as the request's body and written to disk as it arrives.
@@ -504,10 +533,48 @@ function renderList() {
   colourList();
 }
 
+// The list's words are read even with the colours off: they give the comprehension and the recommended lines.
 function colourList() {
   if (!window.MiningCatMining) return;
-  if (P.settings.colors === "off" || !P.cues.length) MiningCatMining.clearColours("list");
-  else MiningCatMining.colourWords($("cues"), effectiveLanguage(), "list");
+  if (!P.cues.length) MiningCatMining.clearColours("list");
+  else MiningCatMining.colourWords($("cues"), effectiveLanguage(), "list", { paint: P.settings.colors !== "off" });
+}
+
+// ---------------------------------------------------------------- comprehension & recommended lines
+
+const percentText = (p) => (p === null || p === undefined ? "" : `${p >= 99.95 ? 100 : p.toFixed(1)}% known`);
+
+// Each subtitle line is a sentence: it's recommended (i+1) when every word but one new word is known.
+// Recomputed whenever the list's words or their statuses change (a card made, a word marked known...).
+function showComprehension(key) {
+  if (key !== "list") return;
+  const a = MiningCatMining.analyse("list", (node) => node.parentElement && node.parentElement.closest("li.cue"));
+  P.recommended = [];
+  for (const li of $("cues").children) {
+    li.classList.remove("i1");
+    li.removeAttribute("title");
+  }
+  for (const unit of a ? a.units : []) {
+    if (!unit.recommended) continue;
+    unit.element.classList.add("i1");
+    unit.element.title = `Recommended: “${unit.targetRange.toString()}” is the only new word`;
+    P.recommended.push(Number(unit.element.dataset.i));
+  }
+  P.recommended.sort((x, y) => x - y);
+  $("cue-summary").hidden = !a || !a.total;
+  if (a && a.total) {
+    $("comp-summary").textContent = `${percentText(a.percent)} · ${P.recommended.length} i+1`;
+    const i1 = a.units.filter((u) => u.i1).length;
+    $("comp-summary").title = `${a.known} known, ${a.learning} learning and ${a.new} new words in these subtitles. `
+      + `${i1} lines have only one new word`
+      + (a.frequency ? `, ${P.recommended.length} of them a frequent one (up to #${a.frequency.limit.toLocaleString()} of “${a.frequency.dictionary.title}”).` : ".");
+  }
+}
+
+function nextRecommended(cur) {
+  const next = (P.recommended || []).find((i) => i > cur);
+  if (next === undefined) osd("No recommended line after this one");
+  else seekToCue(next);
 }
 
 function colourOverlay() {
@@ -740,6 +807,20 @@ async function sentenceClip(text, node) {
   return { data: data.data, name: data.name };
 }
 
+// For the card creator's waveform: the lines' span in the file, with the settings' margins around it…
+function sentenceRange(text, node) {
+  const r = rangeOf(node);
+  if (!r) return null;
+  return { start: P.cues[r.first].start + offset(), end: rangeEnd(r) + offset(),
+    before: P.settings.audio_before / 1000, after: P.settings.audio_after / 1000 };
+}
+
+// …and any span of the audio, as is: WAV for the waveform, MP3 for the card.
+async function audioSpan(start, end, format = "mp3") {
+  const data = await api(`/player/api/videos/${P.video.id}/clip`, { start, end, exact: true, format });
+  return { data: data.data, name: data.name };
+}
+
 function playSentence(text, node) {
   const r = rangeOf(node);
   if (!r) return;
@@ -865,6 +946,8 @@ function changeSpeed(delta) {
 function wireSettings() {
   $("settings-btn").addEventListener("click", () => togglePanel());
   $("list-btn").addEventListener("click", toggleList);
+  $("i1-only").addEventListener("change", (e) => $("cues").classList.toggle("i1-only", e.target.checked));
+  if (window.MiningCatMining) MiningCatMining.onAnalysis(showComprehension);
   $("fullscreen-btn").addEventListener("click", toggleFullscreen);
   for (const btn of document.querySelectorAll("[data-close]")) btn.addEventListener("click", () => togglePanel(false));
   $("set-sub-size").addEventListener("input", (e) => {
@@ -966,6 +1049,7 @@ function onKey(e) {
     s: cycleDisplay, S: cycleDisplay,
     p: toggleAutoPause, P: toggleAutoPause,
     l: toggleList, L: toggleList,
+    n: () => nextRecommended(cur), N: () => nextRecommended(cur),
     f: toggleFullscreen, F: toggleFullscreen,
     Escape: clearSelection,
   };
@@ -1053,6 +1137,8 @@ async function init() {
       expandSentence,
       onCard: clearSelection,
       sentenceClip,
+      sentenceRange,
+      audioSpan,
       getImage,
       onLookup: pauseForLookup,
     });

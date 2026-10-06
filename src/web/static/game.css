@@ -52,3 +52,9 @@ body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--ui-font); }
 @media (max-width: 600px) {
   .capture-line { font-size: 24px; }
 }
+
+/* Recommended captures (i+1): every word known but one new word */
+.capture.i1 { box-shadow: inset 3px 0 rgb(40, 160, 90); }
+.capture.i1 .capture-meta::after {
+  content: " · i+1"; color: rgb(30, 130, 70); font-weight: 600;
+}

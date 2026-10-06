@@ -1,8 +1,3 @@
-# Using Yomitan's implementation.
-# Yomitan's Korean deinflection rules work on jamo (먹었다 -> ㅁㅓㄱㅇㅓㅆㄷㅏ): a lookup disassembles the
-# text, deinflects it, then reassembles the result. Port of Hangul.js 0.2.6 (https://github.com/e-/Hangul.js,
-# Copyright 2017 Jaemin Jo, MIT license), which Yomitan uses: the same jamo give the same rule matches.
-
 HANGUL_OFFSET = 0xAC00
 
 CHO = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"]

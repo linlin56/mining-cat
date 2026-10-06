@@ -10,7 +10,7 @@ MiningCat reads dictionaries in [Yomitan's format](https://github.com/yomidevs/y
 
 Character dictionaries work too: KANJIDIC (Japanese) or CC-CEDICT Hanzi (Chinese). The popup then has a **Characters** section under each word, with the readings and meanings of each kanji / hanzi.
 
-- The language is detected from the dictionary's words. If it can't be, choose it in the list before importing.
+- Dictionaries are imported for the language you study. A dictionary whose words are clearly in another language is refused: choose that language on the home page first.
 - Results are shown in the order of the list: use ↑ ↓ to change it. Untick a dictionary to hide it without deleting it.
 - When you've imported a frequency list, more frequent words come first in the results.
 
@@ -78,7 +78,7 @@ Settings › **Anki**
 
 1. In Anki, install the AnkiConnect add-on: *Tools › Add-ons › Get Add-ons…*, code `2055492159`, then restart Anki.
 2. Click *Test the connection*.
-3. Under **New cards**, for each language you mine, choose the deck and the note type. MiningCat proposes what goes in each field of your note type from the field names (Hanzi → Word, Pinyin → Reading, Meaning → Definition…); change anything that doesn't fit, then *Save*.
+3. Under **New cards**, choose the deck and the note type of the language you study. MiningCat proposes what goes in each field of your note type from the field names (Hanzi → Word, Pinyin → Reading, Meaning → Definition…); change anything that doesn't fit, then *Save*.
 
 !!! tip "Zhuyin"
     CC-CEDICT only gives pinyin. A *Zhuyin* or *Bopomofo* field gets **Zhuyin (Mandarin, from the reading)**: MiningCat converts the pinyin (說話 shuōhuà → ㄕㄨㄛ ㄏㄨㄚˋ). The pronunciation is the dictionary's: for the few words read differently in Taiwan (垃圾...), check the card.
@@ -101,7 +101,7 @@ Words you marked *known* or *ignored* yourself are never changed by a sync.
 
 Each language has its own words: knowing 說 in Mandarin says nothing about Cantonese. Settings › **Languages & words** lists them.
 
-For the Chinese languages you study (the ones with a dictionary or saved words), choose the characters you learn: **Traditional**, **Simplified** or **Both**.
+When you study a Chinese language, choose the characters you learn: **Traditional**, **Simplified** or **Both**.
 
 - Words whose characters are the same in both scripts count for both.
 - If you learn Traditional and look up 说话 in a simplified book, the word is saved as 說話, with Taiwan's characters for Mandarin (里面 is saved as 裡面) and Hong Kong's for Cantonese.

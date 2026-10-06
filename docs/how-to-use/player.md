@@ -13,7 +13,7 @@ The player opens at <http://127.0.0.1:5050/player/>. It's also reachable from th
 | How | What you get |
 | --- | ------------ |
 | **+ Add videos**, or drop files on the page | A video from your computer. Drop its subtitles (`.srt`, `.vtt`, `.ass`) with it: `movie.mkv` takes `movie.srt`, `movie.ja.srt`… (with a single video, it takes every subtitle file dropped with it). |
-| Paste a link and click **Download** | A video from YouTube, Instagram (Reels) or Bilibili, downloaded like in the [converter](video.md). Pick the video's language first: YouTube captions in that language come with it. |
+| Paste a link and click **Download** | A video from YouTube, Instagram (Reels) or Bilibili, downloaded like in the [converter](video.md). YouTube captions in the language you study come with it (for Mandarin and English, pick the variant first). |
 | After a [video conversion](video.md) | Click **Watch in the player** in the *Done* dialog: the converted video opens with the subtitles MiningCat made (Whisper or OCR) and the ones it came with. |
 
 Subtitle tracks inside the video file (MKV, MP4) are added by themselves. Image-based subtitles (PGS, VobSub) can't be read: make text ones with the [converter's OCR](video.md#burned-in-subtitles-ocr).
@@ -65,7 +65,9 @@ Click a line's time in the list to jump to it. The list follows the video; scrol
 
 Click **Aa**. For this video:
 
-- **Language of the subtitles**: detected from the subtitles, or set by the converter or the download. It picks the dictionaries and the fonts.
+- **Characters of the subtitles** (Mandarin only): Traditional or Simplified, detected from the subtitles, or set by the converter or the download. It picks the fonts.
+
+The library only shows the videos of the language you study: the videos you add are filed under it.
 - **Subtitles** and **Second subtitles**: the second track (a translation, for example) is shown smaller, under the first one, and isn't looked up.
 - **Subtitle timing**: when the subtitles are early or late (`[` `]`).
 - **Audio track**, for videos with several (e.g. dubs). A browser can only play the first audio track of a file, so MiningCat makes a copy with the chosen one.

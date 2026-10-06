@@ -38,17 +38,23 @@ make gui
 
 MiningCat starts a small local server and opens the GUI in your browser at <http://127.0.0.1:5050/>. Keep the terminal open while you use it, and press `Ctrl+C` there to stop it. Use `make gui PORT=8080` if the port is already taken.
 
+### Choose the language you study
+
+The home page first asks which language you study. Every screen then only shows what belongs to it: the converter's variants, the books of the reader, the videos of the player, and in the settings the dictionaries, words, Anki decks and cards of that language. Change it at any time with the language badge in the header of every page, which brings you back to the home page.
+
+From the home page, open the **Converter**, the [Reader](reader.md), the [Player](player.md) or the **Settings**.
+
 You can drag and drop files on the audio, book and video panels. The files you pick are copied into the project's `sources/` folder, like before.
 
 !!! note
     The previous Tkinter window is still available with `make gui-tk` for now. It needs the Tk bindings for Python (`sudo apt install python3-tk` on Debian/Ubuntu, `brew install python-tk` with Homebrew's Python).
 
-The page header has three settings shared by every workflow:
+The converter's header has three settings shared by every workflow:
 
 | Setting        | What it does                                                                                                                        |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | **Source**     | `Audiobook / Ebook`, `Video` or `Video game / Screen share`. Picks which screen you're working with.                                |
-| **Language**   | The original language of your input files. It drives transcription, punctuation fixes, TTS voices and subtitle metadata.          |
+| **Variant**    | Only when the language studied has several (Mandarin: Taiwan or China, English: US or UK). It drives transcription, punctuation fixes, TTS voices and subtitle metadata. |
 | **Convert to** | Only for Chinese variants: converts subtitles between simplified and traditional characters (e.g. read a mainland book in traditional). |
 
 Then pick your workflow:

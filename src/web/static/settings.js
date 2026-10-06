@@ -3,6 +3,9 @@
 
 const $ = (id) => document.getElementById(id);
 
+// Everything here is about the language studied (chosen on the home page, see web/profile.py).
+const STUDY = document.body.dataset.study;
+
 const S = { languages: [], anki: { decks: [], models: [], connected: false }, config: null, cardFields: {} };
 
 async function api(path, body) {
@@ -65,14 +68,13 @@ function showTab() {
 async function loadDictionaries() {
   const { dictionaries } = await api("/api/dict");
   const box = $("dict-list");
-  if (!dictionaries.length) {
+  if (!dictionaries.some((d) => d.language === STUDY)) {
     box.replaceChildren(el("p", { class: "empty", text: "No dictionary yet." }));
     return;
   }
   const byLang = {};
-  for (const d of dictionaries) (byLang[d.language] = byLang[d.language] || []).push(d);
+  for (const d of dictionaries) if (d.language === STUDY) (byLang[d.language] = byLang[d.language] || []).push(d);
   box.replaceChildren(...Object.entries(byLang).map(([lang, list]) => el("div", { class: "dict-group" },
-    el("h3", { text: langName(lang) }),
     ...list.map((d, i) => {
       const enabled = el("input", { type: "checkbox", checked: Boolean(d.enabled), "aria-label": `Use ${d.title}` });
       enabled.addEventListener("change", async () => {
@@ -107,7 +109,7 @@ async function importDictionary(file) {
   if (!file) return;
   const form = new FormData();
   form.append("file", file, file.name);
-  form.append("language", $("dict-language").value);
+  form.append("language", STUDY);
   const progress = $("dict-progress");
   progress.hidden = false;
   $("dict-progress-bar").style.width = "0%";
@@ -117,7 +119,7 @@ async function importDictionary(file) {
     const res = await fetch("/api/dict/import", { method: "POST", headers: { "X-MiningCat": "1" }, body: form });
     const data = await res.json();
     if (!res.ok) throw Object.assign(new Error(data.error), { title: data.title });
-    $("dict-progress-text").textContent = `Importing “${data.title}” (${langName(data.language)})…`;
+    $("dict-progress-text").textContent = `Importing “${data.title}”…`;
     for (;;) {
       await new Promise((r) => setTimeout(r, 600));
       const job = await api(`/api/dict/import/${data.job}`);
@@ -141,13 +143,7 @@ async function importDictionary(file) {
 async function loadLanguages() {
   const data = await api("/api/mining/languages");
   S.languages = data.languages;
-  options($("dict-language"), [["", "Detect automatically"], ...S.languages.map((l) => [l.id, l.name])], "");
-  options($("words-language"), [["", "All languages"], ...S.languages.map((l) => [l.id, l.name])], "");
-  options($("note-language"), S.languages.map((l) => [l.id, l.name]), "zh");
-
-  // Only the languages studied (with a dictionary or words) get settings; Mandarin when there's none yet.
-  const chinese = S.languages.filter((l) => l.chinese);
-  const shown = chinese.some((l) => l.studied) ? chinese.filter((l) => l.studied) : chinese.filter((l) => l.id === "zh");
+  const study = S.languages.find((l) => l.id === STUDY);
   const radios = (language, choices, current, path, key) => {
     const row = el("div", { class: "script-row", role: "radiogroup", "aria-label": language.name }, el("span", { text: language.name }));
     for (const [value, label] of choices) {
@@ -157,33 +153,31 @@ async function loadLanguages() {
     }
     return row;
   };
-  $("script-settings").replaceChildren(...shown.map((l) => radios(l,
-    [["traditional", "Traditional 繁體"], ["simplified", "Simplified 简体"], ["both", "Both"]], data.scripts[l.id], "/api/mining/script", "script")));
-  const mandarin = S.languages.find((l) => l.id === "zh");
-  $("reading-settings").replaceChildren(radios(mandarin,
+  // The templates only have these boxes for Chinese languages (script) and Mandarin (readings).
+  $("script-settings")?.replaceChildren(radios(study,
+    [["traditional", "Traditional 繁體"], ["simplified", "Simplified 简体"], ["both", "Both"]], data.scripts[STUDY], "/api/mining/script", "script"));
+  $("reading-settings")?.replaceChildren(radios(study,
     [["pinyin", "Pinyin (hànyǔ)"], ["zhuyin", "Zhuyin (ㄏㄢˋ ㄩˇ)"]], data.readings.zh, "/api/mining/reading", "system"));
 
-  const counts = $("word-counts");
-  const entries = Object.entries(data.counts);
-  counts.replaceChildren(entries.length
-    ? el("div", { class: "counts" }, ...entries.map(([lang, c]) => el("div", { class: "count-card" },
-      el("strong", { text: langName(lang) }),
-      `${c.known || 0} known · ${c.learning || 0} learning${c.ignored ? ` · ${c.ignored} ignored` : ""}`)))
+  const c = data.counts[STUDY];
+  $("word-counts").replaceChildren(c
+    ? el("div", { class: "counts" }, el("div", { class: "count-card" },
+      el("strong", { text: study.name }),
+      `${c.known || 0} known · ${c.learning || 0} learning${c.ignored ? ` · ${c.ignored} ignored` : ""}`))
     : el("p", { class: "empty", text: "No words yet: look words up in the reader, mark them or make cards." }));
 }
 
 async function loadWords() {
   const params = new URLSearchParams();
   if ($("words-filter").value) params.set("status", $("words-filter").value);
-  if ($("words-language").value) params.set("language", $("words-language").value);
+  params.set("language", STUDY);
   const { words } = await api(`/api/words?${params}`);
   const table = $("words-table");
   table.replaceChildren(
-    el("thead", {}, el("tr", {}, ...["Word", "Reading", "Language", "Status", "From", ""].map((t) => el("th", { text: t })))),
+    el("thead", {}, el("tr", {}, ...["Word", "Reading", "Status", "From", ""].map((t) => el("th", { text: t })))),
     el("tbody", {}, ...words.map((w) => el("tr", {},
       el("td", { class: "word", lang: w.language, text: w.expression }),
       el("td", { text: w.reading }),
-      el("td", { text: langName(w.language) }),
       el("td", {}, el("span", { class: `pill ${w.status}`, text: w.status })),
       el("td", { text: { manual: "you", card: "card", anki: "Anki" }[w.source] || w.source }),
       el("td", {}, el("button", {
@@ -193,7 +187,7 @@ async function loadWords() {
           catch (err) { showError(err); }
         },
       }))))));
-  if (!words.length) table.append(el("tbody", {}, el("tr", {}, el("td", { colspan: "6", class: "empty", text: "No words." }))));
+  if (!words.length) table.append(el("tbody", {}, el("tr", {}, el("td", { colspan: "5", class: "empty", text: "No words." }))));
 }
 
 // ---------------------------------------------------------------- Anki
@@ -229,7 +223,7 @@ function selectWith(values, value, placeholder) {
 }
 
 async function renderNoteSetup() {
-  const language = $("note-language").value;
+  const language = STUDY;
   const setup = (S.config.notes || {})[language] || { deck: "", model: "", fields: {}, tags: "mining-cat" };
   const deck = selectWith(S.anki.decks, setup.deck, S.anki.connected ? "Choose a deck" : "Open Anki to list decks");
   const model = selectWith(S.anki.models, setup.model, S.anki.connected ? "Choose a note type" : "Open Anki to list note types");
@@ -248,7 +242,6 @@ async function renderVoices(language) {
   select.replaceChildren();
   try {
     const { voices, chosen } = await api(`/api/tts/voices?language=${encodeURIComponent(language)}`);
-    if ($("note-language").value !== language) return;
     options(select, [["", voices.length ? "None: generate by hand" : "No voice for this language"], ...voices.map((v) => [v.id, v.label])], chosen);
     select.disabled = !voices.length;
   } catch (err) { showError(err); }
@@ -257,12 +250,11 @@ async function renderVoices(language) {
 async function renderTranslation() {
   try {
     const { languages, chosen } = await api("/api/translate/languages");
-    options($("translation-language"), [["", "None: no translation"], ...languages.map((l) => [l.id, l.name])], chosen);
-    const studied = new Set([...S.languages.filter((l) => l.studied).map((l) => l.id)]);
-    const sources = languages.filter((l) => l.id !== chosen);
-    const first = sources.find((l) => studied.has(l.id)) || sources[0];
-    options($("model-language"), sources.map((l) => [l.id, l.name]), first && first.id);
-    $("model-download").disabled = !chosen;
+    // Translating to the language studied is pointless: it's only listed if it was chosen before.
+    const targets = languages.filter((l) => l.id !== STUDY || l.id === chosen);
+    options($("translation-language"), [["", "None: no translation"], ...targets.map((l) => [l.id, l.name])], chosen);
+    S.translatable = languages.some((l) => l.id === STUDY);
+    $("model-download").disabled = !chosen || chosen === STUDY || !S.translatable;
     renderModels(await api("/api/translate/models"));
   } catch (err) { showError(err); }
 }
@@ -288,7 +280,8 @@ function renderModels({ available, installed, job }) {
 
   const running = job.state === "running";
   $("model-progress").hidden = !running && job.state !== "error";
-  $("model-download").disabled = running || !$("translation-language").value;
+  const target = $("translation-language").value;
+  $("model-download").disabled = running || !target || target === STUDY || !S.translatable;
   if (running) {
     $("model-progress-bar").value = job.total ? job.done / job.total : 0;
     $("model-progress-bar").max = 1;
@@ -303,7 +296,7 @@ function renderModels({ available, installed, job }) {
 }
 
 async function downloadModels() {
-  try { renderModels(await api("/api/translate/models", { language: $("model-language").value })); } catch (err) { showError(err); }
+  try { renderModels(await api("/api/translate/models", { language: STUDY })); } catch (err) { showError(err); }
 }
 
 async function saveTranslation() {
@@ -341,7 +334,7 @@ async function renderMapping(model, saved) {
 }
 
 async function saveNoteSetup() {
-  const language = $("note-language").value;
+  const language = STUDY;
   const fields = {};
   for (const select of $("field-mapping").querySelectorAll("select[data-field]")) fields[select.dataset.field] = select.value;
   try {
@@ -351,7 +344,7 @@ async function saveNoteSetup() {
       ...($("note-voice").disabled ? {} : { tts_voices: { [language]: $("note-voice").value } }),
     });
     S.config = config;
-    $("note-saved").textContent = `Saved for ${langName(language)}.`;
+    $("note-saved").textContent = "Saved.";
     setTimeout(() => { $("note-saved").textContent = ""; }, 3000);
   } catch (err) { showError(err); }
 }
@@ -359,20 +352,17 @@ async function saveNoteSetup() {
 function renderSyncSources() {
   const box = $("sync-sources");
   const rows = [];
-  for (const [language, sources] of Object.entries(S.config.sync || {})) for (const s of sources) rows.push({ language, ...s });
+  for (const s of (S.config.sync || {})[STUDY] || []) rows.push(s);
   box.replaceChildren(...rows.map(syncRow));
   if (!rows.length) box.append(el("p", { class: "empty", text: "No deck yet: add the decks that hold the words you already study." }));
 }
 
 function syncRow(source = {}) {
-  const language = el("select", { "data-role": "language" });
-  options(language, S.languages.map((l) => [l.id, l.name]), source.language || $("note-language").value);
   const deck = selectWith(S.anki.decks, source.deck, "Deck");
   deck.dataset.role = "deck";
   const field = el("input", { type: "text", value: source.field || "", placeholder: "e.g. Hanzi", "data-role": "field" });
   const reading = el("input", { type: "text", value: source.reading_field || "", placeholder: "optional", "data-role": "reading" });
   const row = el("div", { class: "sync-source" },
-    el("label", { class: "field" }, el("span", { class: "field-label", text: "Language" }), language),
     el("label", { class: "field" }, el("span", { class: "field-label", text: "Deck" }), deck),
     el("label", { class: "field" }, el("span", { class: "field-label", text: "Word field" }), field),
     el("label", { class: "field" }, el("span", { class: "field-label", text: "Reading field" }), reading),
@@ -381,12 +371,12 @@ function syncRow(source = {}) {
 }
 
 async function saveSync() {
-  const sync = {};
-  for (const lang of S.languages) sync[lang.id] = [];
+  // The other languages' decks are kept as they are.
+  const sync = { [STUDY]: [] };
   for (const row of $("sync-sources").querySelectorAll(".sync-source")) {
     const get = (role) => row.querySelector(`[data-role="${role}"]`).value.trim();
     if (!get("deck") || !get("field")) continue;
-    sync[get("language")].push({ deck: get("deck"), field: get("field"), reading_field: get("reading") });
+    sync[STUDY].push({ deck: get("deck"), field: get("field"), reading_field: get("reading") });
   }
   const { config } = await api("/api/anki/config", { url: $("anki-url").value, known_interval: $("known-interval").value, sync });
   S.config = config;
@@ -400,8 +390,9 @@ async function syncNow() {
     report.textContent = "Syncing…";
     const result = await api("/api/anki/sync", {});
     const parts = [`Cards sent: ${result.cards.sent}` + (result.cards.failed ? `, refused: ${result.cards.failed}` : "")];
-    for (const [lang, r] of Object.entries(result.languages)) {
-      parts.push(`${langName(lang)}: ${r.notes} notes read, ${r.known} known, ${r.learning} learning${r.kept ? `, ${r.kept} kept as you set them` : ""}`);
+    const r = result.languages[STUDY];
+    if (r) {
+      parts.push(`${langName(STUDY)}: ${r.notes} notes read, ${r.known} known, ${r.learning} learning${r.kept ? `, ${r.kept} kept as you set them` : ""}`);
     }
     report.textContent = parts.join(" · ");
     loadLanguages();
@@ -418,17 +409,18 @@ const CARD_STATUS = { pending: "waiting", failed: "refused", sent: "in Anki", ex
 
 async function loadCards() {
   const status = $("cards-filter").value;
-  const { cards } = await api(`/api/cards${status ? `?status=${status}` : ""}`);
+  const params = new URLSearchParams({ language: STUDY });
+  if (status) params.set("status", status);
+  const { cards } = await api(`/api/cards?${params}`);
   const table = $("cards-table");
   table.replaceChildren(
-    el("thead", {}, el("tr", {}, ...["Word", "Sentence", "Language", "Status", ""].map((t) => el("th", { text: t })))),
+    el("thead", {}, el("tr", {}, ...["Word", "Sentence", "Status", ""].map((t) => el("th", { text: t })))),
     el("tbody", {}, ...cards.map((c) => {
       const sentence = el("td");
       sentence.textContent = c.fields.sentence.replace(/<[^>]+>/g, "");
       return el("tr", {},
         el("td", { class: "word", lang: c.language, text: c.expression }),
         sentence,
-        el("td", { text: langName(c.language) }),
         el("td", {}, el("span", { class: `pill ${c.status}`, text: CARD_STATUS[c.status] || c.status }),
           c.error && c.status !== "sent" ? el("div", { class: "error", text: c.error }) : null),
         el("td", {},
@@ -447,12 +439,12 @@ async function loadCards() {
             },
           })));
     })));
-  if (!cards.length) table.append(el("tbody", {}, el("tr", {}, el("td", { colspan: "5", class: "empty", text: "No cards here." }))));
+  if (!cards.length) table.append(el("tbody", {}, el("tr", {}, el("td", { colspan: "4", class: "empty", text: "No cards here." }))));
 }
 
 async function updateBadge() {
   try {
-    const [{ cards: pending }, { cards: failed }] = await Promise.all([api("/api/cards?status=pending"), api("/api/cards?status=failed")]);
+    const [{ cards: pending }, { cards: failed }] = await Promise.all([api(`/api/cards?status=pending&language=${STUDY}`), api(`/api/cards?status=failed&language=${STUDY}`)]);
     const n = pending.length + failed.length;
     $("pending-badge").hidden = n === 0;
     $("pending-badge").textContent = String(n);
@@ -461,7 +453,8 @@ async function updateBadge() {
 
 async function exportCards() {
   try {
-    const res = await fetch("/api/cards/export", { method: "POST", headers: { "Content-Type": "application/json", "X-MiningCat": "1" }, body: "{}" });
+    const body = JSON.stringify({ language: STUDY });
+    const res = await fetch("/api/cards/export", { method: "POST", headers: { "Content-Type": "application/json", "X-MiningCat": "1" }, body });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw Object.assign(new Error(data.error || "Export failed"), { title: data.title || "Export" });
@@ -486,12 +479,10 @@ async function init() {
     $("dict-pick").addEventListener("click", () => $("dict-file").click());
     $("dict-file").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; importDictionary(f); });
     $("words-filter").addEventListener("change", loadWords);
-    $("words-language").addEventListener("change", loadWords);
     $("anki-test").addEventListener("click", async () => {
       try { await api("/api/anki/config", { url: $("anki-url").value }); } catch (err) { return showError(err); }
       refreshAnki();
     });
-    $("note-language").addEventListener("change", renderNoteSetup);
     $("note-save").addEventListener("click", saveNoteSetup);
     $("translation-save").addEventListener("click", saveTranslation);
     $("model-download").addEventListener("click", downloadModels);
@@ -506,7 +497,7 @@ async function init() {
     $("cards-filter").addEventListener("change", loadCards);
     $("cards-send").addEventListener("click", async () => {
       try {
-        const r = await api("/api/cards/send-pending", {});
+        const r = await api("/api/cards/send-pending", { language: STUDY });
         dialog("Cards", `${r.sent} sent to Anki, ${r.failed} refused, ${r.pending} still waiting.`);
         loadCards(); updateBadge();
       } catch (err) { showError(err); }

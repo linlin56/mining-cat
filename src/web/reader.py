@@ -3,7 +3,7 @@
 
 from flask import Blueprint, jsonify, render_template, request, send_file
 
-from web import book_audio, books
+from web import book_audio, books, profile
 
 bp = Blueprint("reader", __name__, url_prefix="/reader")
 
@@ -29,24 +29,41 @@ def page(book_id: str | None = None):
     return render_template("reader.html")
 
 
+def _language_of(book_id: str, declared: str | None) -> str:
+    from mining.languages import language_key
+    return language_key(books.get_prefs(book_id).get("language") or declared)
+
+
+# Only the books of the language studied (and those of no known language) are in the library.
 @bp.get("/api/books")
 def api_books():
-    return jsonify(books=books.list_books(), extensions=list(books.BOOK_EXTENSIONS))
+    study = profile.current()
+    shown = [b for b in books.list_books() if not study or _language_of(b["id"], b["language"]) in (study, "")]
+    return jsonify(books=shown, extensions=list(books.BOOK_EXTENSIONS))
 
 
 @bp.post("/api/books")
 def api_import():
-    added, errors = [], []
+    from mining.languages import LANGUAGES
+
+    study = profile.current()
+    added, errors, elsewhere = [], [], []
     for upload in request.files.getlist("files"):
         name = upload.filename or "book"
         try:
             meta = books.import_book(name, upload.read())
+            language = _language_of(meta["id"], meta["language"])
+            # Detection can't tell Cantonese from Mandarin: a Chinese book belongs to the Chinese language studied.
+            if study and language != study and (not language or profile.same_family(language, study)):
+                books.save_prefs(meta["id"], {"language": profile.default_tag(study)})
+            elif study and language != study:
+                elsewhere.append(f"{meta['title']} ({LANGUAGES.get(language, language)})")
             added.append({"id": meta["id"], "title": meta["title"]})
         except books.BookError as exc:
             errors.append(f"{name}: {exc}")
         except Exception as exc:  # a broken file must not break the whole upload
             errors.append(f"{name}: could not be read ({exc})")
-    return jsonify(added=added, errors=errors)
+    return jsonify(added=added, errors=errors, elsewhere=elsewhere)
 
 
 @bp.get("/api/books/<book_id>")

@@ -95,7 +95,7 @@ def _extension(filename: str) -> str:
     return ext
 
 
-def import_stream(filename: str, stream) -> dict:
+def import_stream(filename: str, stream, language: str | None = None) -> dict:
     """Imports an uploaded video, written straight to the library as it arrives (a movie doesn't fit in memory)."""
     ext = _extension(filename)
     videos_dir().mkdir(parents=True, exist_ok=True)
@@ -106,7 +106,7 @@ def import_stream(filename: str, stream) -> dict:
             shutil.copyfileobj(stream, out, 1024 * 1024)
         if tmp.stat().st_size == 0:
             raise VideoError("The file is empty.")
-        return _add(tmp, ext, Path(filename).name, move=True)
+        return _add(tmp, ext, Path(filename).name, move=True, language=language)
     finally:
         tmp.unlink(missing_ok=True)
 
@@ -196,6 +196,7 @@ def list_videos() -> list[dict]:
             "status": meta.get("status"), "progress": meta.get("progress", 0), "error": meta.get("error"),
             "thumb": (folder / "thumb.jpg").exists(), "tracks": len(meta.get("tracks", [])),
             "added": meta.get("added", 0), "opened": progress.get("updated", 0), "percent": progress.get("percent", 0),
+            "language": get_prefs(folder.name).get("language") or meta.get("language") or "",
         })
     videos.sort(key=lambda v: (v["opened"] or 0, v["added"] or 0), reverse=True)
     return videos
@@ -647,12 +648,12 @@ def save_settings(values: dict) -> dict:
 
 # ---------------------------------------------------------------- online videos
 
-def start_download(url: str, language) -> dict:
+def start_download(url: str, language, tag: str | None = None) -> dict:
     """Downloads an online video with the converter's platform handlers (YouTube captions included), then imports it."""
     job = {"id": secrets.token_hex(6), "url": url, "status": "downloading", "error": None, "video": None}
     _downloads[job["id"]] = job
     started = dict(job)
-    _spawn(_download, job, language)
+    _spawn(_download, job, language, tag)
     return started
 
 
@@ -666,7 +667,8 @@ def _online_title(url: str) -> str | None:
         return None
 
 
-def _download(job: dict, language) -> None:
+# `tag`: the video's language tag when `language` (the converter's, for YouTube captions) isn't given.
+def _download(job: dict, language, tag: str | None = None) -> None:
     try:
         import video
         import video_downloader
@@ -675,7 +677,7 @@ def _download(job: dict, language) -> None:
 
         path = video_downloader.download_video(job["url"], DIR_VIDEOS, app_id="web", language=language)
         subtitles = [(p, video._sidecar_tag(p, path.stem)) for p in video.find_platform_subtitles(path.parent, path.stem)]
-        meta = import_file(path, title=_online_title(job["url"]), language=language_tag(language) if language else None,
+        meta = import_file(path, title=_online_title(job["url"]), language=language_tag(language) if language else tag,
                            subtitles=subtitles)
         job.update(status="done", video=meta["id"])
     except Exception as exc:

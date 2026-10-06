@@ -342,6 +342,8 @@ def test_delete(client, library):
 
 
 def test_pages(client):
+    assert client.get("/player/").headers["Location"] == "/?next=/player/"
+    client.post("/api/profile", json={"language": "ja"}, headers=HEADERS)
     assert client.get("/player/").status_code == 200
     assert b"player.js" in client.get("/player/0123456789abcdef").data
 

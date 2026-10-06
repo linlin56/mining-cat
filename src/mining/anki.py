@@ -324,11 +324,16 @@ def get_card(card_id: int) -> dict:
     return _card_row(row)
 
 
-def list_cards(status: str | None = None, limit: int = 200) -> list[dict]:
-    query, params = "SELECT * FROM cards", []
+def list_cards(status: str | None = None, limit: int = 200, language: str | None = None) -> list[dict]:
+    query, conditions, params = "SELECT * FROM cards", [], []
     if status:
-        query += " WHERE status = ?"
+        conditions.append("status = ?")
         params.append(status)
+    if language:
+        conditions.append("language = ?")
+        params.append(language)
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY created DESC LIMIT ?"
     params.append(limit)
     with db.session() as conn:
@@ -391,9 +396,9 @@ def send_card(card_id: int) -> dict:
     return get_card(card_id)
 
 
-def send_pending() -> dict:
+def send_pending(language: str | None = None) -> dict:
     sent = failed = waiting = 0
-    for card in list_cards("pending", limit=10_000) + list_cards("failed", limit=10_000):
+    for card in list_cards("pending", 10_000, language) + list_cards("failed", 10_000, language):
         result = send_card(card["id"])
         if result["status"] == "sent":
             sent += 1

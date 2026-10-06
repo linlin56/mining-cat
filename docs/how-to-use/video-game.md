@@ -47,7 +47,7 @@ The [capture key](#capture-key-or-continuous-capture) also needs the **Input Mon
 
 ## In the GUI
 
-1. Pick the **Language** of the game (and **Convert to**, for Chinese).
+1. The game is in the language you study: pick its **Variant** if there are several (and **Convert to**, for Chinese).
 2. Click **Select window…** and pick the game window:
     - **Linux**: GNOME's sharing dialog opens, pick the window there.
     - **macOS**: MiningCat lists the open windows in a dialog (**Refresh** if the game isn't there yet). The game must be open and not minimized.

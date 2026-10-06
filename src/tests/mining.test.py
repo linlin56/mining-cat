@@ -461,6 +461,8 @@ def test_http_lookup_status_and_cards(client, zh_dict, fake_anki):
     assert client.get("/api/anki/status").get_json()["connected"] is True
     fields = client.get("/api/anki/fields?model=Basic").get_json()
     assert fields["guess"] == {"Front": "{word}", "Back": "{definition}"}
+    assert client.get("/settings/").status_code == 302  # no language studied yet: the home page asks for it
+    client.post("/api/profile", json={"language": "zh"}, headers=HEADERS)
     assert client.get("/settings/").status_code == 200
 
 

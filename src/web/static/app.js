@@ -854,11 +854,12 @@ function wire() {
   const o = S.opts;
   $("repo-link").href = o.github_url;
 
-  // header
+  // header: the variants of the language studied (Mandarin: Taiwan or China), hidden when there's only one
   const langSel = $("language");
   langSel.replaceChildren(...o.languages.map((l) => new Option(l.label, l.id)));
   langSel.value = o.default_language;
   langSel.addEventListener("change", onLanguageChange);
+  $("language-field").hidden = o.languages.length <= 1;
 
   const src = $("source");
   src.replaceChildren(...o.sources.map((s) => {
@@ -929,6 +930,13 @@ function wire() {
 async function init() {
   try {
     S.opts = await api("/api/options");
+    if (!S.opts.languages.length) {
+      // The language studied has no converter (e.g. Taigi): only the reader and the player work with it.
+      $("no-converter").hidden = false;
+      for (const id of ["controls", "game-actions"]) $(id).hidden = true;
+      for (const block of document.querySelectorAll(".progress-block, .log-panel")) block.hidden = true;
+      return;
+    }
     wire();
     onLanguageChange();
     renderSource();

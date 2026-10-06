@@ -38,7 +38,9 @@ Clicks on the text itself don't turn pages: they look words up (this can be chan
 Per book:
 
 - **Text direction**: automatic, horizontal or vertical (縦書き). Automatic uses vertical text for Japanese and Chinese EPUBs laid out from right to left, and horizontal text otherwise.
-- **Language**: detected from the book's metadata and checked against its text (some tools tag every book in the same language). It picks the right fonts for Japanese, Traditional or Simplified Chinese, and Korean.
+- **Characters** (Mandarin only): Traditional or Simplified, detected from the book's metadata and checked against its text. It picks the right fonts.
+
+The library only shows the books of the language you study. A Chinese book imported while you study Cantonese or Taigi is filed under that language (Chinese text alone can't tell them apart); a book clearly in another language (e.g. Japanese while you study Mandarin) goes to that language's library.
 
 For all books: font size, line spacing, margins, serif or sans-serif font, theme (light, sepia, dark, or following your system), showing or hiding furigana, how to look up words, and [word colours](mining.md#word-colours).
 

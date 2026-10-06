@@ -239,7 +239,10 @@ def api_import_dictionary():
     upload = request.files.get("file")
     if upload is None or not upload.filename:
         raise ApiError("Choose a dictionary file (.zip).")
-    language = request.form.get("language") or ""
+    from web import profile
+
+    # Dictionaries are imported for the language studied, unless the request names another.
+    language = request.form.get("language") or profile.current() or ""
     if language and language not in LANGUAGES:
         raise ApiError(f"Unknown language: {language}")
     tmp = Path(tempfile.mkstemp(suffix=".zip", prefix="miningcat-dict-")[1])
@@ -249,6 +252,11 @@ def api_import_dictionary():
     except dictionaries.DictionaryError:
         tmp.unlink(missing_ok=True)
         raise
+    if language and info["language"] and not profile.same_family(info["language"], language):
+        tmp.unlink(missing_ok=True)
+        raise ApiError(f"“{info['title']}” looks like a {LANGUAGES.get(info['language'], info['language'])} dictionary, "
+                       f"not a {LANGUAGES[language]} one. To import it, choose {LANGUAGES.get(info['language'], info['language'])} "
+                       "on the home page first.", title="Wrong language")
     if not language and not info["language"]:
         tmp.unlink(missing_ok=True)
         raise ApiError(f"Couldn't tell which language “{info['title']}” is for: choose it in the list and import it again.")
@@ -332,7 +340,8 @@ def api_create_card():
 
 @bp.get("/api/cards")
 def api_cards():
-    return jsonify(cards=anki.list_cards(request.args.get("status") or None))
+    language = request.args.get("language")
+    return jsonify(cards=anki.list_cards(request.args.get("status") or None, language=_language(language) if language else None))
 
 
 @bp.post("/api/cards/<int:card_id>/send")
@@ -342,7 +351,8 @@ def api_send_card(card_id: int):
 
 @bp.post("/api/cards/send-pending")
 def api_send_pending():
-    return jsonify(anki.send_pending())
+    language = _body().get("language")
+    return jsonify(anki.send_pending(_language(language) if language else None))
 
 
 @bp.post("/api/cards/<int:card_id>/delete")
@@ -353,7 +363,13 @@ def api_delete_card(card_id: int):
 
 @bp.post("/api/cards/export")
 def api_export_cards():
-    ids = _body().get("ids")
+    body = _body()
+    ids = body.get("ids")
+    if not ids and body.get("language"):
+        language = _language(body["language"])
+        ids = [c["id"] for status in ("pending", "failed") for c in anki.list_cards(status, 10_000, language=language)]
+        if not ids:
+            raise anki.AnkiError("There are no cards to export.")
     path = anki.export_apkg([int(i) for i in ids] if ids else None)
     return send_file(path, as_attachment=True, download_name=path.name, mimetype="application/octet-stream")
 

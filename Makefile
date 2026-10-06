@@ -74,7 +74,7 @@ help:
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
-	# Install separately with --no-deps to avoid the PyGObject build error on Linux.
+# Install separately with --no-deps to avoid the PyGObject build error on Linux.
 	$(PYTHON) -m pip install --no-deps "owocr>=1.26.8"
 
 test:

@@ -14,8 +14,7 @@ Window capture works very differently from one OS to another, so MiningCat picks
 | ------ | ------- | ------ |
 | **Linux** | Desktop portal (ScreenCast) + PipeWire | Tested on Ubuntu, GNOME, Wayland |
 | **macOS** | ScreenCaptureKit (macOS 14 or later) | Tested on macOS 15 |
-
-Windows isn't supported yet (you can [help](../how-to-contribute/add-capture-backend.md)!).
+| **Windows** | `PrintWindow` (GDI) | Tested on Windows 11 |
 
 ### Linux setup
 
@@ -45,6 +44,12 @@ The app you launch MiningCat from (Terminal, iTerm2, VS Code...) needs the **Scr
 
 The [capture key](#capture-key-or-continuous-capture) also needs the **Input Monitoring** permission for the same app (**System Settings > Privacy & Security > Input Monitoring**). macOS asks for it the first time you click **Start**.
 
+### Windows setup
+
+Nothing to install: capture uses the Windows API directly (`PrintWindow`), with no extra package or permission.
+
+A handful of games using exclusive fullscreen DirectX, or protected by an anti-cheat, may capture as a black image: switch them to **windowed** or **borderless fullscreen** mode.
+
 ## In the GUI
 
 ![The converter's Video game / Screen share screen](../assets/screenshots/converter-game.png)
@@ -52,10 +57,10 @@ The [capture key](#capture-key-or-continuous-capture) also needs the **Input Mon
 1. The game is in the language you study: pick its **Variant** if there are several (and **Convert to**, for Chinese).
 2. Click **Select window…** and pick the game window:
     - **Linux**: GNOME's sharing dialog opens, pick the window there.
-    - **macOS**: MiningCat lists the open windows in a dialog (**Refresh** if the game isn't there yet). The game must be open and not minimized.
+    - **macOS** and **Windows**: MiningCat lists the open windows in a dialog (**Refresh** if the game isn't there yet). The game must be open and not minimized.
 3. Click **Select window's full size (for screenshot)…** and draw a box around the part of the window you want to see in the page. It's pre-selected on the whole capture.
     - On **Linux**, the portal captures a screen-sized image with the window pasted on a black background: draw the box around the window's edges.
-    - On **macOS**, the capture already is the window: keep it as is, or leave out the title bar or black borders.
+    - On **macOS** and **Windows**, the capture already is the window: keep it as is, or leave out the title bar or black borders.
 4. Click **Select text area (for OCR)…** and draw a box around the game's dialog box, where the text appears. It's pre-selected on the whole screenshot area, and **Reset to bottom third** is a good start for most games. Only this part is read by OCR, which makes it faster and avoids reading menus or the HUD.
 5. Pick the **Capture key** (`F9` by default), or check **Continuous capture** (see [below](#capture-key-or-continuous-capture)).
 6. Click **Start**. The page opens in a new tab of your browser (or click **Open page**).
@@ -74,6 +79,7 @@ By default, MiningCat captures when you press the **capture key** (`F9`, or any 
 
 - **macOS**: MiningCat listens to the key itself. It needs the Input Monitoring permission (see [macOS setup](#macos-setup)). On a Mac keyboard, `F1`-`F12` usually control the brightness, the volume... : press **fn** with the key, or enable **System Settings > Keyboard > Keyboard Shortcuts > Function Keys > Use F1, F2, etc. keys as standard function keys**.
 - **Linux (GNOME)**: on Wayland, apps can't listen to the keyboard globally. While the capture runs, MiningCat registers a GNOME custom shortcut (named "MiningCat capture", visible in Settings > Keyboard) that sends the capture request, and removes it when you click **Stop**. Pick a key that isn't already used by another shortcut.
+- **Windows**: MiningCat listens to the key itself, with a low-level keyboard hook (no extra permission needed).
 
 Check **Continuous capture** to capture without pressing anything (the capture key is then greyed out): MiningCat looks at the text area twice per second, and runs OCR when it changed. Games often draw text letter by letter, so it waits until the text area stops changing before reading it, to avoid half sentences. It works best when nothing moves behind the text.
 
@@ -119,7 +125,7 @@ python src/main.py game serve --continuous          # continuous capture instead
 
 Or with make: `make game-setup`, then `make game LANGUAGE=japanese HOTKEY=F9`.
 
-On macOS, `game setup` lists the windows and asks for a number, or use `--window` to pick the first window whose app name or title contains some text:
+On macOS and Windows, `game setup` lists the windows and asks for a number, or use `--window` to pick the first window whose app name or title contains some text:
 
 ```bash
 python src/main.py game setup --window Ryujinx
@@ -130,7 +136,8 @@ See the [CLI reference](cli.md#game) for all options.
 ## Troubleshooting
 
 - **"MiningCat needs the Screen Recording permission"** (macOS): see [macOS setup](#macos-setup). If you already enabled it, make sure you restarted the app you launch MiningCat from, and that it's the right one (e.g. VS Code, if you run `make gui` from its terminal).
-- **"Window not found"** (macOS): the game was closed or minimized. Open it again: MiningCat finds it back by its app name and title. If its title changed, click **Select window…** again.
+- **"Window not found"** (macOS, Windows): the game was closed or minimized. Open it again: MiningCat finds it back by its app name and title. If its title changed, click **Select window…** again.
+- **A captured frame is black** (Windows): some games using exclusive fullscreen DirectX, or protected by an anti-cheat, can't be captured this way. Switch them to windowed or borderless fullscreen mode.
 - **"The permission may have been revoked"** (Linux): GNOME forgot the window you shared (e.g. after restarting the game). Click **Select window…** again.
 - **Nothing shows up in the page**: check the log in the GUI. "no text detected" usually means the text area is wrong (select it again, a bit larger), or the selected **Language** doesn't match the game.
 - **The capture key does nothing**: check the log. On macOS, grant the Input Monitoring permission and restart the app you launch MiningCat from, and press **fn** with the key. On GNOME, make sure no other shortcut uses the same key. The page's camera button always works.

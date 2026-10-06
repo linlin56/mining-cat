@@ -6,6 +6,7 @@ The [video game / screen share](../how-to-use/video-game.md) source captures a w
 | ------- | ------ | -------- |
 | Linux (Tested on Ubuntu, Wayland) | `linux_wayland.py` | `linux` |
 | macOS | `macos.py` | `darwin` |
+| Windows | `windows.py` | `win32` |
 
 Everything else (areas, OCR, change detection, the web page, the GUI) is shared: a new backend only has to return images of a window.
 

@@ -211,6 +211,7 @@ def test_old_renders_are_refreshed(library, monkeypatch):
 # ---------------------------------------------------------------- HTTP API
 
 def test_reader_api_flow(client, library):
+    client.post("/api/profile", json={"language": "ja"}, headers=HEADERS)
     assert client.get("/reader/").status_code == 200
     data = {"files": [(io.BytesIO(make_epub(JA_CHAPTERS)), "neko.epub"), (io.BytesIO(b"x"), "notes.pdf")]}
     res = client.post("/reader/api/books", data=data, headers=HEADERS, content_type="multipart/form-data").get_json()

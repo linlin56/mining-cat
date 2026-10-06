@@ -15,6 +15,14 @@ def _isolated_game_ocr_settings(tmp_path, monkeypatch):
     return path
 
 
+# Never read or write the user's real database (library/miningcat.db): every page reads the language studied from it.
+@pytest.fixture(autouse=True)
+def _isolated_database(tmp_path, monkeypatch):
+    from mining import db
+    monkeypatch.setattr(db, "DB_PATH", tmp_path / "library" / "miningcat.db")
+    db.reset_cache()
+
+
 # GUI tests (`make test-gui`): keep their windows hidden. Widgets work the same while withdrawn.
 @pytest.fixture(autouse=True)
 def _hidden_tk_windows(request, monkeypatch):

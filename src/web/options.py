@@ -69,14 +69,17 @@ def language_options(lang: Language) -> dict:
     }
 
 
-def all_options() -> dict:
+# Only the variants of the language studied (see web/profile.py): Mandarin is Taiwan or China, French is French.
+def all_options(study_language: str | None = None) -> dict:
     from config import AUDIO_EXTENSIONS
+    from web.profile import converter_languages
     from ocr_mining.frames import DEFAULT_REGION, OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
     from gui_components.constants import GITHUB_URL
 
+    languages = converter_languages(study_language) if study_language else list(Language)
     return {
-        "languages": [language_options(lang) for lang in Language],
-        "default_language": Language.MANDARIN_TW.name.lower(),
+        "languages": [language_options(lang) for lang in languages],
+        "default_language": languages[0].name.lower() if languages else None,
         "sources": SOURCES,
         "modes": MODES,
         "default_precision": DEFAULT_PRECISION,

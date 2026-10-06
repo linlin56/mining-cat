@@ -2,7 +2,7 @@ import base64
 
 from flask import Blueprint, jsonify, render_template, request, send_file
 
-from web import videos
+from web import profile, videos
 
 bp = Blueprint("player", __name__, url_prefix="/player")
 
@@ -28,9 +28,14 @@ def page(video_id: str | None = None):
 
 # ---------- library ----------
 
+# Only the videos of the language studied (and those of no known language yet) are in the library.
 @bp.get("/api/videos")
 def api_videos():
-    return jsonify(videos=videos.list_videos(), downloads=videos.downloads(),
+    from mining.languages import language_key
+
+    study = profile.current()
+    shown = [v for v in videos.list_videos() if not study or language_key(v["language"]) in (study, "")]
+    return jsonify(videos=shown, downloads=videos.downloads(),
                    extensions=list(videos.VIDEO_EXTENSIONS), subtitle_extensions=list(videos.SUBTITLE_EXTENSIONS))
 
 
@@ -38,7 +43,9 @@ def api_videos():
 @bp.post("/api/videos")
 def api_import():
     name = request.args.get("name") or ""
-    return jsonify(video=videos.import_stream(name, request.stream))
+    # A video added while studying a language is in that language.
+    study = profile.current()
+    return jsonify(video=videos.import_stream(name, request.stream, language=profile.default_tag(study) if study else None))
 
 
 @bp.post("/api/videos/url")
@@ -58,7 +65,8 @@ def api_import_url():
         language = Language.from_id(str(body.get("language"))) if body.get("language") else None
     except ValueError:
         raise videos.VideoError(f"Unknown language: {body.get('language')!r}")
-    return jsonify(job=videos.start_download(url, language))
+    study = profile.current()
+    return jsonify(job=videos.start_download(url, language, tag=profile.default_tag(study) if study else None))
 
 
 @bp.post("/api/downloads/<job_id>/dismiss")

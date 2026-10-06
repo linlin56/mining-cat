@@ -10,12 +10,8 @@
 
 const $ = (id) => document.getElementById(id);
 
-const LANGUAGES = [
-  ["ja", "Japanese"], ["zh-Hant", "Chinese (Traditional)"], ["zh-Hans", "Chinese (Simplified)"],
-  ["yue", "Cantonese"], ["ko", "Korean"], ["en", "English"], ["fr", "French"], ["de", "German"],
-  ["es", "Spanish"], ["it", "Italian"], ["pt", "Portuguese"], ["pl", "Polish"], ["vi", "Vietnamese"],
-  ["ru", "Russian"],
-];
+// The language studied (see web/profile.py): {id, name, tag, tags: [{tag, label}]}.
+const STUDY = JSON.parse(document.body.dataset.study || "null");
 const GAP = 48;          // px between columns (never visible: it falls outside the viewport)
 const SAVE_DELAY = 700;  // ms
 
@@ -172,6 +168,9 @@ async function addBooks(fileList) {
     const res = await fetch("/reader/api/books", { method: "POST", headers: { "X-MiningCat": "1" }, body: form });
     const data = await res.json();
     if (data.errors && data.errors.length) showDialog("Some files could not be imported", data.errors.join("\n"));
+    if (data.elsewhere && data.elsewhere.length) {
+      showDialog("Books of another language", `These books were imported into the library of another language: choose it on the home page to read them.\n\n${data.elsewhere.join("\n")}`);
+    }
   } catch (err) {
     showError(err);
   } finally {
@@ -216,7 +215,8 @@ function effectiveWriting() {
   return w === "vertical" ? "vertical" : "horizontal";
 }
 function effectiveLanguage() {
-  return R.prefs.language || R.book.language || "und";
+  const own = R.prefs.language || R.book.language;
+  return own && own !== "und" ? own : STUDY.tag;
 }
 
 // ---------------------------------------------------------------- chapter rendering
@@ -547,13 +547,16 @@ function syncSettingsForm() {
   for (const b of $("set-theme").children) b.setAttribute("aria-pressed", String(b.dataset.value === s.theme));
   if (R.book) {
     $("set-writing").value = R.prefs.writing || "auto";
+    // Only the forms of the language studied (Mandarin: traditional or simplified characters).
     const lang = $("set-language");
-    const detected = LANGUAGES.find(([code]) => code === R.book.language);
+    const detected = STUDY.tags.find((t) => t.tag === R.book.language);
     lang.replaceChildren(
-      new Option(`Automatic (${detected ? detected[1] : R.book.language})`, ""),
-      ...LANGUAGES.map(([code, label]) => new Option(label, code)),
+      new Option(`Automatic (${detected ? detected.label : R.book.language})`, ""),
+      ...STUDY.tags.map((t) => new Option(t.label, t.tag)),
     );
+    if (R.prefs.language && !STUDY.tags.some((t) => t.tag === R.prefs.language)) lang.append(new Option(R.prefs.language, R.prefs.language));
     lang.value = R.prefs.language || "";
+    $("language-setting").hidden = STUDY.tags.length <= 1;
   }
 }
 

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MiningCat</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+  <script src="{{ url_for('static', filename='home.js') }}" defer></script>
+</head>
+<body>
+  <div class="page home">
+    <header class="topbar">
+      <h1 class="brand"><span class="brand-mark" aria-hidden="true">🐱</span> MiningCat</h1>
+    </header>
+
+    <!-- Once a language is chosen: its screens -->
+    <section id="hub" class="hub" hidden>
+      <div class="hub-head">
+        <div>
+          <p class="dim hub-kicker">You're studying</p>
+          <h2 class="hub-language"><span id="hub-native" class="hub-native"></span> <span id="hub-name"></span></h2>
+        </div>
+        <button type="button" class="btn" id="change-language">Change language</button>
+      </div>
+      <nav class="tiles">
+        <a class="tile" href="/converter/" id="tile-converter">
+          <strong>Converter</strong>
+          <span class="dim">Audiobooks, ebooks, videos and games: subtitles, audio, frequency lists.</span>
+        </a>
+        <a class="tile" href="/reader/">
+          <strong>Reader</strong>
+          <span class="dim">Read your books, look words up and make cards.</span>
+        </a>
+        <a class="tile" href="/player/">
+          <strong>Player</strong>
+          <span class="dim">Watch videos with subtitles you can look up.</span>
+        </a>
+        <a class="tile" href="/settings/">
+          <strong>Settings</strong>
+          <span class="dim">Dictionaries, your words, Anki and cards.</span>
+        </a>
+      </nav>
+    </section>
+
+    <!-- Language choice -->
+    <section id="picker" class="picker" hidden>
+      <h2 class="picker-title">Which language do you study?</h2>
+      <p class="dim">Every screen then shows only what belongs to it. You can change it at any time from the header.</p>
+      <div class="languages" id="languages"></div>
+    </section>
+  </div>
+
+  <dialog id="dialog" class="dialog">
+    <form method="dialog">
+      <h3 id="dialog-title"></h3>
+      <p id="dialog-message"></p>
+      <div class="dialog-actions"><button class="btn btn-primary" value="ok">OK</button></div>
+    </form>
+  </dialog>
+</body>
+</html>

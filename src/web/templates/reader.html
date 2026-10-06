@@ -10,14 +10,15 @@
   <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
   <script src="{{ url_for('static', filename='reader.js') }}" defer></script>
 </head>
-<body class="theme-light">
+<body class="theme-light" data-study='{{ study|tojson }}'>
 
   <!-- ===================== Library ===================== -->
   <main id="library" class="library" hidden>
     <header class="lib-header">
-      <h1 class="brand"><span aria-hidden="true">🐱</span> Reader</h1>
+      <h1 class="brand"><a class="brand-link" href="/"><span aria-hidden="true">🐱</span> Reader</a></h1>
       <nav class="lib-nav">
-        <a href="/" class="nav-link">Converter</a>
+        {% include "_study.html" %}
+        <a href="/converter/" class="nav-link">Converter</a>
         <a href="/player/" class="nav-link">Player</a>
         <a href="/settings/" class="nav-link">Settings</a>
         <button type="button" class="btn btn-primary" id="add-books">+ Add books</button>
@@ -87,8 +88,8 @@
           <option value="vertical">Vertical (縦書き)</option>
         </select>
       </label>
-      <label class="setting">
-        <span>Language</span>
+      <label class="setting" id="language-setting">
+        <span>Characters</span>
         <select id="set-language"></select>
       </label>
 

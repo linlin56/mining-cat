@@ -11,14 +11,15 @@
   <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
   <script src="{{ url_for('static', filename='player.js') }}" defer></script>
 </head>
-<body class="theme-light">
+<body class="theme-light" data-study='{{ study|tojson }}'>
 
   <!-- ===================== Library ===================== -->
   <main id="library" class="library" hidden>
     <header class="lib-header">
-      <h1 class="brand"><span aria-hidden="true">🐱</span> Player</h1>
+      <h1 class="brand"><a class="brand-link" href="/"><span aria-hidden="true">🐱</span> Player</a></h1>
       <nav class="lib-nav">
-        <a href="/" class="nav-link">Converter</a>
+        {% include "_study.html" %}
+        <a href="/converter/" class="nav-link">Converter</a>
         <a href="/reader/" class="nav-link">Reader</a>
         <a href="/settings/" class="nav-link">Settings</a>
         <button type="button" class="btn btn-primary" id="add-videos">+ Add videos</button>
@@ -73,7 +74,7 @@
         <div class="cues-empty" id="cues-empty" hidden>
           <p>This video has no subtitles yet.</p>
           <p class="dim">Drop a subtitle file (.srt, .vtt, .ass) on the page, or add one in the settings (Aa).
-            To make some, generate them in the <a href="/">converter</a> (Video, Whisper or OCR), then open the result here.</p>
+            To make some, generate them in the <a href="/converter/">converter</a> (Video, Whisper or OCR), then open the result here.</p>
         </div>
       </aside>
     </div>
@@ -85,8 +86,8 @@
       </div>
 
       <h3>This video</h3>
-      <label class="setting">
-        <span>Language of the subtitles</span>
+      <label class="setting" id="language-setting">
+        <span>Characters of the subtitles</span>
         <select id="set-language"></select>
       </label>
       <label class="setting">

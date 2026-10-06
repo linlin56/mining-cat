@@ -2,12 +2,8 @@
 
 const $ = (id) => document.getElementById(id);
 
-const LANGUAGES = [
-  ["ja", "Japanese"], ["zh-Hant", "Chinese (Traditional)"], ["zh-Hans", "Chinese (Simplified)"],
-  ["yue", "Cantonese"], ["ko", "Korean"], ["en", "English"], ["fr", "French"], ["de", "German"],
-  ["es", "Spanish"], ["it", "Italian"], ["pt", "Portuguese"], ["pl", "Polish"], ["vi", "Vietnamese"],
-  ["ru", "Russian"],
-];
+// The language studied (see web/profile.py): {id, name, tag, tags: [{tag, label}]}.
+const STUDY = JSON.parse(document.body.dataset.study || "null");
 const SUBTITLE_EXT = /\.(srt|vtt|ass|ssa)$/i;
 const SAVE_EVERY_MS = 5000;
 const SEEK_STEP_S = 5;
@@ -261,9 +257,12 @@ async function handleFiles(fileList) {
 async function fillUrlLanguages() {
   const select = $("url-language");
   try {
+    // The converter's variants of the language studied: only worth a choice when there are several.
     const { languages, default_language: fallback } = await api("/api/options");
     select.replaceChildren(...languages.map((l) => new Option(l.label, l.id)));
-    select.value = storageGet("miningcat-player-language") || fallback;
+    const saved = storageGet("miningcat-player-language");
+    select.value = languages.some((l) => l.id === saved) ? saved : fallback || "";
+    select.hidden = languages.length <= 1;
   } catch { select.hidden = true; }
 }
 
@@ -293,7 +292,7 @@ function wireLibrary() {
 // ---------------------------------------------------------------- opening a video
 
 function effectiveLanguage() {
-  return (P.prefs.language || (P.video && P.video.language) || "und");
+  return P.prefs.language || (P.video && P.video.language) || STUDY.tag;
 }
 const offset = () => Number(P.prefs.offset) || 0;
 
@@ -774,18 +773,17 @@ function syncSettingsForm() {
 
 function syncVideoSettings() {
   const v = P.video;
-  const detected = LANGUAGES.find(([code]) => code === v.language);
+  // Only the forms of the language studied (Mandarin: traditional or simplified characters).
+  const detected = STUDY.tags.find((t) => t.tag === v.language);
   $("set-language").replaceChildren(
-    new Option(v.language ? `Automatic (${detected ? detected[1] : v.language})` : "Choose…", ""),
-    ...LANGUAGES.map(([code, label]) => new Option(label, code)),
+    new Option(`Automatic (${detected ? detected.label : v.language || STUDY.name})`, ""),
+    ...STUDY.tags.map((t) => new Option(t.label, t.tag)),
   );
-  // a tag set elsewhere (ja-JP from the converter) is kept, under its own name
+  // a tag set elsewhere (zh-TW from the converter) is kept, under its own name
   const lang = P.prefs.language || "";
-  if (lang && !LANGUAGES.some(([code]) => code === lang)) {
-    const base = LANGUAGES.find(([code]) => lang.toLowerCase().startsWith(code.toLowerCase().split("-")[0]));
-    $("set-language").append(new Option(base ? `${base[1]} (${lang})` : lang, lang));
-  }
+  if (lang && !STUDY.tags.some((t) => t.tag === lang)) $("set-language").append(new Option(lang, lang));
   $("set-language").value = lang;
+  $("language-setting").hidden = STUDY.tags.length <= 1;
   const options = (none) => [new Option(none, ""), ...(v.tracks || []).map((t) => new Option(`${t.label} · ${t.cues} lines`, t.id))];
   $("set-primary").replaceChildren(...options("None"));
   $("set-secondary").replaceChildren(...options("None"));
@@ -930,7 +928,6 @@ async function addSubtitles(files) {
     P.video.tracks = data.tracks;
     if (data.added.length) {
       P.prefs = await api(`/player/api/videos/${P.video.id}/prefs`, { primary: data.added[0].id });
-      if (!P.prefs.language && !P.video.language) togglePanel(true);
     }
     syncVideoSettings();
     await loadTracks();

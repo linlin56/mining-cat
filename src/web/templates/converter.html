@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MiningCat</title>
+  <title>Converter · MiningCat</title>
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script src="{{ url_for('static', filename='app.js') }}" defer></script>
@@ -11,8 +11,9 @@
 <body>
   <div class="page">
     <header class="topbar">
-      <h1 class="brand"><span class="brand-mark" aria-hidden="true">🐱</span> MiningCat</h1>
+      <h1 class="brand"><a class="brand-link" href="/"><span class="brand-mark" aria-hidden="true">🐱</span> Converter</a></h1>
       <nav class="top-links">
+        {% include "_study.html" %}
         <a class="nav-link" href="/reader/">Reader</a>
         <a class="nav-link" href="/player/">Player</a>
         <a class="nav-link" href="/settings/">Settings</a>
@@ -20,11 +21,17 @@
       </nav>
     </header>
 
+    <section class="panel" id="no-converter" hidden>
+      <h2 class="panel-title">Not available yet</h2>
+      <p>The converter doesn't support {{ study.name if study else "this language" }} yet. The <a href="/reader/">reader</a>
+        and the <a href="/player/">player</a> work with it: import books, or videos with their subtitles.</p>
+    </section>
+
     <fieldset id="controls" class="controls">
-      <!-- Language / conversion / source -->
+      <!-- Variant of the language studied / conversion / source -->
       <section class="row settings">
-        <label class="field">
-          <span class="field-label">Language</span>
+        <label class="field" id="language-field">
+          <span class="field-label">Variant</span>
           <select id="language"></select>
         </label>
         <label class="field">

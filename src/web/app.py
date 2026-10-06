@@ -91,6 +91,8 @@ def create_app(state: AppState | None = None) -> Flask:
     from web.mining_api import bp as mining_bp
     from web.game import bp as game_bp
     from web.player import bp as player_bp
+    from web import profile
+    app.register_blueprint(profile.bp)
     app.register_blueprint(reader_bp)
     app.register_blueprint(mining_bp)
     app.register_blueprint(game_bp)
@@ -105,6 +107,12 @@ def create_app(state: AppState | None = None) -> Flask:
             return jsonify(error="MiningCat only answers on localhost."), 403
         if request.method not in ("GET", "HEAD", "OPTIONS") and request.headers.get(CSRF_HEADER) != "1":
             return jsonify(error="Missing MiningCat header."), 403
+        return profile.guard()
+
+    # The language studied, for every page's header (see web/profile.py).
+    @app.context_processor
+    def _study_language():
+        return {"study": profile.describe(profile.current())}
 
     @app.errorhandler(UserError)
     def _user_error(exc: UserError):
@@ -112,9 +120,14 @@ def create_app(state: AppState | None = None) -> Flask:
 
     # ---------- pages & settings ----------
 
+    # Home: the user chooses the language they study, then a screen.
     @app.get("/")
-    def index():
-        return render_template("index.html")
+    def home():
+        return render_template("home.html")
+
+    @app.get("/converter/")
+    def converter():
+        return render_template("converter.html")
 
     # Video game captures, with the dictionary popup and the card creator (see web/game.py).
     @app.get("/game/")
@@ -123,7 +136,7 @@ def create_app(state: AppState | None = None) -> Flask:
 
     @app.get("/api/options")
     def api_options():
-        return jsonify(options.all_options())
+        return jsonify(options.all_options(profile.current()))
 
     @app.get("/api/state")
     def api_state():

@@ -9,12 +9,13 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='settings.css') }}">
   <script src="{{ url_for('static', filename='settings.js') }}" defer></script>
 </head>
-<body>
+<body data-study="{{ study.id if study else "" }}">
   <div class="page">
     <header class="topbar">
-      <h1 class="brand"><span class="brand-mark" aria-hidden="true">🐱</span> Settings</h1>
+      <h1 class="brand"><a class="brand-link" href="/"><span class="brand-mark" aria-hidden="true">🐱</span> Settings</a></h1>
       <nav class="top-links">
-        <a class="nav-link" href="/">Converter</a>
+        {% include "_study.html" %}
+        <a class="nav-link" href="/converter/">Converter</a>
         <a class="nav-link" href="/reader/">Reader</a>
         <a class="nav-link" href="/player/">Player</a>
       </nav>
@@ -22,7 +23,7 @@
 
     <nav class="tabs" role="tablist">
       <a href="#dictionaries" role="tab" data-tab="dictionaries">Dictionaries</a>
-      <a href="#languages" role="tab" data-tab="languages">Languages &amp; words</a>
+      <a href="#languages" role="tab" data-tab="languages">Words</a>
       <a href="#anki" role="tab" data-tab="anki">Anki</a>
       <a href="#cards" role="tab" data-tab="cards">Cards <span class="badge" id="pending-badge" hidden></span></a>
     </nav>
@@ -30,15 +31,11 @@
     <!-- ================= Dictionaries ================= -->
     <section id="tab-dictionaries" class="tab-panel" hidden>
       <div class="panel">
-        <h2 class="panel-title">Import a dictionary</h2>
+        <h2 class="panel-title">Import a {{ study.name }} dictionary</h2>
         <p class="help">MiningCat reads dictionaries in Yomitan's format (.zip). For example CC-CEDICT (Mandarin),
           words.hk (Cantonese), JMdict (Japanese), and frequency lists.
           They're stored in the project's <code>library/</code> folder.</p>
         <div class="row">
-          <label class="field">
-            <span class="field-label">Language of the words</span>
-            <select id="dict-language"></select>
-          </label>
           <div class="field">
             <span class="field-label">File</span>
             <div class="row tight">
@@ -54,7 +51,7 @@
       </div>
 
       <div class="panel">
-        <h2 class="panel-title">Your dictionaries</h2>
+        <h2 class="panel-title">Your {{ study.name }} dictionaries</h2>
         <p class="help">Results are shown in this order. Disable a dictionary to hide it without deleting it.</p>
         <div id="dict-list"></div>
       </div>
@@ -62,18 +59,21 @@
 
     <!-- ================= Languages ================= -->
     <section id="tab-languages" class="tab-panel" hidden>
+      {% if study.chinese %}
       <div class="panel">
         <h2 class="panel-title">Chinese characters</h2>
         <p class="help">Choose the characters you learn. Words are saved in that script; a word whose characters are the
           same in both scripts counts for both. When you know a word in the other script, the dictionary tells you.</p>
         <div id="script-settings"></div>
+        {% if study.id == "zh" %}
         <p class="help">Readings: how Mandarin pronunciation is shown in the popup and written in the cards' reading
           field. Your words keep the same status whichever you choose.</p>
         <div id="reading-settings"></div>
+        {% endif %}
       </div>
+      {% endif %}
       <div class="panel">
-        <h2 class="panel-title">Your words</h2>
-        <p class="help">Each language has its own words: knowing 說 in Mandarin doesn't mean you know it in Cantonese.</p>
+        <h2 class="panel-title">Your {{ study.name }} words</h2>
         <div id="word-counts"></div>
         <div class="row">
           <label class="field">
@@ -84,10 +84,6 @@
               <option value="known">Known</option>
               <option value="ignored">Ignored</option>
             </select>
-          </label>
-          <label class="field">
-            <span class="field-label">Language</span>
-            <select id="words-language"></select>
           </label>
         </div>
         <div class="table-wrap"><table class="table" id="words-table"></table></div>
@@ -113,12 +109,8 @@
 
       <div class="panel">
         <h2 class="panel-title">New cards</h2>
-        <p class="help">For each language, choose where cards go and what each field of your note type receives.</p>
+        <p class="help">Choose where your {{ study.name }} cards go and what each field of your note type receives.</p>
         <div class="row">
-          <label class="field">
-            <span class="field-label">Language</span>
-            <select id="note-language"></select>
-          </label>
           <label class="field">
             <span class="field-label">Deck</span>
             <select id="note-deck"></select>
@@ -156,14 +148,10 @@
         </div>
         <p class="dim saved" id="translation-saved"></p>
         <h3 class="panel-subtitle">Models</h3>
-        <p class="help">Download a language's models ahead of time, so that its first card doesn't wait for them.
-          For Chinese, the models of the characters you learn (traditional, simplified or both) are downloaded.</p>
+        <p class="help">Download the {{ study.name }} models ahead of time, so that the first card doesn't wait for them.
+          {% if study.id == "zh" %}The models of the characters you learn (traditional, simplified or both) are downloaded.{% endif %}</p>
         <div class="row">
-          <label class="field">
-            <span class="field-label">Language</span>
-            <select id="model-language"></select>
-          </label>
-          <button type="button" class="btn" id="model-download">Download</button>
+          <button type="button" class="btn" id="model-download">Download the {{ study.name }} models</button>
         </div>
         <div class="model-progress" id="model-progress" hidden>
           <progress id="model-progress-bar" max="1"></progress>
@@ -174,7 +162,7 @@
 
       <div class="panel">
         <h2 class="panel-title">Word statuses from Anki</h2>
-        <p class="help">At each sync, MiningCat reads the cards of these decks: a word is <em>learning</em> while its
+        <p class="help">At each sync, MiningCat reads the cards of these {{ study.name }} decks: a word is <em>learning</em> while its
           card is young, and <em>known</em> once its interval reaches the number of days below. Words you marked
           known or ignored yourself are never changed. Cards made in MiningCat are always followed.</p>
         <div id="sync-sources"></div>
@@ -194,7 +182,7 @@
     <!-- ================= Cards ================= -->
     <section id="tab-cards" class="tab-panel" hidden>
       <div class="panel">
-        <h2 class="panel-title">Cards</h2>
+        <h2 class="panel-title">{{ study.name }} cards</h2>
         <p class="help">Cards waiting for Anki are sent at the next sync. If you can't use AnkiConnect (on another
           computer, or with AnkiDroid / AnkiMobile), export them to an .apkg file and open it with Anki: they use
           a “MiningCat” note type.</p>

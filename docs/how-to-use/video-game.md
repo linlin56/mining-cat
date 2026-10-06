@@ -47,6 +47,8 @@ The [capture key](#capture-key-or-continuous-capture) also needs the **Input Mon
 
 ## In the GUI
 
+![The converter's Video game / Screen share screen](../assets/screenshots/converter-game.png)
+
 1. The game is in the language you study: pick its **Variant** if there are several (and **Convert to**, for Chinese).
 2. Click **Select window…** and pick the game window:
     - **Linux**: GNOME's sharing dialog opens, pick the window there.

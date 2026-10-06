@@ -80,6 +80,18 @@ zensical serve
 
 Then open <http://localhost:8000>. When adding a page, add it to the `nav` in `zensical.toml`.
 
+### Screenshots
+
+The screenshots in `docs/assets/screenshots/` are taken by `tools/screenshots.py`. It runs the GUI from a temporary copy of `src/`, with demo data (a short story, a small dictionary, a generated video, a fake AnkiConnect), so your own library never shows up. Then it drives Chrome with [Playwright](https://playwright.dev/python/):
+
+```bash
+pip install playwright         # uses your installed Chrome, no browser download
+make screenshots               # every screenshot
+make screenshots ONLY=reader   # only the reader's
+```
+
+Retake them when a screen changes. To add one, add a step in `tools/screenshots.py` and reference the image from the page: `![What it shows](../assets/screenshots/<name>.png)`.
+
 ## License
 
 By contributing, you agree that your contributions are released under the project's [AGPL-3.0-or-later](https://github.com/linlin56/mining-cat/blob/main/LICENSE) license.

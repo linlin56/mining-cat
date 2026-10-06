@@ -2,6 +2,8 @@
 
 Select **Audiobook / Ebook** in the **Source** dropdown. You get one `.mp4` video per chapter in `output/final/`, with the audio and embedded subtitles.
 
+![The converter with an EPUB selected: its chapters are listed and ticked](../assets/screenshots/converter-audiobook.png)
+
 ## Pick a mode
 
 The **Mode** dropdown depends on what you have:

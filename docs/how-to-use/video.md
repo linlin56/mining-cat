@@ -4,6 +4,8 @@ Select **Video** in the **Source** dropdown. You get an `.mp4` with embedded sub
 
 ## Input source
 
+![The converter's Video screen](../assets/screenshots/converter-video.png)
+
 ### From the web
 
 Pick **From web** and paste the video **URL**. The platform is detected from the URL (the **Target website** dropdown is informational).

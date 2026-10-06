@@ -10,6 +10,8 @@ The player opens at <http://127.0.0.1:5050/player/>. It's also reachable from th
 
 ## Adding videos
 
+![The player's library](../assets/screenshots/player-library.png)
+
 | How | What you get |
 | --- | ------------ |
 | **+ Add videos**, or drop files on the page | A video from your computer. Drop its subtitles (`.srt`, `.vtt`, `.ass`) with it: `movie.mkv` takes `movie.srt`, `movie.ja.srt`… (with a single video, it takes every subtitle file dropped with it). |
@@ -32,7 +34,11 @@ Chrome plays the most formats (HEVC included on a Mac), so it rarely needs step 
 
 ## Watching and mining
 
+![A video with its subtitles over the picture and in the list beside it](../assets/screenshots/player-watch.png)
+
 Click a word in the subtitles, over the video or in the list: the video pauses and the [dictionary popup](mining.md#2-look-up-words-in-the-reader) opens, with the same keys as in the reader. **▶ Sentence** (or `P` in the popup) plays the line again in the video.
+
+![A word of the subtitles looked up in the player](../assets/screenshots/player-lookup.png)
 
 **+ Card** opens the card creator with:
 

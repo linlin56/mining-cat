@@ -6,6 +6,8 @@ MiningCat has its own dictionary popup and card creator, so you don't need to in
 
 Settings › **Dictionaries** › *Choose a .zip…*
 
+![Settings › Dictionaries](../assets/screenshots/settings-dictionaries.png)
+
 MiningCat reads dictionaries in [Yomitan's format](https://github.com/yomidevs/yomitan), so the dictionaries made for Yomitan work as they are: for example [CC-CEDICT](https://github.com/MarvNC/cc-cedict-yomitan/releases) (Mandarin, also in a zhuyin version), words.hk (Cantonese), [JMdict](https://github.com/yomidevs/jmdict-yomitan/releases) (Japanese), [Wiktionary dictionaries](https://github.com/yomidevs/kaikki-to-yomitan) (Korean and many more), and frequency lists.
 
 Character dictionaries work too: KANJIDIC (Japanese) or CC-CEDICT Hanzi (Chinese). The popup then has a **Characters** section under each word, with the readings and meanings of each kanji / hanzi.
@@ -20,6 +22,8 @@ Dictionaries are stored in `library/miningcat.db`, with your words and cards.
 ## 2. Look up words in the reader
 
 Click a word in the reader. The popup shows:
+
+![The dictionary popup: reading, status, definitions and the + Card button](../assets/screenshots/reader-lookup.png)
 
 - the word, its reading, and how it was conjugated when you clicked an inflected form (Japanese, Korean, French, Spanish…: 泣いていた gives 泣く « -て « -いる « -た, 먹었어요 gives 먹다 « -았/었 « -아/어요);
 - the definitions of every dictionary. A word has one entry per pronunciation (行 xíng and 行 háng are two entries, 行動 another one), whatever the dictionary and however it writes the reading: 行 xíng, 行 xing2 and 行 ㄒㄧㄥˊ are one entry. Its definitions are merged without repeats: "walk, OK" and "walk, go" give "walk, OK, go". Senses a dictionary tags differently (parts of speech, numbered senses) stay apart;
@@ -57,6 +61,10 @@ When two coloured words touch (Chinese, Japanese), every other one is a bit dark
 The text is split into words with your dictionaries, like the popup does: the longest word found from each character, conjugated forms included (泣いていた is the word 泣く). In Korean, the particles after a noun aren't coloured (친구와 is 친구 + 와). Words missing from your dictionaries (names, typos...) aren't coloured, and neither are rare or dialect words when a split into common words fits. Change a status in the popup, or make a card, and every occurrence of the word changes colour.
 
 In the reader's settings (Aa), *Colour words* can be turned *Off*. The colours don't change the page itself, so Yomitan or other tools work on it as usual.
+
+Your words and their statuses are listed in Settings › **Words**:
+
+![Settings › Words](../assets/screenshots/settings-languages.png)
 
 ## Comprehension and recommended sentences
 
@@ -96,6 +104,8 @@ The rank is also shown:
 
 **+ Card** opens the card creator, filled in with the word, its reading, the definition of the first dictionary, the sentence (the word in bold) and the book's title. Everything can be edited before sending:
 
+![The card creator: word, reading, definition, sentence with its readings and translation, audio](../assets/screenshots/card-creator.png)
+
 - tick other dictionaries to add their definitions;
 - add an image: *Choose a file*, drop one on the window, paste one with Ctrl+V, or paste a link;
 - add the word's audio or the sentence's audio the same way. The word's audio is filled in when an online recording exists (when there are several, pick another one under *Recording*); when there's none, the word is read by the voice of the settings, as below (pick another voice under *Word audio* and click **Generate**), and for a book [converted with its audio](reader.md#audio-of-a-converted-book), so is the sentence's;
@@ -116,6 +126,8 @@ Settings › **Anki**
 2. Click *Test the connection*.
 3. Under **New cards**, choose the deck and the note type of the language you study. MiningCat proposes what goes in each field of your note type from the field names (Hanzi → Word, Pinyin → Reading, Meaning → Definition…); change anything that doesn't fit, then *Save*.
 
+![Settings › Anki: connection, deck, note type and fields](../assets/screenshots/settings-anki.png)
+
 !!! tip "Zhuyin"
     CC-CEDICT only gives pinyin. A *Zhuyin* or *Bopomofo* field gets **Zhuyin (Mandarin, from the reading)**: MiningCat converts the pinyin (說話 shuōhuà → ㄕㄨㄛ ㄏㄨㄚˋ). The pronunciation is the dictionary's: for the few words read differently in Taiwan (垃圾...), check the card.
 
@@ -125,6 +137,8 @@ Settings › **Anki**
 ### When Anki is closed
 
 Cards wait in MiningCat (Settings › **Cards**, with a counter) and are sent at the next sync. You can also export them as an `.apkg` file and open it in Anki, AnkiDroid or AnkiMobile. Exported cards use a note type called “MiningCat”.
+
+![Settings › Cards: a card waiting for Anki](../assets/screenshots/settings-cards.png)
 
 ## 5. Word statuses from Anki
 

@@ -12,6 +12,8 @@ The reader opens at <http://127.0.0.1:5050/reader/>. It's also reachable from th
 
 Click **Add books** or drop files on the page. Supported formats:
 
+![The reader's library](../assets/screenshots/reader-library.png)
+
 | Format          | Notes                                                                                                                        |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | EPUB            | Chapters, table of contents, images, furigana (ruby), notes and cross references. DRM-protected files can't be opened.       |
@@ -39,6 +41,8 @@ Limits: no PDF yet, and the OCR reads text over busy backgrounds or sound effect
 
 ## Reading
 
+![A chapter in the reader, words coloured by status](../assets/screenshots/reader-reading.png)
+
 | Action                 | How                                                                                     |
 | ---------------------- | --------------------------------------------------------------------------------------- |
 | Turn pages             | `←` `→`, `Space`, `Page Up/Down`, the mouse wheel, a click in the side margins, or a swipe |
@@ -49,9 +53,13 @@ Limits: no PDF yet, and the OCR reads text over busy backgrounds or sound effect
 
 In vertical text the book reads from right to left, so `←` goes to the next page.
 
+![The contents panel (T)](../assets/screenshots/reader-contents.png)
+
 Clicks on the text itself don't turn pages: they look words up (this can be changed in the settings).
 
 ## Settings
+
+![The reader's settings panel (Aa)](../assets/screenshots/reader-settings.png)
 
 Per book:
 

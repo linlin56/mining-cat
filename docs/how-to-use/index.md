@@ -42,7 +42,11 @@ MiningCat starts a small local server and opens the GUI in your browser at <http
 
 The home page first asks which language you study. Every screen then only shows what belongs to it: the converter's variants, the books of the reader, the videos of the player, and in the settings the dictionaries, words, Anki decks and cards of that language. Change it at any time with the language badge in the header of every page, which brings you back to the home page.
 
+![The home page asks which language you study](../assets/screenshots/home-language-picker.png)
+
 From the home page, open the **Converter**, the [Reader](reader.md), the [Player](player.md) or the **Settings**.
+
+![The home page, once the language is chosen: Converter, Reader, Player and Settings](../assets/screenshots/home-hub.png)
 
 You can drag and drop files on the audio, book and video panels. The files you pick are copied into the project's `sources/` folder, like before.
 

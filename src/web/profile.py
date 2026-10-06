@@ -1,9 +1,3 @@
-# profile.py - The language the user studies, chosen on the home page. Every screen then only shows
-# what belongs to it: the converter's variants, the books and videos, dictionaries, words, Anki setup, cards.
-#
-# It's a mining language key ("zh", "yue", "ja"...), saved in the database's settings. The converter's
-# languages (language.Language) are variants of it: Mandarin is Taiwan (traditional) or China (simplified).
-
 from flask import Blueprint, jsonify, redirect, request
 
 from mining import db

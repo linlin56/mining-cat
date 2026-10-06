@@ -1,6 +1,6 @@
 # Video player
 
-MiningCat has a video player made for mining, in the spirit of [asbplayer](https://github.com/killergerbah/asbplayer): the subtitles are shown over the video and in a list beside it, a click on a word looks it up in your dictionaries, and **+ Card** makes an Anki card with a screenshot and the line's audio. The subtitles are plain text in the page, so [Yomitan](https://github.com/yomidevs/yomitan) works on them too if you prefer it.
+MiningCat has a video player made for mining: the subtitles are shown over the video and in a list beside it, a click on a word looks it up in your dictionaries, and **+ Card** makes an Anki card with a screenshot and the line's audio. The subtitles are plain text in the page, so [Yomitan](https://github.com/yomidevs/yomitan) works on them too if you prefer it.
 
 ```bash
 make player
@@ -38,7 +38,7 @@ Click a word in the subtitles, over the video or in the list: the video pauses a
 
 - the whole subtitle line as the sentence, the word in bold;
 - a **screenshot** of the video at that line, without the subtitles drawn on it: the picture on screen when the line is the one shown, else the middle of the line you clicked (also with several lines selected);
-- the line's **audio**, cut from the video (the audio track you're listening to), from the start to the end of the line, with a margin of 200 ms before and after (set in **Aa** › *Cards*);
+- the line's **audio**, cut from the video (the audio track you're listening to), from the start to the end of the line, with a margin of 200 ms before and after (set in **Aa** › *Cards*). When the subtitles' timing isn't right, adjust it on the **waveform** under *Sentence audio*: drag either edge (the edge you moved is played), drag across the waveform for a new span, or click it to listen from there. A focused edge moves by 50 ms with ← → (250 ms with Shift), and Space plays the span. The dotted lines are the subtitles' own timing, **More context** shows 2.5 s more on each side, and **Reset** goes back to the subtitles with their margins. The card gets exactly the span you chose;
 - the video's title and the line's time as the source, e.g. `My video (0:12:34)`.
 
 Subtitle lines are often only part of a sentence. Before looking the word up, select the sentence's lines in the list with the ○ in front of them (the lines in between come along; click the first or last one again to remove it). Then click a word in one of them, in the list or over the video: the card gets all the lines as its sentence, and one piece of audio from the first line to the last. The selection is shown above the list (and around the subtitle over the video); it's cleared once the card is made, or with **Clear** / `Esc`.
@@ -58,6 +58,7 @@ Click a line's time in the list to jump to it. The list follows the video; scrol
 | `S` | Subtitles shown, blurred (hover to read) or hidden |
 | `P` | Pause at the end of each subtitle |
 | `L` | Show / hide the subtitle list |
+| `N` | Go to the next recommended line (i+1, see [comprehension and recommended sentences](mining.md#comprehension-and-recommended-sentences)) |
 | `F` | Fullscreen, with the subtitles |
 | `Esc` | Clear the lines selected for the card |
 

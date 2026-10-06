@@ -5,7 +5,9 @@
 // a popup with the definitions, the word's status and a "+ Card" button that opens the card creator.
 // Optional: hasAudio(), sentenceAudio(text, node) -> {url, start, end} and sentenceClip(text, node) -> {data, name}
 // when the text has audio (a book converted by MiningCat): the popup can then play the sentence, and
-// the card creator gets the sentence's audio. playSentence(text, node) plays it instead of the popup's own player
+// the card creator gets the sentence's audio. With sentenceRange(text, node) -> {start, end, before, after} and
+// audioSpan(start, end, format) -> {data, name} too (a video), the card creator shows the sentence's waveform
+// to choose the span of its audio. playSentence(text, node) plays it instead of the popup's own player
 // (e.g. in the video). getImage(node) -> {data, name} (or a promise of it): an image for the card, from
 // the text node that was looked up (e.g. the screenshot of a video game capture). blockSentence: the sentence
 // is the whole block that was clicked (a subtitle), not the sentence around the word. onLookup(): a word was
@@ -171,8 +173,10 @@
   // Two touching words of the same colour would read as one: every other one gets the "-alt" shade.
   const COLOUR_HIGHLIGHTS = COLOURED.flatMap((status) => [`mc-${status}`, `mc-${status}-alt`]);
   // One set per coloured area (a reader chapter; the subtitle over a video and the subtitle list...), by key:
-  // key -> {language, words: [{headword, form, status}], tokens: [{index, start, end, range}]}
+  // key -> {language, words: [{headword, form, status}], tokens: [{index, start, end, range}], sentences: [[start, end]],
+  //         seg, paint}
   const colourSets = new Map();
+  const analysisListeners = [];  // fn(key): the words of a set, or their statuses, changed (see analyse())
   const colourTokens = new Map();  // key -> number of the latest request
 
   // Text of `root` sent for segmentation: its text nodes (ruby annotations excluded), with a line break
@@ -209,6 +213,7 @@
     if (!window.CSS || !CSS.highlights || !window.Highlight) return;
     const groups = Object.fromEntries(COLOUR_HIGHLIGHTS.map((name) => [name, []]));
     for (const colours of colourSets.values()) {
+      if (!colours.paint) continue;
       let previous = null;  // {status, end, alt} of the last coloured word
       for (const token of colours.tokens) {
         const status = colours.words[token.index].status;
@@ -229,11 +234,19 @@
       colourSets.delete(k);
     }
     paintColours();
+    for (const k of keys) notifyAnalysis(k);
+  }
+
+  function notifyAnalysis(key) {
+    for (const fn of analysisListeners) {
+      try { fn(key); } catch (err) { console.error(err); }
+    }
   }
 
   // Colours the words of `root` (e.g. a reader chapter) by status. Words missing from the dictionaries stay as they are.
-  // Areas coloured under different keys keep their colours side by side.
-  async function colourWords(root, language, key = "main") {
+  // Areas coloured under different keys keep their colours side by side. paint: false only reads the words (for
+  // analyse()) when the user turned the colours off.
+  async function colourWords(root, language, key = "main", { paint = true } = {}) {
     clearColours(key);
     if (!window.CSS || !CSS.highlights || !window.Highlight) return;
     const token = colourTokens.get(key);
@@ -255,22 +268,91 @@
       range.setEnd(b.node, b.at);
       tokens.push({ index, start, end: start + length, range });
     }
-    colourSets.set(key, { language: data.language, words: data.words, tokens });
+    colourSets.set(key, { language: data.language, words: data.words, tokens, sentences: data.sentences || [], seg, paint,
+      frequency: data.frequency || null });
     paintColours();
+    notifyAnalysis(key);
   }
+
+  // ------------------------------------------------------------ comprehension (same rule as mining/comprehension.py)
+
+  // Comprehension of a coloured area, from the statuses of its words (the user's cards): {known, learning, new, total,
+  // percent, units: [{start, end, range, element, target, recommended}]}. Units are the sentences of the text, or with
+  // `unitOf(textNode) -> element`, the elements holding the words (a subtitle line). A unit is recommended (i+1) when
+  // exactly one of its words isn't known and that word is new: `target` is that word ({headword, form, status}),
+  // `targetRange` where it first is in the unit. With a frequency list, only the units whose new word ranks within its
+  // limit are recommended (`i1` is set for every unit with one new word): `frequency` is {dictionary, known, limit}.
+  function analyse(key, unitOf) {
+    const colours = colourSets.get(key);
+    if (!colours) return null;
+    const totals = { known: 0, learning: 0, new: 0 };
+    const units = [];
+    if (unitOf) {
+      const byElement = new Map();
+      for (const token of colours.tokens) {
+        const element = unitOf(token.range.startContainer);
+        if (!element) continue;
+        if (!byElement.has(element)) {
+          const unit = { element, tokens: [] };
+          byElement.set(element, unit);
+          units.push(unit);
+        }
+        byElement.get(element).tokens.push(token);
+      }
+    } else {
+      let k = 0;
+      for (const [start, end] of colours.sentences) {
+        const unit = { start, end, tokens: [] };
+        while (k < colours.tokens.length && colours.tokens[k].start < end) {
+          if (colours.tokens[k].start >= start) unit.tokens.push(colours.tokens[k]);
+          k++;
+        }
+        if (!unit.tokens.length) continue;
+        const a = nodeAt(colours.seg, start), b = nodeAt(colours.seg, end);
+        unit.range = document.createRange();
+        unit.range.setStart(a.node, a.at);
+        unit.range.setEnd(b.node, b.at);
+        units.push(unit);
+      }
+    }
+    for (const token of colours.tokens) {
+      const status = colours.words[token.index].status;
+      if (status in totals) totals[status]++;
+    }
+    for (const unit of units) {
+      const missing = new Map();
+      for (const token of unit.tokens) {
+        const word = colours.words[token.index];
+        if ((word.status === "new" || word.status === "learning") && !missing.has(word.form)) missing.set(word.form, { word, token });
+      }
+      const only = missing.size === 1 ? [...missing.values()][0].word : null;
+      unit.target = only;
+      unit.targetRange = only ? [...missing.values()][0].token.range : null;
+      unit.i1 = Boolean(only && only.status === "new");
+      const limit = colours.frequency ? colours.frequency.limit : null;
+      unit.recommended = unit.i1 && (limit === null || (only.rank !== null && only.rank !== undefined && only.rank <= limit));
+      delete unit.tokens;
+    }
+    const total = totals.known + totals.learning + totals.new;
+    return { ...totals, total, percent: total ? (100 * totals.known) / total : null, units, language: colours.language,
+      frequency: colours.frequency || null };
+  }
+
+  function onAnalysis(fn) { analysisListeners.push(fn); }
 
   // A status changed in the popup or through a new card: recolour that word everywhere in the text.
   function updateColour(form, status) {
-    let changed = false;
-    for (const colours of colourSets.values()) {
+    const changed = [];
+    for (const [key, colours] of colourSets) {
       for (const word of colours.words) {
         if (word.form === form && word.status !== status) {
           word.status = status;
-          changed = true;
+          if (!changed.includes(key)) changed.push(key);
         }
       }
     }
-    if (changed) paintColours();
+    if (changed.length) paintColours();
+    for (const key of changed) notifyAnalysis(key);
   }
 
   // ------------------------------------------------------------ dictionary content
@@ -388,6 +470,28 @@
     return wordAudioCache.get(key);
   }
 
+  // A sentence's translation, made once. `prefetch`: ahead of time, at the lookup (never downloads a model); the card
+  // creator asks again when that failed.
+  const translationCache = new Map();
+  function translateSentence(language, text, prefetch = false) {
+    const key = `${language}|${text}`;
+    if (!translationCache.has(key)) {
+      if (translationCache.size >= 20) translationCache.delete(translationCache.keys().next().value);
+      const result = api("/api/translate", { language, text, prefetch }).then((d) => d.translation);
+      result.catch(() => translationCache.delete(key));
+      translationCache.set(key, result);
+    }
+    return translationCache.get(key);
+  }
+
+  // What the card creator would wait for, asked while the popup is read: the card is complete when it opens.
+  function prefetchCard(language, entries, sentence, node) {
+    if (entries.length) wordAudio(entries[0], language).catch(() => {});
+    const text = `${sentence.before}${sentence.word}${sentence.after}`;
+    if (sentence.text && text.trim()) translateSentence(language, text, true).catch(() => {});
+    prefetchWave(sentence, node);
+  }
+
   // Plays the word's recordings in turn, one per click.
   async function playWord(entry, language, button) {
     button.disabled = true;
@@ -496,6 +600,25 @@
     return el("div", { class: "mc-head" }, ...parts);
   }
 
+  // "#1,234" for a word's rank in the frequency list, highlighted when it's frequent enough to be recommended now.
+  function frequencyText(entry) {
+    const list = entry.frequency_list;
+    if (!list) return null;
+    if (!entry.frequency_rank) return { text: "Not in your frequency list", frequent: false, title: `Not in “${list.dictionary.title}”: a rare word` };
+    const frequent = entry.frequency_rank <= list.limit;
+    return {
+      text: `#${entry.frequency_rank.toLocaleString()}`, frequent,
+      title: `Rank in “${list.dictionary.title}” (1 = most frequent). You know ${list.known.toLocaleString()} of its words: `
+        + `sentences are recommended for words up to #${list.limit.toLocaleString()}`
+        + (frequent ? ", like this one." : ", this one is further down the list."),
+    };
+  }
+
+  function frequencyChip(entry) {
+    const f = frequencyText(entry);
+    return f ? el("span", { class: `mc-chip mc-freq${f.frequent ? " mc-freq-now" : ""}`, title: f.title, text: f.frequent ? `★ ${f.text}` : f.text }) : null;
+  }
+
   function renderEntries(data, language) {
     const box = ensurePopup();
     box.replaceChildren();
@@ -524,9 +647,14 @@
         meta.append(el("span", { class: "mc-infl", title: entry.inflections.map((i) => `${i.name}: ${i.description || ""}`).join("\n") },
           `« ${entry.inflections.map((i) => i.name).join(" « ")}`));
       }
-      for (const f of entry.frequencies.slice(0, 3)) meta.append(el("span", { class: "mc-chip", title: f.dictionary, text: `${f.dictionary.split(/[\s[(]/)[0]} ${f.display}` }));
-      if (entry.frequencies.length > 3) {
-        const rest = entry.frequencies.slice(3);
+      // The rank in the language's frequency list first (see frequency.py), then the other frequency dictionaries.
+      entry.frequency_list = data.frequency || null;
+      const chip = frequencyChip(entry);
+      if (chip) meta.append(chip);
+      const others = entry.frequencies.filter((f) => !data.frequency || f.dictionary !== data.frequency.dictionary.title);
+      for (const f of others.slice(0, 3)) meta.append(el("span", { class: "mc-chip", title: f.dictionary, text: `${f.dictionary.split(/[\s[(]/)[0]} ${f.display}` }));
+      if (others.length > 3) {
+        const rest = others.slice(3);
         meta.append(el("span", { class: "mc-chip", title: rest.map((f) => `${f.dictionary}: ${f.display}`).join("\n"), text: `+${rest.length}` }));
       }
       for (const p of entry.pronunciations || []) meta.append(pronunciation(p, entry, language));
@@ -654,6 +782,7 @@
     placePopup(rect);
     popup.scrollTop = 0;
     if (options.onLookup) options.onLookup();
+    prefetchCard(data.language, data.entries, current.sentence, current.node);
   }
 
   // Lookup of a word clicked inside a definition (cross reference).
@@ -714,7 +843,8 @@
       preview.replaceChildren();
       if (!state.value) return;
       const src = state.value.data || state.value.url;
-      preview.append(kind === "image" ? el("img", { src, alt: "" }) : el("audio", { src, controls: true }),
+      preview.append(state.value.wave ? el("span", { class: "mc-hint", text: "The span chosen on the waveform." })
+        : kind === "image" ? el("img", { src, alt: "" }) : el("audio", { src, controls: true }),
         el("button", { type: "button", class: "mc-media-remove", text: "Remove", onclick: () => { state.value = null; url.value = ""; render(); } }));
     };
     const set = async (file) => {
@@ -751,14 +881,16 @@
     return { zone, state, set, setValue, preview };
   }
 
-  // A voice reading the card's sentence (Edge-TTS), for sentences without audio. The voice set in the
-  // settings is picked first; ready resolves to it ("" when sentences aren't read automatically).
+  // A voice reading the card's sentence (Edge-TTS), for sentences without audio (and words without a recording).
+  // The voice set in the settings is picked first; ready resolves to it ("" when sentences aren't read automatically).
   function ttsRow(language, getText, slot) {
     const select = el("select", { class: "mc-tts-voice", "aria-label": "Voice", disabled: true });
     const button = el("button", { type: "button", class: "mc-btn", text: "Generate", disabled: true });
     const row = el("div", { class: "mc-media-row mc-tts" }, el("span", { class: "mc-label", text: "Read by" }), select, button);
+    let available = false;
     const ready = api(`/api/tts/voices?language=${encodeURIComponent(language)}`).then(({ voices, default: fallback, chosen }) => {
       if (!voices.length) { row.hidden = true; return ""; }
+      available = true;
       for (const v of voices) select.append(el("option", { value: v.id, text: v.label }));
       select.value = chosen || fallback;
       select.disabled = button.disabled = false;
@@ -766,7 +898,7 @@
     }).catch(() => { row.hidden = true; return ""; });
     const generate = async () => {
       const text = getText().trim();
-      if (!text) return toast("There's no sentence to read.", "info");
+      if (!text) return toast("There's nothing to read.", "info");
       button.disabled = true;
       button.textContent = "Generating…";
       try {
@@ -780,7 +912,416 @@
       }
     };
     button.addEventListener("click", generate);
-    return { row, ready, generate };
+    return { row, ready, generate, available: () => available };
+  }
+
+  // The span of the sentence's audio, chosen on its waveform (a video): the lines with the settings' margins to begin
+  // with, and some context around them. Drag an edge (or a new span), or move a focused edge with ← →; the moved edge
+  // is played. A click plays from there. range: {start, end, before, after} (s). The card's audio is cut from the
+  // chosen span only when the card is made (the slot holds {wave: true} until then).
+  const WAVE_CONTEXT_S = 2.5;
+  const WAVE_MAX_S = 170;
+  const WAVE_MIN_SPAN_S = 0.1;
+  const WAVE_EDGE_PLAY_S = 1.2;
+  const WAVE_GRAB_PX = 10;
+
+  function waveSpans(range) {
+    const initial = { start: Math.max(0, range.start - range.before), end: range.end + range.after };
+    return { initial, win: { start: Math.max(0, initial.start - WAVE_CONTEXT_S), end: initial.end + WAVE_CONTEXT_S } };
+  }
+
+  // The audio of a span, fetched once: from the lookup on, so that it's ready when the card creator opens.
+  // {blob} plays it, {buffer} (decoded) draws it.
+  const waveCache = new Map();
+  function waveAudio(start, end) {
+    const key = `${start.toFixed(3)}-${end.toFixed(3)}`;
+    if (!waveCache.has(key)) {
+      if (waveCache.size >= 6) waveCache.delete(waveCache.keys().next().value);
+      const decoded = options.audioSpan(start, end, "wav")
+        .then((wav) => fetch(wav.data)).then((res) => res.blob())
+        .then(async (blob) => ({ blob, buffer: await new OfflineAudioContext(1, 1, 16000).decodeAudioData(await blob.arrayBuffer()) }));
+      decoded.catch(() => waveCache.delete(key));
+      waveCache.set(key, decoded);
+    }
+    return waveCache.get(key);
+  }
+
+  function hasWave() {
+    return Boolean(options.sentenceRange && options.audioSpan && options.hasAudio && options.hasAudio() && window.OfflineAudioContext);
+  }
+
+  function prefetchWave(sentence, node) {
+    if (!sentence.text || !node || !hasWave()) return;
+    const range = options.sentenceRange(sentence.text, node);
+    if (!range) return;
+    const { win } = waveSpans(range);
+    waveAudio(win.start, win.end).catch(() => {});
+  }
+
+  function waveEditor(range, slot) {
+    const { initial, win } = waveSpans(range);
+    const sel = { ...initial };
+    let buffer = null, layers = null, colors = null, playing = null, keyTimer = null, frame = 0;
+    // Played by an <audio>, as the video is: Safari's Web Audio takes seconds to start.
+    let media = null;
+
+    const canvas = el("canvas", { class: "mc-wave-canvas", "aria-hidden": "true" });
+    const handle = (label) => el("div", { class: "mc-wave-handle", role: "slider", tabindex: "0", "aria-label": label });
+    const startHandle = handle("Start of the sentence's audio");
+    const endHandle = handle("End of the sentence's audio");
+    const box = el("div", { class: "mc-wave-box loading", title: "Drag the edges, or drag a new span. A click plays from there." },
+      canvas, startHandle, endHandle);
+    const message = el("p", { class: "mc-hint", text: "Loading the waveform…" });
+    const play = el("button", { type: "button", class: "mc-btn", text: "▶ Play", disabled: true });
+    const info = el("span", { class: "mc-wave-info" });
+    const reset = el("button", { type: "button", class: "mc-btn", text: "Reset", disabled: true, title: "The subtitles' span with the settings' margins" });
+    const wider = el("button", { type: "button", class: "mc-btn", text: "More context", disabled: true, title: `${WAVE_CONTEXT_S} s more on each side` });
+    const root = el("div", { class: "mc-wave" }, box, message, el("div", { class: "mc-media-row mc-wave-row" }, play, info, reset, wider));
+
+    const duration = () => (buffer ? buffer.duration : win.end - win.start);
+    const share = (t) => (t - win.start) / duration();
+    const timeAt = (clientX, rect) => win.start + Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) * duration();
+    const clock = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, "0")}`;
+
+    // The waveform drawn once in each colour (on resize); a frame only copies them, the chosen span from the bright one.
+    function paintLayers() {
+      const { width, height } = canvas;
+      layers = null;
+      if (!buffer || !width) return;
+      const css = getComputedStyle(box);
+      colors = {
+        accent: css.getPropertyValue("--accent").trim() || "#ff6b6b",
+        dim: css.getPropertyValue("--dim").trim() || "#888",
+        fg: css.getPropertyValue("--fg").trim() || "#000",
+      };
+      const data = buffer.getChannelData(0);
+      const peaks = new Float32Array(width);
+      let top = 0;
+      for (let x = 0; x < width; x++) {
+        const from = Math.floor((x * data.length) / width), to = Math.floor(((x + 1) * data.length) / width);
+        let peak = 0;
+        for (let i = from; i < to; i++) { const v = data[i] < 0 ? -data[i] : data[i]; if (v > peak) peak = v; }
+        peaks[x] = peak;
+        if (peak > top) top = peak;
+      }
+      const scale = top > 0 ? (height / 2 - 2) / top : 0;  // quiet audio fills the height too
+      layers = {};
+      for (const name of ["dim", "accent"]) {
+        const layer = document.createElement("canvas");
+        layer.width = width;
+        layer.height = height;
+        const g = layer.getContext("2d");
+        g.fillStyle = colors[name];
+        g.beginPath();
+        for (let x = 0; x < width; x++) {
+          const h = Math.max(0.5, peaks[x] * scale);
+          g.rect(x, height / 2 - h, 1, h * 2);
+        }
+        g.fill();
+        layers[name] = layer;
+      }
+    }
+
+    function draw(head = null) {
+      const g = canvas.getContext("2d");
+      const { width, height } = canvas;
+      g.clearRect(0, 0, width, height);
+      if (layers) {
+        const x0 = share(sel.start) * width, x1 = share(sel.end) * width;
+        g.globalAlpha = 0.14;
+        g.fillStyle = colors.accent;
+        g.fillRect(x0, 0, x1 - x0, height);
+        g.globalAlpha = 1;
+        g.drawImage(layers.dim, 0, 0);
+        g.save();
+        g.beginPath();
+        g.rect(x0, 0, x1 - x0, height);
+        g.clip();
+        g.drawImage(layers.accent, 0, 0);
+        g.restore();
+        // the subtitles' own span
+        g.strokeStyle = colors.dim;
+        g.lineWidth = devicePixelRatio;
+        g.setLineDash([3 * devicePixelRatio, 3 * devicePixelRatio]);
+        g.beginPath();
+        for (const t of [range.start, range.end]) {
+          const x = Math.round(share(t) * width) + 0.5;
+          g.moveTo(x, 0);
+          g.lineTo(x, height);
+        }
+        g.stroke();
+        g.setLineDash([]);
+        if (head !== null) {
+          g.strokeStyle = colors.fg;
+          g.beginPath();
+          g.moveTo(share(head) * width, 0);
+          g.lineTo(share(head) * width, height);
+          g.stroke();
+        }
+      }
+      startHandle.style.left = `${share(sel.start) * 100}%`;
+      endHandle.style.left = `${share(sel.end) * 100}%`;
+      for (const [h, t] of [[startHandle, sel.start], [endHandle, sel.end]]) {
+        h.setAttribute("aria-valuenow", t.toFixed(2));
+        h.setAttribute("aria-valuetext", clock(t));
+      }
+      info.textContent = `${clock(sel.start)} – ${clock(sel.end)} · ${(sel.end - sel.start).toFixed(1)} s`;
+    }
+
+    // At most one frame per screen refresh while dragging.
+    function redraw() {
+      if (frame || playing) return;  // while playing, the playhead's loop draws
+      frame = requestAnimationFrame(() => { frame = 0; draw(); });
+    }
+
+    function resize() {
+      const rect = box.getBoundingClientRect();
+      if (!rect.width) return;
+      canvas.width = Math.round(rect.width * devicePixelRatio);
+      canvas.height = Math.round(rect.height * devicePixelRatio);
+      paintLayers();
+      draw();
+    }
+    new ResizeObserver(resize).observe(box);
+
+    function stop() {
+      if (!playing) return;
+      cancelAnimationFrame(playing.frame);
+      playing = null;
+      media.pause();
+      play.textContent = "▶ Play";
+      draw();
+    }
+
+    // The <audio> starts at the window's start; it's stopped at `to` by the playhead's loop.
+    function playSpan(from, to) {
+      stop();
+      if (!media || to - from <= 0.02) return;
+      const zero = win.start;
+      const run = { frame: 0 };
+      playing = run;
+      play.textContent = "■ Stop";
+      media.currentTime = from - zero;
+      media.play().catch(() => { if (playing === run) stop(); });
+      const tick = () => {
+        if (playing !== run) return;
+        if (!root.isConnected) return stop();
+        const head = zero + media.currentTime;
+        if (head >= to || media.ended) return stop();
+        draw(Math.max(from, head));
+        run.frame = requestAnimationFrame(tick);
+      };
+      tick();
+    }
+
+    function release() {
+      stop();
+      if (media) URL.revokeObjectURL(media.src);
+      media = null;
+    }
+
+    let closed = false;
+    function dispose() {
+      closed = true;
+      release();
+    }
+
+    // The span was changed: the card takes it (again, if a file or a voice had replaced it), and its moved edge is played.
+    function changed(edge) {
+      if (!slot.state.value || !slot.state.value.wave) slot.setValue({ wave: true });
+      if (edge === "start") playSpan(sel.start, Math.min(sel.end, sel.start + WAVE_EDGE_PLAY_S));
+      else if (edge === "end") playSpan(Math.max(sel.start, sel.end - WAVE_EDGE_PLAY_S), sel.end);
+      else playSpan(sel.start, sel.end);
+    }
+
+    function setEdge(edge, t) {
+      if (edge === "start") sel.start = Math.max(win.start, Math.min(t, sel.end - WAVE_MIN_SPAN_S));
+      else sel.end = Math.min(win.start + duration(), Math.max(t, sel.start + WAVE_MIN_SPAN_S));
+    }
+
+    function edgeNear(clientX, rect) {
+      const dStart = Math.abs(share(sel.start) * rect.width - (clientX - rect.left));
+      const dEnd = Math.abs(share(sel.end) * rect.width - (clientX - rect.left));
+      if (Math.min(dStart, dEnd) > WAVE_GRAB_PX) return null;
+      return dStart < dEnd ? "start" : "end";
+    }
+
+    // Pointer: near an edge drags it, elsewhere drags a new span; a click without moving plays from there.
+    box.addEventListener("pointermove", (e) => {
+      if (buffer && !e.buttons) box.style.cursor = edgeNear(e.clientX, box.getBoundingClientRect()) ? "ew-resize" : "";
+    });
+    box.addEventListener("pointerdown", (e) => {
+      if (!buffer || e.button !== 0) return;
+      e.preventDefault();
+      const rect = box.getBoundingClientRect();
+      const anchor = timeAt(e.clientX, rect);
+      const edge = e.target === startHandle ? "start" : e.target === endHandle ? "end" : edgeNear(e.clientX, rect);
+      if (edge) {
+        stop();
+        (edge === "start" ? startHandle : endHandle).focus();  // then ← → fine-tune it
+      }
+      let moved = false;
+      box.setPointerCapture(e.pointerId);
+      const move = (ev) => {
+        if (!edge && !moved && Math.abs(ev.clientX - e.clientX) < 3) return;
+        moved = true;
+        const t = timeAt(ev.clientX, rect);
+        if (edge) setEdge(edge, t);
+        else {
+          stop();
+          sel.start = Math.min(anchor, t);
+          sel.end = Math.min(win.start + duration(), Math.max(anchor, t, sel.start + WAVE_MIN_SPAN_S));
+        }
+        redraw();
+      };
+      const up = () => {
+        box.removeEventListener("pointermove", move);
+        box.removeEventListener("pointerup", up);
+        box.removeEventListener("pointercancel", up);
+        if (moved) changed(edge);
+        else playSpan(anchor, anchor < sel.end ? sel.end : win.start + duration());
+      };
+      box.addEventListener("pointermove", move);
+      box.addEventListener("pointerup", up);
+      box.addEventListener("pointercancel", up);
+    });
+
+    // Keyboard on an edge: ← → move it by 50 ms (Shift: 250 ms), Space or Enter plays the span.
+    for (const [h, edge] of [[startHandle, "start"], [endHandle, "end"]]) {
+      h.addEventListener("keydown", (e) => {
+        if (!buffer) return;
+        const step = e.shiftKey ? 0.25 : 0.05;
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          stop();
+          setEdge(edge, sel[edge] + (e.key === "ArrowLeft" ? -step : step));
+          redraw();
+          clearTimeout(keyTimer);
+          keyTimer = setTimeout(() => changed(edge), 350);
+        } else if (e.key === " " || e.key === "Enter") {
+          if (playing) stop(); else playSpan(sel.start, sel.end);
+        } else return;
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    }
+
+    play.addEventListener("click", () => (playing ? stop() : playSpan(sel.start, sel.end)));
+    reset.addEventListener("click", () => { Object.assign(sel, initial); draw(); changed(null); });
+
+    // The waveform: the picture already there stays until the wider one is decoded.
+    async function load() {
+      wider.disabled = true;
+      try {
+        const decoded = await waveAudio(win.start, win.end);
+        if (closed) return false;
+        release();
+        buffer = decoded.buffer;
+        media = new Audio(URL.createObjectURL(decoded.blob));
+        media.preload = "auto";
+        media.load();
+        sel.start = Math.max(win.start, sel.start);
+        sel.end = Math.min(win.start + duration(), Math.max(sel.end, sel.start + WAVE_MIN_SPAN_S));
+        message.hidden = true;
+        box.classList.remove("loading");
+        for (const h of [startHandle, endHandle]) {
+          h.setAttribute("aria-valuemin", win.start.toFixed(2));
+          h.setAttribute("aria-valuemax", (win.start + duration()).toFixed(2));
+        }
+        play.disabled = reset.disabled = false;
+        paintLayers();
+        draw();
+      } catch (err) {
+        if (buffer) return toast(err.message, "error");
+        message.textContent = `No waveform: ${err.message}`;
+        box.hidden = true;
+        return false;
+      } finally {
+        // no more context at the start of the video, or past its end
+        const atEdges = buffer && win.start === 0 && buffer.duration < win.end - win.start - 0.05;
+        wider.disabled = !buffer || atEdges || win.end - win.start + 2 * WAVE_CONTEXT_S > WAVE_MAX_S;
+      }
+      return true;
+    }
+
+    wider.addEventListener("click", () => {
+      win.start = Math.max(0, win.start - WAVE_CONTEXT_S);
+      win.end += WAVE_CONTEXT_S;
+      load();
+    });
+
+    draw();
+    // loaded: whether the waveform could be shown; cut(): the card's audio, cut from the chosen span
+    return { root, stop, dispose, loaded: load(), cut: () => options.audioSpan(sel.start, sel.end) };
+  }
+
+  // The reading of every word of the card's sentence (Mandarin), chosen from the dictionaries by the context.
+  // A click on a word the dictionaries read several ways picks its next reading. field() is the sentence with
+  // the reading of every word in brackets (你[ni3]<b>好[hao3]</b>), "" while the sentence was edited and its readings aren't back yet.
+  function sentenceReadings(language, sentenceBox, getReading) {
+    const box = el("div", { class: "mc-readings", lang: displayLang(language), "data-empty": "Reading the sentence…" });
+    const picked = new Map();  // "start:text" -> reading picked by the user
+    let data = null, timer = 0, request = 0, stale = true;
+    const key = (t) => `${t.start}:${t.text}`;
+    const pinyinOf = (t) => picked.get(key(t)) || t.pinyin;
+
+    const render = () => {
+      box.replaceChildren();
+      if (!data || !data.tokens.length) return;
+      let pos = 0;
+      for (const t of data.tokens) {
+        if (t.start > pos) box.append(data.text.slice(pos, t.start));
+        const pinyin = pinyinOf(t);
+        const choice = t.choices.find((c) => c.pinyin === pinyin);
+        let node = el("ruby", {}, t.text, el("rt", { text: choice ? choice.display : pinyin }));
+        if (t.choices.length > 1) {
+          node = el("button", { type: "button", class: picked.has(key(t)) ? "mc-changed" : null,
+            title: `${t.choices.map((c) => c.display).join(" · ")}: click for the next reading` }, node);
+          node.addEventListener("click", () => {
+            const i = t.choices.findIndex((c) => c.pinyin === pinyin);
+            const next = t.choices[(i + 1) % t.choices.length].pinyin;
+            if (next === t.pinyin) picked.delete(key(t)); else picked.set(key(t), next);
+            render();
+          });
+        }
+        box.append(t.target ? el("b", {}, node) : node);
+        pos = t.end;
+      }
+      if (pos < data.text.length) box.append(data.text.slice(pos));
+    };
+
+    const refresh = async () => {
+      const id = ++request;
+      try {
+        const result = await api("/api/sentence/readings", { language, sentence: sentenceBox.innerHTML, reading: getReading() });
+        if (id !== request) return;
+        data = result;
+        stale = false;
+        box.dataset.empty = "No sentence";
+      } catch (err) {
+        if (id !== request) return;
+        data = null;
+        box.dataset.empty = err.message;
+      }
+      render();
+    };
+    const schedule = () => { stale = true; clearTimeout(timer); timer = setTimeout(refresh, 400); };
+
+    const field = () => {
+      if (stale || !data || !data.tokens.length) return "";
+      let out = "", pos = 0;
+      for (const t of data.tokens) {
+        out += escapeHtml(data.text.slice(pos, t.start));
+        const pinyin = pinyinOf(t);
+        const word = escapeHtml(t.text) + (pinyin ? `[${pinyin}]` : "");
+        out += t.target ? `<b>${word}</b>` : word;
+        pos = t.end;
+      }
+      return (out + escapeHtml(data.text.slice(pos))).replace(/\n/g, "<br>");
+    };
+
+    sentenceBox.addEventListener("input", schedule);
+    refresh();
+    return { box, field, schedule };
   }
 
   async function openCreator(entry, language) {
@@ -797,13 +1338,27 @@
     const sentenceBox = el("div", { class: "mc-editable", contenteditable: "true", role: "textbox", lang: displayLang(language) });
     sentenceBox.innerHTML = sentence.text
       ? `${escapeHtml(sentence.before)}<b>${escapeHtml(sentence.word)}</b>${escapeHtml(sentence.after)}` : "";
+    const readings = language === "zh" ? sentenceReadings(language, sentenceBox, () => reading.value.trim() || entry.reading) : null;
+    if (readings) reading.addEventListener("input", readings.schedule);
     const translation = el("textarea", { rows: "2", placeholder: "Optional" });
     const notes = el("textarea", { rows: "2", placeholder: "Optional" });
+    const freq = frequencyText(entry);
+    const frequencyInput = el("input", { type: "text", value: entry.frequency_rank ? String(entry.frequency_rank) : "",
+      placeholder: entry.frequency_list ? "Not in the list" : "No frequency list", title: freq ? freq.title : "" });
     const source = el("input", { type: "text", value: options.getSource ? options.getSource(ctx && ctx.node) : "" });
     const tags = el("input", { type: "text", placeholder: "space separated" });
     const image = mediaSlot("image", "Image", "image/*");
     const audio = mediaSlot("audio", "Word audio", "audio/*");
+    const wordTts = ttsRow(language, () => word.value, audio);
+    wordTts.row.hidden = true;  // shown when no recording is found
+    audio.zone.insertBefore(wordTts.row, audio.preview);
     const sentenceAudio = mediaSlot("sentence_audio", "Sentence audio", "audio/*,video/*");
+    const range = sentence.text && ctx && ctx.node && hasWave() ? options.sentenceRange(sentence.text, ctx.node) : null;
+    const wave = range ? waveEditor(range, sentenceAudio) : null;
+    if (wave) {
+      sentenceAudio.zone.insertBefore(wave.root, sentenceAudio.preview);
+      sentenceAudio.setValue({ wave: true });
+    }
     const tts = ttsRow(language, () => sentenceBox.textContent, sentenceAudio);
     sentenceAudio.zone.insertBefore(tts.row, sentenceAudio.preview);
 
@@ -836,10 +1391,13 @@
       el("div", { class: "mc-creator-head" }, el("h2", { text: "New card" }), target),
       el("div", { class: "mc-creator-body" },
         el("div", { class: "mc-col" },
-          el("div", { class: "mc-row2" }, field("Word", word), field("Reading", reading)),
+          el("div", { class: "mc-row3" }, field("Word", word), field("Reading", reading),
+            field("Frequency", frequencyInput, freq && freq.frequent ? "★ frequent" : "rank")),
           field("Definition", definition, "editable"),
           dictChoice.childNodes.length > 1 ? dictChoice : null,
           field("Sentence", sentenceBox, "editable"),
+          readings ? el("div", { class: "mc-field" }, el("span", { class: "mc-label" }, "Readings",
+            el("small", { text: "click a dotted word to change its reading" })), readings.box) : null,
           field("Sentence translation", translation),
           field("Notes", notes),
           el("div", { class: "mc-row2" }, field("Source", source), field("Tags", tags))),
@@ -872,7 +1430,11 @@
       if (file.type.startsWith("image/")) image.set(file);
       else if (file.type.startsWith("audio/") || file.type.startsWith("video/")) (audio.state.value ? sentenceAudio : audio).set(file);
     });
-    dialog.addEventListener("close", () => { dialog.remove(); if (creator && creator.dialog === dialog) creator = null; });
+    dialog.addEventListener("close", () => {
+      if (wave) wave.dispose();
+      dialog.remove();
+      if (creator && creator.dialog === dialog) creator = null;
+    });
     cancel.addEventListener("click", () => dialog.close());
 
     const submit = async (sendNow) => {
@@ -882,12 +1444,23 @@
       if (image.state.value) media.image = image.state.value;
       if (audio.state.value) media.audio = audio.state.value;
       if (sentenceAudio.state.value) media.sentence_audio = sentenceAudio.state.value;
+      if (wave && media.sentence_audio && media.sentence_audio.wave) {
+        wave.stop();
+        try {
+          media.sentence_audio = await wave.cut();
+        } catch (err) {
+          status.textContent = err.message;
+          send.disabled = later.disabled = false;
+          return;
+        }
+      }
       try {
         const { card } = await api("/api/cards", {
           language, send: sendNow, tags: tags.value, key_reading: entry.reading !== entry.expression ? entry.reading : "",
           fields: {
             word: word.value.trim(), reading: reading.value.trim(), definition: definition.innerHTML,
             sentence: sentenceBox.innerHTML, sentence_translation: translation.value, notes: notes.value, source: source.value,
+            frequency: frequencyInput.value.trim(), sentence_readings: readings ? readings.field() : "",
           },
           media,
         });
@@ -915,9 +1488,16 @@
       }).catch(() => {});
     }
 
-    // A recording of the word, when an online source has one; the others can be picked instead.
-    wordAudio(entry, language).then((sources) => {
-      if (!sources.length || !dialog.isConnected) return;
+    // A recording of the word, when an online source has one; the others can be picked instead. Without one (or
+    // offline), the word is read by the settings' voice, as a sentence without audio.
+    const readWord = () => wordTts.ready.then((voice) => {
+      if (!dialog.isConnected || !wordTts.available()) return;
+      wordTts.row.hidden = false;
+      if (voice && word.value.trim() && !audio.state.value) wordTts.generate();
+    });
+    wordAudio(entry, language).catch(() => []).then((sources) => {
+      if (!dialog.isConnected) return;
+      if (!sources.length) return readWord();
       if (!audio.state.value) audio.setValue({ url: sources[0].url });
       if (sources.length < 2) return;
       const pick = el("select", { class: "mc-audio-source", "aria-label": "Recording" });
@@ -932,14 +1512,20 @@
     // A translation of the sentence, made offline in the language of the settings.
     if (sentence.text) {
       translation.placeholder = "Translating…";
-      api("/api/translate", { language, text: sentenceBox.textContent }).then(({ translation: text }) => {
+      const text = sentenceBox.textContent;
+      translateSentence(language, text, true).catch(() => translateSentence(language, text)).then((text) => {
         if (text && !translation.value) translation.value = text;
         translation.placeholder = "Optional";
       }).catch((err) => { translation.placeholder = `Optional (no translation: ${err.message})`; });
     }
 
     // The sentence's audio, cut from the book's audio when there is one, else read by the settings' voice.
-    const bookClip = sentence.text && options.sentenceClip && options.hasAudio && options.hasAudio()
+    // (a video: the span chosen on the waveform, when it can be shown)
+    const bookClip = wave ? wave.loaded.then((shown) => {
+      if (shown) return true;
+      if (sentenceAudio.state.value && sentenceAudio.state.value.wave) sentenceAudio.setValue(null);
+      return null;
+    }) : sentence.text && options.sentenceClip && options.hasAudio && options.hasAudio()
       ? (() => {
         const wait = el("p", { class: "mc-hint", text: "Cutting the sentence's audio…" });
         sentenceAudio.preview.append(wait);
@@ -1027,6 +1613,6 @@
 
   window.MiningCatMining = {
     attach, hide: hidePopup, isOpen: () => Boolean(popup && !popup.hidden), renderGlossary, api,
-    colourWords, clearColours, updateColour,
+    colourWords, clearColours, updateColour, analyse, onAnalysis,
   };
 })();

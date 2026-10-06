@@ -1,4 +1,5 @@
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 
 from PIL import Image
@@ -7,8 +8,10 @@ from language import Language
 
 
 class OcrEngine:
-    def __init__(self, language: Language):
-        self._impl = _build_impl(language)
+    # `vertical`: comics and manga. On macOS, Apple Live Text reads vertical columns (Apple Vision skips them),
+    # but only on the main thread of its process: see ocr_mining/worker.py.
+    def __init__(self, language: Language, vertical: bool = False):
+        self._impl = _build_impl(language, vertical=vertical)
 
     # `image` is a file path or an in-memory PIL image (game / screen share OCR never touches the disk).
     # `drop_narrow_lines` is the hardsubs heuristic below: disable it when every line matters (e.g. a game dialog box).
@@ -21,8 +24,30 @@ class OcrEngine:
             return ""
         return _flatten_text(result, drop_narrow_lines=drop_narrow_lines)
 
+    # Every line read, with its box in pixels (top-left origin): (text, x, y, width, height).
+    def read_lines(self, image: Path | str | Image.Image) -> list[tuple[str, float, float, float, float]]:
+        if not isinstance(image, Image.Image):
+            image = Path(image)
+        with Image.open(image) if isinstance(image, Path) else nullcontext(image) as img:
+            width, height = img.size
+            success, result = self._impl(img)
+        if not success:
+            return []
+        lines = []
+        for paragraph in result.paragraphs:
+            for line in paragraph.lines:
+                text = line.text or "".join(w.text for w in line.words)
+                b = line.bounding_box
+                if text:
+                    lines.append((text, b.left * width, b.top * height, b.width * width, b.height * height))
+        return lines
 
-def _build_impl(language: Language):
+
+def _build_impl(language: Language, vertical: bool = False):
+    if sys.platform == "darwin" and vertical:
+        impl = _apple_live_text(language)
+        if impl is not None:
+            return impl
     if sys.platform == "darwin":
         from owocr.ocr import AppleVision
         _ensure_owocr_objc_global()
@@ -39,6 +64,19 @@ def _build_impl(language: Language):
             "or install 'owocr[easyocr]' for the cross-platform fallback)."
         )
     return impl
+
+
+# Apple Live Text (VisionKit, macOS 13+): owocr expects its private classes to be loaded already.
+def _apple_live_text(language: Language):
+    try:
+        import objc
+        objc.loadBundle("VisionKit", {}, bundle_path="/System/Library/Frameworks/VisionKit.framework")
+        from owocr.ocr import AppleLiveText
+        impl = AppleLiveText(language=language.value.ocr_lang_apple)
+    except Exception as exc:
+        print(f"  Apple Live Text unavailable ({exc}), falling back to Apple Vision")
+        return None
+    return impl if getattr(impl, "available", False) else None
 
 
 # Workaround for an owocr upstream bug (owocr==1.26.8)

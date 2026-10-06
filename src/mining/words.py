@@ -1,13 +1,3 @@
-# words.py - The user's words and their status (learning, known, ignored; absent = new).
-#
-# A word is identified by (language, expression, reading). The reading is normalized (pinyin case and
-# spacing, katakana -> hiragana) so that dictionaries agree; a word saved without a reading (e.g. read
-# from an Anki field) matches every reading of that expression.
-#
-# Chinese: 説 and 说 are two expressions, so two words. The user picks which script they learn
-# (traditional, simplified or both); words are saved in that script, and a word known in the other
-# script is shown as a hint ("You know this word in Traditional").
-
 import time
 
 from mining import db
@@ -56,19 +46,23 @@ def set_reading_system(language: str, system: str) -> None:
 
 
 def display_reading(language: str, expression: str, reading: str) -> str:
-    """The reading as the user wants to see it: zhuyin instead of pinyin when chosen."""
-    if reading and reading_system(language) == "zhuyin":
-        from mining.zhuyin import pinyin_to_zhuyin
+    """The reading as the user wants to see it, whichever the dictionary uses: zhuyin or pinyin, as chosen."""
+    if reading and language == "zh":
+        from mining.zhuyin import is_zhuyin, pinyin_to_zhuyin, zhuyin_to_pinyin
 
-        return pinyin_to_zhuyin(reading, expression) or reading
+        if reading_system(language) == "zhuyin":
+            return pinyin_to_zhuyin(reading) or reading
+        if is_zhuyin(reading):
+            return zhuyin_to_pinyin(reading) or reading
     return reading
 
 
-def preferred_form(language: str, expression: str) -> str:
-    """The form under which a word is saved, given the script the user learns."""
+def preferred_form(language: str, expression: str, preference: str | None = None) -> str:
+    """The form under which a word is saved, given the script the user learns (`preference`, read from the
+    settings when not given: pass it for many words)."""
     if language not in CHINESE_LANGUAGES:
         return expression
-    preference = chinese_script_preference(language)
+    preference = preference or chinese_script_preference(language)
     script = chinese_script(expression)
     # A word written the same way in both scripts (了解, 台灣's 台...) is kept as it is.
     if preference == "traditional" and script in ("simplified", "mixed"):

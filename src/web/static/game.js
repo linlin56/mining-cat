@@ -34,6 +34,21 @@ function scheduleColours() {
   G.colourTimer = setTimeout(() => MiningCatMining.colourWords($("feed"), G.language), 300);
 }
 
+// Captures whose every word is known but one new word (i+1) are marked: the best ones to make a card with.
+function markRecommended(key) {
+  if (key !== "main") return;
+  const a = MiningCatMining.analyse("main", (node) => node.parentElement && node.parentElement.closest(".capture"));
+  for (const article of $("feed").querySelectorAll(".capture")) {
+    article.classList.remove("i1");
+    article.removeAttribute("title");
+  }
+  for (const unit of a ? a.units : []) {
+    if (!unit.recommended) continue;
+    unit.element.classList.add("i1");
+    unit.element.title = `Recommended: “${unit.targetRange.toString()}” is the only new word`;
+  }
+}
+
 function addCapture(data) {
   $("empty").hidden = true;
   const article = document.createElement("article");
@@ -106,6 +121,7 @@ function init() {
   resetFeed();
   $("capture").addEventListener("click", () => post("capture"));
   $("clear").addEventListener("click", () => post("clear"));
+  MiningCatMining.onAnalysis(markRecommended);
   MiningCatMining.attach($("feed"), {
     getLanguage: () => G.language || "und",
     getSource: () => "Video game",

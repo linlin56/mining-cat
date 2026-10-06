@@ -92,77 +92,172 @@ async function showLibrary() {
   document.title = "MiningCat Reader";
   $("reading").hidden = true;
   $("library").hidden = false;
-  const { books, extensions } = await api("/reader/api/books");
-  $("lib-formats").textContent = `Supported formats: ${extensions.map((e) => e.toUpperCase()).join(", ")}. Books are stored in the project's library/ folder.`;
-  $("book-input").accept = extensions.map((e) => `.${e}`).join(",");
+  const [{ books, extensions }, comics] = await Promise.all([api("/reader/api/books"), api("/reader/api/comics")]);
+  R.comicExtensions = comics.extensions;
+  $("lib-formats").textContent = `Supported formats: ${extensions.map((e) => e.toUpperCase()).join(", ")}; `
+    + `comics and manga: ${comics.extensions.map((e) => e.toUpperCase()).join(", ")} (their text is read by OCR). `
+    + "Books are stored in the project's library/ folder.";
+  $("book-input").accept = [...extensions, ...comics.extensions].map((e) => `.${e}`).join(",");
+  // books and comics together, the last opened first
+  const items = [...books, ...comics.comics.map((c) => ({ ...c, comic: true }))]
+    .sort((a, b) => (b.opened || 0) - (a.opened || 0) || (b.added || 0) - (a.added || 0));
   const grid = $("book-grid");
-  grid.replaceChildren(...books.map((b) => {
-    const a = document.createElement("a");
-    a.className = "book";
-    a.href = `/reader/${b.id}`;
-    a.addEventListener("click", (e) => {
-      if (e.target.closest(".book-delete")) return;
-      e.preventDefault();
-      history.pushState({}, "", a.href);
-      route();
-    });
-    const cover = document.createElement("div");
-    cover.className = "book-cover";
-    if (b.cover) {
-      const img = document.createElement("img");
-      img.src = b.cover;
-      img.alt = "";
-      img.loading = "lazy";
-      cover.append(img);
-    } else {
-      const ph = document.createElement("div");
-      ph.className = "placeholder";
-      ph.lang = b.language;
-      ph.style.background = placeholderColor(b.title);
-      ph.textContent = b.title;
-      cover.append(ph);
-    }
-    const title = document.createElement("div");
-    title.className = "book-title";
-    title.lang = b.language;
-    title.textContent = b.title;
-    title.title = b.title;
-    const meta = document.createElement("div");
-    meta.className = "book-meta";
-    const left = document.createElement("span");
-    left.textContent = [b.author, b.format.toUpperCase()].filter(Boolean).join(" · ");
-    const right = document.createElement("span");
-    right.textContent = b.percent ? `${Math.floor(b.percent)}%` : "New";
-    meta.append(left, right);
-    const bar = document.createElement("div");
-    bar.className = "book-progress";
-    const fill = document.createElement("div");
-    fill.style.width = `${b.percent || 0}%`;
-    bar.append(fill);
-    const del = document.createElement("button");
-    del.type = "button";
-    del.className = "book-delete";
-    del.textContent = "×";
-    del.title = "Remove from library";
-    del.setAttribute("aria-label", `Remove ${b.title} from the library`);
-    del.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const ok = await showDialog("Remove book", `Remove “${b.title}” and its reading progress from the library?`,
-        [{ label: "Cancel", value: false }, { label: "Remove", value: true, primary: true }]);
-      if (!ok) return;
-      try { await api(`/reader/api/books/${b.id}/delete`, {}); showLibrary(); } catch (err) { showError(err); }
-    });
-    a.append(cover, title, meta, bar, del);
-    return a;
-  }));
-  $("lib-empty").hidden = books.length > 0;
+  grid.replaceChildren(...items.map((b) => (b.comic ? comicCard(b) : bookCard(b))));
+  $("lib-empty").hidden = items.length > 0;
+  loadComprehension(books);
+}
+
+function bookCard(b) {
+  const a = document.createElement("a");
+  a.className = "book";
+  a.href = `/reader/${b.id}`;
+  a.addEventListener("click", (e) => {
+    if (e.target.closest(".book-delete")) return;
+    e.preventDefault();
+    history.pushState({}, "", a.href);
+    route();
+  });
+  const cover = document.createElement("div");
+  cover.className = "book-cover";
+  if (b.cover) {
+    const img = document.createElement("img");
+    img.src = b.cover;
+    img.alt = "";
+    img.loading = "lazy";
+    cover.append(img);
+  } else {
+    const ph = document.createElement("div");
+    ph.className = "placeholder";
+    ph.lang = b.language;
+    ph.style.background = placeholderColor(b.title);
+    ph.textContent = b.title;
+    cover.append(ph);
+  }
+  const title = document.createElement("div");
+  title.className = "book-title";
+  title.lang = b.language;
+  title.textContent = b.title;
+  title.title = b.title;
+  const meta = document.createElement("div");
+  meta.className = "book-meta";
+  const left = document.createElement("span");
+  left.textContent = [b.author, b.format.toUpperCase()].filter(Boolean).join(" · ");
+  const right = document.createElement("span");
+  right.textContent = b.percent ? `${Math.floor(b.percent)}%` : "New";
+  meta.append(left, right);
+  const comp = document.createElement("div");
+  comp.className = "book-comp";
+  comp.dataset.book = b.id;
+  const bar = document.createElement("div");
+  bar.className = "book-progress";
+  const fill = document.createElement("div");
+  fill.style.width = `${b.percent || 0}%`;
+  bar.append(fill);
+  const del = document.createElement("button");
+  del.type = "button";
+  del.className = "book-delete";
+  del.textContent = "×";
+  del.title = "Remove from library";
+  del.setAttribute("aria-label", `Remove ${b.title} from the library`);
+  del.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const ok = await showDialog("Remove book", `Remove “${b.title}” and its reading progress from the library?`,
+      [{ label: "Cancel", value: false }, { label: "Remove", value: true, primary: true }]);
+    if (!ok) return;
+    try { await api(`/reader/api/books/${b.id}/delete`, {}); showLibrary(); } catch (err) { showError(err); }
+  });
+  a.append(cover, title, meta, bar, comp, del);
+  return a;
+}
+
+// A comic or manga: opened in its own page (static/comic.js).
+function comicCard(c) {
+  const a = document.createElement("a");
+  a.className = "book";
+  a.href = `/reader/comic/${c.id}`;
+  const cover = document.createElement("div");
+  cover.className = "book-cover";
+  const img = document.createElement("img");
+  img.src = `/reader/api/comics/${c.id}/thumb?v=${c.added}`;
+  img.alt = "";
+  img.loading = "lazy";
+  cover.append(img);
+  const title = document.createElement("div");
+  title.className = "book-title";
+  title.lang = c.language;
+  title.textContent = c.title;
+  title.title = c.title;
+  const meta = document.createElement("div");
+  meta.className = "book-meta";
+  const left = document.createElement("span");
+  left.textContent = `${c.pages} pages · Comic`;
+  const right = document.createElement("span");
+  right.textContent = c.percent ? `${Math.floor(c.percent)}%` : "New";
+  meta.append(left, right);
+  const bar = document.createElement("div");
+  bar.className = "book-progress";
+  const fill = document.createElement("div");
+  fill.style.width = `${c.percent || 0}%`;
+  bar.append(fill);
+  const del = document.createElement("button");
+  del.type = "button";
+  del.className = "book-delete";
+  del.textContent = "×";
+  del.title = "Remove from library";
+  del.setAttribute("aria-label", `Remove ${c.title} from the library`);
+  del.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const ok = await showDialog("Remove comic", `Remove “${c.title}”, the text read on its pages and its reading progress from the library?`,
+      [{ label: "Cancel", value: false }, { label: "Remove", value: true, primary: true }]);
+    if (!ok) return;
+    try { await api(`/reader/api/comics/${c.id}/delete`, {}); showLibrary(); } catch (err) { showError(err); }
+  });
+  a.append(cover, title, meta, bar, del);
+  return a;
+}
+
+// Each book's comprehension, one book after the other (a book never analysed takes a moment).
+let comprehensionToken = 0;
+async function loadComprehension(books) {
+  const token = ++comprehensionToken;
+  for (const b of books) {
+    if (token !== comprehensionToken) return;
+    const box = document.querySelector(`.book-comp[data-book="${b.id}"]`);
+    if (!box) continue;
+    box.textContent = "…";
+    try {
+      const { comprehension: c } = await api(`/reader/api/books/${b.id}/comprehension`);
+      box.textContent = c && c.total ? `${percentText(c.percent)}${c.recommended ? ` · ${c.recommended} i+1` : ""}` : "";
+      if (c && c.total) box.title = `${c.known} known, ${c.learning} learning and ${c.new} new running words (${c.unique_new} different new words). `
+        + `${c.i1} of ${c.sentences} sentences have only one new word`
+        + (c.frequency ? `, ${c.recommended} of them a frequent one (up to #${c.frequency.limit.toLocaleString()}).` : ".");
+    } catch { box.textContent = ""; }
+  }
+}
+
+// Comics are sent one by one, as the request's body: an archive can be hundreds of MB.
+async function addComic(file, status) {
+  status.textContent = `Importing ${file.name}…`;
+  const res = await fetch(`/reader/api/comics?name=${encodeURIComponent(file.name)}`, {
+    method: "POST", headers: { "X-MiningCat": "1", "Content-Type": "application/octet-stream" }, body: file,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`${file.name}: ${data.error || `import failed (${res.status})`}`);
 }
 
 async function addBooks(fileList) {
   if (!fileList.length) return;
+  const status = $("lib-status");
+  const isComic = (f) => (R.comicExtensions || []).includes(f.name.split(".").pop().toLowerCase());
+  const comicErrors = [];
+  for (const file of fileList.filter(isComic)) {
+    try { await addComic(file, status); } catch (err) { comicErrors.push(err.message); }
+  }
+  if (comicErrors.length) showDialog("Some files could not be imported", comicErrors.join("\n"));
+  fileList = fileList.filter((f) => !isComic(f));
+  if (!fileList.length) { status.textContent = ""; showLibrary(); return; }
   const form = new FormData();
   for (const f of fileList) form.append("files", f, f.name);
-  const status = $("lib-status");
   status.textContent = `Importing ${fileList.length} file${fileList.length > 1 ? "s" : ""}…`;
   try {
     const res = await fetch("/reader/api/books", { method: "POST", headers: { "X-MiningCat": "1" }, body: form });
@@ -290,11 +385,68 @@ async function renderChapter(i) {
   if (i > 0) chapterHtml(i - 1).catch(() => {});
 }
 
-// Colours the chapter's words by status (new, learning), unless turned off in the settings.
+// Colours the chapter's words by status (new, learning), unless turned off in the settings. Their statuses are
+// read anyway: they give the chapter's comprehension and its recommended sentences.
 function colourWords() {
   if (!window.MiningCatMining) return;
-  if (R.settings.colors === "off" || !R.book) MiningCatMining.clearColours();
-  else MiningCatMining.colourWords($("content"), effectiveLanguage());
+  if (!R.book) MiningCatMining.clearColours();
+  else MiningCatMining.colourWords($("content"), effectiveLanguage(), "main", { paint: R.settings.colors !== "off" });
+}
+
+// ---------------------------------------------------------------- comprehension & recommended sentences
+
+const percentText = (p) => (p === null || p === undefined ? "" : `${p >= 99.95 ? 100 : p.toFixed(1)}% known`);
+
+// Recomputed whenever the chapter's words or their statuses change (a card made, a word marked known...).
+function showComprehension(key) {
+  if (key !== "main") return;
+  const a = MiningCatMining.analyse("main");
+  const recommended = a ? a.units.filter((u) => u.recommended) : [];
+  R.recommended = recommended;
+  $("comp-info").textContent = a && a.total ? `${percentText(a.percent)}${recommended.length ? ` · ${recommended.length} i+1` : ""}` : "";
+  paintRecommended();
+  const rarer = a ? a.units.filter((u) => u.i1 && !u.recommended).length : 0;
+  $("i1-summary").textContent = !a || !a.total
+    ? "No dictionary words in this chapter (import a dictionary in Settings)."
+    : `${percentText(a.percent)} · ${a.learning} learning · ${a.new} new words in this chapter · ${recommended.length} recommended sentence${recommended.length === 1 ? "" : "s"}.`
+      + (a.frequency ? ` Only words up to #${a.frequency.limit.toLocaleString()} of “${a.frequency.dictionary.title}” (you know ${a.frequency.known.toLocaleString()} of its words)`
+        + `${rarer ? `: ${rarer} other sentence${rarer === 1 ? " teaches a rarer word" : "s teach rarer words"}` : ""}.`
+        : " Import a frequency list in Settings to only get the frequent words.");
+  $("i1-list").replaceChildren(...recommended.map((u) => {
+    const li = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.lang = effectiveLanguage();
+    const before = document.createRange();
+    before.setStart(u.range.startContainer, u.range.startOffset);
+    before.setEnd(u.targetRange.startContainer, u.targetRange.startOffset);
+    const after = document.createRange();
+    after.setStart(u.targetRange.endContainer, u.targetRange.endOffset);
+    after.setEnd(u.range.endContainer, u.range.endOffset);
+    const word = document.createElement("strong");
+    word.textContent = u.targetRange.toString();
+    button.append(before.toString().trimStart(), word, after.toString().trimEnd());
+    button.addEventListener("click", () => {
+      togglePanel("i1-panel", false);
+      showPage(pageOfRect(u.range.getBoundingClientRect()));
+      flashRange(u.range);
+    });
+    li.append(button);
+    return li;
+  }));
+}
+
+function paintRecommended() {
+  if (!window.CSS || !CSS.highlights || !window.Highlight) return;
+  const ranges = R.settings.i1 !== false && R.recommended ? R.recommended.map((u) => u.range) : [];
+  CSS.highlights.set("mc-i1", new Highlight(...ranges));
+}
+
+function flashRange(range) {
+  if (!window.CSS || !CSS.highlights || !window.Highlight) return;
+  CSS.highlights.set("mc-i1-focus", new Highlight(range));
+  clearTimeout(R.flashTimer);
+  R.flashTimer = setTimeout(() => CSS.highlights.delete("mc-i1-focus"), 1800);
 }
 
 // Sizes the column layout to the viewport and counts the pages of the current chapter.
@@ -543,6 +695,7 @@ function syncSettingsForm() {
   $("set-furigana").checked = s.furigana;
   $("set-lookup").value = s.lookup || "click";
   $("set-colors").value = s.colors || "status";
+  $("set-i1").checked = s.i1 !== false;
   for (const b of $("set-font").children) b.setAttribute("aria-pressed", String(b.dataset.value === s.font));
   for (const b of $("set-theme").children) b.setAttribute("aria-pressed", String(b.dataset.value === s.theme));
   if (R.book) {
@@ -580,6 +733,7 @@ function wireSettings() {
   $("audio-link").addEventListener("click", linkAudio);
   $("audio-remove").addEventListener("click", removeAudio);
   $("set-colors").addEventListener("change", (e) => { R.settings.colors = e.target.value; colourWords(); saveSettings(); });
+  $("set-i1").addEventListener("change", (e) => { R.settings.i1 = e.target.checked; paintRecommended(); saveSettings(); });
   for (const [id, key] of [["set-font", "font"], ["set-theme", "theme"]]) {
     for (const b of $(id).children) {
       b.addEventListener("click", () => {
@@ -645,6 +799,8 @@ function wireReading() {
   $("zone-left").addEventListener("click", leftAction);
   $("zone-right").addEventListener("click", rightAction);
   $("toc-btn").addEventListener("click", () => togglePanel("toc-panel"));
+  $("i1-btn").addEventListener("click", () => togglePanel("i1-panel"));
+  if (window.MiningCatMining) MiningCatMining.onAnalysis(showComprehension);
   $("settings-btn").addEventListener("click", () => togglePanel("settings-panel"));
   for (const btn of document.querySelectorAll("[data-close]")) btn.addEventListener("click", () => togglePanel(btn.closest(".panel").id, false));
   $("back").addEventListener("click", (e) => {
@@ -669,7 +825,7 @@ function wireReading() {
       ArrowLeft: leftAction, ArrowRight: rightAction,
       ArrowDown: next, ArrowUp: prev, PageDown: next, PageUp: prev, " ": e.shiftKey ? prev : next,
       Home: () => goTo(R.chapter, { page: 0 }), End: () => goTo(R.chapter, { end: true }),
-      t: () => togglePanel("toc-panel"), s: () => togglePanel("settings-panel"),
+      t: () => togglePanel("toc-panel"), s: () => togglePanel("settings-panel"), r: () => togglePanel("i1-panel"),
       Escape: () => {
         if ([...document.querySelectorAll(".panel")].some((p) => !p.hidden)) togglePanel("toc-panel", false);
         else $("back").click();

@@ -9,7 +9,6 @@ This is subject to change as we are still in early dev.
 
 The priority is to add languages :
 
-- Supported by Migaku
 - Supported by edge-tts and Whisper
 
 I may be able to add new languages that I don't speak, but help is wanted to double-check!

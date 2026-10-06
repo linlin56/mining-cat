@@ -1,10 +1,3 @@
-# book_audio.py - Audio of a reader book: the chapters' audio and subtitles of a MiningCat conversion
-# (output/chapters_audio + output/srt), copied next to the book in library/books/<id>/audio/.
-#
-# The reader's chapters don't always match the conversion's (selected chapters, TXT split differently...),
-# so a sentence is found back by its text in the subtitles, not by its chapter number. It gives the
-# sentence's time span, to play it in the reader and to cut it for the card creator.
-
 import json
 import re
 import shutil
@@ -244,10 +237,15 @@ def clip(book_id: str, track: int, start: float, end: float) -> bytes:
     return cut_mp3(track_path(book_id, track), start, end)
 
 
+# MP3 for cards; WAV (16 kHz, 16 bits) for the card creator's waveform: decoded exactly, with no encoder delay.
+_CODECS = {"mp3": ["-c:a", "libmp3lame", "-b:a", "96k", "-f", "mp3"],
+           "wav": ["-ar", "16000", "-c:a", "pcm_s16le", "-f", "wav"]}
+
+
 def cut_mp3(source: Path, start: float, end: float, audio_stream: int = 0,
-            before: float = CLIP_PADDING_S, after: float = CLIP_PADDING_S) -> bytes:
-    """The span of an audio (or video) file as MP3, cut with ffmpeg. Constant bitrate: written to a pipe, a variable
-    bitrate MP3 has no header giving its length, and players would show a wrong duration."""
+            before: float = CLIP_PADDING_S, after: float = CLIP_PADDING_S, fmt: str = "mp3") -> bytes:
+    """The span of an audio (or video) file as MP3 (or WAV), cut with ffmpeg. Constant bitrate: written to a pipe, a
+    variable bitrate MP3 has no header giving its length, and players would show a wrong duration."""
     start = max(0.0, float(start) - before)
     end = float(end) + after
     if end <= start:
@@ -255,7 +253,7 @@ def cut_mp3(source: Path, start: float, end: float, audio_stream: int = 0,
     try:
         result = subprocess.run(
             ["ffmpeg", "-hide_banner", "-loglevel", "error", "-ss", f"{start:.3f}", "-to", f"{end:.3f}",
-             "-i", str(source), "-map", f"0:a:{audio_stream}", "-vn", "-ac", "1", "-c:a", "libmp3lame", "-b:a", "96k", "-f", "mp3", "pipe:1"],
+             "-i", str(source), "-map", f"0:a:{audio_stream}", "-vn", "-ac", "1", *_CODECS[fmt], "pipe:1"],
             capture_output=True, check=True, timeout=60,
         )
     except FileNotFoundError:

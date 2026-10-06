@@ -319,8 +319,8 @@ def test_guess_field_templates():
     assert anki.guess_field_templates(["Word", "Translation"]) == {"Word": "{word}", "Translation": "{definition}"}
 
 
-# Migaku's note types: "Translation" is the sentence's, the definition goes to "Definitions".
-def test_guess_field_templates_for_migaku():
+# Note types where "Translation" is the sentence's, the definition goes to "Definitions".
+def test_guess_field_templates_with_a_sentence_translation_field():
     fields = ["Sentence", "Translation", "Target Word", "Definitions", "Screenshot", "Sentence Audio",
               "Word Audio", "Images", "Example Sentences", "Zhuyin", "Is Vocabulary Card"]
     assert anki.guess_field_templates(fields) == {
@@ -552,7 +552,7 @@ def test_colours_use_the_saved_form(zh_dict):
     words.set_chinese_script_preference("zh", "traditional")
     words.set_status("zh", "說話", "", "learning")
     result = segment.colour("zh", "说话，说话")
-    assert result["words"] == [{"headword": "说话", "form": "說話", "status": "learning"}]
+    assert result["words"] == [{"headword": "说话", "form": "說話", "status": "learning", "rank": None}]
     assert result["tokens"] == [[0, 2, 0], [3, 2, 0]]
 
 
@@ -567,33 +567,88 @@ def test_http_segment(client, zh_dict):
 
 # ---------------------------------------------------------------- zhuyin
 
-from mining.zhuyin import pinyin_to_zhuyin
+from mining.zhuyin import pinyin_to_zhuyin, zhuyin_to_pinyin
 
 
-@pytest.mark.parametrize("word, pinyin, zhuyin", [
-    ("中國", "zhōngguó", "ㄓㄨㄥ ㄍㄨㄛˊ"),
-    ("西安", "xī'ān", "ㄒㄧ ㄢ"),
-    ("先", "xiān", "ㄒㄧㄢ"),
-    ("綠", "lǜ", "ㄌㄩˋ"),
-    ("旅遊", "lǚyóu", "ㄌㄩˇ ㄧㄡˊ"),
-    ("學", "xué", "ㄒㄩㄝˊ"),
-    ("我們", "wǒmen", "ㄨㄛˇ ˙ㄇㄣ"),
-    ("知道", "zhīdào", "ㄓ ㄉㄠˋ"),
-    ("女兒", "nǚ'ér", "ㄋㄩˇ ㄦˊ"),
-    ("一會兒", "yīhuìr", "ㄧ ㄏㄨㄟˋㄦ"),
-    ("一下兒", "yīxiàr5", "ㄧ ㄒㄧㄚˋㄦ"),
-    ("說話", "shuo1 hua4", "ㄕㄨㄛ ㄏㄨㄚˋ"),
-    ("綠", "lu:4", "ㄌㄩˋ"),
-    ("說話", "ㄕㄨㄛ ㄏㄨㄚˋ", "ㄕㄨㄛ ㄏㄨㄚˋ"),
-    ("", "Zhōngguó", "ㄓㄨㄥ ㄍㄨㄛˊ"),
+@pytest.mark.parametrize("pinyin, zhuyin", [
+    ("zhōngguó", "ㄓㄨㄥ ㄍㄨㄛˊ"),
+    ("xī'ān", "ㄒㄧ ㄢ"),
+    ("xiān", "ㄒㄧㄢ"),
+    ("lǜ", "ㄌㄩˋ"),
+    ("lǚyóu", "ㄌㄩˇ ㄧㄡˊ"),
+    ("xué", "ㄒㄩㄝˊ"),
+    ("wǒmen", "ㄨㄛˇ ˙ㄇㄣ"),
+    ("zhīdào", "ㄓ ㄉㄠˋ"),
+    ("nǚ'ér", "ㄋㄩˇ ㄦˊ"),
+    ("yīhuìr", "ㄧ ㄏㄨㄟˋㄦ"),
+    ("yīxiàr5", "ㄧ ㄒㄧㄚˋㄦ"),  # CC-CEDICT's erhua
+    ("shuo1 hua4", "ㄕㄨㄛ ㄏㄨㄚˋ"),
+    ("lu:4", "ㄌㄩˋ"),  # CC-CEDICT's ü
+    ("ㄕㄨㄛ ㄏㄨㄚˋ", "ㄕㄨㄛ ㄏㄨㄚˋ"),
+    ("Zhōngguó", "ㄓㄨㄥ ㄍㄨㄛˊ"),
+    ("Wáng Xiǎo·míng", "ㄨㄤˊ ㄒㄧㄠˇ ㄇㄧㄥˊ"),
+    ("yī ge , liǎng ge", "ㄧ ˙ㄍㄜ , ㄌㄧㄤˇ ˙ㄍㄜ"),
+    ("xing2dong4", "ㄒㄧㄥˊ ㄉㄨㄥˋ"),
+    ("ni3hao", "ㄋㄧˇ ˙ㄏㄠ"),  # no tone: neutral
+    ("Xīān", "ㄒㄧ ㄢ"),  # two tone marks: two syllables, even without the apostrophe
+    ("fangan", "˙ㄈㄢ ˙ㄍㄢ"),  # without an apostrophe, a syllable can't start with a, o or e
+    ("fang'an", "˙ㄈㄤ ˙ㄢ"),
+    ("hua1r", "ㄏㄨㄚㄦ"), ("huar1", "ㄏㄨㄚㄦ"), ("jīnrgè", "ㄐㄧㄣㄦ ㄍㄜˋ"),
+    ("kèrén", "ㄎㄜˋ ㄖㄣˊ"), ("pòkérì", "ㄆㄛˋ ㄎㄜˊ ㄖˋ"),  # an r before a vowel is an initial, not erhua
+    ("hm5", "˙ㄏㄇ"), ("ng2", "ㄫˊ"),
 ])
-def test_pinyin_to_zhuyin(word, pinyin, zhuyin):
-    assert pinyin_to_zhuyin(pinyin, word) == zhuyin
+def test_pinyin_to_zhuyin(pinyin, zhuyin):
+    assert pinyin_to_zhuyin(pinyin) == zhuyin
 
 
-@pytest.mark.parametrize("pinyin", ["", "hello world!", "xx5", "qqq"])
+@pytest.mark.parametrize("pinyin", ["", "hello world!", "xx5", "qqq", "CP", "2xing", "xing0"])
 def test_not_pinyin(pinyin):
-    assert pinyin_to_zhuyin(pinyin, "字") == ""
+    assert pinyin_to_zhuyin(pinyin) == ""
+
+
+@pytest.mark.parametrize("zhuyin, pinyin", [
+    ("ㄒㄧㄥˊ ㄉㄨㄥˋ", "xíng dòng"),
+    ("˙ㄌㄜ", "le"),
+    ("ㄉㄚˋㄢ", "dà'ān"),
+    ("ㄋㄩˇㄦˊ", "nǚ'ér"),
+    ("ㄏㄨㄚㄦ", "huār"),
+    ("ㄓㄜˋㄦ", "zhèr"),
+    ("ㄅㄚㄦˇㄍㄢˋ", "bā'ěrgàn"),      # a toned ㄦ is 爾 itself, not erhua
+    ("ㄌㄠˇㄖㄣˊ", "lǎorén"),         # the r of 人 isn't erhua
+    ("˙ㄉㄜㄑㄧˇ", "deqǐ"),           # a neutral tone inside a word
+    ("˙ㄅㄛ˙ㄅㄛㄇㄧˇ", "bobomǐ"),     # Taiwan's dot, before its syllable
+    ("ㄇㄚ ˙ㄌㄡ", "mā lou"),
+    ("ㄖㄣˋㄕ˙ ㄇㄚ˙", "rènshi ma"),   # dots after their syllables, at the end of words
+    ("ㄅㄞㄅㄞ", "bāibāi"),            # no mark: first tone
+    ("ㄐㄩㄝˊㄉㄧㄥˋ", "juédìng"), ("ㄌㄩㄝˋ", "lüè"), ("ㄧㄥㄒㄩㄥˊ", "yīngxióng"),
+    ("ㄓ", "zhī"), ("ㄕˋ", "shì"), ("ㄌㄧㄡˊ", "liú"), ("ㄍㄨㄟˇ", "guǐ"), ("ㄇˊ", "ḿ"), ("˙ㄫㄐㄧㄥˋ", "ngjìng"),
+])
+def test_zhuyin_to_pinyin(zhuyin, pinyin):
+    assert zhuyin_to_pinyin(zhuyin) == pinyin
+
+
+@pytest.mark.parametrize("text", ["xíng", "", "CP", "ㄅㄅㄅ", "ㆠㄚ"])
+def test_not_zhuyin(text):
+    assert zhuyin_to_pinyin(text) == ""
+
+
+@pytest.mark.parametrize("tone", [1, 2, 3, 4, 5])
+def test_every_syllable_both_ways(tone):
+    from mining.zhuyin import ZHUYIN_OF
+
+    for syllable in ZHUYIN_OF:
+        numbered = f"{syllable}{tone}"
+        zhuyin = pinyin_to_zhuyin(numbered)
+        assert zhuyin, numbered
+        assert pinyin_to_zhuyin(zhuyin_to_pinyin(zhuyin)) == zhuyin, numbered
+
+
+def test_readings_shown_in_the_chosen_system():
+    words.set_reading_system("zh", "pinyin")
+    assert words.display_reading("zh", "行", "ㄒㄧㄥˊ") == "xíng"  # a zhuyin dictionary, read in pinyin
+    words.set_reading_system("zh", "zhuyin")
+    assert words.display_reading("zh", "行", "xing2") == "ㄒㄧㄥˊ"
+    assert words.display_reading("zh", "行", "ㄒㄧㄥˊ") == "ㄒㄧㄥˊ"
 
 
 def test_zhuyin_field_of_a_card():

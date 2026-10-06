@@ -106,6 +106,7 @@ a.brand-link { color: inherit; text-decoration: none; }
 .book-meta { font-size: 12px; color: var(--dim); display: flex; justify-content: space-between; gap: 6px; }
 .book-progress { height: 3px; background: var(--field); border-radius: 9px; overflow: hidden; }
 .book-progress div { height: 100%; background: var(--accent); }
+.book-comp { font-size: 12px; color: var(--dim); min-height: 1.4em; font-variant-numeric: tabular-nums; }
 .book-delete {
   position: absolute; top: 6px; right: 6px;
   width: 28px; height: 28px; border-radius: 50%; border: 0;
@@ -152,7 +153,8 @@ a.brand-link { color: inherit; text-decoration: none; }
 
 .progress-track { flex: 1; height: 3px; background: var(--field); border-radius: 9px; overflow: hidden; }
 .progress-fill { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
-#page-info, #percent-info { white-space: nowrap; font-variant-numeric: tabular-nums; }
+#page-info, #percent-info, .comp-info { white-space: nowrap; font-variant-numeric: tabular-nums; }
+#i1-btn { font-size: 13px; font-weight: 700; }
 
 .stage { position: relative; flex: 1; min-height: 0; display: flex; }
 
@@ -292,6 +294,16 @@ a.brand-link { color: inherit; text-decoration: none; }
 }
 .toc li a:hover { background: var(--field); }
 .toc li a.current { background: var(--panel); font-weight: 600; color: var(--accent); }
+
+/* Recommended (i+1) sentences */
+.i1-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.i1-list button {
+  display: block; width: 100%; text-align: start; padding: 8px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--fg); font: inherit; font-size: 14px; line-height: 1.5; cursor: pointer;
+}
+.i1-list button:hover { background: var(--field); }
+.i1-list strong { color: rgb(30, 110, 230); }
+.theme-dark .i1-list strong { color: rgb(130, 175, 255); }
 
 .setting { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; font-size: 13px; }
 .setting > span { display: flex; justify-content: space-between; color: var(--dim); font-weight: 600; }

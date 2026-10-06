@@ -66,6 +66,10 @@
         <div class="osd" id="osd" aria-live="polite"></div>
       </div>
       <aside class="cue-panel" id="cue-panel" aria-label="Subtitles">
+        <div class="cue-summary" id="cue-summary" hidden>
+          <span id="comp-summary" title="Words of these subtitles you know (from your cards and word statuses)"></span>
+          <label class="check"><input type="checkbox" id="i1-only"><span>Only i+1</span></label>
+        </div>
         <div class="cue-selection" id="cue-selection" hidden>
           <span id="cue-selection-text"></span>
           <button type="button" class="btn" id="cue-selection-clear" title="Clear the selection (Esc)">Clear</button>
@@ -154,7 +158,8 @@
       <p class="dim shortcuts">
         Space: play / pause · ← →: previous / next subtitle · ↓: replay the subtitle ·
         Shift + ← →: 5 s back / forward · [ ]: subtitle timing · − +: speed ·
-        S: show / blur / hide subtitles · P: auto-pause · L: subtitle list · F: fullscreen.<br>
+        S: show / blur / hide subtitles · P: auto-pause · L: subtitle list · F: fullscreen ·
+        N: next recommended line (i+1: every word known but one new word).<br>
         Click a word to look it up: the video pauses, and + Card takes the screenshot and the line's audio.
         A sentence split across lines? Select its lines in the list (○), then click a word in one of them: the card takes them all.
       </p>

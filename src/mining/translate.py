@@ -164,8 +164,9 @@ def delete_model(source: str, target: str) -> None:
         argostranslate.package.uninstall(package)
 
 
-def translate(language: str, text: str) -> str | None:
-    """The text translated to the language of the settings, or None when there's nothing to do."""
+def translate(language: str, text: str, download: bool = True) -> str | None:
+    """The text translated to the language of the settings, or None when there's nothing to do. Without `download`
+    (translated ahead of time, when a word is looked up), only with the models already installed."""
     target = target_language()
     text = re.sub(r"\s+", " ", text or "").strip()
     if not text or not target or target == language:
@@ -179,6 +180,10 @@ def translate(language: str, text: str) -> str | None:
     except ImportError:
         raise TranslateError("Translation needs the argostranslate package (pip install argostranslate).")
     source, target = _argos_code(language, text), _argos_code(target)
+    if not download:
+        installed = _installed()
+        if (source, target) not in installed and not {(source, "en"), ("en", target)} <= installed:
+            raise TranslateError("The translation model isn't installed yet.")
     with _lock:  # one download and one model load at a time
         try:
             _ensure_models(source, target)

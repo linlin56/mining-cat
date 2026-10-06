@@ -1,12 +1,9 @@
-# mining_api.py - HTTP API of the mining features: dictionaries, lookups, word statuses, card
-# creator and Anki. Used by the reader's popup and by the Settings page.
-
 import tempfile
 from pathlib import Path
 
 from flask import Blueprint, jsonify, render_template, request, send_file
 
-from mining import anki, dictionaries, lookup, segment, words
+from mining import anki, dictionaries, frequency, lookup, segment, words
 from mining.languages import CHINESE_LANGUAGES, LANGUAGES, language_key
 
 bp = Blueprint("mining", __name__)
@@ -140,9 +137,44 @@ def api_lookup():
     text = str(body.get("text") or "")[:200]
     language = _language(body.get("language"))
     result = lookup.lookup(language, text)
+    ranker = frequency.Ranker(language)
     for entry in result["entries"]:
         entry["display_reading"] = words.display_reading(language, entry["expression"], entry.get("reading") or "")
+        # rank in the frequency list of the language, shown in the popup and the card creator
+        entry["frequency_rank"] = ranker.rank(entry["expression"], entry.get("form") or "")
+    result["frequency"] = ranker.frontier
     return jsonify(result)
+
+
+# The reading of every word of a card's sentence (HTML, the card's word in bold), chosen from the context.
+@bp.post("/api/sentence/readings")
+def api_sentence_readings():
+    from mining import sentence_readings
+
+    body = _body()
+    sentence = str(body.get("sentence") or "")[:5000]
+    return jsonify(sentence_readings.annotate(_language(body.get("language")), sentence, str(body.get("reading") or "")))
+
+
+# ---------------------------------------------------------------- frequency list
+
+@bp.get("/api/frequency/lists")
+def api_frequency_lists():
+    language = _language(request.args.get("language"))
+    ref = frequency.reference(language)
+    return jsonify(lists=frequency.lists(language), chosen=ref["id"] if ref else None, frontier=frequency.frontier(language),
+                   limit_base=frequency.LIMIT_BASE, limit_per_known_word=frequency.LIMIT_PER_KNOWN_WORD)
+
+
+@bp.post("/api/frequency/list")
+def api_choose_frequency_list():
+    body = _body()
+    language = _language(body.get("language"))
+    try:
+        frequency.choose(language, int(body["id"]) if body.get("id") not in (None, "") else None)
+    except (ValueError, TypeError) as exc:
+        raise ApiError(str(exc), title="Frequency list")
+    return jsonify(frontier=frequency.frontier(language))
 
 
 # Online recordings of a word (JapanesePod101, Wiktionary, Lingua Libre), fetched when the user asks for them.
@@ -194,7 +226,8 @@ def api_translate():
 
     body = _body()
     try:
-        translation = translate.translate(_language(body.get("language")), str(body.get("text") or ""))
+        translation = translate.translate(_language(body.get("language")), str(body.get("text") or ""),
+                                          download=not body.get("prefetch"))
     except translate.TranslateError as exc:
         raise ApiError(str(exc), title="Translation")
     return jsonify(translation=translation, target=translate.target_language())
@@ -238,17 +271,19 @@ def api_dictionaries():
 def api_import_dictionary():
     upload = request.files.get("file")
     if upload is None or not upload.filename:
-        raise ApiError("Choose a dictionary file (.zip).")
+        raise ApiError("Choose a dictionary file (.zip), or a frequency list (.json, .txt).")
     from web import profile
 
     # Dictionaries are imported for the language studied, unless the request names another.
     language = request.form.get("language") or profile.current() or ""
     if language and language not in LANGUAGES:
         raise ApiError(f"Unknown language: {language}")
-    tmp = Path(tempfile.mkstemp(suffix=".zip", prefix="miningcat-dict-")[1])
+    suffix = Path(upload.filename).suffix.lower()
+    suffix = suffix if suffix in dictionaries.FREQUENCY_LIST_SUFFIXES else ".zip"
+    tmp = Path(tempfile.mkstemp(suffix=suffix, prefix="miningcat-dict-")[1])
     upload.save(tmp)
     try:
-        info = dictionaries.inspect(tmp)
+        info = dictionaries.inspect(tmp, upload.filename)
     except dictionaries.DictionaryError:
         tmp.unlink(missing_ok=True)
         raise

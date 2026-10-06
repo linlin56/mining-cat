@@ -63,7 +63,7 @@ Then pick your workflow:
 - [Videos](video.md): subtitles for a YouTube, Instagram or Bilibili video, or a video file on your computer.
 - [Video games & screen share](video-game.md): OCR the text of a game window, and mine it from a web page.
 
-When you're done, the videos are in `output/final/`. Open them in MiningCat's [video player](player.md), in asbplayer or Migaku and start mining!
+When you're done, the videos are in `output/final/`. Open them in MiningCat's [video player](player.md), or in any player you like, and start mining!
 
 ## Accepted inputs
 

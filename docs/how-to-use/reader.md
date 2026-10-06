@@ -20,12 +20,30 @@ Click **Add books** or drop files on the page. Supported formats:
 
 Books are copied into the `library/` folder of the project, with their reading progress. Removing a book from the library deletes this copy, not your original file.
 
+## Comics and manga
+
+The library also takes comics and manga: drop their archive (or use **+ Add books**) (`.cbz`, `.zip`, and `.cbr`, `.cb7`, `.cbt` when your system's `bsdtar` reads them, as on macOS). A folder of images? Zip it first.
+
+The text of each page is read by OCR the first time the page is shown (and the next pages while you read), then kept. On macOS it's Apple Live Text, which reads vertical text; elsewhere EasyOCR, horizontal text only. The lines read are grouped into speech bubbles and drawn over the page, where they were read.
+
+- **Click a word** to look it up. The whole bubble is the card's sentence, and the page its picture (sentence audio: the voice of the card creator).
+- **Text** (`T`, or 文): shown on hover (default), outlined, or always shown.
+- **Pages**: one, two (side by side), or automatic (two when the window is wide); the cover can stand alone so that facing pages match the printed book. A double page scanned as one image always stands alone.
+- **Reading direction**: right to left for Japanese and Chinese, left to right otherwise; change it per comic in **Aa**.
+- **Characters of the text** (Mandarin): Traditional or Simplified, for the OCR.
+- **Read these pages again**: when the text read is wrong (after changing the script, for example).
+
+Keys: `←` `→` turn the page in the reading direction, `Space` / `Shift+Space` next / previous, `Home` `End`, `F` fullscreen. Clicking the page outside the text, or scrolling, turns it too.
+
+Limits: no PDF yet, and the OCR reads text over busy backgrounds or sound effects poorly.
+
 ## Reading
 
 | Action                 | How                                                                                     |
 | ---------------------- | --------------------------------------------------------------------------------------- |
 | Turn pages             | `←` `→`, `Space`, `Page Up/Down`, the mouse wheel, a click in the side margins, or a swipe |
 | Contents               | `T` or ☰                                                                                |
+| Recommended sentences  | `R` or *i+1* (see [comprehension and recommended sentences](mining.md#comprehension-and-recommended-sentences)) |
 | Settings               | `S` or Aa                                                                               |
 | Back to the library    | `Esc` or ←                                                                              |
 

@@ -1,4 +1,3 @@
-# The "Video game / Screen share" source of the web GUI (src/web/game.py).
 import pytest
 
 pytest.importorskip("flask")

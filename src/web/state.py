@@ -1,10 +1,3 @@
-# state.py - Server-side state shared by every browser tab: the running job, its log and progress,
-# and the last generated video subtitles (used by the video screen's frequency lists).
-#
-# The pipeline functions in gui_components/pipeline.py report progress through callbacks
-# (log, set_status, on_done, on_finish, schedule). Here they publish events on an EventBus,
-# which the browser follows through Server-Sent Events (/api/events).
-
 import itertools
 import subprocess
 import threading

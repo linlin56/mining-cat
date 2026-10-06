@@ -6,6 +6,7 @@ import threading
 import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 USER_AGENT = "MiningCat (https://github.com/linlin56/mining-cat)"
 TIMEOUT_S = 8
@@ -114,9 +115,11 @@ def wiktionary(language: str, words: list[str]) -> list[dict]:
 
 def lingua_libre(language: str, words: list[str]) -> list[dict]:
     titles = []
-    for word in words:
-        data = _json(COMMONS_API, {"action": "query", "list": "search", "srnamespace": 6, "srlimit": 20,
-                                   "srsearch": f'intitle:"{word}"'})
+    search = lambda word: _json(COMMONS_API, {"action": "query", "list": "search", "srnamespace": 6, "srlimit": 20,
+                                              "srsearch": f'intitle:"{word}"'})
+    with ThreadPoolExecutor(max_workers=len(words) or 1) as pool:
+        results = list(pool.map(search, words))
+    for word, data in zip(words, results):
         for hit in data.get("query", {}).get("search", []):
             title = hit["title"]
             stem = title.split(":", 1)[-1].rsplit(".", 1)[0]
@@ -145,9 +148,12 @@ def sources(language: str, expression: str, reading: str = "") -> list[dict]:
     if language in FILE_PREFIXES:
         attempts += [lambda: wiktionary(language, words), lambda: lingua_libre(language, words)]
     failed = False
-    for attempt in attempts:
+    # all the sources at once: the slowest one sets the time, not their sum
+    with ThreadPoolExecutor(max_workers=max(1, len(attempts))) as pool:
+        futures = [pool.submit(attempt) for attempt in attempts]
+    for future in futures:
         try:
-            for source in attempt():
+            for source in future.result():
                 if source["url"] not in {s["url"] for s in found}:
                     found.append(source)
         except (urllib.error.URLError, OSError, ValueError, KeyError):

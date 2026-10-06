@@ -131,6 +131,20 @@
 }
 .cue-time:hover { color: var(--accent); background: var(--field); }
 .cue-text { margin: 0; flex: 1; min-width: 0; font-size: 18px; line-height: 1.6; overflow-wrap: anywhere; cursor: pointer; }
+/* Comprehension and recommended (i+1) lines: every word known but one new word */
+.cue-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+.cue-summary .check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.cue.i1 { box-shadow: inset 3px 0 rgb(40, 160, 90); }
+.cue.i1.current { box-shadow: inset 3px 0 var(--accent); }
+.cue.i1::after {
+  content: "i+1"; flex: none; align-self: center; padding: 0 6px; border-radius: 99px;
+  font: 600 11px/18px var(--ui-font); color: rgb(30, 130, 70); background: rgba(40, 160, 90, .16);
+}
+.cues.i1-only .cue:not(.i1) { display: none; }
 .cues-empty { padding: 18px 16px; font-size: 14px; line-height: 1.5; }
 .cues-empty p { margin: 0 0 10px; }
 .cues-empty a { color: var(--link); }

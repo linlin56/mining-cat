@@ -1,6 +1,3 @@
-# options.py - Everything the web GUI needs to fill its dropdowns, and the rules that tie them together
-# (same behaviour as the Tkinter GUI: available conversions, voices, precision levels per language).
-
 from language import Language
 from gui_components.constants import (
     _CONVERT_OPTIONS_FOR_SCRIPT,

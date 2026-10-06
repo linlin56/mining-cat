@@ -2,7 +2,7 @@
 
 Select **Video game / Screen share** as the **Source** at the top of the GUI to mine sentences from anything displayed in a window: a video game, a visual novel, a video call, a website...
 
-MiningCat watches a window, reads its text with OCR, and pushes the **screenshot + text** to a web page. Open that page next to your game, click a word to look it up in your [dictionaries](mining.md), and make an Anki card: the screenshot goes on the card. Migaku, Yomitan or any other browser extension work on the page too.
+MiningCat watches a window, reads its text with OCR, and pushes the **screenshot + text** to a web page. Open that page next to your game, click a word to look it up in your [dictionaries](mining.md), and make an Anki card: the screenshot goes on the card. Yomitan or any other browser extension works on the page too.
 
 Nothing is recorded in `output/`: everything lives in the page, while the capture runs.
 

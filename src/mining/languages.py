@@ -1,9 +1,3 @@
-# languages.py - Language helpers shared by lookups, words and cards.
-#
-# Words and dictionaries are keyed by a short language code: "zh" (Mandarin, both scripts),
-# "yue" (Cantonese), "ja", "ko", "fr"... The script of Chinese text (traditional/simplified) is not
-# part of the key: 説 and 说 are simply two different expressions, linked for display.
-
 import re
 import unicodedata
 
@@ -104,6 +98,21 @@ def normalize_reading(reading: str, language: str) -> str:
     if language == "ja":
         return katakana_to_hiragana(reading)
     return reading
+
+
+def reading_key(reading: str, language: str) -> str:
+    """Key telling whether two dictionary readings are the same pronunciation: in Mandarin, pinyin with tone numbers
+    (xing2), with tone marks (xíng) and zhuyin (ㄒㄧㄥˊ) are. Only for comparing dictionaries: saved words use
+    normalize_reading."""
+    if language == "zh":
+        from mining.zhuyin import pinyin_to_zhuyin
+
+        zhuyin = pinyin_to_zhuyin(reading)
+        if zhuyin:
+            # the first tone may be written ˉ, and the neutral tone's dot before or after its syllable
+            zhuyin = re.sub(r"[\sˉ]", "", zhuyin)
+            return zhuyin.replace("˙", "") + "˙" * zhuyin.count("˙")
+    return normalize_reading(reading, language)
 
 
 # ---------------------------------------------------------------- dictionary language guess

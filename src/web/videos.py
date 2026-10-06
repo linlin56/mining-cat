@@ -516,17 +516,25 @@ def remove_subtitles(video_id: str, track_id: str) -> list[dict]:
         return tracks
 
 
-def clip(video_id: str, start, end) -> bytes:
+CLIP_MAX_S = 180
+
+
+def clip(video_id: str, start, end, exact: bool = False, fmt: str = "mp3") -> bytes:
     """The audio of one or more subtitle lines as MP3, with the margins of the settings, cut from the file the browser
-    plays (its first audio stream is the chosen track)."""
+    plays (its first audio stream is the chosen track). `exact`: the span as given, without margins (chosen on the
+    card creator's waveform). `fmt` "wav": for that waveform."""
     try:
         start, end = float(start), float(end)
     except (TypeError, ValueError):
         raise VideoError("Invalid time span.")
+    if fmt not in ("mp3", "wav"):
+        raise VideoError("Invalid audio format.")
+    if end - start > CLIP_MAX_S:
+        raise VideoError(f"The audio can't be longer than {CLIP_MAX_S // 60} minutes.")
     settings = get_settings()
+    before, after = (0.0, 0.0) if exact else (settings["audio_before"] / 1000, settings["audio_after"] / 1000)
     try:
-        return book_audio.cut_mp3(file_path(video_id), start, end,
-                                  before=settings["audio_before"] / 1000, after=settings["audio_after"] / 1000)
+        return book_audio.cut_mp3(file_path(video_id), start, end, before=before, after=after, fmt=fmt)
     except book_audio.AudioError as exc:
         raise VideoError(str(exc))
 

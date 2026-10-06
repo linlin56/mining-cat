@@ -1,8 +1,3 @@
-# app.py - Flask web GUI: the browser version of gui.py.
-#
-# The server only binds to 127.0.0.1 and reuses the same pipeline as the Tkinter GUI
-# (gui_components/pipeline.py), which runs each step through src/main.py.
-
 import json
 import threading
 from pathlib import Path

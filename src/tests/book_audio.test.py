@@ -1,4 +1,3 @@
-# Audio of a reader book: subtitles + chapter audio of a MiningCat conversion (src/web/book_audio.py).
 import shutil
 import subprocess
 

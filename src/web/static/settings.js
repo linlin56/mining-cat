@@ -78,14 +78,14 @@ async function loadDictionaries() {
     ...list.map((d, i) => {
       const enabled = el("input", { type: "checkbox", checked: Boolean(d.enabled), "aria-label": `Use ${d.title}` });
       enabled.addEventListener("change", async () => {
-        try { await api(`/api/dict/${d.id}`, { enabled: enabled.checked }); loadDictionaries(); } catch (err) { showError(err); }
+        try { await api(`/api/dict/${d.id}`, { enabled: enabled.checked }); loadDictionaries(); loadFrequency(); } catch (err) { showError(err); }
       });
       const move = async (delta) => {
         const ids = list.map((x) => x.id);
         const j = i + delta;
         [ids[i], ids[j]] = [ids[j], ids[i]];
         const others = dictionaries.filter((x) => x.language !== lang).map((x) => x.id);
-        try { await api("/api/dict/reorder", { ids: [...ids, ...others] }); loadDictionaries(); } catch (err) { showError(err); }
+        try { await api("/api/dict/reorder", { ids: [...ids, ...others] }); loadDictionaries(); loadFrequency(); } catch (err) { showError(err); }
       };
       const counts = [d.term_count ? `${d.term_count.toLocaleString()} terms` : null,
         d.kanji_count ? `${d.kanji_count.toLocaleString()} characters` : null,
@@ -99,10 +99,25 @@ async function loadDictionaries() {
           class: "icon-btn danger", type: "button", title: "Delete", "aria-label": `Delete ${d.title}`, text: "🗑",
           onclick: async () => {
             if (!(await confirmBox("Delete dictionary", `Delete “${d.title}”? You can import it again later.`, "Delete"))) return;
-            try { await api(`/api/dict/${d.id}/delete`, {}); loadDictionaries(); } catch (err) { showError(err); }
+            try { await api(`/api/dict/${d.id}/delete`, {}); loadDictionaries(); loadFrequency(); } catch (err) { showError(err); }
           },
         }));
     }))));
+}
+
+// ---------------------------------------------------------------- frequency list
+
+async function loadFrequency() {
+  const { lists, chosen, frontier, limit_base: base, limit_per_known_word: perWord } = await api(`/api/frequency/lists?language=${STUDY}`);
+  const select = $("freq-list");
+  options(select, lists.length
+    ? lists.map((l) => [String(l.id), l.enabled ? l.title : `${l.title} (disabled)`])
+    : [["", "None: every i+1 sentence is recommended"]], chosen === null ? "" : String(chosen));
+  select.disabled = lists.length < 2;
+  $("freq-frontier").textContent = frontier
+    ? `You know ${frontier.known.toLocaleString()} of its ${frontier.words.toLocaleString()} words: sentences are recommended `
+      + `for words up to #${frontier.limit.toLocaleString()} (${base.toLocaleString()} + ${perWord} per word you know).`
+    : "No frequency list yet: every sentence with one new word is recommended, frequent or not.";
 }
 
 async function importDictionary(file) {
@@ -126,10 +141,13 @@ async function importDictionary(file) {
       $("dict-progress-bar").style.width = `${Math.round(job.progress * 100)}%`;
       if (!job.done) { $("dict-progress-text").textContent = `Importing “${data.title}”: ${job.message}`; continue; }
       if (job.error) throw Object.assign(new Error(job.error), { title: "Import failed" });
-      $("dict-progress-text").textContent = `“${data.title}” imported: ${(job.dictionary.term_count || job.dictionary.kanji_count).toLocaleString()} ${job.dictionary.term_count ? "terms" : "characters"}.`;
+      const d = job.dictionary;
+      const [count, unit] = d.term_count ? [d.term_count, "terms"] : d.kanji_count ? [d.kanji_count, "characters"] : [d.meta_count, "frequencies"];
+      $("dict-progress-text").textContent = `“${data.title}” imported: ${count.toLocaleString()} ${unit}.`;
       break;
     }
     loadDictionaries();
+    loadFrequency();
   } catch (err) {
     progress.hidden = true;
     showError(err);
@@ -478,6 +496,12 @@ async function init() {
     await loadDictionaries();
     $("dict-pick").addEventListener("click", () => $("dict-file").click());
     $("dict-file").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; importDictionary(f); });
+    await loadFrequency();
+    $("freq-pick").addEventListener("click", () => $("freq-file").click());
+    $("freq-file").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; importDictionary(f); });
+    $("freq-list").addEventListener("change", async (e) => {
+      try { await api("/api/frequency/list", { language: STUDY, id: e.target.value }); loadFrequency(); } catch (err) { showError(err); }
+    });
     $("words-filter").addEventListener("change", loadWords);
     $("anki-test").addEventListener("click", async () => {
       try { await api("/api/anki/config", { url: $("anki-url").value }); } catch (err) { return showError(err); }

@@ -1,13 +1,3 @@
-# anki.py - Sends cards to Anki and reads the state of the user's cards back.
-#
-# Cards are made in MiningCat's card creator with MiningCat's own fields (word, reading, definition,
-# sentence, image, audio...). A per-language "note setup" says which Anki deck and note type to use and
-# what to put in each field of that note type, with markers like {word} or {sentence}.
-#
-# Delivery: AnkiConnect (the Anki add-on, also what a future MiningCat add-on would speak) when Anki
-# is open; otherwise the card waits in the database and is sent at the next sync, or can be exported
-# to an .apkg file that Anki (desktop, AnkiDroid, AnkiMobile) can import.
-
 import base64
 import html
 import json
@@ -35,8 +25,11 @@ CARD_FIELDS = {
     "definition": "Definition",
     "sentence": "Sentence",
     "sentence_translation": "Sentence translation",
+    "word_readings": "Word with its reading (Mandarin: 字[zi4])",
+    "sentence_readings": "Sentence with the reading of every word (Mandarin: 你[ni3]好[hao3])",
     "notes": "Notes",
     "source": "Source",
+    "frequency": "Frequency (rank in your frequency list)",
     "image": "Image",
     "audio": "Word audio",
     "sentence_audio": "Sentence audio",
@@ -44,7 +37,7 @@ CARD_FIELDS = {
 MEDIA_FIELDS = ("image", "audio", "sentence_audio")
 
 # Field names guessed from the user's note type. Each marker goes to the first unused field matching its pattern,
-# patterns being tried in this order: a clear "Definitions" field wins over a "Translation" one (in Migaku's note
+# patterns being tried in this order: a clear "Definitions" field wins over a "Translation" one (in some note
 # types, "Translation" is the sentence's), which only gets the definition when there's nothing better.
 _GUESSES = [
     (re.compile(r"sentence.*(audio|sound)|(audio|sound).*sentence", re.I), "{sentence_audio}"),
@@ -59,6 +52,7 @@ _GUESSES = [
     (re.compile(r"(translation|english|back)", re.I), "{definition}"),
     (re.compile(r"(translation|english)", re.I), "{sentence_translation}"),
     (re.compile(r"(source|book|reference)", re.I), "{source}"),
+    (re.compile(r"(frequency|freq|rank)", re.I), "{frequency}"),
     (re.compile(r"(note|comment|remark)", re.I), "{notes}"),
 ]
 # Flags of some note types ("Is Vocabulary Card", "Is Audio Card"): never filled with content.
@@ -257,13 +251,20 @@ def render_template(template: str, fields: dict, media: dict) -> str:
     return _MARKER.sub(replace, template or "")
 
 
-# Fields computed from the card's: the zhuyin of a Mandarin word, from its pinyin reading (CC-CEDICT has no zhuyin).
+# Fields computed from the card's: the zhuyin of a Mandarin word, from its pinyin reading (CC-CEDICT has no zhuyin),
+# and the readings of the word and of the sentence's words when the card creator didn't give them.
 def derived_fields(language: str, fields: dict) -> dict:
     derived = {}
-    if language == "zh" and not fields.get("zhuyin"):
+    if language == "zh":
+        from mining import sentence_readings
         from mining.zhuyin import pinyin_to_zhuyin
-        word = re.sub(r"<[^>]+>", "", fields.get("word", ""))
-        derived["zhuyin"] = pinyin_to_zhuyin(re.sub(r"<[^>]+>", "", fields.get("reading", "")), word)
+        reading = re.sub(r"<[^>]+>", "", fields.get("reading", ""))
+        if not fields.get("zhuyin"):
+            derived["zhuyin"] = pinyin_to_zhuyin(reading)
+        if not fields.get("word_readings"):
+            derived["word_readings"] = sentence_readings.word_field(re.sub(r"<[^>]+>", "", fields.get("word", "")).strip(), reading)
+        if not fields.get("sentence_readings") and fields.get("sentence"):
+            derived["sentence_readings"] = sentence_readings.annotate(language, fields["sentence"], reading)["field"]
     return derived
 
 

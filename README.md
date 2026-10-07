@@ -1,62 +1,69 @@
-# MiningCat
+# MiningCat 🐱
 
 📖 **Documentation: <https://linlin56.github.io/mining-cat/>**
 
-MiningCat is an all-in-one tool for learning languages through immersion and sentence mining. Read books and comics, watch videos, play games, look up words in your own dictionaries, and turn the sentences you like into flashcards you can export to [Anki](https://apps.ankiweb.net/).
+MiningCat is a free and open source, all-in-one tool for learning languages through immersion and sentence mining. Read, watch and play in the language you study, look up words in your own dictionaries, and turn the sentences you like into Anki flashcards.
 
-Everything runs locally, in your browser: nothing is sent online.
+> ℹ️ Support is experimental for some languages. [Issues](https://github.com/linlin56/mining-cat/issues) are very welcome!
 
-## What it does
+## Features
 
-- **Read**: an ebook reader (EPUB, TXT, horizontal or vertical text) and a comic / manga reader whose text is read by OCR.
-- **Watch**: a video player for local videos with their subtitles, or YouTube / Instagram / Bilibili links downloaded with their captions.
-- **Play**: OCR on a game window (or any window), each line pushed with its screenshot to a page you can mine from.
-- **Look up words**: a dictionary popup that reads [Yomitan](https://github.com/yomidevs/yomitan)-format dictionaries (CC-CEDICT, JMdict, Wiktionary…), with character dictionaries and frequency lists.
-- **Know where you stand**: words coloured by status (new, learning, known), the share of a text you understand, and the sentences worth mining next (i+1), ranked with your frequency list.
-- **Make cards**: a card creator with the word, its reading, definitions, the sentence, its audio, a screenshot and an offline translation. Cards go to Anki through AnkiConnect, or are exported as an `.apkg` file. Your Anki decks keep the word statuses up to date.
-- **Create mineable videos**: turn an audiobook and its ebook into `.mp4` videos with accurate subtitles, chapter by chapter. Only the audiobook? Subtitles are generated with Whisper. Only the ebook? The audio is generated with text-to-speech. Videos without subtitles get them transcribed, or read from burned-in subtitles with OCR.
-- **Extras**: simplified ↔ traditional Chinese conversion, zhuyin, word frequency lists and Kanji Grid character lists.
+- 📚 **Read** EPUB, TXT, HTML, Markdown, comics and manga (horizontal or vertical text, furigana, saved progress), or paste any text in the Clipboard page.
+- 🎬 **Watch** local videos, or YouTube, Instagram (Reels) and Bilibili videos, in a player made for mining.
+- 🎮 **Play**: dialog boxes of a game (or any window) are read with OCR and sent, with a screenshot, to a page you can mine from.
+- 🔎 **Look up** words with a popup that reads [Yomitan](https://github.com/yomidevs/yomitan)-format dictionaries, with conjugation handling, pitch accent, audio and frequency ranks.
+- 📈 **Track** your progress: words coloured by status, comprehension of each text, and the **i+1** sentences worth mining next.
+- 🃏 **Make cards** (word, reading, definitions, sentence, audio, image, translation) sent to Anki through AnkiConnect, or exported as `.apkg`. Your Anki decks keep your word statuses up to date.
+- 🎞️ **Create mineable videos** (`.mp4` + `.srt`) from an audiobook and its ebook, an audiobook alone, an ebook alone (text-to-speech), or a video without subtitles (transcription, or OCR of burned-in subtitles).
+- 🈶 **Chinese tools**: simplified ⇄ traditional conversion, zhuyin / pinyin, context-aware readings.
 
-## Supported languages
+**Languages:** Mandarin (Taiwan, traditional / China, simplified), Cantonese (Hong Kong), Japanese, Korean, Vietnamese, English (US / UK), French, German, Italian, Spanish, Portuguese (Brazil / Portugal), Polish. Taiwanese Hokkien (Taigi) is a work in progress.
 
-| Language   | Variants                                 |
-| ---------- | ---------------------------------------- |
-| Mandarin   | Taiwan (traditional), China (simplified) |
-| Cantonese  | Hong Kong (traditional)                  |
-| Japanese   |                                          |
-| Korean     |                                          |
-| Vietnamese |                                          |
-| English    | United States, United Kingdom            |
-| French     |                                          |
-| German     |                                          |
-| Italian    |                                          |
-| Spanish    |                                          |
-| Portuguese | Brazil and Portugal voices               |
-| Polish     |                                          |
+## Under the hood
+
+MiningCat chains several speech and NLP components into one local, multilingual pipeline:
+
+| Task | Components |
+| --- | --- |
+| Speech recognition | [faster-whisper](https://github.com/SYSTRAN/faster-whisper), with selectable model sizes (tiny to large / turbo) |
+| Forced alignment of a book's text on its audiobook | [stable-ts](https://github.com/jianfch/stable-ts) (Whisper-based) |
+| Speech synthesis | [edge-tts](https://github.com/rany2/edge-tts) |
+| OCR (hardsubs, games, manga) | Apple Vision / Live Text on macOS, [EasyOCR](https://github.com/JaidedAI/EasyOCR) and [owocr](https://github.com/AuroraWright/owocr) elsewhere |
+| Offline machine translation of sentences | [Argos Translate](https://github.com/argosopentech/argos-translate) |
+| Word segmentation | Longest dictionary match, [jieba](https://github.com/fxsjy/jieba) and [Janome](https://github.com/mocobeta/janome) for frequency lists |
+| Morphology | Deconjugation (Japanese, Korean, French, Spanish...), Mandarin readings chosen from the context |
+| Learner modelling | Word statuses synced from Anki (card maturity), comprehension rate, i+1 recommendation bounded by a frequency list |
+| Chinese script conversion | [OpenCC](https://github.com/BYVoid/OpenCC) |
+
+It is a Python project with a local web interface, tested on Linux, macOS and Windows, with a test suite and a CI that requires at least 80% coverage.
 
 ## Getting started
 
-Requirements: Python 3.14, [ffmpeg](https://ffmpeg.org/), a web browser and `make`.
+> There are currently no executable files: installation requires the terminal.
+
+**Requirements:** Python 3.14 (tested with 3.14.5), [ffmpeg](https://ffmpeg.org/) (`brew install ffmpeg` / `sudo apt install ffmpeg`), a web browser, and `make`.
 
 ```bash
 git clone https://github.com/linlin56/mining-cat.git
 cd mining-cat
+
 python3 -m venv .venv
-source .venv/bin/activate
-make install
-make gui
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
+
+make install                   # installs everything else (Whisper, yt-dlp, OpenCC, owocr...)
+make gui                       # opens http://127.0.0.1:5050/ in your browser
 ```
 
-The GUI opens at <http://127.0.0.1:5050/>. Pick the language you study, then open the **Converter**, the **Reader**, the **Player** or the **Settings** (dictionaries and Anki). `make reader` and `make player` open the reader and the player directly.
+Keep the terminal open while you use MiningCat, and press `Ctrl+C` to stop it (`make gui PORT=8080` if the port is taken). The home page asks which language you study, then gives you the Converter, the Reader, the Player, the Clipboard and the Settings.
 
-See the [documentation](https://linlin56.github.io/mining-cat/how-to-use/) for each workflow, and the [CLI reference](https://linlin56.github.io/mining-cat/how-to-use/cli/) to use MiningCat from the terminal.
+Then import your dictionaries and connect Anki in *Settings*, add a book or a video, and click a word to start mining. The full guides (audiobooks & ebooks, videos, video games, reader, player, dictionaries & Anki cards, CLI) are in the [documentation](https://linlin56.github.io/mining-cat/how-to-use/).
 
-This project is fairly recent: [issues](https://github.com/linlin56/mining-cat/issues) and contributions are very appreciated! See [CONTRIBUTE.md](CONTRIBUTE.md).
+## Contributing
+
+Bug reports, language proofreading, new languages, new video platforms, capture backends for other systems and doc fixes are all very welcome. See [CONTRIBUTE.md](CONTRIBUTE.md) and the [contributor guide](https://linlin56.github.io/mining-cat/how-to-contribute/).
 
 ## License
 
-MiningCat is free software, released under the [GNU Affero General Public License v3.0 or later](LICENSE) (AGPL-3.0-or-later).
-
-You are free to use, study, modify and redistribute it. If you distribute a modified version, or make it available to users over a network, you must publish its source code under the same license.
+MiningCat is free software, released under the [GNU Affero General Public License v3.0 or later](LICENSE) (AGPL-3.0-or-later). If you distribute a modified version, or make it available to users over a network, you must publish its source code under the same license.
 
 MiningCat doesn't provide any book or video. Only use it with content you are allowed to use.

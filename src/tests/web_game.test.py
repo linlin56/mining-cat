@@ -18,7 +18,7 @@ INFO = BackendInfo(id="fake", label="Fake OS", platforms=("fake",), module="", c
 
 class FakeBackend(CaptureBackend):
     has_system_picker = False
-    windows = [WindowInfo(1, "Ryujinx", "Zelda"), WindowInfo(2, "Safari")]
+    windows = [WindowInfo(1, "SampleApp", "Sample Quest"), WindowInfo(2, "Browser")]
 
     def __init__(self):
         self._window = None
@@ -73,7 +73,7 @@ def post(client, url, json=None):
 
 def ready_settings() -> GameOcrSettings:
     settings = GameOcrSettings(
-        backend="fake", backend_state={"id": 1, "owner": "Ryujinx"}, window_label="Ryujinx - Zelda",
+        backend="fake", backend_state={"id": 1, "owner": "SampleApp"}, window_label="SampleApp - Sample Quest",
         text_region=(0, 0.5, 1, 0.5),
     )
     settings.save()
@@ -91,7 +91,7 @@ def test_state_describes_the_saved_selection(client, backend):
     assert data["backend_label"] == "Fake OS"
     assert data["hotkeys"][0] == "F1"
     assert data["running"] is False
-    assert data["settings"]["window_label"] == "Ryujinx - Zelda"
+    assert data["settings"]["window_label"] == "SampleApp - Sample Quest"
     assert data["settings"]["is_ready"] is True
     assert data["settings"]["hotkey"] == "F9"
 
@@ -111,10 +111,10 @@ def test_settings_of_another_os_are_ignored(client, backend):
 
 def test_list_then_select_a_window(client, backend):
     data = client.get("/api/game/windows").get_json()
-    assert data == {"system_picker": False, "windows": [{"id": 1, "label": "Ryujinx - Zelda"}, {"id": 2, "label": "Safari"}]}
+    assert data == {"system_picker": False, "windows": [{"id": 1, "label": "SampleApp - Sample Quest"}, {"id": 2, "label": "Browser"}]}
     data = post(client, "/api/game/window", {"id": 2}).get_json()
-    assert data["settings"]["window_label"] == "Safari"
-    assert GameOcrSettings.load().backend_state == {"id": 2, "owner": "Safari"}
+    assert data["settings"]["window_label"] == "Browser"
+    assert GameOcrSettings.load().backend_state == {"id": 2, "owner": "Browser"}
 
 
 def test_selecting_a_gone_window_fails(client, backend):

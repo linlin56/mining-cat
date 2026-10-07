@@ -17,7 +17,7 @@ _OWN_PID = os.getpid()
 
 # hwnd -> window data. Order matters: it's the GetTopWindow / GetWindow(NEXT) z-order the fake API walks.
 WINDOWS = {
-    10: dict(title="Zelda", class_name="RyuWnd", pid=100, proc_name="Ryujinx.exe", rect=(0, 0, 800, 600)),
+    10: dict(title="Sample Quest", class_name="SampleAppWnd", pid=100, proc_name="SampleApp.exe", rect=(0, 0, 800, 600)),
     11: dict(title="Main Menu", class_name="MenuWndClass", pid=101, proc_name=None, rect=(0, 0, 800, 600)),
     12: dict(title="Tooltip", class_name="Tip", pid=102, proc_name="explorer.exe", rect=(0, 0, 800, 600), ex_style=_WS_EX_TOOLWINDOW),
     13: dict(title="Tiny", class_name="Tiny", pid=103, proc_name="tiny.exe", rect=(0, 0, 20, 20)),
@@ -112,7 +112,7 @@ def test_init_without_windows_api_raises():
 def test_list_windows_filters_out_everything_but_real_app_windows():
     with _windows_modules():
         result = windows.WindowsCapture().list_windows()
-    assert result == [WindowInfo(10, "Ryujinx", "Zelda"), WindowInfo(11, "MenuWndClass", "Main Menu")]
+    assert result == [WindowInfo(10, "SampleApp", "Sample Quest"), WindowInfo(11, "MenuWndClass", "Main Menu")]
 
 
 def test_list_windows_falls_back_to_class_name_without_a_process_name():
@@ -133,14 +133,14 @@ def test_state_and_label_follow_selected_window():
     with _windows_modules():
         backend = windows.WindowsCapture()
         assert backend.state == {} and backend.window_label == ""
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
-        assert backend.state == {"id": 10, "owner": "Ryujinx", "title": "Zelda"}
-        assert backend.window_label == "Ryujinx - Zelda"
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
+        assert backend.state == {"id": 10, "owner": "SampleApp", "title": "Sample Quest"}
+        assert backend.window_label == "SampleApp - Sample Quest"
 
 
 @pytest.mark.parametrize("state, expected_id", [
-    ({"id": 10, "owner": "Ryujinx", "title": "Zelda"}, 10),                  # same window id
-    ({"id": 999, "owner": "Ryujinx", "title": "Zelda"}, 10),                 # app restarted: same owner + title
+    ({"id": 10, "owner": "SampleApp", "title": "Sample Quest"}, 10),                  # same window id
+    ({"id": 999, "owner": "SampleApp", "title": "Sample Quest"}, 10),                 # app restarted: same owner + title
     ({"id": 999, "owner": "MenuWndClass", "title": "Old title"}, 11),       # title changed: same owner
 ])
 def test_restore_finds_the_saved_window(state, expected_id):
@@ -174,7 +174,7 @@ def test_grab_frame_window_closed_raises():
     user32.IsWindow.return_value = False
     with _windows_modules(user32=user32):
         backend = windows.WindowsCapture()
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
         with pytest.raises(CaptureError, match="gone"):
             backend.grab_frame()
 
@@ -185,7 +185,7 @@ def test_grab_frame_rect_unavailable_raises():
     user32.GetWindowRect.return_value = False  # window closed between IsWindow() and the rect lookup
     with _windows_modules(user32=user32):
         backend = windows.WindowsCapture()
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
         with pytest.raises(CaptureError, match="gone"):
             backend.grab_frame()
 
@@ -200,7 +200,7 @@ def test_grab_frame_empty_rect_raises():
     user32.GetWindowRect.side_effect = get_window_rect
     with _windows_modules(user32=user32):
         backend = windows.WindowsCapture()
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
         with pytest.raises(CaptureError, match="no visible content"):
             backend.grab_frame()
 
@@ -229,7 +229,7 @@ def test_grab_frame_print_window_failure_raises():
     user32.PrintWindow.return_value = False
     with _windows_modules(user32=user32):
         backend = windows.WindowsCapture()
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
         with pytest.raises(CaptureError, match="Could not capture"):
             backend.grab_frame()
 
@@ -239,7 +239,7 @@ def test_grab_frame_no_device_context_raises():
     user32.GetWindowDC.return_value = 0
     with _windows_modules(user32=user32):
         backend = windows.WindowsCapture()
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
         with pytest.raises(CaptureError, match="device context"):
             backend.grab_frame()
 
@@ -264,7 +264,7 @@ def test_grab_frame_reads_the_captured_bitmap():
 
     with _windows_modules(user32=user32, gdi32=gdi32):
         backend = windows.WindowsCapture()
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
         image = backend.grab_frame()
     assert image.size == (W, H)
     assert image.getpixel((0, 0)) == (0, 0, 255)
@@ -281,6 +281,6 @@ def test_grab_frame_dibits_failure_raises():
     gdi32.GetDIBits.return_value = 0
     with _windows_modules(user32=user32, gdi32=gdi32):
         backend = windows.WindowsCapture()
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
         with pytest.raises(CaptureError, match="Could not read the captured image"):
             backend.grab_frame()

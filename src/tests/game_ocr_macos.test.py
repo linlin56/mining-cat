@@ -54,10 +54,10 @@ def _macos_modules(quartz, sck=None):
         yield
 
 
-GAME = _window_info(10, "Ryujinx", "Zelda")
+GAME = _window_info(10, "SampleApp", "Sample Quest")
 WINDOWS = [
     GAME,
-    _window_info(11, "Steam", ""),
+    _window_info(11, "Launcher", ""),
     _window_info(12, "Menubar", layer=25),
     _window_info(13, "Tiny", width=20, height=20),
     _window_info(14, "Python", pid=os.getpid()),
@@ -86,7 +86,7 @@ def test_init_without_pyobjc_raises_capture_error():
 def test_list_windows_keeps_normal_windows_of_other_apps():
     with _macos_modules(_fake_quartz(WINDOWS)):
         windows = macos.MacOSCapture().list_windows()
-    assert windows == [WindowInfo(10, "Ryujinx", "Zelda"), WindowInfo(11, "Steam", "")]
+    assert windows == [WindowInfo(10, "SampleApp", "Sample Quest"), WindowInfo(11, "Launcher", "")]
 
 
 def test_list_windows_without_permission_asks_for_it():
@@ -108,15 +108,15 @@ def test_state_and_label_follow_selected_window():
     with _macos_modules(_fake_quartz(WINDOWS)):
         backend = macos.MacOSCapture()
         assert backend.state == {} and backend.window_label == ""
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
-        assert backend.state == {"id": 10, "owner": "Ryujinx", "title": "Zelda"}
-        assert backend.window_label == "Ryujinx - Zelda"
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
+        assert backend.state == {"id": 10, "owner": "SampleApp", "title": "Sample Quest"}
+        assert backend.window_label == "SampleApp - Sample Quest"
 
 
 @pytest.mark.parametrize("state, expected_id", [
-    ({"id": 10, "owner": "Ryujinx", "title": "Zelda"}, 10),        # same window id
-    ({"id": 999, "owner": "Ryujinx", "title": "Zelda"}, 10),       # app restarted: same app + title
-    ({"id": 999, "owner": "Steam", "title": "Old title"}, 11),     # title changed: same app
+    ({"id": 10, "owner": "SampleApp", "title": "Sample Quest"}, 10),        # same window id
+    ({"id": 999, "owner": "SampleApp", "title": "Sample Quest"}, 10),       # app restarted: same app + title
+    ({"id": 999, "owner": "Launcher", "title": "Old title"}, 11),     # title changed: same app
 ])
 def test_restore_finds_the_saved_window(state, expected_id):
     with _macos_modules(_fake_quartz(WINDOWS)):
@@ -152,7 +152,7 @@ def test_grab_frame_with_screencapturekit_uses_retina_size_and_caches_filter():
     quartz, sck = _fake_quartz(WINDOWS), _fake_sck([10, 11])
     with _macos_modules(quartz, sck):
         backend = macos.MacOSCapture()
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
         assert backend.grab_frame().getpixel((0, 0)) == (0, 0, 255)
         backend.grab_frame()
     assert sck.SCShareableContent.getShareableContentWithCompletionHandler_.call_count == 1
@@ -172,7 +172,7 @@ def test_grab_frame_window_closed_raises():
 def test_grab_frame_window_not_shareable_raises():
     with _macos_modules(_fake_quartz(WINDOWS), _fake_sck([11])):
         backend = macos.MacOSCapture()
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
         with pytest.raises(CaptureError, match="not capturable"):
             backend.grab_frame()
 
@@ -181,7 +181,7 @@ def test_grab_frame_permission_declined_by_screencapturekit():
     error = MagicMock(**{"code.return_value": -3801})
     with _macos_modules(_fake_quartz(WINDOWS), _fake_sck([10], image=None, error=error)):
         backend = macos.MacOSCapture()
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
         with pytest.raises(CaptureError, match="Screen Recording permission"):
             backend.grab_frame()
 
@@ -190,7 +190,7 @@ def test_grab_frame_image_conversion_error_is_reported():
     quartz = _fake_quartz(WINDOWS)
     with _macos_modules(quartz, _fake_sck([10])):
         backend = macos.MacOSCapture()
-        backend.select_window(WindowInfo(10, "Ryujinx", "Zelda"))
+        backend.select_window(WindowInfo(10, "SampleApp", "Sample Quest"))
         quartz.CGDataProviderCopyData.return_value = None
         with pytest.raises(CaptureError, match="Could not read the captured image"):
             backend.grab_frame()

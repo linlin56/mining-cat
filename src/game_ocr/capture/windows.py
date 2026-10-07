@@ -1,4 +1,5 @@
 import ctypes
+import ntpath
 import os
 from ctypes import wintypes
 
@@ -186,7 +187,7 @@ class WindowsCapture(CaptureBackend):
             size = wintypes.DWORD(len(buf))
             if not self._kernel32.QueryFullProcessImageNameW(handle, 0, buf, ctypes.pointer(size)):
                 return None
-            return os.path.splitext(os.path.basename(buf.value))[0] or None
+            return ntpath.splitext(ntpath.basename(buf.value))[0] or None
         finally:
             self._kernel32.CloseHandle(handle)
 

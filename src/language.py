@@ -17,7 +17,7 @@ class LangConfig:
 
 class Language(Enum):
     MANDARIN_TW = LangConfig(
-        label='Mandarin - Taiwan (Traditionnal)',
+        label='Mandarin - Taiwan (Traditional)',
         whisper_code='zh',
         iso639_2='zho',
         closing_punct=frozenset('。？！」』'),

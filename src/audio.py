@@ -1,5 +1,3 @@
-# audio.py - Audio chapter extraction.
-
 import json
 import shutil
 import subprocess

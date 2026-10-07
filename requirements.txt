@@ -15,6 +15,9 @@ easyocr
 pyobjc; platform_system == "Darwin"
 opencc-python-reimplemented>=0.1.7
 edge-tts>=7.0
+argostranslate>=1.9
+flask>=3.0
+genanki>=0.13
 jieba>=0.42
 janome>=0.5
 pytest>=8.0

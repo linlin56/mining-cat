@@ -25,7 +25,7 @@ def choose_window(windows: list[WindowInfo], query: str | None, ask: Callable[[s
         print("  Invalid choice.")
 
 
-# Asks the user for the game window: through the OS dialog (Wayland portal), or from a list MiningCat prints (macOS).
+# Asks the user for the game window: through the OS dialog (Wayland portal), or from a list MiningCat prints (macOS, Windows).
 def select_window(backend: CaptureBackend, settings: GameOcrSettings, query: str | None = None) -> None:
     info = capture.backend_info()
     if backend.has_system_picker:

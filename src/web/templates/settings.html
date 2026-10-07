@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings · MiningCat</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='settings.css') }}">
+  <script src="{{ url_for('static', filename='settings.js') }}" defer></script>
+</head>
+<body data-study="{{ study.id if study else "" }}">
+  <div class="page">
+    <header class="topbar">
+      <h1 class="brand"><a class="brand-link" href="/"><span class="brand-mark" aria-hidden="true">🐱</span> Settings</a></h1>
+      <nav class="top-links">
+        {% include "_study.html" %}
+        <a class="nav-link" href="/converter/">Converter</a>
+        <a class="nav-link" href="/reader/">Reader</a>
+        <a class="nav-link" href="/player/">Player</a>
+      </nav>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <a href="#dictionaries" role="tab" data-tab="dictionaries">Dictionaries</a>
+      <a href="#languages" role="tab" data-tab="languages">Words</a>
+      <a href="#anki" role="tab" data-tab="anki">Anki</a>
+      <a href="#cards" role="tab" data-tab="cards">Cards <span class="badge" id="pending-badge" hidden></span></a>
+    </nav>
+
+    <!-- ================= Dictionaries ================= -->
+    <section id="tab-dictionaries" class="tab-panel" hidden>
+      <div class="panel">
+        <h2 class="panel-title">Import a {{ study.name }} dictionary</h2>
+        <p class="help">MiningCat reads dictionaries in Yomitan's format (.zip). For example CC-CEDICT (Mandarin),
+          words.hk (Cantonese), JMdict (Japanese), and frequency lists.
+          They're stored in the project's <code>library/</code> folder.</p>
+        <div class="row">
+          <div class="field">
+            <span class="field-label">File</span>
+            <div class="row tight">
+              <button type="button" class="btn btn-primary" id="dict-pick">Choose a .zip…</button>
+              <input type="file" id="dict-file" accept=".zip" hidden>
+            </div>
+          </div>
+        </div>
+        <div class="import-progress" id="dict-progress" hidden>
+          <div class="progress"><div class="progress-bar" id="dict-progress-bar"></div></div>
+          <p class="status dim" id="dict-progress-text"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">{{ study.name }} frequency list</h2>
+        <p class="help">Recommended sentences (i+1) only teach frequent words: their new word must be high enough in your
+          frequency list. The more of its words you know, the further down the list they go. The list's rank is also
+          shown in the dictionary popup and the card creator.<br>
+          Import a Yomitan frequency dictionary (.zip), or a JSON frequency list (.json, the words from the most
+          frequent; a text file with a word per line works too).</p>
+        <div class="row">
+          <label class="field">
+            <span class="field-label">Used for recommendations</span>
+            <select id="freq-list"></select>
+          </label>
+          <div class="field">
+            <span class="field-label">File</span>
+            <div class="row tight">
+              <button type="button" class="btn" id="freq-pick">Import a frequency list…</button>
+              <input type="file" id="freq-file" accept=".zip,.json,.txt,.csv,.tsv" hidden>
+            </div>
+          </div>
+        </div>
+        <p class="dim" id="freq-frontier"></p>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Your {{ study.name }} dictionaries</h2>
+        <p class="help">Results are shown in this order. Disable a dictionary to hide it without deleting it.</p>
+        <div id="dict-list"></div>
+      </div>
+    </section>
+
+    <!-- ================= Languages ================= -->
+    <section id="tab-languages" class="tab-panel" hidden>
+      {% if study.chinese %}
+      <div class="panel">
+        <h2 class="panel-title">Chinese characters</h2>
+        <p class="help">Choose the characters you learn. Words are saved in that script; a word whose characters are the
+          same in both scripts counts for both. When you know a word in the other script, the dictionary tells you.</p>
+        <div id="script-settings"></div>
+        {% if study.id == "zh" %}
+        <p class="help">Readings: how Mandarin pronunciation is shown in the popup and written in the cards' reading
+          field. Your words keep the same status whichever you choose.</p>
+        <div id="reading-settings"></div>
+        {% endif %}
+      </div>
+      {% endif %}
+      <div class="panel">
+        <h2 class="panel-title">Your {{ study.name }} words</h2>
+        <div id="word-counts"></div>
+        <div class="row">
+          <label class="field">
+            <span class="field-label">Show</span>
+            <select id="words-filter">
+              <option value="">All statuses</option>
+              <option value="learning">Learning</option>
+              <option value="known">Known</option>
+              <option value="ignored">Ignored</option>
+            </select>
+          </label>
+        </div>
+        <div class="table-wrap"><table class="table" id="words-table"></table></div>
+      </div>
+    </section>
+
+    <!-- ================= Anki ================= -->
+    <section id="tab-anki" class="tab-panel" hidden>
+      <div class="panel">
+        <h2 class="panel-title">Connection</h2>
+        <p class="help">MiningCat talks to Anki through the <strong>AnkiConnect</strong> add-on: in Anki, open
+          Tools › Add-ons › Get Add-ons… and enter the code <code>2055492159</code>, then restart Anki.
+          When Anki is closed, your cards wait here and are sent at the next sync.</p>
+        <div class="row">
+          <label class="field field-grow">
+            <span class="field-label">AnkiConnect address</span>
+            <input type="url" id="anki-url">
+          </label>
+          <button type="button" class="btn" id="anki-test">Test the connection</button>
+        </div>
+        <p class="connection-state" id="anki-state"></p>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">New cards</h2>
+        <p class="help">Choose where your {{ study.name }} cards go and what each field of your note type receives.</p>
+        <div class="row">
+          <label class="field">
+            <span class="field-label">Deck</span>
+            <select id="note-deck"></select>
+          </label>
+          <label class="field">
+            <span class="field-label">Note type</span>
+            <select id="note-model"></select>
+          </label>
+        </div>
+        <div id="field-mapping"></div>
+        <div class="row">
+          <label class="field field-grow">
+            <span class="field-label">Tags added to every card</span>
+            <input type="text" id="note-tags" placeholder="mining-cat">
+          </label>
+          <label class="field field-grow">
+            <span class="field-label">Voice reading sentences without audio</span>
+            <select id="note-voice"></select>
+          </label>
+          <button type="button" class="btn btn-primary" id="note-save">Save</button>
+        </div>
+        <p class="dim saved" id="note-saved"></p>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Sentence translation</h2>
+        <p class="help">New cards get a translation of their sentence, made offline with Argos Translate. The
+          first time a language is translated, its model (about 100 MB) is downloaded.</p>
+        <div class="row">
+          <label class="field">
+            <span class="field-label">Translate sentences to</span>
+            <select id="translation-language"></select>
+          </label>
+          <button type="button" class="btn btn-primary" id="translation-save">Save</button>
+        </div>
+        <p class="dim saved" id="translation-saved"></p>
+        <h3 class="panel-subtitle">Models</h3>
+        <p class="help">Download the {{ study.name }} models ahead of time, so that the first card doesn't wait for them.
+          {% if study.id == "zh" %}The models of the characters you learn (traditional, simplified or both) are downloaded.{% endif %}</p>
+        <div class="row">
+          <button type="button" class="btn" id="model-download">Download the {{ study.name }} models</button>
+        </div>
+        <div class="model-progress" id="model-progress" hidden>
+          <progress id="model-progress-bar" max="1"></progress>
+          <span class="dim" id="model-progress-text"></span>
+        </div>
+        <div id="model-list"></div>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Word statuses from Anki</h2>
+        <p class="help">At each sync, MiningCat reads the cards of these {{ study.name }} decks: a word is <em>learning</em> while its
+          card is young, and <em>known</em> once its interval reaches the number of days below. Words you marked
+          known or ignored yourself are never changed. Cards made in MiningCat are always followed.</p>
+        <div id="sync-sources"></div>
+        <div class="row">
+          <button type="button" class="btn" id="sync-add">+ Add a deck</button>
+          <label class="field">
+            <span class="field-label">Known after (days)</span>
+            <input type="number" id="known-interval" min="1" max="3650">
+          </label>
+          <button type="button" class="btn btn-primary" id="sync-save">Save</button>
+          <button type="button" class="btn" id="sync-now">Sync now</button>
+        </div>
+        <p class="dim saved" id="sync-report"></p>
+      </div>
+    </section>
+
+    <!-- ================= Cards ================= -->
+    <section id="tab-cards" class="tab-panel" hidden>
+      <div class="panel">
+        <h2 class="panel-title">{{ study.name }} cards</h2>
+        <p class="help">Cards waiting for Anki are sent at the next sync. If you can't use AnkiConnect (on another
+          computer, or with AnkiDroid / AnkiMobile), export them to an .apkg file and open it with Anki: they use
+          a “MiningCat” note type.</p>
+        <div class="row">
+          <label class="field">
+            <span class="field-label">Show</span>
+            <select id="cards-filter">
+              <option value="">All</option>
+              <option value="pending" selected>Waiting for Anki</option>
+              <option value="failed">Refused by Anki</option>
+              <option value="sent">In Anki</option>
+              <option value="exported">Exported</option>
+            </select>
+          </label>
+          <button type="button" class="btn" id="cards-send">Send waiting cards</button>
+          <button type="button" class="btn" id="cards-export">Export waiting cards (.apkg)</button>
+        </div>
+        <div class="table-wrap"><table class="table" id="cards-table"></table></div>
+      </div>
+    </section>
+  </div>
+
+  <dialog id="dialog" class="dialog">
+    <form method="dialog">
+      <h3 id="dialog-title"></h3>
+      <p id="dialog-message"></p>
+      <div class="dialog-actions" id="dialog-actions"></div>
+    </form>
+  </dialog>
+</body>
+</html>

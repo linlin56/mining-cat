@@ -16,6 +16,10 @@ mining-cat/
     ├── frequency/           # word frequency (.csv) and character lists (.json)
     ├── temp/                # intermediate files (chapter metadata, OCR frames...)
     └── final/               # The videos you want
+library/                     # the reader's books, the player's videos, dictionaries and cards (ignored by git)
+├── books/                   #   one folder per book
+├── videos/                  #   one folder per video: the file, its subtitles, your position
+└── miningcat.db             #   dictionaries, word statuses and cards
 ```
 
 When you pick files in the GUI, they're copied into `sources/` for you. With the [CLI](cli.md), put them there yourself.

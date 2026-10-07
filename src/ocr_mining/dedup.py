@@ -7,6 +7,11 @@ from language import Language
 
 TEXT_SIMILARITY_THRESHOLD = 0.85
 MAX_PIXEL_DIFF_RATIO = 0.02
+# A pixel that changed by more than this (out of 255) changed for real, not from compression noise...
+STRONG_PIXEL_DIFF = 64
+# ...and frames differ as soon as this share of their pixels did. A subtitle line appearing on a plain
+# background (black bars, a game's dialog box) barely moves the mean difference, but changes these pixels a lot.
+MAX_STRONG_DIFF_RATIO = 0.005
 
 # Preserve aspect ratio and use a larger downscale size 
 # so subtitle text remains distinguishable and real changes do not get mistaken for identical frames.
@@ -29,7 +34,10 @@ def frames_are_similar(a: Image.Image, b: Image.Image, threshold: float = MAX_PI
     b_small = _downscale_for_diff(b)
     diff = ImageChops.difference(a_small, b_small)
     mean_diff = ImageStat.Stat(diff).mean[0]
-    return (mean_diff / 255) <= threshold
+    if mean_diff / 255 > threshold:
+        return False
+    strong = sum(diff.histogram()[STRONG_PIXEL_DIFF + 1:])
+    return strong / (diff.width * diff.height) <= MAX_STRONG_DIFF_RATIO
 
 
 def text_similarity(a: str, b: str) -> float:

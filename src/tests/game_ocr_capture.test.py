@@ -7,18 +7,21 @@ from game_ocr.capture import CaptureBackend, CaptureError, WindowInfo
 
 
 # per-OS switch
-@pytest.mark.parametrize("platform, expected_id", [("linux", "linux_wayland"), ("darwin", "macos")])
+@pytest.mark.parametrize("platform, expected_id", [
+    ("linux", "linux_wayland"), ("darwin", "macos"), ("win32", "windows"),
+])
 def test_backend_info_picks_the_platform_backend(platform, expected_id):
     assert capture.backend_info(platform).id == expected_id
 
 
 def test_backend_info_unsupported_platform_returns_none():
-    assert capture.backend_info("win32") is None
+    assert capture.backend_info("freebsd") is None
 
 
 def test_backend_labels():
     assert capture.backend_info("linux").label == "Linux (Tested on Ubuntu, Wayland)"
     assert capture.backend_info("darwin").label == "macOS"
+    assert capture.backend_info("win32").label == "Windows"
 
 
 def test_backend_info_defaults_to_current_platform():
@@ -27,11 +30,11 @@ def test_backend_info_defaults_to_current_platform():
 
 
 def test_create_backend_unsupported_platform_raises():
-    with pytest.raises(CaptureError, match="isn't supported on 'win32'"):
-        capture.create_backend("win32")
+    with pytest.raises(CaptureError, match="isn't supported on 'freebsd'"):
+        capture.create_backend("freebsd")
 
 
-@pytest.mark.parametrize("platform", ["linux", "darwin"])
+@pytest.mark.parametrize("platform", ["linux", "darwin", "win32"])
 def test_create_backend_instantiates_the_registered_class(platform):
     info = capture.backend_info(platform)
     fake_cls = MagicMock()
@@ -52,11 +55,11 @@ def test_registered_modules_and_classes_exist():
 
 # WindowInfo
 def test_window_label_with_title():
-    assert WindowInfo(1, "Steam", "My Game").label == "Steam - My Game"
+    assert WindowInfo(1, "Launcher", "My Game").label == "Launcher - My Game"
 
 
 def test_window_label_without_title():
-    assert WindowInfo(1, "Ryujinx").label == "Ryujinx"
+    assert WindowInfo(1, "SampleApp").label == "SampleApp"
 
 
 # CaptureBackend base

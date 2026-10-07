@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MiningCat · Video game</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='game.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mining.css') }}">
+  <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='game.js') }}" defer></script>
+</head>
+<body>
+  <header class="game-bar">
+    <a class="brand" href="/converter/">🐱 MiningCat</a>
+    <span class="game-status" id="status">connecting…</span>
+    <span class="game-count dim" id="count"></span>
+    <span class="spacer"></span>
+    <button type="button" class="btn" id="capture" title="Capture now">Capture</button>
+    <button type="button" class="btn" id="clear" title="Clear the history, in every open tab">Clear</button>
+  </header>
+  <main class="game-feed" id="feed">
+    <p class="game-empty" id="empty"></p>
+  </main>
+</body>
+</html>

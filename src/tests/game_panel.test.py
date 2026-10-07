@@ -29,7 +29,7 @@ class FakeBackend(CaptureBackend):
         self.closed = False
 
     def list_windows(self):
-        return [WindowInfo(3, "Ryujinx", "Zelda")]
+        return [WindowInfo(3, "SampleApp", "Sample Quest")]
 
     def select_window(self, window=None):
         self.selected = window or WindowInfo(0, "portal")
@@ -60,7 +60,7 @@ def root():
 
 
 def _ready_settings():
-    return GameOcrSettings(backend="macos", backend_state={"id": 3}, window_label="Ryujinx - Zelda",
+    return GameOcrSettings(backend="macos", backend_state={"id": 3}, window_label="SampleApp - Sample Quest",
                            screenshot_region=(0, 0, 1, 1), text_region=(0, 0.5, 1, 0.5))
 
 
@@ -96,7 +96,7 @@ def test_loads_saved_selection(root):
     _ready_settings().save()
     panel = _panel(root)
     assert panel.is_ready
-    assert panel._window_lbl.cget("text") == "Ryujinx - Zelda"
+    assert panel._window_lbl.cget("text") == "SampleApp - Sample Quest"
     assert panel._text_lbl.cget("text") == "Selected"
     assert str(panel._text_btn.cget("state")) == "normal"
 
@@ -153,13 +153,13 @@ def test_on_change_is_called_on_refresh(root):
 def test_select_window_from_list(root):
     panel = _panel(root)
     backend = FakeBackend()
-    window = WindowInfo(3, "Ryujinx", "Zelda")
+    window = WindowInfo(3, "SampleApp", "Sample Quest")
     with patch.object(game_panel_module.capture, "create_backend", return_value=backend), \
          patch("gui_components.game_dialogs.WindowPickerDialog") as dialog:
         dialog.return_value.show.return_value = window
         panel._select_window()
     assert backend.selected == window and backend.closed
-    assert GameOcrSettings.load().window_label == "Ryujinx - Zelda"
+    assert GameOcrSettings.load().window_label == "SampleApp - Sample Quest"
     assert str(panel._screenshot_btn.cget("state")) == "normal"
 
 

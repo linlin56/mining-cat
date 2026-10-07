@@ -1,5 +1,3 @@
-# align.py - Forced alignment of chapter text to audio.
-
 import re
 import time
 from dataclasses import dataclass

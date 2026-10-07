@@ -1,11 +1,14 @@
+import contextlib
+import ctypes
 import subprocess
+import threading
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from game_ocr import hotkey
-from game_ocr.hotkey import GnomeHotkey, HotkeyError, MacOSHotkey
+from game_ocr.hotkey import GnomeHotkey, HotkeyError, MacOSHotkey, WindowsHotkey
 
 URL = "http://127.0.0.1:6677/capture"
 PATH = hotkey._GNOME_BINDING_PATH
@@ -32,8 +35,10 @@ def test_create_hotkey_switch():
     assert isinstance(hotkey.create_hotkey("F9", "linux"), GnomeHotkey)
     with patch.object(hotkey, "MacOSHotkey") as macos_cls:
         assert hotkey.create_hotkey("F9", "darwin") is macos_cls.return_value
-    with pytest.raises(HotkeyError, match="win32"):
-        hotkey.create_hotkey("F9", "win32")
+    with patch.object(hotkey, "WindowsHotkey") as windows_cls:
+        assert hotkey.create_hotkey("F9", "win32") is windows_cls.return_value
+    with pytest.raises(HotkeyError, match="freebsd"):
+        hotkey.create_hotkey("F9", "freebsd")
 
 
 def test_create_hotkey_defaults_to_current_platform():
@@ -190,3 +195,112 @@ def test_macos_stop_stops_run_loop():
     quartz.CFRunLoopStop.assert_called_once_with(run_loop)
     key.stop()  # idempotent
     quartz.CFRunLoopStop.assert_called_once()
+
+
+# ---- Windows (fake ctypes.WinDLL)
+
+def _fake_windows_api():
+    user32, kernel32 = MagicMock(), MagicMock()
+    kernel32.GetCurrentThreadId.return_value = 4242
+    user32.SetWindowsHookExW.return_value = 777
+    # The real call blocks until a message arrives: return "no more messages" right away so the thread exits in tests.
+    user32.GetMessageW.return_value = 0
+    return {"user32": user32, "kernel32": kernel32}
+
+
+# ctypes.WinDLL and ctypes.WINFUNCTYPE only exist on Windows: faked here (with create=True) so the test runs on any OS.
+# WINFUNCTYPE is faked as a no-op decorator, so `self._hook_ref` stays the plain Python callback, callable directly.
+@contextlib.contextmanager
+def _windows_hotkey_modules(dlls):
+    with patch.object(hotkey.ctypes, "WinDLL", lambda name, **_kwargs: dlls[name], create=True), \
+         patch.object(hotkey.ctypes, "WINFUNCTYPE", lambda *_types: (lambda f: f), create=True):
+        yield
+
+
+def _press(callback, vk_code, code=0, message=None):
+    info = hotkey._KBDLLHOOKSTRUCT(vkCode=vk_code)
+    return callback(code, message or hotkey._WM_KEYDOWN, ctypes.addressof(info))
+
+
+def test_windows_without_api_raises():
+    with patch.object(hotkey.ctypes, "WinDLL", MagicMock(side_effect=OSError("boom")), create=True):
+        with pytest.raises(HotkeyError, match="Windows API"):
+            WindowsHotkey("F9")
+
+
+def test_windows_listens_to_the_selected_key_only():
+    dlls = _fake_windows_api()
+    on_press = MagicMock()
+    with _windows_hotkey_modules(dlls):
+        key = WindowsHotkey("F9")
+        key.start(on_press, URL)
+    assert dlls["user32"].SetWindowsHookExW.call_args[0][0] == hotkey._WH_KEYBOARD_LL
+    callback = key._hook_ref
+
+    _press(callback, 0x77)  # F8
+    on_press.assert_not_called()
+    _press(callback, 0x78)  # F9
+    on_press.assert_called_once()
+
+
+def test_windows_forwards_the_event_to_the_next_hook():
+    dlls = _fake_windows_api()
+    with _windows_hotkey_modules(dlls):
+        key = WindowsHotkey("F9")
+        key.start(lambda: None, URL)
+    result = _press(key._hook_ref, 0x78)
+    assert result is dlls["user32"].CallNextHookEx.return_value
+
+
+def test_windows_ignores_events_from_a_disabled_hook_code():
+    dlls = _fake_windows_api()
+    with _windows_hotkey_modules(dlls):
+        key = WindowsHotkey("F9")
+        on_press = MagicMock()
+        key.start(on_press, URL)
+    # code != 0 (HC_ACTION): must not read the (possibly meaningless) lparam, just forward the event.
+    key._hook_ref(-1, hotkey._WM_KEYDOWN, 0)
+    on_press.assert_not_called()
+
+
+def test_windows_hook_registration_failure_raises():
+    dlls = _fake_windows_api()
+    dlls["user32"].SetWindowsHookExW.return_value = 0
+    with _windows_hotkey_modules(dlls):
+        with pytest.raises(HotkeyError, match="SetWindowsHookExW"):
+            WindowsHotkey("F9").start(lambda: None, URL)
+
+
+def test_windows_pumps_messages_until_none_are_left():
+    dlls = _fake_windows_api()
+    done = threading.Event()
+    calls = []
+
+    def get_message(*_args):
+        calls.append(None)
+        if len(calls) >= 2:
+            done.set()
+            return 0
+        return 1  # one message, then none: the loop must exit
+    dlls["user32"].GetMessageW.side_effect = get_message
+
+    with _windows_hotkey_modules(dlls):
+        key = WindowsHotkey("F9")
+        key.start(lambda: None, URL)
+        assert done.wait(timeout=2)
+        key.stop()
+    assert len(calls) == 2
+    dlls["user32"].TranslateMessage.assert_called_once()
+    dlls["user32"].DispatchMessageW.assert_called_once()
+
+
+def test_windows_stop_unhooks_and_posts_quit():
+    dlls = _fake_windows_api()
+    with _windows_hotkey_modules(dlls):
+        key = WindowsHotkey("F9")
+        key.start(lambda: None, URL)
+        key.stop()
+    dlls["user32"].UnhookWindowsHookEx.assert_called_once_with(777)
+    dlls["user32"].PostThreadMessageW.assert_called_once_with(4242, hotkey._WM_QUIT, 0, 0)
+    key.stop()  # idempotent
+    dlls["user32"].UnhookWindowsHookEx.assert_called_once()

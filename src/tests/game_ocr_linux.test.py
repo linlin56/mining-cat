@@ -1,4 +1,3 @@
-# WaylandPortalCapture against a fake PyGObject (Gio / GLib / Gst / GstVideo), so it runs without a desktop portal.
 import contextlib
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch

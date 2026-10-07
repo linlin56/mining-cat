@@ -7,8 +7,10 @@
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='csv_cards.js') }}" defer></script>
 </head>
-<body>
+<body data-study='{{ study|tojson }}'>
   <div class="page">
     <header class="topbar">
       <h1 class="brand"><a class="brand-link" href="/"><span class="brand-mark" aria-hidden="true">🐱</span> Converter</a></h1>
@@ -215,7 +217,97 @@
           </div>
         </section>
       </div>
+
+      <!-- ===== CSV to cards screen (csv_cards.js) ===== -->
+      <div id="screen-csv" class="screen" hidden>
+        <section class="panel">
+          <h2 class="panel-title">CSV file <span class="dim">— one card per row, the first row naming the columns</span></h2>
+          <div class="dropzone" data-kind="csv">
+            <div class="ebook-row">
+              <span id="csv-label" class="dim">No file selected</span>
+              <button type="button" class="btn" id="csv-select">Select…</button>
+            </div>
+          </div>
+          <input type="file" id="csv-input" accept=".csv,.tsv,.txt,text/csv" hidden>
+        </section>
+
+        <section class="panel" id="csv-columns-panel" hidden>
+          <h2 class="panel-title">Columns</h2>
+          <div class="row">
+            <label class="field"><span class="field-label">Word *</span><select id="csv-col-word"></select></label>
+            <label class="field"><span class="field-label">Sentence *</span><select id="csv-col-sentence"></select></label>
+            <label class="field"><span class="field-label">Word pronunciation</span><select id="csv-col-reading"></select></label>
+            <label class="field"><span class="field-label">Sentence translation</span><select id="csv-col-translation"></select></label>
+            <label class="field"><span class="field-label">Notes</span><select id="csv-col-notes"></select></label>
+          </div>
+          <div class="csv-preview-wrap"><table class="csv-preview" id="csv-preview"></table></div>
+        </section>
+
+        <section class="panel" id="csv-content-panel" hidden>
+          <h2 class="panel-title">Card content <span class="dim">— as the card creator fills it</span></h2>
+          <div class="field">
+            <span class="field-label">Definitions (from your dictionaries)</span>
+            <div class="row" id="csv-definitions"></div>
+          </div>
+          <div class="row">
+            <label class="field">
+              <span class="field-label">Word audio</span>
+              <select id="csv-word-audio">
+                <option value="online">Online recording, else the voice</option>
+                <option value="voice">The voice</option>
+                <option value="">None</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="field-label">Sentence audio</span>
+              <select id="csv-sentence-audio">
+                <option value="voice">The voice</option>
+                <option value="">None</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="field-label">Voice</span>
+              <select id="csv-voice"></select>
+            </label>
+          </div>
+          <label class="check">
+            <input type="checkbox" id="csv-translate" checked>
+            <span>Translate the sentences (offline, in the language chosen in Settings), unless the CSV has a translation</span>
+          </label>
+          <p class="mode-help" id="csv-readings-help" hidden>The zhuyin of the word and the reading of every word of the
+            sentence are added as for the card creator: they go to the fields of your note type that use
+            {zhuyin} and {sentence_readings}.</p>
+        </section>
+
+        <section class="panel" id="csv-tags-panel" hidden>
+          <h2 class="panel-title">Source and tags</h2>
+          <div class="row">
+            <label class="field field-grow"><span class="field-label">Source</span><input type="text" id="csv-source"></label>
+            <label class="field field-grow"><span class="field-label">Tags <span class="dim">(space separated, besides the tags set in Settings)</span></span>
+              <input type="text" id="csv-tags" value="csv-import"></label>
+            <label class="field"><span class="field-label">Tag from a column</span><select id="csv-col-tag"></select></label>
+          </div>
+          <div class="row">
+            <label class="check">
+              <input type="checkbox" id="csv-skip" checked>
+              <span>Skip the words you already learn or know, and the rows repeating a word</span>
+            </label>
+            <label class="field">
+              <span class="field-label">Rows to import <span class="dim">(empty: all)</span></span>
+              <input type="text" id="csv-limit" inputmode="numeric" placeholder="all" size="6">
+            </label>
+          </div>
+          <p class="dim" id="csv-target"></p>
+        </section>
+      </div>
     </fieldset>
+
+    <!-- Outside the fieldset: Stop must stay usable while the import runs. -->
+    <section class="row start-row" id="csv-actions" hidden>
+      <button type="button" class="btn btn-start" id="csv-start" disabled>Make the cards and send them to Anki</button>
+      <button type="button" class="btn" id="csv-later" disabled>Make the cards, send them later</button>
+      <button type="button" class="btn" id="csv-stop" hidden>Stop</button>
+    </section>
 
     <!-- Outside the fieldset: Stop must stay usable while the capture runs. -->
     <section class="row start-row" id="game-actions" hidden>

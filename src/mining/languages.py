@@ -107,7 +107,7 @@ def reading_key(reading: str, language: str) -> str:
     if language == "zh":
         from mining.zhuyin import pinyin_to_zhuyin
 
-        zhuyin = pinyin_to_zhuyin(reading)
+        zhuyin = pinyin_to_zhuyin(reading.replace("ɡ", "g"))  # the "ɡ" of 兩岸詞典's xínɡ
         if zhuyin:
             # the first tone may be written ˉ, and the neutral tone's dot before or after its syllable
             zhuyin = re.sub(r"[\sˉ]", "", zhuyin)

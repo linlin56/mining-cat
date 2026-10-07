@@ -72,3 +72,38 @@ def test_senses_tagged_differently_stay_apart(tmp_path):
         term("行", "xíng", ["to walk"], tags="3 v"),  # nothing new: dropped
     ])
     assert entries("行") == [("行", "xíng", [("Dict A", ["to walk"]), ("Dict A", ["capable"])])]
+
+
+def test_block_texts_are_split_and_not_repeated(tmp_path):
+    make_dictionary(tmp_path / "a.zip", "Dict A", [
+        term("好", "hǎo", ["good"]), term("好", "hào", ["to be fond of"]),
+        term("除非", "chúfēi", ["only if (..., or otherwise, ...)", "unless"]),
+    ])
+    make_dictionary(tmp_path / "b.zip", "Dict B", [
+        term("好", "hǎo", ["1。good\n2。easy \nhào \n3。to be fond of\n4。to wish "]),
+        term("除非", "chúfēi", ["1。only if\n2。unless\n3。except "]),
+    ])
+    make_dictionary(tmp_path / "c.zip", "Dict C", [term("好", "hào", ["【好】 [11] 1.愛。"])])
+
+    def senses(glossary):
+        return [s.get("text") or s.get("reading") for s in glossary[0]["senses"]]
+
+    [chufei] = [e for e in lookup.lookup("zh", "除非")["entries"] if e["expression"] == "除非"]
+    assert senses(chufei["definitions"][1]["glossary"]) == ["except"]
+    hao3, hao4 = [e for e in lookup.lookup("zh", "好")["entries"]]
+    assert senses(hao3["definitions"][1]["glossary"]) == ["easy"]
+    # the senses of hào go to that entry, without the one Dict A gives
+    assert [(d["dictionary"], senses(d["glossary"]) if isinstance(d["glossary"][0], dict) else d["glossary"])
+            for d in hao4["definitions"]] == [("Dict A", ["to be fond of"]), ("Dict B", ["to wish"]), ("Dict C", ["愛。"])]
+
+
+def test_script_g_reading_is_the_same_pronunciation():
+    assert reading_key("xínɡ", "zh") == reading_key("xíng", "zh")
+
+
+def test_examples_are_in_the_script_learnt(tmp_path):
+    from mining import words
+    words.set_chinese_script_preference("zh", "traditional")
+    make_dictionary(tmp_path / "a.zip", "Dict A", [term("除非", "chúfēi", ["1。unless\n例: 除非业务好转。\nUnless business improves."])])
+    [entry] = [e for e in lookup.lookup("zh", "除非")["entries"] if e["expression"] == "除非"]
+    assert entry["definitions"][0]["glossary"][0]["examples"][0]["text"] == "除非業務好轉。"

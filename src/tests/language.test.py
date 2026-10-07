@@ -128,7 +128,7 @@ def test_from_id_unknown_raises():
 def test_from_label():
     assert Language.from_label("Japanese") is Language.JAPANESE
     assert Language.from_label("French") is Language.FRENCH
-    assert Language.from_label("Mandarin - Taiwan (Traditionnal)") is Language.MANDARIN_TW
+    assert Language.from_label("Mandarin - Taiwan (Traditional)") is Language.MANDARIN_TW
 
 
 def test_from_label_unknown_raises():

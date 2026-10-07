@@ -28,7 +28,7 @@ class WindowRegionDialog(OcrRegionDialog):
         self._on_previews_loaded([self._image], self._image.width, self._image.height)
 
 
-# Lists the windows a backend without a system picker can capture (macOS), so the user can pick the game.
+# Lists the windows a backend without a system picker can capture (macOS, Windows), so the user can pick the game.
 class WindowPickerDialog(tk.Toplevel):
     def __init__(self, parent, list_windows: Callable[[], list[WindowInfo]], error_handler: Callable[[Exception], None]):
         super().__init__(parent)

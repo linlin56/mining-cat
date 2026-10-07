@@ -1,5 +1,3 @@
-# gui_config.py - GUI configuration (colors, fonts, window size)
-
 # Window configuration
 # Fixed size (window is not resizable for now, to avoid layout issues)
 WINDOW_TITLE = "MiningCat"

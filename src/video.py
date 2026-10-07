@@ -201,7 +201,10 @@ def run(
         segs = generate_segments(video_file, language=language, region=ocr_region, fps=fps)
         align.save_srt(segs, ocr_srt_file)
         print(f"Subtitles: {ocr_srt_file}  ({len(segs)} segments)")
-        subtitle_tracks.append((ocr_srt_file, "OCR"))
+        if segs:
+            subtitle_tracks.append((ocr_srt_file, "OCR"))
+        else:
+            print("  No subtitles read: check the subtitle region and the language.")
     else:
         print("\n=== Extracting audio ===")
         audio_file = extract_audio(video_file, DIR_TEMP, audio_track=audio_track)
@@ -217,7 +220,10 @@ def run(
         align.save_srt(segs, whisper_srt_file)
         chinese_converter.normalize_whisper_script(whisper_srt_file, language)
         print(f"Subtitles: {whisper_srt_file}  ({len(segs)} segments)")
-        subtitle_tracks.append((whisper_srt_file, "Whisper"))
+        if segs:
+            subtitle_tracks.append((whisper_srt_file, "Whisper"))
+        else:
+            print("  Nothing transcribed: is there speech in the selected language?")
 
     # Convert script if requested (applies to every SRT in DIR_SRT, source and whisper alike)
     source_script = chinese_converter.SCRIPT_FOR_LANGUAGE.get(language)
@@ -227,6 +233,10 @@ def run(
 
     print("\n=== Muxing subtitles into video ===")
     output_file = DIR_FINAL / f"{video_file.stem}.mp4"
-    if mux_subtitles(video_file, subtitle_tracks, output_file, subtitle_lang=language.value.iso639_2):
-        size_mb = output_file.stat().st_size / (1024 * 1024)
-        print(f"\nOK: {output_file}  ({size_mb:.1f} MB)")
+    # An empty subtitle file can't be muxed: without any track, or when ffmpeg fails, the run fails (and the GUI says so).
+    if not subtitle_tracks:
+        raise RuntimeError("No subtitles to add to the video.")
+    if not mux_subtitles(video_file, subtitle_tracks, output_file, subtitle_lang=language.value.iso639_2):
+        raise RuntimeError("Could not add the subtitles to the video (see the ffmpeg error above).")
+    size_mb = output_file.stat().st_size / (1024 * 1024)
+    print(f"\nOK: {output_file}  ({size_mb:.1f} MB)")

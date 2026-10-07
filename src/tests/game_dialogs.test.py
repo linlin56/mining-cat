@@ -15,7 +15,7 @@ from PIL import Image
 from game_ocr.capture import CaptureError, WindowInfo
 from gui_components import game_dialogs
 
-WINDOWS = [WindowInfo(1, "Steam", "Game A"), WindowInfo(2, "Ryujinx")]
+WINDOWS = [WindowInfo(1, "Launcher", "Game A"), WindowInfo(2, "SampleApp")]
 
 
 @pytest.fixture
@@ -76,7 +76,7 @@ def test_pick_region_standalone_returns_dialog_result():
 # WindowPickerDialog
 def test_picker_lists_windows_and_returns_selection(root):
     dialog = game_dialogs.WindowPickerDialog(root, lambda: WINDOWS, MagicMock())
-    assert dialog._listbox.get(0, "end") == ("Steam - Game A", "Ryujinx")
+    assert dialog._listbox.get(0, "end") == ("Launcher - Game A", "SampleApp")
     dialog._listbox.selection_set(1)
     dialog._on_ok()
     assert dialog._result == WINDOWS[1]

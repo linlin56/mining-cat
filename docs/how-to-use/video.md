@@ -4,6 +4,8 @@ Select **Video** in the **Source** dropdown. You get an `.mp4` with embedded sub
 
 ## Input source
 
+![The converter's Video screen](../assets/screenshots/converter-video.png)
+
 ### From the web
 
 Pick **From web** and paste the video **URL**. The platform is detected from the URL (the **Target website** dropdown is informational).
@@ -31,6 +33,8 @@ If the file has several audio tracks (e.g. several dubs), an **Audio track** dro
     - **Local file**: a sidecar `.srt` with the same name next to the video (e.g. `movie.mp4` + `movie.en.srt`) is reused, or else a text subtitle track already inside the video is extracted. Image-based subtitles (PGS, VobSub) can't be extracted this way, use [OCR](#burned-in-subtitles-ocr) instead.
     - Instagram and Bilibili don't provide usable subtitles, so their videos only get the Whisper track.
 4. The final video contains one subtitle track per source, labelled **Source**, **Whisper** (or **OCR**) in players like VLC.
+
+When it's done, **Watch in the player** opens the video in MiningCat's [video player](player.md): click a word in the subtitles to look it up, and make Anki cards with a screenshot and the line's audio.
 
 Subtitle files are saved in `output/srt/`, so **Convert to** and the [frequency lists](frequency-lists.md) work just like for audiobooks (computed from the Whisper transcript).
 
@@ -62,3 +66,4 @@ See the [CLI reference](cli.md#video) for all options (OCR, audio track, convers
 - **Instagram downloads start failing**: try another app id with `--app-id ios` (or a numeric id) in the CLI.
 - **YouTube captions are missing**: YouTube sometimes rate-limits caption downloads. MiningCat then continues without them and you still get the Whisper track. Try again later if you need the source captions.
 - **Wrong language in the transcript**: check the **Language** setting and, for local files with several dubs, the **Audio track**.
+- **"No subtitles read"** (OCR): nothing in the selected region was read as text in the selected language. Draw the subtitle region again (a bit larger), and check the **Language**. With no subtitles at all to add, the run stops with an error instead of making a video without subtitles.

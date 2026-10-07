@@ -4,6 +4,7 @@ temp/
 
 # Ignore source files for obvious copyright reasons
 sources/
+library/
 
 # Python
 .venv/

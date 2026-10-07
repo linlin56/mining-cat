@@ -172,3 +172,14 @@ VOICES_FOR_LANGUAGE = _VOICES_FOR_LANGUAGE
 LARGE_ONLY_WHISPER_CODES = {"yue"}  # Cantonese
 
 GITHUB_URL = "https://github.com/linlin56/mining-cat"
+
+# Video screen (shared by the Tkinter and web GUIs). To add a platform, also register its handler in video_handlers/.
+TARGET_WEBSITES = ["Instagram", "YouTube", "Bilibili"]
+INPUT_MODES = ["From web", "Local file"]
+
+# Example URL shown as greyed-out placeholder text in the URL entry, per selected website.
+URL_HINT_BY_WEBSITE = {
+    "Instagram": "https://www.instagram.com/reel/...",
+    "YouTube": "https://www.youtube.com/watch?v=... or https://youtu.be/...",
+    "Bilibili": "https://www.bilibili.com/video/BV...",
+}

@@ -1,25 +1,3 @@
-# main.py - Audiobook-to-subtitles pipeline.
-#
-# Subcommands:
-#   audio   Prepare audio chapters (copy MP3s or split .m4b)
-#   epub    Extract epub text split by chapter
-#   align   Forced alignment of chapter text to audio
-#   export  Render final MP4 files
-#   run     Run all steps in sequence
-#   video   Download an online video (e.g. Instagram reel) or use a local file, and generate subtitles
-#   game    Video game / screen share OCR: push a window's screenshot + OCR'd text to a local web page
-#
-# Usage:
-#   python main.py audio [--dry-run]
-#   python main.py epub [--list] [--range 4-9] [--chapters 3,4,5] [--preview]
-#   python main.py align [--model tiny] [--language zh] [--from 3] [--only 1]
-#   python main.py export [--chapter 5] [--all] [--preset ultrafast]
-#   python main.py run [--range 4-9]
-#   python main.py video --url <URL> [--model tiny] [--language mandarin_tw]
-#   python main.py video --file <PATH> [--model tiny] [--language mandarin_tw]
-#   python main.py game setup [--window TITLE] [--areas-only]
-#   python main.py game serve [--language mandarin_tw] [--convert-to s] [--port 6677] [--hotkey F9 | --continuous]
-
 import argparse
 import sys
 

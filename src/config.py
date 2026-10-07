@@ -1,5 +1,3 @@
-# config.py - Global paths and configuration.
-
 from pathlib import Path
 
 #  Project root 

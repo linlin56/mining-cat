@@ -5,9 +5,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from ocr_mining.frames import OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
+from gui_components.constants import INPUT_MODES, TARGET_WEBSITES, URL_HINT_BY_WEBSITE
 
-TARGET_WEBSITES = ["Instagram", "YouTube", "Bilibili"]
-INPUT_MODES = ["From web", "Local file"]
 VIDEO_FILETYPES = [
     ("Video", "*.mp4 *.mkv *.mov *.avi *.webm *.m4v"),
     ("All", "*.*"),
@@ -15,12 +14,7 @@ VIDEO_FILETYPES = [
 
 _CHANNEL_LABELS = {1: "mono", 2: "stereo"}
 
-# Example URL shown as greyed-out placeholder text in the URL entry, per selected website.
-_URL_HINT_BY_WEBSITE = {
-    "Instagram": "https://www.instagram.com/reel/...",
-    "YouTube": "https://www.youtube.com/watch?v=... or https://youtu.be/...",
-    "Bilibili": "https://www.bilibili.com/video/BV...",
-}
+_URL_HINT_BY_WEBSITE = URL_HINT_BY_WEBSITE
 
 
 class VideoPanel(ttk.LabelFrame):

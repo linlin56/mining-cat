@@ -9,7 +9,7 @@ from game_ocr.capture import CaptureBackend, CaptureError, WindowInfo
 from game_ocr.settings import GameOcrSettings
 from language import Language
 
-WINDOWS = [WindowInfo(1, "Steam", "Game A"), WindowInfo(2, "Ryujinx", "Zelda")]
+WINDOWS = [WindowInfo(1, "Launcher", "Game A"), WindowInfo(2, "SampleApp", "Sample Quest")]
 MACOS = MagicMock(id="macos", label="macOS")
 
 
@@ -31,7 +31,7 @@ class FakeBackend(CaptureBackend):
 
     @property
     def window_label(self):
-        return "Ryujinx - Zelda"
+        return "SampleApp - Sample Quest"
 
     def grab_frame(self):
         return Image.new("RGB", (200, 100))
@@ -42,12 +42,12 @@ class FakeBackend(CaptureBackend):
 
 # choose_window
 def test_choose_window_by_query_is_case_insensitive():
-    assert cli.choose_window(WINDOWS, "zelda") == WINDOWS[1]
+    assert cli.choose_window(WINDOWS, "quest") == WINDOWS[1]
 
 
 def test_choose_window_query_without_match_lists_windows():
-    with pytest.raises(CaptureError, match="Steam - Game A"):
-        cli.choose_window(WINDOWS, "mario")
+    with pytest.raises(CaptureError, match="Launcher - Game A"):
+        cli.choose_window(WINDOWS, "unknown")
 
 
 def test_choose_window_no_windows_raises():
@@ -59,7 +59,7 @@ def test_choose_window_asks_until_valid(capsys):
     answers = iter(["abc", "9", "2"])
     assert cli.choose_window(WINDOWS, None, ask=lambda _prompt: next(answers)) == WINDOWS[1]
     out = capsys.readouterr().out
-    assert " 1. Steam - Game A" in out
+    assert " 1. Launcher - Game A" in out
     assert out.count("Invalid choice") == 2
 
 
@@ -67,9 +67,9 @@ def test_choose_window_asks_until_valid(capsys):
 def test_select_window_from_list_saves_settings():
     backend, settings = FakeBackend(), GameOcrSettings()
     with patch.object(cli.capture, "backend_info", return_value=MACOS):
-        cli.select_window(backend, settings, "zelda")
+        cli.select_window(backend, settings, "quest")
     assert backend.selected == WINDOWS[1]
-    assert GameOcrSettings.load() == GameOcrSettings(backend="macos", backend_state={"id": 2}, window_label="Ryujinx - Zelda")
+    assert GameOcrSettings.load() == GameOcrSettings(backend="macos", backend_state={"id": 2}, window_label="SampleApp - Sample Quest")
 
 
 def test_select_window_with_system_picker_does_not_list(capsys):
@@ -110,7 +110,7 @@ def test_setup_selects_window_then_areas_and_closes_backend():
     with patch.object(cli.capture, "backend_info", return_value=MACOS), \
          patch.object(cli.capture, "create_backend", return_value=backend), \
          patch.object(cli, "select_areas", return_value=True) as select_areas:
-        cli.setup(window_query="zelda")
+        cli.setup(window_query="quest")
     assert backend.selected == WINDOWS[1]
     select_areas.assert_called_once()
     assert backend.closed
@@ -131,7 +131,7 @@ def test_setup_cancelled_exits():
          patch.object(cli.capture, "create_backend", return_value=FakeBackend()), \
          patch.object(cli, "select_areas", return_value=False):
         with pytest.raises(SystemExit, match="cancelled"):
-            cli.setup(window_query="zelda")
+            cli.setup(window_query="quest")
 
 
 # serve
@@ -141,7 +141,7 @@ def test_serve_without_selection_exits():
 
 
 def test_serve_wires_session_and_server_then_closes_backend():
-    GameOcrSettings(backend="macos", backend_state={"id": 2}, window_label="Zelda", text_region=(0, 0.5, 1, 0.5)).save()
+    GameOcrSettings(backend="macos", backend_state={"id": 2}, window_label="Sample Quest", text_region=(0, 0.5, 1, 0.5)).save()
     backend = FakeBackend()
     with patch("game_ocr.session.open_saved_window", return_value=backend), \
          patch("game_ocr.session.GameOcrSession") as session_cls, \
@@ -177,8 +177,8 @@ def test_main_dispatches_serve_options():
 
 def test_main_dispatches_setup():
     with patch.object(cli, "setup") as setup:
-        cli.main(_args(game_command="setup", window="zelda", areas_only=True))
-    setup.assert_called_once_with(window_query="zelda", areas_only=True)
+        cli.main(_args(game_command="setup", window="quest", areas_only=True))
+    setup.assert_called_once_with(window_query="quest", areas_only=True)
 
 
 def test_main_turns_capture_errors_into_exit_message():
@@ -188,7 +188,7 @@ def test_main_turns_capture_errors_into_exit_message():
 
 
 def _serve_with_patches(**kwargs):
-    GameOcrSettings(backend="macos", backend_state={"id": 2}, window_label="Zelda", text_region=(0, 0.5, 1, 0.5)).save()
+    GameOcrSettings(backend="macos", backend_state={"id": 2}, window_label="Sample Quest", text_region=(0, 0.5, 1, 0.5)).save()
     with patch("game_ocr.session.open_saved_window", return_value=FakeBackend()), \
          patch("game_ocr.session.GameOcrSession"), \
          patch("game_ocr.server.create_app") as create_app, \

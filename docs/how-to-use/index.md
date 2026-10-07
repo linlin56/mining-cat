@@ -8,9 +8,7 @@
 - **ffmpeg**, used to split, convert and render audio and video
     - macOS: `brew install ffmpeg`
     - Debian/Ubuntu: `sudo apt install ffmpeg`
-- **Tk bindings for Python** (`tkinter`), needed for the GUI
-    - macOS: bundled with the official python.org installer (Homebrew's `python` also needs `brew install python-tk`)
-    - Debian/Ubuntu: `sudo apt install python3-tk`
+- **A web browser**: the GUI is a local web page (nothing is sent online)
 - **make**, to use the shortcuts below (you can also call `python src/main.py` directly, see [CLI reference](cli.md))
 
 Everything else (Whisper, yt-dlp, edge-tts, OpenCC, [owocr](https://pypi.org/project/owocr/)...) is installed by `make install`.
@@ -38,12 +36,29 @@ make install
 make gui
 ```
 
-The window header has three settings shared by every workflow:
+MiningCat starts a small local server and opens the GUI in your browser at <http://127.0.0.1:5050/>. Keep the terminal open while you use it, and press `Ctrl+C` there to stop it. Use `make gui PORT=8080` if the port is already taken.
+
+### Choose the language you study
+
+The home page first asks which language you study. Every screen then only shows what belongs to it: the converter's variants, the books of the reader, the videos of the player, and in the settings the dictionaries, words, Anki decks and cards of that language. Change it at any time with the language badge in the header of every page, which brings you back to the home page.
+
+![The home page asks which language you study](../assets/screenshots/home-language-picker.png)
+
+From the home page, open the **Converter**, the [Reader](reader.md), the [Player](player.md) or the **Settings**.
+
+![The home page, once the language is chosen: Converter, Reader, Player and Settings](../assets/screenshots/home-hub.png)
+
+You can drag and drop files on the audio, book and video panels. The files you pick are copied into the project's `sources/` folder, like before.
+
+!!! note
+    The previous Tkinter window is still available with `make gui-tk` for now. It needs the Tk bindings for Python (`sudo apt install python3-tk` on Debian/Ubuntu, `brew install python-tk` with Homebrew's Python).
+
+The converter's header has three settings shared by every workflow:
 
 | Setting        | What it does                                                                                                                        |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | **Source**     | `Audiobook / Ebook`, `Video` or `Video game / Screen share`. Picks which screen you're working with.                                |
-| **Language**   | The original language of your input files. It drives transcription, punctuation fixes, TTS voices and subtitle metadata.          |
+| **Variant**    | Only when the language studied has several (Mandarin: Taiwan or China, English: US or UK). It drives transcription, punctuation fixes, TTS voices and subtitle metadata. |
 | **Convert to** | Only for Chinese variants: converts subtitles between simplified and traditional characters (e.g. read a mainland book in traditional). |
 
 Then pick your workflow:
@@ -52,7 +67,7 @@ Then pick your workflow:
 - [Videos](video.md): subtitles for a YouTube, Instagram or Bilibili video, or a video file on your computer.
 - [Video games & screen share](video-game.md): OCR the text of a game window, and mine it from a web page.
 
-When you're done, the videos are in `output/final/`. Open them in your player, in asbplayer or Migaku and start mining!
+When you're done, the videos are in `output/final/`. Open them in MiningCat's [video player](player.md), or in any player you like, and start mining!
 
 ## Accepted inputs
 

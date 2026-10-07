@@ -1,0 +1,742 @@
+{
+ "language": "de",
+ "source": "Exported from Yomitan (https://github.com/yomidevs/yomitan), GPL-3.0-or-later, by tools/export_yomitan_transforms.mjs",
+ "conditions": {
+  "v": {
+   "name": "Verb",
+   "isDictionaryForm": true,
+   "subConditions": [
+    "vw",
+    "vst"
+   ]
+  },
+  "vw": {
+   "name": "Weak verb",
+   "isDictionaryForm": true,
+   "subConditions": []
+  },
+  "vst": {
+   "name": "Strong verb",
+   "isDictionaryForm": true,
+   "subConditions": []
+  },
+  "n": {
+   "name": "Noun",
+   "isDictionaryForm": true,
+   "subConditions": []
+  },
+  "adj": {
+   "name": "Adjective",
+   "isDictionaryForm": true,
+   "subConditions": []
+  }
+ },
+ "transforms": {
+  "nominalization": {
+   "name": "nominalization",
+   "description": "Noun formed from a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "ung",
+     "to": "en",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "lung",
+     "to": "eln",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "rung",
+     "to": "rn",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "-bar": {
+   "name": "-bar",
+   "description": "-able adjective from a verb",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "bar",
+     "to": "en",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "bar",
+     "to": "n",
+     "conditionsIn": [
+      "adj"
+     ],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "negative": {
+   "name": "negative",
+   "description": "Negation",
+   "rules": [
+    {
+     "kind": "prefix",
+     "from": "un",
+     "to": "",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "adj"
+     ]
+    }
+   ]
+  },
+  "zu-infinitive": {
+   "name": "zu-infinitive",
+   "description": "",
+   "rules": [
+    {
+     "kind": "prefix",
+     "from": "abzu",
+     "to": "ab",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "anzu",
+     "to": "an",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "aufzu",
+     "to": "auf",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "auszu",
+     "to": "aus",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "auseinanderzu",
+     "to": "auseinander",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "beizu",
+     "to": "bei",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "dazu",
+     "to": "da",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "dabeizu",
+     "to": "dabei",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "darzu",
+     "to": "dar",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "daranzu",
+     "to": "daran",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "dazwischenzu",
+     "to": "dazwischen",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "durchzu",
+     "to": "durch",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "einzu",
+     "to": "ein",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "emporzu",
+     "to": "empor",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "entgegenzu",
+     "to": "entgegen",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "entlangzu",
+     "to": "entlang",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "entzweizu",
+     "to": "entzwei",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "fehlzu",
+     "to": "fehl",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "fernzu",
+     "to": "fern",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "festzu",
+     "to": "fest",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "fortzu",
+     "to": "fort",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "freizu",
+     "to": "frei",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "gegenüberzu",
+     "to": "gegenüber",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "gleichzu",
+     "to": "gleich",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "heimzu",
+     "to": "heim",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "herzu",
+     "to": "her",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "herabzu",
+     "to": "herab",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "heranzu",
+     "to": "heran",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "heraufzu",
+     "to": "herauf",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "herauszu",
+     "to": "heraus",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "herbeizu",
+     "to": "herbei",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hereinzu",
+     "to": "herein",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "herüberzu",
+     "to": "herüber",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "herumzu",
+     "to": "herum",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "herunterzu",
+     "to": "herunter",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hervorzu",
+     "to": "hervor",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hinzu",
+     "to": "hin",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hinabzu",
+     "to": "hinab",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hinaufzu",
+     "to": "hinauf",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hinauszu",
+     "to": "hinaus",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hineinzu",
+     "to": "hinein",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hinterherzu",
+     "to": "hinterher",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hinunterzu",
+     "to": "hinunter",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hinwegzu",
+     "to": "hinweg",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hinzuzu",
+     "to": "hinzu",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "hochzu",
+     "to": "hoch",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "loszu",
+     "to": "los",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "mitzu",
+     "to": "mit",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "nachzu",
+     "to": "nach",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "nebenherzu",
+     "to": "nebenher",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "niederzu",
+     "to": "nieder",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "stattzu",
+     "to": "statt",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "umzu",
+     "to": "um",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "vorzu",
+     "to": "vor",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "voranzu",
+     "to": "voran",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "vorauszu",
+     "to": "voraus",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "vorbeizu",
+     "to": "vorbei",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "vorüberzu",
+     "to": "vorüber",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "vorwegzu",
+     "to": "vorweg",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "wegzu",
+     "to": "weg",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "weiterzu",
+     "to": "weiter",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "wiederzu",
+     "to": "wieder",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "zuzu",
+     "to": "zu",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "zurechtzu",
+     "to": "zurecht",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "zurückzu",
+     "to": "zurück",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    },
+    {
+     "kind": "prefix",
+     "from": "zusammenzu",
+     "to": "zusammen",
+     "conditionsIn": [],
+     "conditionsOut": [
+      "v"
+     ]
+    }
+   ]
+  },
+  "-heit": {
+   "name": "-heit",
+   "description": "1. Converts an adjective into a noun and usually denotes an abstract quality of the adjectival root. It is often equivalent to the English suffixes -ness, -th, -ty, -dom:\n\t schön (“beautiful”) + -heit → Schönheit (“beauty”)\n\t neu (“new”) + -heit → Neuheit (“novelty”)\n2. Converts concrete nouns into abstract nouns:\n\t Kind (“child”) + -heit → Kindheit (“childhood”)\n\t Christ (“Christian”) + -heit → Christenheit (“Christendom”)\n",
+   "rules": [
+    {
+     "kind": "suffix",
+     "from": "heit",
+     "to": "",
+     "conditionsIn": [
+      "n"
+     ],
+     "conditionsOut": [
+      "adj",
+      "n"
+     ]
+    },
+    {
+     "kind": "suffix",
+     "from": "keit",
+     "to": "",
+     "conditionsIn": [
+      "n"
+     ],
+     "conditionsOut": [
+      "adj",
+      "n"
+     ]
+    }
+   ]
+  }
+ }
+}

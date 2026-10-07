@@ -6,6 +6,7 @@ The [video game / screen share](../how-to-use/video-game.md) source captures a w
 | ------- | ------ | -------- |
 | Linux (Tested on Ubuntu, Wayland) | `linux_wayland.py` | `linux` |
 | macOS | `macos.py` | `darwin` |
+| Windows | `windows.py` | `win32` |
 
 Everything else (areas, OCR, change detection, the web page, the GUI) is shared: a new backend only has to return images of a window.
 
@@ -25,7 +26,7 @@ flowchart LR
 - `settings.py`: the selected window (`backend` id + `backend_state`) and the two areas, saved in `sources/game_ocr.json`.
 - `session.py`: crops the screenshot and text areas, runs OCR with `ocr_mining.engine.OcrEngine`, and decides when the text changed (with `ocr_mining.dedup`).
 - `server.py` + `page.html`: the local web page (aiohttp + websocket).
-- `cli.py`: `main.py game setup|serve`. The GUI (`gui_components/game_panel.py`) runs `main.py game serve` in a subprocess.
+- `cli.py`: `main.py game setup|serve`. The GUIs (`web/game.py`, and `gui_components/game_panel.py` for Tkinter) run `main.py game serve` in a subprocess.
 
 ## 1. Write the backend
 

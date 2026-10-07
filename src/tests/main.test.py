@@ -79,10 +79,10 @@ def test_main_game_serve_rejects_unknown_key():
 
 
 def test_main_dispatches_game_setup():
-    with patch.object(sys, "argv", ["main.py", "game", "setup", "--window", "Zelda"]):
+    with patch.object(sys, "argv", ["main.py", "game", "setup", "--window", "Sample Quest"]):
         with patch("main.cmd_game") as mock:
             main.main()
-    assert mock.call_args[0][0].window == "Zelda"
+    assert mock.call_args[0][0].window == "Sample Quest"
 
 
 def test_main_game_requires_a_subcommand():

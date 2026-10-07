@@ -121,6 +121,15 @@ def test_index_page(client):
     assert b"MiningCat" in res.data
 
 
+def test_clipboard_page(client):
+    assert client.get("/clipboard/").headers["Location"] == "/?next=/clipboard/"
+    post(client, "/api/profile", {"language": "zh"})
+    res = client.get("/clipboard/")
+    assert res.status_code == 200
+    assert b"clipboard.js" in res.data and b"zh-Hant" in res.data
+    assert b'href="/clipboard/"' in client.get("/").data
+
+
 # ---------------------------------------------------------------- files
 
 def test_upload_then_discard_audio(client, project):

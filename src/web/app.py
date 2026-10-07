@@ -129,6 +129,11 @@ def create_app(state: AppState | None = None) -> Flask:
     def game_page():
         return render_template("game.html")
 
+    # Clipboard: a text typed or pasted by the user, then read with the dictionary popup (static/clipboard.js).
+    @app.get("/clipboard/")
+    def clipboard_page():
+        return render_template("clipboard.html")
+
     @app.get("/api/options")
     def api_options():
         return jsonify(options.all_options(profile.current()))

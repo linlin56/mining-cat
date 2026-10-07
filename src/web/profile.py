@@ -14,7 +14,7 @@ NATIVE_NAMES = {
 }
 
 # Pages that need a language: without one, they send the user to the home page to choose it.
-GUARDED_PREFIXES = ("/converter/", "/reader/", "/player/", "/settings/")
+GUARDED_PREFIXES = ("/converter/", "/reader/", "/clipboard/", "/player/", "/settings/")
 
 
 def current() -> str | None:

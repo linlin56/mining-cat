@@ -1027,7 +1027,7 @@ def test_zhuyin_readings(client, zh_dict, fake_anki):
     lookup_entry = lambda: client.post("/api/dict/lookup", json={"language": "zh", "text": "說話"}, headers=HEADERS).get_json()["entries"][0]
     assert lookup_entry()["display_reading"] == "shuōhuà"
     assert client.post("/api/mining/reading", json={"language": "zh", "system": "zhuyin"}, headers=HEADERS).status_code == 200
-    assert client.get("/api/mining/languages").get_json()["readings"] == {"zh": "zhuyin"}
+    assert client.get("/api/mining/languages").get_json()["readings"] == {"zh": "zhuyin", "nan": "tailo"}
     entry = lookup_entry()
     assert entry["reading"] == "shuōhuà" and entry["display_reading"] == "ㄕㄨㄛ ㄏㄨㄚˋ"
     assert client.post("/api/mining/reading", json={"language": "ja", "system": "zhuyin"}, headers=HEADERS).status_code == 400

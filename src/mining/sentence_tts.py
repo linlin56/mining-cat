@@ -60,6 +60,14 @@ def synthesize(language: str, text: str, voice: str) -> bytes:
         raise TtsError(f"Sentences are limited to {MAX_CHARS} characters.")
     if voice not in {v["id"] for v in voices(language)["voices"]}:
         raise TtsError(f"Unknown voice: {voice!r}")
+    from speech import SpeechError, mms_tts
+    if mms_tts.is_local(voice):
+        try:
+            return mms_tts.synthesize_mp3(text, voice)
+        except SpeechError as exc:
+            raise TtsError(str(exc))
+        except Exception as exc:  # a model that couldn't be downloaded...
+            raise TtsError(f"The voice couldn't be generated: {exc}")
     try:
         audio = asyncio.run(_stream(text, voice))
     except ImportError:

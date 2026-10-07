@@ -92,6 +92,11 @@
         <p class="help">Readings: how Mandarin pronunciation is shown in the popup and written in the cards' reading
           field. Your words keep the same status whichever you choose.</p>
         <div id="reading-settings"></div>
+        {% elif study.id == "nan" %}
+        <p class="help">Readings: the romanization the popup shows and the cards' reading field gets (a dictionary
+          in either one works). Your words keep the same status whichever you choose. The {tailo} and {poj} card
+          fields always give both.</p>
+        <div id="reading-settings"></div>
         {% endif %}
       </div>
       {% endif %}

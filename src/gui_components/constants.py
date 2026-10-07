@@ -52,6 +52,13 @@ _CONVERT_OPTIONS_FOR_SCRIPT: dict[str, list[tuple[str, str | None]]] = {
         ("No conversion", None),
         ("Simplified - China", "s"),
     ],
+    # Taigi: whatever the text is written in (Hanji, Tâi-lô, POJ or a mix), into one of them.
+    "nan": [
+        ("No conversion", None),
+        ("Hanji (漢字)", "hanji"),
+        ("Tâi-lô", "tailo"),
+        ("Pe̍h-ōe-jī (POJ)", "poj"),
+    ],
 }
 CONVERT_BY_LABEL: dict[str, str | None] = {
     label: code
@@ -144,6 +151,10 @@ _VOICES_FOR_LANGUAGE: dict[Language, list[tuple[str, str]]] = {
         ("HiuGaai - Cantonese (Hong Kong), female",  "zh-HK-HiuGaaiNeural"),
         ("WanLung - Cantonese (Hong Kong), male",    "zh-HK-WanLungNeural"),
     ],
+    # Edge has no Taigi voice: Meta's MMS voice runs locally (speech/mms_tts.py).
+    Language.TAIGI: [
+        ("MMS - Taigi (local, Meta MMS-TTS)", "nan-TW-MmsTaigi"),
+    ],
 }
 DEFAULT_VOICE_FOR_LANGUAGE: dict[Language, str] = {
     Language.MANDARIN_TW: "HsiaoChen - Mandarin (Taiwan), female",
@@ -160,6 +171,7 @@ DEFAULT_VOICE_FOR_LANGUAGE: dict[Language, str] = {
     Language.PORTUGUESE:  "Francisca - Portuguese (Brazil), female",
     Language.VIETNAMESE:  "HoaiMy - Vietnamese, female",
     Language.CANTONESE_HK: "HiuMaan - Cantonese (Hong Kong), female",
+    Language.TAIGI:       "MMS - Taigi (local, Meta MMS-TTS)",
 }
 VOICE_ID_BY_LABEL: dict[str, str] = {
     label: voice_id

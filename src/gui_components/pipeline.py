@@ -97,7 +97,7 @@ def run_pipeline(
                           schedule=schedule, log=log)
             if rc != 0:
                 raise RuntimeError(f"Command '{cmd}' failed (code {rc})")
-            if cmd in ("align", "tts") and convert_target is not None:
+            if cmd in ("align", "transcribe", "tts") and convert_target is not None:
                 source = chinese_converter.SCRIPT_FOR_LANGUAGE[lang]
                 schedule(0, set_status, "Step 3.5 - Character conversion…", 45)
                 schedule(0, log, "\nStep 3.5 - Character conversion\n")

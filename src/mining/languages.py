@@ -29,6 +29,10 @@ _HANGUL = re.compile(r"[가-힯]")
 _HAN = re.compile(r"[㐀-䶿一-鿿豈-﫿]")
 _PINYIN_TONE = re.compile(r"[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]|[a-z]+[1-5]\b", re.IGNORECASE)
 _JYUTPING = re.compile(r"\b[a-z]{1,6}[1-6]\b")
+_LATIN = re.compile(r"[A-Za-z]")
+# Spellings of Taigi romanizations that pinyin and jyutping don't have: the 8th tone's mark, POJ's o͘ and ⁿ,
+# Tâi-lô's ts/tsh, aspirated kh/ph/th, and nasal vowels written -nn.
+_TAIGI_READING = re.compile(r"\u030d|\u0358|\u207f|\bts|\b(?:kh|ph|th)[aeiou]|[aeiou]nn\b")
 
 
 def language_key(tag: str | None) -> str:
@@ -77,6 +81,11 @@ def text_variants(text: str, language: str) -> list[str]:
     if language == "ja":
         base = _half_width_kana(text)
         variants += [base, katakana_to_hiragana(base), hiragana_to_katakana(base)]
+    elif language == "nan" and _LATIN.search(text):
+        # romanized Taigi: the same words in the other romanization, and with tone numbers (dictionaries use either)
+        from mining.taigi import respell
+        lower = text.lower()
+        variants += [lower, respell(lower, "tailo"), respell(lower, "poj"), respell(lower, "tailo", numbers=True)]
     elif language not in CHINESE_LANGUAGES and language != "ko":
         normalized = text.translate(_APOSTROPHES)
         variants += [normalized, normalized.lower()]
@@ -93,6 +102,9 @@ def text_variants(text: str, language: str) -> list[str]:
 def normalize_reading(reading: str, language: str) -> str:
     """Canonical reading used to identify a word (pinyin spacing and case vary between dictionaries)."""
     reading = unicodedata.normalize("NFC", reading or "").strip()
+    if language == "nan" and _LATIN.search(reading):
+        from mining.taigi import respell
+        reading = respell(reading, "tailo")  # a POJ reading is the Tâi-lô one
     if language in CHINESE_LANGUAGES:
         return re.sub(r"[\s・:'’-]", "", reading.lower())
     if language == "ja":
@@ -112,6 +124,11 @@ def reading_key(reading: str, language: str) -> str:
             # the first tone may be written ˉ, and the neutral tone's dot before or after its syllable
             zhuyin = re.sub(r"[\sˉ]", "", zhuyin)
             return zhuyin.replace("˙", "") + "˙" * zhuyin.count("˙")
+    if language == "nan":
+        from mining.taigi import reading_key as taigi_key
+        key = taigi_key(reading)
+        if key:
+            return key
     return normalize_reading(reading, language)
 
 
@@ -126,6 +143,8 @@ def reading_match(reading: str, other: str, language: str) -> int:
     if language == "zh":
         toneless = lambda key: re.sub(r"[ˊˇˋ˙]", "", key)
         return 1 if toneless(a) == toneless(b) else 0
+    if language == "nan":  # the same syllables, with tone sandhi or a neutral tone written
+        return 1 if re.sub(r"\d", "", a) == re.sub(r"\d", "", b) else 0
     return 0
 
 
@@ -140,6 +159,9 @@ def guess_dictionary_language(samples: list[tuple[str, str]]) -> str:
     if len(_HANGUL.findall(text)) > len(_HAN.findall(text)):
         return "ko"
     if len(_HAN.findall(text)) > len(text) * 0.3:
+        taigi = len(_TAIGI_READING.findall(unicodedata.normalize("NFD", readings).lower()))
+        if taigi >= max(3, len(samples) // 20):
+            return "nan"
         if _PINYIN_TONE.search(readings):
             jyutping = len(_JYUTPING.findall(readings.lower()))
             tone_marks = len(re.findall(r"[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]", readings))

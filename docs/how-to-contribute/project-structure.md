@@ -19,7 +19,8 @@ src/
 ├── align.py                # step 3: Whisper alignment / transcription : SRT
 ├── tts.py                  # edge-tts audio generation (Generate audio mode)
 ├── export.py               # step 4: render MP4 with embedded subtitles
-├── chinese_converter.py    # simplified / traditional conversion (OpenCC)
+├── chinese_converter.py    # simplified / traditional conversion (OpenCC), Taigi's writing systems
+├── speech/                 # local speech engines for languages Whisper / Edge lack (Taigi): Qwen3-ASR, MMS
 ├── frequency/              # word frequency and Kanji Grid character lists
 │
 ├── video.py                # video pipeline: download, transcribe/OCR, mux
@@ -80,6 +81,7 @@ The GUI runs the same steps through `gui_components/pipeline.py`, after copying 
 - `hangul.py`: splits Hangul into jamo and back (port of Hangul.js), for the Korean deinflection rules.
 - `word_audio.py`: online recordings of a word (JapanesePod101, Wiktionary, Lingua Libre), fetched only when asked.
 - `zhuyin.py`: pinyin to zhuyin, for the `{zhuyin}` field of Mandarin cards.
+- `taigi.py`: Taigi's writing systems (Hanji, Tâi-lô, Pe̍h-ōe-jī) and the conversions between them.
 - `anki.py`: AnkiConnect, the card queue, status sync and `.apkg` export (genanki).
 
 `web/mining_api.py` exposes them over HTTP, `static/mining.js` is the popup and the card creator, and `templates/settings.html` the Settings page. `tests/fake_ankiconnect.py` is an in-memory AnkiConnect used by the tests; run it with `python src/tests/fake_ankiconnect.py` to try MiningCat without Anki.

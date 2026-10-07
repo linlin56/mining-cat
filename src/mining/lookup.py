@@ -1,7 +1,7 @@
 import json
 import re
 
-from mining import db
+from mining import db, glossary as glossary_mod
 from mining.deinflect import Deinflection, transformer_for
 from mining.languages import (
     CHINESE_LANGUAGES, chinese_counterpart, is_no_space, reading_key, text_variants,
@@ -165,17 +165,25 @@ def _gloss_key(item) -> str:
 def merge_definitions(definitions: list[dict]) -> list[dict]:
     """The definitions of one entry without repeats: rows of a dictionary with the same tags become one sense
     (行 xíng: "walk, OK" and "walk, go" -> "walk, OK, go"), and a gloss already given (by this dictionary or one shown
-    before it) isn't repeated. Senses tagged differently (JMdict's numbered senses, parts of speech) stay apart."""
+    before it) isn't repeated, nor a sense of a block text whose meanings were all given ("only if" after CC-CEDICT's
+    "only if (..., or otherwise, ...)"). Senses tagged differently (JMdict's numbered senses, parts of speech) stay apart."""
     merged: list[dict] = []
     by_tags: dict[tuple, dict] = {}
     seen: set[str] = set()
+    meanings: set[str] = set()
     for definition in definitions:
         glossary = definition["glossary"] if isinstance(definition["glossary"], list) else [definition["glossary"]]
         fresh = []
         for item in glossary:
+            if isinstance(item, dict) and item.get("type") == "senses":
+                item = glossary_mod.new_senses(item, meanings)
+                if item:
+                    fresh.append(item)
+                continue
             key = _gloss_key(item)
             if key and key not in seen:
                 seen.add(key)
+                meanings |= glossary_mod.item_meaning_keys(item)
                 fresh.append(item)
         if not fresh:
             continue
@@ -187,6 +195,52 @@ def merge_definitions(definitions: list[dict]) -> list[dict]:
             by_tags[same] = definition
             merged.append(definition)
     return merged
+
+
+def _move_other_readings(groups: dict[tuple, dict], language: str) -> None:
+    """The senses a block text gives for another pronunciation (DrEye's 好 hǎo: "…8。easily\nhào\n9。to be fond of")
+    go to the entry of that pronunciation when there is one."""
+    for (expression, key), group in list(groups.items()):
+        for definition in group["definitions"]:
+            for i, item in enumerate(definition["glossary"]):
+                if not (isinstance(item, dict) and item.get("type") == "senses"):
+                    continue
+                kept, moved, target = [], [], None
+                for sense in item["senses"]:
+                    if "reading" in sense:
+                        other = groups.get((expression, reading_key(sense["reading"], language)))
+                        target = other if other is not group else None
+                        if target:
+                            moved.append((target, []))
+                            continue
+                    (moved[-1][1] if target else kept).append(sense)
+                if not moved:
+                    continue
+                definition["glossary"][i] = {**item, "senses": kept}
+                for other, senses in moved:
+                    other["definitions"].append({**definition, "glossary": [{"type": "senses", "senses": senses, "examples": []}]})
+
+
+def _convert_senses(entries: list[dict], language: str) -> None:
+    """The split senses and their examples in the script the user learns (DrEye's examples are in Simplified)."""
+    preference = words_mod.chinese_script_preference(language)
+
+    def convert(sense: dict) -> None:
+        if "text" in sense:
+            sense["text"] = words_mod.preferred_form(language, sense["text"], preference)
+        for example in sense.get("examples", ()):
+            example["text"] = words_mod.preferred_form(language, example["text"], preference)
+        for sub in sense.get("subs", ()):
+            convert(sub)
+
+    for g in entries:
+        for definition in g["definitions"]:
+            for item in definition["glossary"]:
+                if isinstance(item, dict) and item.get("type") == "senses":
+                    for sense in item["senses"]:
+                        convert(sense)
+                    for example in item["examples"]:
+                        convert(example)
 
 
 def lookup(language: str, text: str) -> dict:
@@ -229,7 +283,7 @@ def lookup(language: str, text: str) -> dict:
         # 行 xíng from two dictionaries (or two rows of one) is one, whether written xíng or xing2
         groups: dict[tuple, dict] = {}
         for rank, source, d, row in matches.values():
-            reading = row["reading"] or row["expression"]
+            reading = (row["reading"] or row["expression"]).replace("ɡ", "g")  # 兩岸詞典 writes xínɡ
             key = (row["expression"], reading_key(reading, language))
             group = groups.get(key)
             if group is None or rank > group["rank"]:
@@ -249,11 +303,13 @@ def lookup(language: str, text: str) -> dict:
             group["definitions"].append({
                 "dictionary": dictionary["title"], "dict_id": dictionary["id"], "priority": dictionary["priority"],
                 "tags": [t for t in row["def_tags"].split() if t], "term_tags": [t for t in row["term_tags"].split() if t],
-                "glossary": json.loads(row["glossary"]), "score": row["score"], "sequence": row["sequence"],
+                "glossary": glossary_mod.structure(json.loads(row["glossary"]), row["expression"]), "score": row["score"], "sequence": row["sequence"],
                 "row": row["id"],
             })
             group["score"] = max(group["score"], row["score"])
 
+        if language in CHINESE_LANGUAGES:
+            _move_other_readings(groups, language)
         freqs = _frequencies(conn, dicts, list({g["expression"] for g in groups.values()}))
         sounds = _pronunciations(conn, dicts, list({g["expression"] for g in groups.values()}))
         for g in groups.values():
@@ -291,6 +347,8 @@ def lookup(language: str, text: str) -> dict:
             g["characters"] = [{"character": c, "entries": found[c]}
                                for c in dict.fromkeys(_HAN_CHAR.findall(g["expression"])) if c in found]
 
+    if language in CHINESE_LANGUAGES:
+        _convert_senses(ordered, language)
     for g in ordered:
         form = words_mod.preferred_form(language, g["expression"])
         g["form"] = form

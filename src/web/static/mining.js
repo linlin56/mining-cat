@@ -414,11 +414,156 @@
     return out;
   }
 
+  // A sense's text, its 【word】 references clickable like the cross references of structured content.
+  function senseText(text) {
+    const out = el("span", { class: "mc-sense-text" });
+    for (const part of text.split(/(【[^】]+】)/)) {
+      if (/^【[^】]+】$/.test(part)) out.append(el("a", { href: "#", "data-query": part.slice(1, -1), text: part }));
+      else if (part) out.append(part);
+    }
+    return out;
+  }
+
+  // Examples one per line, short ones without a translation (兩岸詞典's 美好│完好) together on one line.
+  function examplesList(examples) {
+    const list = el("ul", { class: "mc-examples" });
+    let run = null;
+    for (const x of examples) {
+      if (!x.translation && x.text.length <= 12) {
+        if (run) run.append(" · ");
+        else { run = el("li", { class: "mc-inline" }); list.append(run); }
+        run.append(el("span", { class: "mc-example", text: x.text }));
+        continue;
+      }
+      run = null;
+      list.append(el("li", {}, el("span", { class: "mc-example", text: x.text }),
+        x.translation ? el("span", { class: "mc-example-tr", text: x.translation }) : null));
+    }
+    return list;
+  }
+
+  // The definitions of an entry in three blocks, whatever their dictionary: translations (definitions in another
+  // language), definitions in the word's language (monolingual dictionaries) and examples. A block is a list of senses
+  // {tags, text | sc | items, dictId, subs} and of {reading} (the senses after it are of that pronunciation).
+  const BLOCKS = [["translations", "Translations"], ["monolingual", "Definitions"], ["examples", "Examples"]];
+  const MONOLINGUAL = { zh: "Chinese definitions", yue: "Cantonese definitions", ja: "Japanese definitions", ko: "Korean definitions" };
+  const SCRIPTS = { zh: /[\u3400-\u9fff\uf900-\ufaff]/gu, yue: /[\u3400-\u9fff\uf900-\ufaff]/gu,
+    ja: /[\u3040-\u30ff\u3400-\u9fff]/gu, ko: /[\uac00-\ud7af]/gu };
+
+  // Whether a definition is written in the word's language: more of its script than Latin letters.
+  function isMonolingual(text, language) {
+    const script = SCRIPTS[language];
+    if (!script) return false;
+    return (text.match(script) || []).length > (text.match(/[A-Za-z\u00c0-\u024f]/g) || []).length;
+  }
+
+  function scText(node) {
+    if (node === null || node === undefined) return "";
+    if (typeof node === "string" || typeof node === "number") return String(node);
+    if (Array.isArray(node)) return node.map(scText).join("");
+    return typeof node === "object" ? scText(node.content) : "";
+  }
+
+  function glossText(item) {
+    if (typeof item === "string") return item;
+    if (item && item.type === "text") return item.text || "";
+    if (item && item.type === "structured-content") return scText(item.content);
+    return "";
+  }
+
+  // The items of structured content that is only a list (CC-CEDICT's), so they can join the other senses; else null.
+  function scListItems(node) {
+    if (Array.isArray(node)) {
+      const parts = node.filter((n) => !(typeof n === "string" && !n.trim()));
+      return parts.length === 1 ? scListItems(parts[0]) : null;
+    }
+    if (!node || typeof node !== "object") return null;
+    if (node.tag === "ul" || node.tag === "ol") {
+      const items = Array.isArray(node.content) ? node.content : [node.content];
+      return items.every((li) => li && li.tag === "li") ? items.map((li) => li.content) : null;
+    }
+    return (!node.tag || node.tag === "div") && node.content !== undefined ? scListItems(node.content) : null;
+  }
+
+  function senseAllText(sense) {
+    return [sense.text || "", ...(sense.subs || []).map(senseAllText)].join(" ");
+  }
+
+  function definitionBlocks(entry, language) {
+    const blocks = { translations: [], monolingual: [], examples: [] };
+    const add = (piece, text) => blocks[isMonolingual(text, language) ? "monolingual" : "translations"].push(piece);
+    const stripExamples = (sense) => {
+      blocks.examples.push(...sense.examples);
+      return { ...sense, examples: [], subs: sense.subs.map(stripExamples) };
+    };
+    for (const d of entry.definitions) {
+      const tags = [...new Set([...d.tags, ...d.term_tags])].filter((t) => !/^\d+$/.test(t))
+        .map((t) => ({ name: t, title: (d.tag_info[t] && d.tag_info[t].notes) || undefined }));
+      const rest = [];
+      for (const item of d.glossary) {
+        if (item && item.type === "senses") {
+          let reading = null;
+          for (const sense of item.senses) {
+            if (sense.reading) { reading = sense.reading; continue; }
+            const piece = { ...stripExamples(sense), tags: sense.tags.map((t) => ({ name: t })), dictId: d.dict_id };
+            const text = senseAllText(sense);
+            if (reading) { add({ reading }, text); reading = null; }
+            add(piece, text);
+          }
+          blocks.examples.push(...item.examples);
+        } else if (item && item.type === "structured-content" && scListItems(item.content)) {
+          for (const node of scListItems(item.content)) add({ sc: node, dictId: d.dict_id, tags, subs: [] }, scText(node));
+        } else {
+          rest.push(item);
+        }
+      }
+      if (rest.length) add({ items: rest, dictId: d.dict_id, tags, subs: [] }, rest.map(glossText).join(" "));
+    }
+    return blocks;
+  }
+
+  function senseNode(sense) {
+    let content = null;
+    if (sense.text) content = senseText(sense.text);
+    else if (sense.sc !== undefined) content = renderSC(sense.sc, sense.dictId);
+    else if (sense.items) content = renderGlossary(sense.items, sense.dictId);
+    return el("li", {},
+      ...sense.tags.flatMap((t) => [el("span", { class: "mc-tag", text: t.name, title: t.title }), " "]),
+      content,
+      sense.examples && sense.examples.length ? examplesList(sense.examples) : null,
+      sense.subs.length ? el("ol", { class: "mc-subsenses" }, ...sense.subs.map(senseNode)) : null);
+  }
+
+  // Numbered senses, each pronunciation's in its own list.
+  function senseList(senses) {
+    const box = el("div", { class: "mc-sense-block" });
+    let list = null;
+    for (const sense of senses) {
+      if (sense.reading) { box.append(el("div", { class: "mc-sense-reading", text: sense.reading })); list = null; continue; }
+      if (!list) { list = el("ol", { class: "mc-numbered" }); box.append(list); }
+      list.append(senseNode(sense));
+    }
+    for (const ol of box.querySelectorAll("ol.mc-numbered")) if (ol.children.length === 1) ol.classList.add("mc-one");
+    return box;
+  }
+
+  function blockNode(key, items) {
+    return key === "examples" ? examplesList(items) : senseList(items);
+  }
+
+  // A definition split into senses by the server (glossary.py), shown on its own (outside the blocks of an entry).
+  function renderSenses(item) {
+    const box = senseList(item.senses.map((s) => s.reading ? s : { ...s, subs: s.subs || [], tags: s.tags.map((t) => ({ name: t })) }));
+    if (item.examples.length) box.append(examplesList(item.examples));
+    return box;
+  }
+
   function renderGlossary(glossary, dictId) {
     const list = el("ul", { class: glossary.length > 1 ? "mc-gloss" : "mc-gloss mc-single" });
     for (const item of glossary) {
       let content;
       if (typeof item === "string") content = document.createTextNode(item);
+      else if (item && item.type === "senses") content = renderSenses(item);
       else if (Array.isArray(item)) content = document.createTextNode(`→ ${item[0]}`);
       else if (item && item.type === "text") content = document.createTextNode(item.text || "");
       else if (item && item.type === "image") content = imageNode(item, dictId);
@@ -669,18 +814,8 @@
       }
 
       const defs = el("div", { class: "mc-defs" });
-      for (const [dictionary, senses] of groupByDictionary(entry.definitions)) {
-        const list = el(senses.length > 1 ? "ol" : "div", { class: "mc-senses" });
-        for (const d of senses) {
-          const tags = [...new Set([...d.tags, ...d.term_tags])].filter((t) => !/^\d+$/.test(t)).map((t) => el("span", {
-            class: "mc-tag", text: t, title: (d.tag_info[t] && d.tag_info[t].notes) || undefined,
-          }));
-          list.append(el(senses.length > 1 ? "li" : "div", { class: "mc-sense" },
-            tags.length ? el("div", { class: "mc-tags" }, ...tags) : null,
-            renderGlossary(d.glossary, d.dict_id)));
-        }
-        defs.append(el("section", { class: "mc-def" }, el("div", { class: "mc-dict", text: dictionary }), list));
-      }
+      const blocks = definitionBlocks(entry, language);
+      for (const [key] of BLOCKS) if (blocks[key].length) defs.append(el("section", { class: `mc-def mc-def-${key}` }, blockNode(key, blocks[key])));
 
       const chars = characterSection(entry, language);
       const add = el("button", { type: "button", class: "mc-add", text: "+ Card", onclick: () => openCreator(entry, language) });
@@ -749,15 +884,6 @@
     return wrap;
   }
 
-  function groupByDictionary(definitions) {
-    const groups = new Map();
-    for (const d of definitions) {
-      if (!groups.has(d.dictionary)) groups.set(d.dictionary, []);
-      groups.get(d.dictionary).push(d);
-    }
-    return groups;
-  }
-
   async function lookupScan(scan, anchorRect) {
     const token = ++lookupToken;
     const query = scan.text.slice(scan.start, scan.start + SCAN_CHARS);
@@ -801,18 +927,9 @@
 
   let creator = null;
 
-  function definitionHtml(entry, selected) {
+  function definitionHtml(blocks, selected) {
     const box = document.createElement("div");
-    for (const [dictionary, senses] of groupByDictionary(entry.definitions)) {
-      if (!selected.has(dictionary)) continue;
-      const list = document.createElement(senses.length > 1 ? "ol" : "div");
-      for (const d of senses) {
-        const item = document.createElement(senses.length > 1 ? "li" : "div");
-        item.append(renderGlossary(d.glossary, d.dict_id));
-        list.append(item);
-      }
-      box.append(list);
-    }
+    for (const [key] of BLOCKS) if (selected.has(key) && blocks[key].length) box.append(blockNode(key, blocks[key]));
     for (const img of box.querySelectorAll("img")) img.remove();
     for (const node of box.querySelectorAll("[data-query]")) { node.removeAttribute("href"); node.removeAttribute("data-query"); }
     for (const node of box.querySelectorAll("[class]")) node.removeAttribute("class");
@@ -1329,12 +1446,14 @@
     hidePopup();
     if (creator) creator.dialog.remove();
     const sentence = ctx ? ctx.sentence : { text: "", before: "", word: entry.source, after: "" };
-    const selected = new Set(entry.definitions.length ? [entry.definitions[0].dictionary] : []);
+    const blocks = definitionBlocks(entry, language);
+    const present = BLOCKS.filter(([key]) => blocks[key].length);
+    const selected = new Set(present.length ? [present[0][0]] : []);
 
     const word = el("input", { type: "text", value: entry.form, lang: displayLang(language) });
     const reading = el("input", { type: "text", value: entry.reading !== entry.expression ? entry.display_reading || entry.reading : "", lang: displayLang(language) });
     const definition = el("div", { class: "mc-editable", contenteditable: "true", role: "textbox", "aria-multiline": "true" });
-    definition.innerHTML = definitionHtml(entry, selected);
+    definition.innerHTML = definitionHtml(blocks, selected);
     const sentenceBox = el("div", { class: "mc-editable", contenteditable: "true", role: "textbox", lang: displayLang(language) });
     sentenceBox.innerHTML = sentence.text
       ? `${escapeHtml(sentence.before)}<b>${escapeHtml(sentence.word)}</b>${escapeHtml(sentence.after)}` : "";
@@ -1363,13 +1482,13 @@
     sentenceAudio.zone.insertBefore(tts.row, sentenceAudio.preview);
 
     const dictChoice = el("div", { class: "mc-dict-choice" });
-    for (const name of [...new Set(entry.definitions.map((d) => d.dictionary))]) {
-      const box = el("input", { type: "checkbox", checked: selected.has(name) });
+    for (const [key, label] of present) {
+      const box = el("input", { type: "checkbox", checked: selected.has(key) });
       box.addEventListener("change", () => {
-        if (box.checked) selected.add(name); else selected.delete(name);
-        definition.innerHTML = definitionHtml(entry, selected);
+        if (box.checked) selected.add(key); else selected.delete(key);
+        definition.innerHTML = definitionHtml(blocks, selected);
       });
-      dictChoice.append(el("label", { class: "mc-check" }, box, name));
+      dictChoice.append(el("label", { class: "mc-check" }, box, key === "monolingual" ? MONOLINGUAL[language] || label : label));
     }
 
     const target = el("p", { class: "mc-target" });

@@ -3,6 +3,7 @@ import json
 import re
 import ssl
 import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -50,12 +51,54 @@ def _ssl_context() -> ssl.SSLContext:
         return ssl.create_default_context()
 
 
-def _get(url: str, params: dict | None = None) -> bytes:
+# Wikimedia answers 429 (too many requests) to a burst, e.g. a CSV import downloading a recording per card: its
+# requests go one at a time, a little apart, and are tried again (after the Retry-After it asks for) when refused.
+_WIKIMEDIA = re.compile(r"^https?://([^/]+\.)?(wikimedia|wiktionary|wikipedia)\.org/", re.I)
+WIKIMEDIA_GAP_S = 0.3
+RETRIES = 4
+RETRY_MAX_WAIT_S = 30
+_wikimedia_lock = threading.Lock()
+_wikimedia_last = 0.0
+
+
+def _wait_turn() -> None:
+    global _wikimedia_last
+    with _wikimedia_lock:
+        wait = _wikimedia_last + WIKIMEDIA_GAP_S - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        _wikimedia_last = time.monotonic()
+
+
+def _retry_delay(exc: urllib.error.HTTPError, attempt: int) -> float:
+    try:
+        asked = float(exc.headers.get("Retry-After") or 0)
+    except (TypeError, ValueError):
+        asked = 0
+    return min(RETRY_MAX_WAIT_S, max(asked, 2 ** attempt))
+
+
+def _get(url: str, params: dict | None = None, timeout: float = TIMEOUT_S) -> bytes:
     if params:
         url = f"{url}?{urllib.parse.urlencode(params)}"
+    wikimedia = bool(_WIKIMEDIA.match(url))
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=TIMEOUT_S, context=_ssl_context()) as response:
-        return response.read()
+    for attempt in range(RETRIES + 1):
+        if wikimedia:
+            _wait_turn()
+        try:
+            with urllib.request.urlopen(request, timeout=timeout, context=_ssl_context()) as response:
+                return response.read()
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (429, 503) or attempt == RETRIES:
+                raise
+            time.sleep(_retry_delay(exc, attempt))
+    raise AssertionError("unreachable")
+
+
+def download(url: str) -> bytes:
+    """A recording found by sources(), downloaded by MiningCat (with the retries above) rather than by Anki."""
+    return _get(url, timeout=30)
 
 
 def _json(url: str, params: dict) -> dict:
@@ -129,6 +172,23 @@ def lingua_libre(language: str, words: list[str]) -> list[dict]:
     return _file_urls(titles[:MAX_SOURCES])
 
 
+# Wiktionary names Mandarin recordings after their pinyin (Zh-zhōng.ogg): those of the reading come first, those of
+# another reading (中 zhòng for zhōng) are left out. Recordings named after the characters keep their place.
+def _for_reading(found: list[dict], reading: str) -> list[dict]:
+    from mining.languages import reading_match
+    from mining.zhuyin import pinyin_to_zhuyin
+
+    ranked = []
+    for source in found:
+        name = urllib.parse.unquote(source["url"].rsplit("/", 1)[-1])
+        stem = re.sub(r"^zh-", "", name.split(".", 1)[0], flags=re.I)
+        if not re.fullmatch(r"[A-Za-zÀ-ɏ'\s]+", stem) or not pinyin_to_zhuyin(stem):
+            ranked.append((1, source))  # not a pinyin name
+        elif reading_match(stem, reading, "zh") == 2:
+            ranked.append((0, source))
+    return [source for _, source in sorted(ranked, key=lambda r: r[0])]
+
+
 def sources(language: str, expression: str, reading: str = "") -> list[dict]:
     """Recordings of a word: [{"name", "url"}], best first. Sources that fail (offline...) are skipped."""
     key = (language, expression, reading)
@@ -158,6 +218,8 @@ def sources(language: str, expression: str, reading: str = "") -> list[dict]:
                     found.append(source)
         except (urllib.error.URLError, OSError, ValueError, KeyError):
             failed = True
+    if language == "zh" and reading:
+        found = _for_reading(found, reading)
     found = found[:MAX_SOURCES]
     if found or not failed:  # an offline failure is retried next time
         with _cache_lock:

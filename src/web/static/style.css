@@ -387,6 +387,15 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius
 
 .upload-status { font-size: 13px; }
 
+/* ---------- CSV to cards ---------- */
+
+#screen-csv .panel > .field, #screen-csv .panel > .check { margin-top: 10px; }
+#csv-limit { width: 90px; }
+.csv-preview-wrap { overflow-x: auto; margin-top: 12px; }
+.csv-preview { border-collapse: collapse; font-size: 13px; width: 100%; }
+.csv-preview th, .csv-preview td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.csv-preview th { color: var(--fg-dim); font-weight: 600; font-size: 12px; }
+
 /* ---------- video / OCR ---------- */
 
 #video-web, #video-local, .ocr-block {

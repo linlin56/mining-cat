@@ -73,7 +73,16 @@ def preferred_form(language: str, expression: str, preference: str | None = None
 
 
 def _row(row) -> dict:
-    return {key: row[key] for key in row.keys()}
+    word = {key: row[key] for key in row.keys()}
+    # added: when the word was first studied. An Anki note's id is its creation time (ms), older than the row of a
+    # word synced from Anki; the others were added in MiningCat.
+    word["added"] = word["anki_note_id"] / 1000 if word.get("anki_note_id") else word["created"]
+    return word
+
+
+# Orders of list_words: by the last change, or by the date added (see _row), newest or oldest first.
+_ADDED = "COALESCE(anki_note_id / 1000.0, created)"
+WORD_ORDERS = {"updated": "updated DESC", "added": f"{_ADDED} DESC", "added_asc": f"{_ADDED} ASC"}
 
 
 def find(conn, language: str, expression: str, reading: str = "") -> dict | None:
@@ -138,7 +147,8 @@ def set_status(language: str, expression: str, reading: str, status: str | None,
     return {"status": status}
 
 
-def list_words(language: str | None = None, status: str | None = None, limit: int = 500, offset: int = 0) -> list[dict]:
+def list_words(language: str | None = None, status: str | None = None, limit: int = 500, offset: int = 0,
+               order: str = "updated") -> list[dict]:
     query, params = "SELECT * FROM words WHERE 1 = 1", []
     if language:
         query += " AND language = ?"
@@ -146,7 +156,7 @@ def list_words(language: str | None = None, status: str | None = None, limit: in
     if status:
         query += " AND status = ?"
         params.append(status)
-    query += " ORDER BY updated DESC LIMIT ? OFFSET ?"
+    query += f" ORDER BY {WORD_ORDERS.get(order, WORD_ORDERS['updated'])}, id DESC LIMIT ? OFFSET ?"
     params += [limit, offset]
     with db.session() as conn:
         return [_row(r) for r in conn.execute(query, params).fetchall()]

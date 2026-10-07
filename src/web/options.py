@@ -10,7 +10,7 @@ from gui_components.constants import (
 )
 
 MODES = ["Standard", "Generate subtitles", "Generate audio"]
-SOURCES = ["Audiobook / Ebook", "Video", "Video game / Screen share"]
+SOURCES = ["Audiobook / Ebook", "Video", "Video game / Screen share", "CSV to cards"]
 PRECISION_VALUES = ["Tiny", "Base (default)", "Small", "Medium", "Large", "Turbo (fast, large-v3)"]
 DEFAULT_PRECISION = "Base (default)"
 

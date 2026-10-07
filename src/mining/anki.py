@@ -10,7 +10,6 @@ import uuid
 from pathlib import Path
 
 from mining import db
-from mining.word_audio import _ssl_context
 from mining import words as words_mod
 from mining.languages import LANGUAGES
 
@@ -67,6 +66,10 @@ class AnkiError(Exception):
 
 class AnkiUnavailable(AnkiError):
     """Anki isn't running, or AnkiConnect isn't installed."""
+
+
+class MediaUnavailable(AnkiError):
+    """A media link of a card couldn't be downloaded (offline, the site refusing for now): it's tried again later."""
 
 
 # ---------------------------------------------------------------- settings
@@ -344,7 +347,7 @@ def list_cards(status: str | None = None, limit: int = 200, language: str | None
 def delete_card(card_id: int) -> None:
     card = get_card(card_id)
     for media in card["media"].values():
-        if media and not media.get("url"):
+        if media:  # a link's file too, once downloaded (_media_file)
             (card_media_dir() / media["filename"]).unlink(missing_ok=True)
     with db.session() as conn:
         conn.execute("DELETE FROM cards WHERE id = ?", (card_id,))
@@ -357,11 +360,42 @@ def _set_card(card_id: int, **values) -> None:
         conn.execute(f"UPDATE cards SET {assignments} WHERE id = ?", [*values.values(), card_id])
 
 
+# A linked media (an online recording) is downloaded by MiningCat once, then sent as a file: Anki downloading every
+# link itself gets refused by Wikimedia (429) during a big import, and the card would fail.
+def _media_file(media: dict) -> Path:
+    path = card_media_dir() / media["filename"]
+    if media.get("url") and not path.exists():
+        from mining import word_audio
+        try:
+            data = word_audio.download(media["url"])
+        except (urllib.error.URLError, OSError, ValueError) as exc:
+            raise MediaUnavailable(f"Couldn't download {media['url']} ({getattr(exc, 'reason', exc)}): "
+                                   "the card will be sent at the next sync.")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    return path
+
+
 def _media_payload(media: dict) -> dict:
-    if media.get("url"):
-        return {"filename": media["filename"], "url": media["url"]}
-    data = (card_media_dir() / media["filename"]).read_bytes()
+    data = _media_file(media).read_bytes()
     return {"filename": media["filename"], "data": base64.b64encode(data).decode("ascii")}
+
+
+def _search_text(text: str) -> str:
+    return re.sub(r'([\\"*_])', r"\\\1", text)
+
+
+def _word_in_deck(setup: dict, expression: str) -> bool:
+    """Whether the deck has a note of this word, in the note field holding the word (True when there's none)."""
+    field = next((name for name, template in setup["fields"].items() if re.search(r"\{word(_readings)?\}", template)), None)
+    if field is None:
+        return True
+    note_ids = invoke("findNotes", query=f'"deck:{_search_text(setup["deck"])}" "{_search_text(field)}:*{_search_text(expression)}*"')
+    for start in range(0, len(note_ids), 500):
+        for note in invoke("notesInfo", notes=note_ids[start:start + 500]):
+            if _plain(note["fields"].get(field, {}).get("value", "")) == expression:
+                return True
+    return False
 
 
 def send_card(card_id: int) -> dict:
@@ -384,8 +418,16 @@ def send_card(card_id: int) -> dict:
             "tags": [t for t in re.split(r"[\s,]+", f"{setup.get('tags', '')} {card['tags']}") if t],
             "options": {"allowDuplicate": False, "duplicateScope": "deck"},
         }
-        note_id = invoke("addNote", note=note)
-    except AnkiUnavailable as exc:
+        try:
+            note_id = invoke("addNote", note=note)
+        except AnkiError as exc:
+            if "duplicate" not in str(exc) or _word_in_deck(setup, card["expression"]):
+                raise
+            # Anki only compares the first field: in note types starting with the sentence (Migaku's), another
+            # word's card with the same sentence isn't a duplicate of this one.
+            note["options"]["allowDuplicate"] = True
+            note_id = invoke("addNote", note=note)
+    except (AnkiUnavailable, MediaUnavailable) as exc:
         _set_card(card_id, status="pending", error=str(exc))
         return get_card(card_id)
     except (AnkiError, OSError) as exc:
@@ -524,21 +566,14 @@ def export_apkg(card_ids: list[int] | None = None, mark_exported: bool = True) -
     )
     decks: dict[str, genanki.Deck] = {}
     media_files = []
-    folder = card_media_dir()
-    folder.mkdir(parents=True, exist_ok=True)
     for card in cards:
         language = LANGUAGES.get(card["language"], card["language"])
         deck = decks.setdefault(language, genanki.Deck(APKG_DECK_ID + sorted(LANGUAGES).index(card["language"]), f"MiningCat::{language}"))
         for media in card["media"].values():
-            path = folder / media["filename"]
-            if media.get("url") and not path.exists():
-                try:
-                    with urllib.request.urlopen(media["url"], timeout=20, context=_ssl_context()) as response:
-                        path.write_bytes(response.read())
-                except (urllib.error.URLError, OSError):
-                    continue
-            if path.exists():
-                media_files.append(str(path))
+            try:
+                media_files.append(str(_media_file(media)))
+            except MediaUnavailable:
+                continue
         values = []
         for key in APKG_FIELD_ORDER:
             if key in MEDIA_FIELDS:

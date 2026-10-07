@@ -4,7 +4,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, render_template, request, send_file
 
 from mining import anki, dictionaries, frequency, lookup, segment, words
-from mining.languages import CHINESE_LANGUAGES, LANGUAGES, language_key
+from mining.languages import CHINESE_LANGUAGES, LANGUAGES, language_key, reading_match
 
 bp = Blueprint("mining", __name__)
 
@@ -105,7 +105,8 @@ def api_word_status():
 def api_words():
     language = request.args.get("language")
     return jsonify(words=words.list_words(_language(language) if language else None, request.args.get("status") or None,
-                                          limit=min(int(request.args.get("limit", 500)), 5000)))
+                                          limit=min(int(request.args.get("limit", 500)), 5000),
+                                          order=request.args.get("order") or "updated"))
 
 
 @bp.post("/api/words/statuses")
@@ -136,12 +137,16 @@ def api_lookup():
     body = _body()
     text = str(body.get("text") or "")[:200]
     language = _language(body.get("language"))
+    # a known reading (a CSV's pinyin column): tells the entry of that pronunciation (還 huán, not hái)
+    wanted = str(body.get("reading") or "").strip()[:100]
     result = lookup.lookup(language, text)
     ranker = frequency.Ranker(language)
     for entry in result["entries"]:
         entry["display_reading"] = words.display_reading(language, entry["expression"], entry.get("reading") or "")
         # rank in the frequency list of the language, shown in the popup and the card creator
         entry["frequency_rank"] = ranker.rank(entry["expression"], entry.get("form") or "")
+        if wanted:
+            entry["reading_match"] = reading_match(wanted, entry.get("reading") or "", language)
     result["frequency"] = ranker.frontier
     return jsonify(result)
 

@@ -115,6 +115,20 @@ def reading_key(reading: str, language: str) -> str:
     return normalize_reading(reading, language)
 
 
+def reading_match(reading: str, other: str, language: str) -> int:
+    """How well two readings agree: 2 the same pronunciation, 1 the same syllables with other tones (Mandarin:
+    an erhua or a neutral tone written another way), 0 not."""
+    a, b = reading_key(reading, language), reading_key(other, language)
+    if not a or not b:
+        return 0
+    if a == b:
+        return 2
+    if language == "zh":
+        toneless = lambda key: re.sub(r"[ˊˇˋ˙]", "", key)
+        return 1 if toneless(a) == toneless(b) else 0
+    return 0
+
+
 # ---------------------------------------------------------------- dictionary language guess
 
 def guess_dictionary_language(samples: list[tuple[str, str]]) -> str:

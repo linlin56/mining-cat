@@ -55,11 +55,11 @@ def test_registered_modules_and_classes_exist():
 
 # WindowInfo
 def test_window_label_with_title():
-    assert WindowInfo(1, "Steam", "My Game").label == "Steam - My Game"
+    assert WindowInfo(1, "Launcher", "My Game").label == "Launcher - My Game"
 
 
 def test_window_label_without_title():
-    assert WindowInfo(1, "Ryujinx").label == "Ryujinx"
+    assert WindowInfo(1, "SampleApp").label == "SampleApp"
 
 
 # CaptureBackend base

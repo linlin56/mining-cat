@@ -77,6 +77,8 @@ _CJK_PATTERN = re.compile(r"[一-鿿぀-ヿｦ-ﾟ]")
 # Hangul syllables + compatibility jamo.
 _HANGUL_PATTERN = re.compile(r"[가-힣ㄱ-ㅎㅏ-ㅣ]")
 _LATIN_LETTER_PATTERN = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ]")
+# Taigi is written in Hanji, in romanization (Tâi-lô, POJ), or both.
+_HANJI_OR_LATIN_PATTERN = re.compile(r"[一-鿿A-Za-zÀ-ÖØ-öø-ÿ]")
 
 # Script pattern per language
 # anything not listed falls back to Latin.
@@ -88,6 +90,7 @@ _PATTERN_FOR_LANGUAGE: dict[Language, re.Pattern] = {
     Language.JAPANESE: _CJK_PATTERN,
     Language.CANTONESE_HK: _CJK_PATTERN,
     Language.KOREAN: _HANGUL_PATTERN,
+    Language.TAIGI: _HANJI_OR_LATIN_PATTERN,
 }
 
 

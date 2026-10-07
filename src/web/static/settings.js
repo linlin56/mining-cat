@@ -171,11 +171,16 @@ async function loadLanguages() {
     }
     return row;
   };
-  // The templates only have these boxes for Chinese languages (script) and Mandarin (readings).
+  // The templates only have these boxes for Chinese languages (script), Mandarin and Taigi (readings).
   $("script-settings")?.replaceChildren(radios(study,
     [["traditional", "Traditional 繁體"], ["simplified", "Simplified 简体"], ["both", "Both"]], data.scripts[STUDY], "/api/mining/script", "script"));
-  $("reading-settings")?.replaceChildren(radios(study,
-    [["pinyin", "Pinyin (hànyǔ)"], ["zhuyin", "Zhuyin (ㄏㄢˋ ㄩˇ)"]], data.readings.zh, "/api/mining/reading", "system"));
+  const readingSystems = {
+    zh: [["pinyin", "Pinyin (hànyǔ)"], ["zhuyin", "Zhuyin (ㄏㄢˋ ㄩˇ)"]],
+    nan: [["tailo", "Tâi-lô (Tâi-uân)"], ["poj", "Pe̍h-ōe-jī (Tâi-oân)"]],
+  };
+  if (readingSystems[STUDY]) {
+    $("reading-settings")?.replaceChildren(radios(study, readingSystems[STUDY], data.readings[STUDY], "/api/mining/reading", "system"));
+  }
 
   const c = data.counts[STUDY];
   $("word-counts").replaceChildren(c

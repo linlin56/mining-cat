@@ -25,6 +25,7 @@ _SCRIPT_FOR_LANGUAGE = {
     Language.MANDARIN_CN: "s",
     Language.MANDARIN_TW: "tw",
     Language.CANTONESE_HK: "hk",
+    Language.TAIGI: "nan",
 }
 
 
@@ -35,17 +36,26 @@ def convert_labels_for(lang: Language) -> list[str]:
     return [label for label, _ in _CONVERT_OPTIONS_FOR_SCRIPT[script]]
 
 
+# Precision of the languages transcribed by Qwen3-ASR instead of Whisper (Taigi).
+QWEN3_PRECISION_VALUES = ["Qwen3-ASR 0.6B (default)", "Qwen3-ASR 1.7B (more accurate, slower)"]
+
+
 # Some languages (like Cantonese) are only known to Whisper's large-v3/turbo checkpoints:
 # smaller models are hidden rather than left in the list to fail during transcription.
 def precision_values_for(lang: Language) -> list[str]:
+    if lang.value.asr == "qwen3":
+        return QWEN3_PRECISION_VALUES
     if lang.value.whisper_code not in LARGE_ONLY_WHISPER_CODES:
         return PRECISION_VALUES
     return [v for v in PRECISION_VALUES if v.split()[0] in ("Large", "Turbo")]
 
 
-# "Base (default)" -> "base", the model name expected by the CLI.
+# "Base (default)" -> "base", "Qwen3-ASR 1.7B (...)" -> "qwen3-1.7b": the model name expected by the CLI.
 def model_from_precision(label: str) -> str:
-    return label.split()[0].lower()
+    words = label.split()
+    if words[0] == "Qwen3-ASR":
+        return f"qwen3-{words[1].lower()}"
+    return words[0].lower()
 
 
 def supports_character_list(lang: Language) -> bool:

@@ -19,14 +19,19 @@ _HAN_CHAR = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U00
 _KANJI_STATS = ("strokes", "grade", "jlpt", "freq")
 
 
+# Romanized Taigi: words with their tone marks (tsia̍h-pn̄g, POJ's o͘ and ⁿ).
+_TAIGI_WORD_END = re.compile(r"[\w\u0300-\u036f’'\-]+", re.UNICODE)
+
+
 def _sources(text: str, language: str) -> list[str]:
     """Candidate texts starting at the cursor, longest first."""
     text = text.strip("\n")
-    if is_no_space(language):
+    romanized = language == "nan" and bool(re.match(r"[A-Za-z\u00c0-\u024f\u1e00-\u1eff]", text))
+    if is_no_space(language) and not romanized:
         text = text[:MAX_SCAN]
         return [text[:n] for n in range(len(text), 0, -1) if text[:n].strip()]
     ends = []
-    for m in _WORD_END.finditer(text):
+    for m in (_TAIGI_WORD_END if romanized else _WORD_END).finditer(text):
         ends.append(m.end())
         if len(ends) >= MAX_WORDS:
             break
@@ -243,6 +248,14 @@ def _convert_senses(entries: list[dict], language: str) -> None:
                         convert(example)
 
 
+def _taigi_readings(entries: list[dict]) -> None:
+    """Taigi dictionaries in Hanji only (no reading): taibun's Tâi-lô reading."""
+    from mining.taigi import reading
+    for g in entries:
+        if not g["reading"] or g["reading"] == g["expression"]:
+            g["reading"] = reading(g["expression"]) or g["reading"]
+
+
 def lookup(language: str, text: str) -> dict:
     """Entries for `text` (the text from the cursor onwards), longest match first."""
     sources = _sources(text, language)
@@ -349,6 +362,8 @@ def lookup(language: str, text: str) -> dict:
 
     if language in CHINESE_LANGUAGES:
         _convert_senses(ordered, language)
+    if language == "nan":
+        _taigi_readings(ordered)
     for g in ordered:
         form = words_mod.preferred_form(language, g["expression"])
         g["form"] = form

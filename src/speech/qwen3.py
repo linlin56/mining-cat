@@ -1,0 +1,113 @@
+"""Transcription with Qwen3-ASR (Alibaba, Apache 2.0), which knows Minnan among its Chinese dialects: it writes Taigi
+speech in Chinese characters. The audio is cut into utterances by a voice activity detector (Silero, shipped with
+faster-whisper), each one transcribed: its subtitles take the utterance's times, shared between its sentences."""
+
+import re
+import sys
+import types
+
+from tqdm import tqdm
+
+from speech import SAMPLE_RATE, SpeechError, load_audio, require, torch_device
+
+MODELS = {"qwen3-0.6b": "Qwen/Qwen3-ASR-0.6B", "qwen3-1.7b": "Qwen/Qwen3-ASR-1.7B"}
+DEFAULT_MODEL = "qwen3-0.6b"
+# The CLI's Whisper sizes, for a language transcribed by Qwen3-ASR: the large ones get the large model.
+_FROM_WHISPER_SIZE = {"medium": "qwen3-1.7b", "large": "qwen3-1.7b", "turbo": "qwen3-1.7b"}
+# Qwen3-ASR's language for ours (Minnan is one of its Chinese dialects), and words telling it what it hears.
+QWEN_LANGUAGES = {"nan": "Chinese"}
+CONTEXTS = {"nan": "台語（閩南語）"}
+
+MAX_UTTERANCE_SECONDS = 20
+BATCH_SIZE = 8
+
+
+def model_name(name: str | None) -> str:
+    """A Qwen3-ASR model for a model name given to the CLI (qwen3-1.7b, or a Whisper size)."""
+    name = (name or "").lower()
+    return name if name in MODELS else _FROM_WHISPER_SIZE.get(name, DEFAULT_MODEL)
+
+
+def _import_qwen_asr():
+    # qwen_asr imports nagisa (a Japanese tokenizer, for its forced aligner, which isn't used here) when it's
+    # loaded: nagisa doesn't build on recent Pythons, a placeholder module lets the transcriber load without it.
+    try:
+        import nagisa  # noqa: F401
+    except ImportError:
+        sys.modules["nagisa"] = types.ModuleType("nagisa")
+    return require("qwen_asr", "Transcription with Qwen3-ASR")
+
+
+def load_model(name: str | None = None):
+    qwen_asr = _import_qwen_asr()
+    torch = require("torch", "Transcription with Qwen3-ASR")
+    device = torch_device()
+    # bfloat16 on NVIDIA GPUs; float32 elsewhere (half precision is slow on CPUs and unreliable on Apple's GPUs)
+    dtype = torch.bfloat16 if device == "cuda" else torch.float32
+    repo = MODELS[model_name(name)]
+    print(f"Loading Qwen3-ASR ({repo}) on {device}...")
+    return qwen_asr.Qwen3ASRModel.from_pretrained(
+        repo, dtype=dtype, device_map=device, max_inference_batch_size=BATCH_SIZE, max_new_tokens=256,
+    )
+
+
+def utterances(samples, max_seconds: float = MAX_UTTERANCE_SECONDS) -> list[tuple[int, int]]:
+    """(start, end) sample positions of the speech of the audio, no longer than max_seconds each."""
+    from faster_whisper.vad import VadOptions, get_speech_timestamps
+
+    options = VadOptions(min_silence_duration_ms=300, max_speech_duration_s=max_seconds, speech_pad_ms=200)
+    return [(chunk["start"], chunk["end"]) for chunk in get_speech_timestamps(samples, options, sampling_rate=SAMPLE_RATE)]
+
+
+# The text of an utterance cut into sentences: after the sentence-final punctuation, the commas of a long one.
+_SENTENCE = re.compile(r".+?(?:[。？！?!]+[」』”]*|$)", re.S)
+
+
+def _split_times(text: str, start: float, end: float, max_chars: int = 30) -> list[tuple[float, float, str]]:
+    sentences = [s.strip() for s in _SENTENCE.findall(text) if s.strip()]
+    pieces = []
+    for sentence in sentences:
+        if len(sentence) <= max_chars:
+            pieces.append(sentence)
+            continue
+        part = ""
+        for clause in re.findall(r".+?(?:[，,、；;]+|$)", sentence):
+            if part and len(part) + len(clause) > max_chars:
+                pieces.append(part)
+                part = ""
+            part += clause
+        if part:
+            pieces.append(part)
+    total = sum(len(p) for p in pieces) or 1
+    timed, position = [], start
+    for piece in pieces:
+        length = (end - start) * len(piece) / total
+        timed.append((position, position + length, piece))
+        position += length
+    return timed
+
+
+def transcribe(model, audio_file, language: str = "nan", progress: bool = True) -> list:
+    """Subtitles (align.Segment) of an audio file."""
+    from align import Segment
+
+    samples = load_audio(audio_file)
+    spans = utterances(samples)
+    if not spans:
+        return []
+    segments = []
+    batches = range(0, len(spans), BATCH_SIZE)
+    for first in tqdm(batches, desc="Transcription", unit="batch", disable=not progress):
+        batch = spans[first:first + BATCH_SIZE]
+        try:
+            results = model.transcribe(
+                audio=[(samples[s:e], SAMPLE_RATE) for s, e in batch],
+                language=QWEN_LANGUAGES.get(language), context=CONTEXTS.get(language, ""),
+            )
+        except Exception as exc:  # out of memory, a model that couldn't be downloaded...
+            raise SpeechError(f"Qwen3-ASR couldn't transcribe the audio: {exc}") from exc
+        for (s, e), result in zip(batch, results):
+            text = (result.text or "").strip()
+            for start, end, piece in _split_times(text, s / SAMPLE_RATE, e / SAMPLE_RATE) if text else ():
+                segments.append(Segment(0, round(start, 3), round(end, 3), piece))
+    return segments

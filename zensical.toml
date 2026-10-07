@@ -17,6 +17,7 @@ nav = [
     "how-to-use/clipboard.md",
     "how-to-use/player.md",
     "how-to-use/mining.md",
+    "how-to-use/taigi.md",
     "how-to-use/cli.md",
     "how-to-use/files.md",
   ] },

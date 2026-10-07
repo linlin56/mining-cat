@@ -9,6 +9,7 @@ from language import Language
 _CHAR_PATTERN: dict[Language, re.Pattern] = {
     Language.MANDARIN_TW: re.compile(r"[一-鿿㐀-䶿]"),
     Language.MANDARIN_CN: re.compile(r"[一-鿿㐀-䶿]"),
+    Language.TAIGI: re.compile(r"[一-鿿㐀-䶿]"),
     # Kanji (CJK + Extension A) + hiragana + katakana
     Language.JAPANESE: re.compile(r"[一-鿿㐀-䶿぀-ゟ゠-ヿ]"),
 }
@@ -16,6 +17,7 @@ _CHAR_PATTERN: dict[Language, re.Pattern] = {
 _LANG_CODE: dict[Language, str] = {
     Language.MANDARIN_TW: "zh-Hant",
     Language.MANDARIN_CN: "zh-Hans",
+    Language.TAIGI: "zh-Hant",
     Language.JAPANESE: "ja",
 }
 

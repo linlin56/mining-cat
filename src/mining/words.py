@@ -29,16 +29,19 @@ def set_chinese_script_preference(language: str, script: str) -> None:
     db.set_setting("chinese_scripts", prefs)
 
 
-# How Mandarin readings are shown in the popup and written on cards. Words stay identified by their pinyin.
-READING_SYSTEMS = ("pinyin", "zhuyin")
+# How readings are shown in the popup and written on cards: Mandarin in pinyin or zhuyin, Taigi in Tâi-lô or
+# Pe̍h-ōe-jī. Words stay identified by their pinyin / Tâi-lô reading. The first system is the default.
+READING_SYSTEMS = {"zh": ("pinyin", "zhuyin"), "nan": ("tailo", "poj")}
 
 
 def reading_system(language: str) -> str:
-    return (db.get_setting("reading_systems", {}) or {}).get(language, "pinyin") if language == "zh" else ""
+    if language not in READING_SYSTEMS:
+        return ""
+    return (db.get_setting("reading_systems", {}) or {}).get(language, READING_SYSTEMS[language][0])
 
 
 def set_reading_system(language: str, system: str) -> None:
-    if language != "zh" or system not in READING_SYSTEMS:
+    if system not in READING_SYSTEMS.get(language, ()):
         raise WordError("Invalid reading setting.")
     prefs = db.get_setting("reading_systems", {}) or {}
     prefs[language] = system
@@ -54,6 +57,12 @@ def display_reading(language: str, expression: str, reading: str) -> str:
             return pinyin_to_zhuyin(reading) or reading
         if is_zhuyin(reading):
             return zhuyin_to_pinyin(reading) or reading
+    if language == "nan":
+        from mining import taigi
+        if reading and reading != expression:
+            return taigi.respell(reading, reading_system(language))
+        # a Hanji dictionary without readings: taibun's
+        return taigi.reading(expression, reading_system(language)) or reading
     return reading
 
 

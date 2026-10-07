@@ -151,6 +151,36 @@ def _extract_segments(result, lang: Language) -> list[Segment]:
     segs = fix_leading_punct(segs, lang)
     return fix_trailing_opening_punct(segs, lang)
 
+# The study language (mining.languages key) of a Language: "nan" for Taigi.
+def language_key_of(lang: Language) -> str:
+    from mining.languages import language_key
+    return language_key(lang.tag)
+
+
+# Loads the speech recognition model of the language: a Whisper checkpoint, or Qwen3-ASR for the languages Whisper
+# doesn't know (`model_name` is then Qwen3-ASR's size, or a Whisper size mapped to one).
+def load_asr_model(model_name: str, lang: Language):
+    if lang.value.asr == "qwen3":
+        from speech import qwen3
+        return qwen3.load_model(model_name)
+    return _load_whisper(model_name, lang)
+
+
+# Loads what aligns a book on its audio: a Whisper checkpoint, or the MMS aligner for the languages Whisper doesn't know.
+def load_aligner(model_name: str, lang: Language):
+    if lang.value.aligner == "mms":
+        from speech.mms_align import Aligner
+        return Aligner()
+    return _load_whisper(model_name, lang)
+
+
+def _load_whisper(model_name: str, lang: Language):
+    print(f"Loading stable-whisper model '{model_name}'...")
+    model = stable_whisper.load_model(model_name, device=get_device())
+    ensure_language_supported(model, lang)
+    return model
+
+
 # Align a single chapter's audio and text, returning a list of segments with timestamps.
 def align_chapter(
     model,
@@ -160,6 +190,11 @@ def align_chapter(
 ) -> tuple[list[Segment], int]:
     # Load and prepare text, then run alignment.
     chapter_text = prepare_text(text_file.read_text(encoding="utf-8").strip(), lang)
+    if lang.value.aligner == "mms":
+        from language import split_sentences
+        timed = model.align(audio_file, split_sentences(chapter_text), language_key_of(lang))
+        segs = [Segment(0, start, end, text) for start, end, text in timed]
+        return fix_trailing_opening_punct(fix_leading_punct(segs, lang), lang), len(chapter_text)
     result = model.align(
         str(audio_file),
         chapter_text,
@@ -175,6 +210,10 @@ def transcribe_chapter(
     audio_file: Path,
     lang: Language = Language.MANDARIN_TW,
 ) -> list[Segment]:
+    if lang.value.asr == "qwen3":
+        from speech import qwen3
+        segs = qwen3.transcribe(model, audio_file, language=language_key_of(lang))
+        return fix_trailing_opening_punct(fix_leading_punct(segs, lang), lang)
     result = model.transcribe(
         str(audio_file),
         language=lang.value.whisper_code,
@@ -207,9 +246,7 @@ def run_transcribe(
     files = audio_files[start_idx:]
     print()
 
-    print(f"Loading stable-whisper model '{model_name}'...")
-    model = stable_whisper.load_model(model_name, device=get_device())
-    ensure_language_supported(model, language)
+    model = load_asr_model(model_name, language)
     print()
 
     for i, audio_file in enumerate(
@@ -274,10 +311,8 @@ def run(
     pairs = list(zip(audio_files, text_files))[start_idx:]
     print()
 
-    # Load stable-whisper
-    print(f"Loading stable-whisper model '{model_name}'...")
-    model = stable_whisper.load_model(model_name, device=get_device())
-    ensure_language_supported(model, language)
+    # Load stable-whisper (or the MMS aligner)
+    model = load_aligner(model_name, language)
     print()
 
     # Process each chapter, skipping already existing SRT files unless from_ch is specified (which indicates a retry).

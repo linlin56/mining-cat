@@ -75,10 +75,9 @@ def describe(settings: GameOcrSettings) -> dict:
     }
 
 
-# Tag of a language for the /game/ page (dictionary popup, fonts): Cantonese isn't Mandarin's zh-Hant.
+# Tag of a language for the /game/ page (dictionary popup, fonts): Cantonese and Taigi aren't Mandarin's zh-Hant.
 def language_tag(lang) -> str:
-    from language import Language
-    return "yue-Hant" if lang is Language.CANTONESE_HK else lang.value.ocr_lang_apple
+    return lang.tag
 
 
 @bp.get("/state")

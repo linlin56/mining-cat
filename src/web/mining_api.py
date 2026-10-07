@@ -72,7 +72,7 @@ def api_languages():
     return jsonify(
         languages=[{"id": k, "name": v, "chinese": k in CHINESE_LANGUAGES, "studied": k in studied} for k, v in LANGUAGES.items()],
         scripts={lang: words.chinese_script_preference(lang) for lang in CHINESE_LANGUAGES},
-        readings={"zh": words.reading_system("zh")},
+        readings={language: words.reading_system(language) for language in words.READING_SYSTEMS},
         counts=counts,
     )
 
@@ -159,6 +159,21 @@ def api_sentence_readings():
     body = _body()
     sentence = str(body.get("sentence") or "")[:5000]
     return jsonify(sentence_readings.annotate(_language(body.get("language")), sentence, str(body.get("reading") or "")))
+
+
+# A Taigi text written in Hanji, Tâi-lô or POJ (from any of them, or a mix): the Clipboard page's "Write in".
+@bp.post("/api/taigi/convert")
+def api_taigi_convert():
+    from mining import taigi
+
+    body = _body()
+    text, target = str(body.get("text") or ""), str(body.get("target") or "")
+    if len(text) > 200_000:
+        raise ApiError("The text is too long to convert (200,000 characters at most).")
+    try:
+        return jsonify(text=taigi.convert(text, target, numbers=bool(body.get("numbers"))))
+    except (ValueError, RuntimeError) as exc:
+        raise ApiError(str(exc))
 
 
 # ---------------------------------------------------------------- frequency list

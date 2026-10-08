@@ -21,6 +21,13 @@ _QUOTES: dict[tuple[str, str], dict[str, str]] = {
     ("hk", "s"): _TO_SIMPLIFIED_QUOTES,
 }
 
+# The scripts subtitles in each script can be converted to, with their label.
+CONVERSION_TARGETS: dict[str, list[tuple[str, str]]] = {
+    "s": [("Traditional - Taiwan", "tw"), ("Traditional - Chinese", "t")],
+    "tw": [("Simplified - China", "s")],
+    "hk": [("Simplified - China", "s")],
+}
+
 
 class ConversionError(ValueError):
     pass

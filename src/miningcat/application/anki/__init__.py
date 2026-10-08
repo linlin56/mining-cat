@@ -2,7 +2,12 @@
 from miningcat.application.anki.apkg_export import export_apkg
 from miningcat.application.anki.card_media import card_media_dir, store_media
 from miningcat.application.anki.cards import (
-    create_card, delete_card, get_card, list_cards, send_card, send_pending,
+    create_card,
+    delete_card,
+    get_card,
+    list_cards,
+    send_card,
+    send_pending,
 )
 from miningcat.application.anki.config import DEFAULT_TAG, get_config, save_config
 from miningcat.application.anki.connection import model_fields, status

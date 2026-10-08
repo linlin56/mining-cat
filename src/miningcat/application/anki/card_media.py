@@ -8,6 +8,7 @@ from pathlib import Path
 from miningcat.config.paths import paths
 from miningcat.domain.cards.errors import AnkiError
 
+
 def card_media_dir() -> Path:
     """Where the images and sounds of the cards are kept."""
     return paths.card_media

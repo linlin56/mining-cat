@@ -8,10 +8,8 @@ from miningcat.domain.text.variants import text_variants
 # Longest headword tried, in characters (no-space languages) or words (other languages).
 MAX_CHARS = 16
 
-
 # Senses that make a word rare when all its senses are (Wiktionary tags).
 _RARE_TAGS = frozenset(("dialect", "dialectal", "archaic", "obsolete", "rare", "dated"))
-
 
 _KANA_END = re.compile(r"[぀-ヿ]$")
 

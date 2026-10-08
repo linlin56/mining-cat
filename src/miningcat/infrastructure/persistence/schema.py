@@ -128,7 +128,6 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 """
 
-
 # Columns added after a database was created (CREATE TABLE IF NOT EXISTS doesn't add them).
 ADDED_COLUMNS = [
     ("dictionaries", "kanji_count", "INTEGER NOT NULL DEFAULT 0"),

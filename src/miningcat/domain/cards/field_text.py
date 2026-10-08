@@ -1,6 +1,7 @@
 import html
 import re
 
+
 def plain_field_text(value: str) -> str:
     """The text of an Anki field: without sounds, HTML tags, entities and furigana."""
     text = re.sub(r"\[sound:[^\]]*\]", "", value or "")

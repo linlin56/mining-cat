@@ -8,19 +8,14 @@ from miningcat.domain.segmentation.lexicon import Lexicon, match
 
 MAX_WORDS = 4
 
-
 # Characters a word can be made of: letters, marks, digits, and the Japanese long vowel / iteration marks.
 _WORD_CHAR = re.compile(r"[\wー々〻ゝゞヽヾ'’\-]", re.UNICODE)
 
-
 _WORD_RUN = re.compile(_WORD_CHAR.pattern + "+", re.UNICODE)
-
 
 _SPACE_WORD = re.compile(r"[^\W_]+(?:['’\-][^\W_]+)*", re.UNICODE)
 
-
 _LETTER = re.compile(r"[^\W\d_]", re.UNICODE)
-
 
 # Korean particles and copula endings written after nouns (친구와, 밥을): recognised as such, never coloured.
 # Wiktionary-based dictionaries don't always have them as entries.
@@ -28,10 +23,8 @@ KO_PARTICLES = frozenset(
     "은 는 이 가 을 를 의 에 에서 에게 께 께서 한테 와 과 랑 이랑 하고 도 만 까지 부터 로 으로 처럼 보다 "
     "마다 조차 밖에 이나 나 이나마 이든지 든지 요 이요 야 아 이야 이다 입니다 이에요 예요 였다 이었다".split())
 
-
 # Languages split inside words, like Japanese: Korean words carry their particles and endings.
 _SPLIT_INSIDE_WORDS = {"ko"}
-
 
 _PARTICLE = ""
 

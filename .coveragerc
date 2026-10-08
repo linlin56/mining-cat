@@ -3,9 +3,7 @@ omit =
     .venv/*
     src/tests/*
     */site-packages/*
-    src/gui.py
-    src/gui_config.py
-    src/gui_components/*
+    src/miningcat/interfaces/cli/area_picker.py
 
 [report]
 fail_under = 80

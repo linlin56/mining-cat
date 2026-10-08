@@ -19,9 +19,7 @@ CARD_FIELDS = {
     "sentence_audio": "Sentence audio",
 }
 
-
 MEDIA_FIELDS = ("image", "audio", "sentence_audio")
-
 
 # Field names guessed from the user's note type. Each marker goes to the first unused field matching its pattern,
 # patterns being tried in this order: a clear "Definitions" field wins over a "Translation" one (in some note
@@ -42,7 +40,6 @@ _GUESSES = [
     (re.compile(r"(frequency|freq|rank)", re.I), "{frequency}"),
     (re.compile(r"(note|comment|remark)", re.I), "{notes}"),
 ]
-
 
 # Flags of some note types ("Is Vocabulary Card", "Is Audio Card"): never filled with content.
 _FLAG_FIELD = re.compile(r"^is\b", re.I)

@@ -3,8 +3,8 @@ import re
 
 from miningcat.application.mining import preferences, words
 from miningcat.domain.dictionary import glossary
-from miningcat.domain.dictionary.deinflection import Deinflection, LanguageTransformer, transformer_for
 from miningcat.domain.dictionary.definitions import merge_definitions, move_other_readings, readable
+from miningcat.domain.dictionary.deinflection import Deinflection, LanguageTransformer, transformer_for
 from miningcat.domain.languages import CHINESE_LANGUAGES, is_no_space
 from miningcat.domain.text.chinese_script import chinese_counterpart, chinese_script
 from miningcat.domain.text.readings import reading_key

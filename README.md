@@ -16,8 +16,9 @@ MiningCat is a free and open source, all-in-one tool for learning languages thro
 - 🃏 **Make cards** (word, reading, definitions, sentence, audio, image, translation) sent to Anki through AnkiConnect, or exported as `.apkg`. Your Anki decks keep your word statuses up to date.
 - 🎞️ **Create mineable videos** (`.mp4` + `.srt`) from an audiobook and its ebook, an audiobook alone, an ebook alone (text-to-speech), or a video without subtitles (transcription, or OCR of burned-in subtitles).
 - 🈶 **Chinese tools**: simplified ⇄ traditional conversion, zhuyin / pinyin, context-aware readings.
+- 🇹🇼 **Taigi tools**: Hanji ⇄ Tâi-lô ⇄ Pe̍h-ōe-jī conversion, and local speech engines for Taigi (`make install-taigi`).
 
-**Languages:** Mandarin (Taiwan, traditional / China, simplified), Cantonese (Hong Kong), Japanese, Korean, Vietnamese, English (US / UK), French, German, Italian, Spanish, Portuguese (Brazil / Portugal), Polish. Taiwanese Hokkien (Taigi) is a work in progress.
+**Languages:** Mandarin (Taiwan, traditional / China, simplified), Cantonese (Hong Kong), Taiwanese Hokkien (Taigi: Hanji, Tâi-lô and Pe̍h-ōe-jī), Japanese, Korean, Vietnamese, English (US / UK), French, German, Italian, Spanish, Portuguese (Brazil / Portugal), Polish.
 
 ## Under the hood
 
@@ -25,15 +26,16 @@ MiningCat chains several speech and NLP components into one local, multilingual 
 
 | Task | Components |
 | --- | --- |
-| Speech recognition | [faster-whisper](https://github.com/SYSTRAN/faster-whisper), with selectable model sizes (tiny to large / turbo) |
-| Forced alignment of a book's text on its audiobook | [stable-ts](https://github.com/jianfch/stable-ts) (Whisper-based) |
-| Speech synthesis | [edge-tts](https://github.com/rany2/edge-tts) |
+| Speech recognition | [faster-whisper](https://github.com/SYSTRAN/faster-whisper), with selectable model sizes (tiny to large / turbo); [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) for Taigi |
+| Forced alignment of a book's text on its audiobook | [stable-ts](https://github.com/jianfch/stable-ts) (Whisper-based); Meta's MMS aligner on the romanized text for Taigi |
+| Speech synthesis | [edge-tts](https://github.com/rany2/edge-tts); Meta's [MMS-TTS](https://huggingface.co/facebook/mms-tts-nan) (local) for Taigi |
 | OCR (hardsubs, games, manga) | Apple Vision / Live Text on macOS, [EasyOCR](https://github.com/JaidedAI/EasyOCR) and [owocr](https://github.com/AuroraWright/owocr) elsewhere |
 | Offline machine translation of sentences | [Argos Translate](https://github.com/argosopentech/argos-translate) |
 | Word segmentation | Longest dictionary match, [jieba](https://github.com/fxsjy/jieba) and [Janome](https://github.com/mocobeta/janome) for frequency lists |
 | Morphology | Deconjugation (Japanese, Korean, French, Spanish...), Mandarin readings chosen from the context |
 | Learner modelling | Word statuses synced from Anki (card maturity), comprehension rate, i+1 recommendation bounded by a frequency list |
 | Chinese script conversion | [OpenCC](https://github.com/BYVoid/OpenCC) |
+| Taigi writing systems | Hanji readings with [taibun](https://github.com/andreihar/taibun), Tâi-lô ⇄ Pe̍h-ōe-jī syllable by syllable |
 
 It is a Python project with a local web interface, tested on Linux, macOS and Windows, with a test suite and a CI that requires at least 80% coverage.
 

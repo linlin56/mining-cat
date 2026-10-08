@@ -73,16 +73,16 @@ _Generate audio mode._ Generates the audio of each extracted chapter with edge-t
 | `--voice`    | _required_    | edge-tts voice name, e.g. `zh-TW-HsiaoChenNeural`         |
 | `--language` | `mandarin_tw` | See [language ids](#language-ids)                         |
 
-List the available voices with `edge-tts --list-voices`.
+List the available voices with `edge-tts --list-voices`. Taigi has no Edge voice: use `nan-TW-MmsTaigi`, a local voice (see [Taigi](taigi.md)).
 
 ### `convert`
 
-Converts every subtitle file in `output/srt/` between Chinese scripts with OpenCC.
+Converts every subtitle file in `output/srt/` between Chinese scripts with OpenCC, or writes Taigi subtitles in another writing system.
 
 | Option     | Values                  | Description                                                     |
 | ---------- | ----------------------- | --------------------------------------------------------------- |
-| `--source` | `s`, `tw`               | Source script: `s` = simplified, `tw` = traditional (Taiwan)    |
-| `--target` | `s`, `tw`, `t`, `hk`    | Target script: `t` = traditional, `hk` = traditional (Hong Kong) |
+| `--source` | `s`, `tw`, `hk`, `nan`  | Source script: `s` = simplified, `tw` = traditional (Taiwan), `hk` = traditional (Hong Kong), `nan` = Taigi in any writing system |
+| `--target` | `s`, `tw`, `t`, `hk`, `hanji`, `tailo`, `poj` | Target script: `t` = traditional, `hk` = traditional (Hong Kong); for Taigi, Hanji, Tâi-lô or Pe̍h-ōe-jī |
 
 ### `export`
 
@@ -166,6 +166,7 @@ Serves the page on <http://127.0.0.1:6677/> and opens it in the browser. Capture
 | `mandarin_tw`  | Mandarin - Taiwan (Traditional)       |
 | `mandarin_cn`  | Mandarin - China (Simplified)         |
 | `cantonese_hk` | Cantonese - Hong Kong (Traditional)   |
+| `taigi`        | Taiwanese Hokkien - Taigi (transcribed with Qwen3-ASR: `--model qwen3-0.6b` or `qwen3-1.7b`) |
 | `japanese`     | Japanese                              |
 | `korean`       | Korean                                |
 | `vietnamese`   | Vietnamese                            |

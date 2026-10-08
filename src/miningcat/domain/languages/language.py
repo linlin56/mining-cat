@@ -1,6 +1,6 @@
 from enum import Enum
 
-from miningcat.domain.languages.profile import LanguageProfile, WordSegmentation
+from miningcat.domain.languages.profile import LanguageProfile, SpeechEngine, WordSegmentation
 from miningcat.domain.languages.profile_builder import LanguageProfileBuilder
 from miningcat.domain.languages.tags import language_key
 from miningcat.domain.text import scripts
@@ -22,7 +22,7 @@ class Language(Enum):
             ("YunJhe - Mandarin (Taiwan), male", "zh-TW-YunJheNeural"),
         )
         .youtube_captions("zh-Hant", "zh-TW", "zh")
-        .chinese_script("tw")
+        .script("tw")
         .word_segmentation(WordSegmentation.CHINESE)
         .character_list("zh-Hant", scripts.HAN)
         .build()
@@ -42,7 +42,7 @@ class Language(Enum):
             ("Yunyang - Mandarin (China), male", "zh-CN-YunyangNeural"),
         )
         .youtube_captions("zh-Hans", "zh-CN", "zh")
-        .chinese_script("s")
+        .script("s")
         .word_segmentation(WordSegmentation.CHINESE)
         .character_list("zh-Hans", scripts.HAN)
         .build()
@@ -207,8 +207,27 @@ class Language(Enum):
             ("WanLung - Cantonese (Hong Kong), male", "zh-HK-WanLungNeural"),
         )
         .youtube_captions("yue", "zh-HK", "zh-Hant", "zh")
-        .chinese_script("hk")
+        .script("hk")
         .large_whisper_models_only()
+        .build()
+    )
+    # Whisper has no Taigi: Qwen3-ASR transcribes it (in Hanji), and books are aligned on their romanization.
+    TAIGI = (
+        LanguageProfileBuilder("Taiwanese Hokkien - Taigi")
+        .codes(key="nan", whisper="nan", iso639_2="nan", tag="nan-Hant")
+        .punctuation(closing="。？！」』.?!”", opening="「『“")
+        .vocab_annotations(r"\[\d+\]")
+        .ocr(apple="zh-Hant", easyocr="ch_tra", script=scripts.HAN_OR_LATIN)
+        # Vietnamese: the Latin model with the most diacritics (Tâi-lô's and POJ's come back as look-alikes,
+        # see domain/text/taigi/ocr_repair.py).
+        .latin_ocr(apple="vi-VT", easyocr="vi")
+        # Edge has no Taigi voice: Meta's MMS voice runs locally (infrastructure/speech/mms_tts.py).
+        .voices(("MMS - Taigi (local, Meta MMS-TTS)", "nan-TW-MmsTaigi"))
+        .youtube_captions("nan", "nan-TW", "zh-min-nan", "zh-TW", "zh-Hant")
+        .script("nan")
+        .speech(transcriber=SpeechEngine.QWEN3_ASR, aligner=SpeechEngine.MMS)
+        .word_segmentation(WordSegmentation.TAIGI)
+        .character_list("zh-Hant", scripts.HAN)
         .build()
     )
     # TODO : Add more! Priorities are languages that me (the owner) can understand enough to test

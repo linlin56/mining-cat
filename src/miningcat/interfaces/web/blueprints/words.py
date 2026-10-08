@@ -3,6 +3,7 @@ from flask import Blueprint, jsonify, request
 
 from miningcat.application.mining import dictionaries, preferences, segmentation, words
 from miningcat.domain.languages import CHINESE_LANGUAGES, LANGUAGES
+from miningcat.domain.words.forms import READING_SYSTEMS
 from miningcat.interfaces.web.errors import UserError
 from miningcat.interfaces.web.requests import json_body, study_language
 
@@ -20,7 +21,7 @@ def api_languages():
     return jsonify(
         languages=[{"id": k, "name": v, "chinese": k in CHINESE_LANGUAGES, "studied": k in studied} for k, v in LANGUAGES.items()],
         scripts={lang: preferences.chinese_script_preference(lang) for lang in CHINESE_LANGUAGES},
-        readings={"zh": preferences.reading_system("zh")},
+        readings={language: preferences.reading_system(language) for language in READING_SYSTEMS},
         counts=counts,
     )
 
@@ -53,7 +54,8 @@ def api_word_status():
 def api_words():
     language = request.args.get("language")
     return jsonify(words=words.list_words(study_language(language) if language else None, request.args.get("status") or None,
-                                          limit=min(int(request.args.get("limit", 500)), 5000)))
+                                          limit=min(int(request.args.get("limit", 500)), 5000),
+                                          order=request.args.get("order") or "updated"))
 
 
 @bp.post("/api/words/statuses")

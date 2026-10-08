@@ -171,11 +171,16 @@ async function loadLanguages() {
     }
     return row;
   };
-  // The templates only have these boxes for Chinese languages (script) and Mandarin (readings).
+  // The templates only have these boxes for Chinese languages (script), Mandarin and Taigi (readings).
   $("script-settings")?.replaceChildren(radios(study,
     [["traditional", "Traditional 繁體"], ["simplified", "Simplified 简体"], ["both", "Both"]], data.scripts[STUDY], "/api/mining/script", "script"));
-  $("reading-settings")?.replaceChildren(radios(study,
-    [["pinyin", "Pinyin (hànyǔ)"], ["zhuyin", "Zhuyin (ㄏㄢˋ ㄩˇ)"]], data.readings.zh, "/api/mining/reading", "system"));
+  const readingSystems = {
+    zh: [["pinyin", "Pinyin (hànyǔ)"], ["zhuyin", "Zhuyin (ㄏㄢˋ ㄩˇ)"]],
+    nan: [["tailo", "Tâi-lô (Tâi-uân)"], ["poj", "Pe̍h-ōe-jī (Tâi-oân)"]],
+  };
+  if (readingSystems[STUDY]) {
+    $("reading-settings")?.replaceChildren(radios(study, readingSystems[STUDY], data.readings[STUDY], "/api/mining/reading", "system"));
+  }
 
   const c = data.counts[STUDY];
   $("word-counts").replaceChildren(c
@@ -189,15 +194,17 @@ async function loadWords() {
   const params = new URLSearchParams();
   if ($("words-filter").value) params.set("status", $("words-filter").value);
   params.set("language", STUDY);
+  params.set("order", $("words-order").value);
   const { words } = await api(`/api/words?${params}`);
   const table = $("words-table");
   table.replaceChildren(
-    el("thead", {}, el("tr", {}, ...["Word", "Reading", "Status", "From", ""].map((t) => el("th", { text: t })))),
+    el("thead", {}, el("tr", {}, ...["Word", "Reading", "Status", "From", "Added", ""].map((t) => el("th", { text: t })))),
     el("tbody", {}, ...words.map((w) => el("tr", {},
       el("td", { class: "word", lang: w.language, text: w.expression }),
       el("td", { text: w.reading }),
       el("td", {}, el("span", { class: `pill ${w.status}`, text: w.status })),
       el("td", { text: { manual: "you", card: "card", anki: "Anki" }[w.source] || w.source }),
+      el("td", { class: "dim", title: new Date(w.added * 1000).toLocaleString(), text: new Date(w.added * 1000).toLocaleDateString() }),
       el("td", {}, el("button", {
         class: "icon-btn", type: "button", title: "Forget this word", "aria-label": `Forget ${w.expression}`, text: "×",
         onclick: async () => {
@@ -205,7 +212,7 @@ async function loadWords() {
           catch (err) { showError(err); }
         },
       }))))));
-  if (!words.length) table.append(el("tbody", {}, el("tr", {}, el("td", { colspan: "5", class: "empty", text: "No words." }))));
+  if (!words.length) table.append(el("tbody", {}, el("tr", {}, el("td", { colspan: "6", class: "empty", text: "No words." }))));
 }
 
 // ---------------------------------------------------------------- Anki
@@ -503,6 +510,7 @@ async function init() {
       try { await api("/api/frequency/list", { language: STUDY, id: e.target.value }); loadFrequency(); } catch (err) { showError(err); }
     });
     $("words-filter").addEventListener("change", loadWords);
+    $("words-order").addEventListener("change", loadWords);
     $("anki-test").addEventListener("click", async () => {
       try { await api("/api/anki/config", { url: $("anki-url").value }); } catch (err) { return showError(err); }
       refreshAnki();

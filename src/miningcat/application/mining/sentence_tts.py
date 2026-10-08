@@ -2,7 +2,9 @@ import re
 
 from miningcat.application.anki.config import get_config
 from miningcat.domain.languages import Language, language_key
+from miningcat.infrastructure.speech import mms_tts
 from miningcat.infrastructure.speech.edge_tts import EdgeTts
+from miningcat.infrastructure.speech.local_models import SpeechError
 
 MAX_CHARS = 1000
 
@@ -42,6 +44,11 @@ def default_voice(language: str) -> str:
 tts = EdgeTts()
 
 
+def preload(voice: str) -> None:
+    """A local voice loads in the background while the card is being made."""
+    mms_tts.preload(voice)
+
+
 def synthesize(language: str, text: str, voice: str) -> bytes:
     """The text read by the voice, as MP3."""
     text = re.sub(r"\s+", " ", text or "").strip()
@@ -51,6 +58,13 @@ def synthesize(language: str, text: str, voice: str) -> bytes:
         raise TtsError(f"Sentences are limited to {MAX_CHARS} characters.")
     if voice not in {v["id"] for v in voices(language)["voices"]}:
         raise TtsError(f"Unknown voice: {voice!r}")
+    if mms_tts.is_local(voice):
+        try:
+            return mms_tts.synthesize_mp3(text, voice)
+        except SpeechError as exc:
+            raise TtsError(str(exc))
+        except Exception as exc:  # a model that couldn't be downloaded...
+            raise TtsError(f"The voice couldn't be generated: {exc}")
     try:
         audio = tts.synthesize(text, voice)
     except ImportError:

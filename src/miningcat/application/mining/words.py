@@ -18,9 +18,9 @@ def preferred_form(language: str, expression: str, preference: str | None = None
     return forms.preferred_form(language, expression, preference or preferences.chinese_script_preference(language))
 
 
-def display_reading(language: str, reading: str) -> str:
-    """The reading as the user wants to see it: zhuyin or pinyin, as chosen."""
-    return forms.display_reading(language, reading, preferences.reading_system(language))
+def display_reading(language: str, expression: str, reading: str) -> str:
+    """The reading as the user wants to see it: zhuyin or pinyin, Tâi-lô or POJ, as chosen."""
+    return forms.display_reading(language, expression, reading, preferences.reading_system(language))
 
 
 def status_of(language: str, expression: str, reading: str = "") -> dict:
@@ -65,9 +65,11 @@ def set_status(language: str, expression: str, reading: str, status: str | None,
     return {"status": status}
 
 
-def list_words(language: str | None = None, status: str | None = None, limit: int = 500, offset: int = 0) -> list[dict]:
+def list_words(language: str | None = None, status: str | None = None, limit: int = 500, offset: int = 0,
+               order: str = "updated") -> list[dict]:
+    """Saved words, by their last change ("updated") or by the date they were added ("added", "added_asc")."""
     with database.session() as conn:
-        return WordRepository(conn).search(language, status, limit, offset)
+        return WordRepository(conn).search(language, status, limit, offset, order)
 
 
 def counts() -> dict:

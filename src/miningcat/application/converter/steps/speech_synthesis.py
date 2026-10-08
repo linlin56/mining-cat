@@ -1,4 +1,4 @@
-"""Generate audio mode: each chapter of the book read by an edge-tts voice, with its subtitles."""
+"""Generate audio mode: each chapter of the book read by an edge-tts voice (or a local one), with its subtitles."""
 import asyncio
 from pathlib import Path
 
@@ -9,7 +9,9 @@ from miningcat.config.paths import paths
 from miningcat.domain.languages import Language
 from miningcat.domain.subtitles.punctuation import restore_opening_punct
 from miningcat.domain.subtitles.segment import Segment
+from miningcat.domain.text.sentences import split_sentences
 from miningcat.infrastructure.files.srt_files import save_srt
+from miningcat.infrastructure.speech import mms_tts
 from miningcat.infrastructure.speech.edge_tts import TICKS_PER_SECOND, EdgeTts
 
 # Gap left between a subtitle and the next one.
@@ -40,6 +42,13 @@ async def _synthesize(text: str, voice: str, audio_path: Path, srt_path: Path,
     return len(segments)
 
 
+# A local voice (Taigi's MMS voice) reads the chapter sentence by sentence: the subtitles are its sentences.
+def _synthesize_local(text: str, voice: str, audio_path: Path, srt_path: Path) -> int:
+    timed = mms_tts.synthesize_chapter(split_sentences(text), voice, audio_path)
+    save_srt([Segment(0, start, end, sentence) for start, end, sentence in timed], srt_path)
+    return len(timed)
+
+
 def run(voice: str, lang: Language = Language.MANDARIN_TW) -> None:
     """Reads each chapter of output/chapters_text into output/chapters_audio and output/srt (chapters already
     done are skipped)."""
@@ -62,7 +71,10 @@ def run(voice: str, lang: Language = Language.MANDARIN_TW) -> None:
             tqdm.write(f"  {text_file.stem} skip")
             continue
         text = text_file.read_text(encoding="utf-8").strip()
-        n_segs = asyncio.run(_synthesize(text, voice, audio_path, srt_path, lang))
+        if mms_tts.is_local(voice):
+            n_segs = _synthesize_local(text, voice, audio_path, srt_path)
+        else:
+            n_segs = asyncio.run(_synthesize(text, voice, audio_path, srt_path, lang))
         tqdm.write(f"  {text_file.stem}  {n_segs} seg")
 
     print("\nDone.")

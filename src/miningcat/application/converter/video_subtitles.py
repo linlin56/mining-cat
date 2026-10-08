@@ -4,7 +4,7 @@ import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from miningcat.application.converter import transcription
+from miningcat.application.converter import speech_engines, transcription
 from miningcat.application.converter.errors import ConverterError
 from miningcat.application.converter.ocr_subtitles import generate_segments
 from miningcat.application.converter.steps.script_conversion import convert_srt_dir, normalize_whisper_script
@@ -13,7 +13,6 @@ from miningcat.application.converter.video_request import VideoRequest
 from miningcat.config.paths import paths
 from miningcat.infrastructure.files.srt_files import save_srt
 from miningcat.infrastructure.media.video_file import extract_audio, mux_subtitles, source_subtitles
-from miningcat.infrastructure.speech.whisper import Whisper
 
 # (SRT file, title of the track in players)
 Track = tuple[Path, str]
@@ -46,8 +45,8 @@ class OcrSubtitles(SubtitleMaker):
         return srt_file, "OCR"
 
 
-class WhisperSubtitles(SubtitleMaker):
-    """The speech of the video, transcribed by Whisper."""
+class SpeechSubtitles(SubtitleMaker):
+    """The speech of the video, transcribed by Whisper (or the language's own engine: Qwen3-ASR for Taigi)."""
 
     def make(self, video_file: Path) -> Track | None:
         request = self.request
@@ -59,16 +58,15 @@ class WhisperSubtitles(SubtitleMaker):
         srt_file = paths.srt / f"{video_file.stem}_whisper.srt"
         if srt_file.exists():
             print(f"A previous transcription exists and will be overwritten: {srt_file}")
-        whisper = Whisper.load(request.model_name)
-        whisper.ensure_supports(request.language)
-        segs = transcription.transcribe(whisper, audio_file, request.language)
+        transcriber = speech_engines.load_transcriber(request.model_name, request.language)
+        segs = transcription.transcribe(transcriber, audio_file, request.language)
         save_srt(segs, srt_file)
         normalize_whisper_script(srt_file, request.language)
         print(f"Subtitles: {srt_file}  ({len(segs)} segments)")
         if not segs:
             print("  Nothing transcribed: is there speech in the selected language?")
             return None
-        return srt_file, "Whisper"
+        return srt_file, transcriber.name
 
 
 class VideoSubtitles:
@@ -77,7 +75,7 @@ class VideoSubtitles:
 
     def __init__(self, request: VideoRequest):
         self.request = request
-        self.maker: SubtitleMaker = OcrSubtitles(request) if request.use_ocr else WhisperSubtitles(request)
+        self.maker: SubtitleMaker = OcrSubtitles(request) if request.use_ocr else SpeechSubtitles(request)
 
     def run(self) -> Path:
         video_file = self._video()
@@ -112,7 +110,7 @@ class VideoSubtitles:
 
     def _convert_script(self) -> None:
         """Every SRT of output/srt (the source ones and the new ones) in the Chinese script asked for."""
-        source_script = self.request.language.profile.chinese_script
+        source_script = self.request.language.profile.script
         target = self.request.convert_target
         if target is not None and source_script is not None:
             print(f"\n=== Character conversion ({source_script} -> {target}) ===")

@@ -4,7 +4,7 @@ This page lists every place in the codebase to touch when adding a language. It'
 
 Priority goes to languages that are supported by [Whisper](https://github.com/openai/whisper#available-models-and-languages) and [edge-tts](https://github.com/rany2/edge-tts).
 
-Other TTS and means of transcriptions may be added in the future.
+For a language they don't support, local engines can take over (`src/miningcat/infrastructure/speech/`): Taigi is transcribed with Qwen3-ASR, aligned with Meta's MMS aligner and read by an MMS voice (see the `speech()` step below, and `mms_tts.py` for the voices).
 
 You can add a language you don't speak, but please ask a native speaker to double-check the results, and say so in your pull request.
 
@@ -40,11 +40,13 @@ What each step of the builder is for:
 | `punctuation(closing, opening)` | none                      | Whisper sometimes puts sentence-final punctuation at the start of the next segment, and drops opening marks (`domain/subtitles/punctuation.py`).               |
 | `vocab_annotations(pattern)` | none                         | Glossary or ruby annotations embedded in ebooks, stripped before alignment (e.g. `\[\d+\]` for Chinese, `［＃.+?］` for Japanese Aozora Bunko).               |
 | `ocr(apple, easyocr, script)` | required (script: Latin)   | OCR on macOS ([Apple Vision languages](https://developer.apple.com/documentation/vision/vnrecognizetextrequest)) and elsewhere ([EasyOCR languages](https://www.jaided.ai/easyocr/)). **Non-Latin scripts must give their `script`** (`scripts.CJK`, `scripts.HANGUL`...): OCR text without a character of the script is rejected as noise. |
-| `voices(...)`               | none                          | The "Generate audio" mode and the sentence audio of cards. List them with `edge-tts --list-voices \| grep xx-`.                                             |
+| `latin_ocr(apple, easyocr)` | none                          | Languages also written in Latin letters (Taigi's romanizations): their Latin lines are read again by a Latin OCR model, which sees the tone marks the CJK model drops. |
+| `voices(...)`               | none                          | The "Generate audio" mode and the sentence audio of cards. List them with `edge-tts --list-voices \| grep xx-`. Without an Edge voice, an [MMS voice](https://huggingface.co/models?search=facebook/mms-tts) can be added to `VOICES` in `infrastructure/speech/mms_tts.py` (non-commercial licence), with an Edge-like id (`xx-XX-Name`). |
 | `youtube_captions(*codes)`  | the Whisper code              | YouTube caption codes to try, in order of preference.                                                                                                       |
-| `word_segmentation(...)`    | `SPACES`                      | Languages written without spaces need a tokenizer for word frequency lists (`CHINESE`: jieba, `JAPANESE`: janome).                                           |
+| `word_segmentation(...)`    | `SPACES`                      | Languages written without spaces need a tokenizer for word frequency lists (`CHINESE`: jieba, `JAPANESE`: janome, `TAIGI`: taibun).                          |
 | `character_list(tag, pattern)` | none                       | CJK languages only: enables the Kanji Grid character list.                                                                                                  |
-| `chinese_script(script)`    | none                          | Chinese variants only: their OpenCC script (`s`, `tw`, `hk`), for the simplified / traditional conversions (`domain/text/chinese_conversion.py`).            |
+| `script(script)`            | none                          | The script its subtitles are converted from: OpenCC's `s`, `tw` or `hk` for Chinese variants (simplified / traditional), `nan` for Taigi (Hanji, Tâi-lô, POJ). See `domain/text/script_conversion.py`. |
+| `speech(transcriber, aligner)` | Whisper                    | Languages Whisper doesn't know: `SpeechEngine.QWEN3_ASR` transcribes with Qwen3-ASR (`infrastructure/speech/qwen3_asr.py`: add the language to `QWEN_LANGUAGES`), `SpeechEngine.MMS` aligns a book with Meta's MMS aligner on its romanized text (`infrastructure/speech/mms_aligner.py`: add a romanizer for a non-Latin script). |
 | `large_whisper_models_only()` | no                          | Languages Whisper only knows with its large-v3 and turbo models (like Cantonese): the GUI only offers **Large** and **Turbo**.                               |
 
 Verify the punctuation sets against real text samples: quotes differ a lot between languages (`« »`, `„ "`, `「 」`...).

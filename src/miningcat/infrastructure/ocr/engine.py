@@ -5,13 +5,17 @@ from pathlib import Path
 from PIL import Image
 
 from miningcat.domain.languages import Language
+from miningcat.domain.text import taigi
 
 
 class OcrEngine:
     # `vertical`: comics and manga. On macOS, Apple Live Text reads vertical columns (Apple Vision skips them),
     # but only on the main thread of its process: see infrastructure/ocr/worker.py.
     def __init__(self, language: Language, vertical: bool = False):
-        self._impl = _build_impl(language, vertical=vertical)
+        self._language = language
+        profile = language.profile
+        self._impl = _build_impl(profile.ocr_lang_apple, profile.ocr_lang_easyocr, vertical=vertical)
+        self._latin_impl = None  # built at the first Latin line: see _reread_latin_lines
 
     # `image` is a file path or an in-memory PIL image (game / screen share OCR never touches the disk).
     # `drop_narrow_lines` is the hardsubs heuristic below: disable it when every line matters (e.g. a game dialog box).
@@ -19,7 +23,7 @@ class OcrEngine:
         # owocr's engines check `isinstance(img, Path)` internally : a plain str is rejected.
         if not isinstance(image, Image.Image):
             image = Path(image)
-        success, result = self._impl(image)
+        success, result = self._recognize(image)
         if not success:
             return ""
         return _flatten_text(result, drop_narrow_lines=drop_narrow_lines)
@@ -30,7 +34,7 @@ class OcrEngine:
             image = Path(image)
         with Image.open(image) if isinstance(image, Path) else nullcontext(image) as img:
             width, height = img.size
-            success, result = self._impl(img)
+            success, result = self._recognize(img)
         if not success:
             return []
         lines = []
@@ -42,22 +46,64 @@ class OcrEngine:
                     lines.append((text, b.left * width, b.top * height, b.width * width, b.height * height))
         return lines
 
+    def _recognize(self, image: Path | Image.Image):
+        success, result = self._impl(image)
+        if success and self._language.profile.latin_ocr:
+            self._reread_latin_lines(image, result)
+        return success, result
 
-def _build_impl(language: Language, vertical: bool = False):
+    # A language also written in Latin letters (Taigi's Tâi-lô and POJ): the CJK model reads their letters but drops
+    # every tone mark (and reads ó as 6), so its Latin lines are read again, cropped, by a Latin model.
+    def _reread_latin_lines(self, image: Path | Image.Image, result) -> None:
+        lines = [line for paragraph in result.paragraphs for line in paragraph.lines if _is_latin(line.text or "")]
+        if not lines:
+            return
+        if self._latin_impl is None:
+            latin = self._language.profile.latin_ocr
+            self._latin_impl = _build_impl(latin.apple, latin.easyocr, latin=True)
+        repair = _LATIN_REPAIRS.get(self._language.profile.key, lambda text: text)
+        with Image.open(image) if isinstance(image, Path) else nullcontext(image) as img:
+            width, height = img.size
+            for line in lines:
+                b = line.bounding_box
+                # tone marks stand above the letters, sometimes outside the CJK model's box
+                pad_x, pad_y = b.height * 0.5, b.height * 0.6
+                box = (max(0, (b.left - pad_x) * width), max(0, (b.top - pad_y) * height),
+                       min(width, (b.left + b.width + pad_x) * width), min(height, (b.top + b.height + pad_y) * height))
+                success, latin = self._latin_impl(img.crop(tuple(round(v) for v in box)).convert("RGB"))
+                reread = [l for p in latin.paragraphs for l in p.lines if l.text] if success else []
+                if reread:
+                    # the widest line: the crop may catch a bit of the lines around it
+                    line.text = repair(max(reread, key=lambda l: l.bounding_box.width).text)
+                else:
+                    line.text = repair(line.text)
+
+
+def _is_latin(text: str) -> bool:
+    letters = [c for c in text if c.isalpha()]
+    return bool(letters) and sum(c.isascii() or "\u00c0" <= c <= "\u024f" for c in letters) * 2 > len(letters)
+
+
+# Study language -> the fix of what its Latin model reads (look-alike tone marks...).
+_LATIN_REPAIRS = {"nan": taigi.repair_ocr}
+
+
+# `latin`: a model for the Latin lines of a CJK language, which mustn't "correct" them into words of its language.
+def _build_impl(apple_language: str, easyocr_language: str, vertical: bool = False, latin: bool = False):
     if sys.platform == "darwin" and vertical:
-        impl = _apple_live_text(language)
+        impl = _apple_live_text(apple_language)
         if impl is not None:
             return impl
     if sys.platform == "darwin":
         from owocr.ocr import AppleVision
         _ensure_owocr_objc_global()
-        impl = AppleVision(language=language.profile.ocr_lang_apple)
+        impl = AppleVision(language=apple_language, config={"language_correction": not latin})
         if getattr(impl, "available", False):
             return impl
         print("  Apple Vision unavailable on this system, falling back to EasyOCR")
 
     from owocr.ocr import EasyOCR
-    impl = EasyOCR(config={}, language=language.profile.ocr_lang_easyocr)
+    impl = EasyOCR(config={}, language=easyocr_language)
     if not getattr(impl, "available", False):
         raise RuntimeError(
             "No usable OCR engine available (macOS 13+ is needed for Apple Vision, "
@@ -67,12 +113,12 @@ def _build_impl(language: Language, vertical: bool = False):
 
 
 # Apple Live Text (VisionKit, macOS 13+): owocr expects its private classes to be loaded already.
-def _apple_live_text(language: Language):
+def _apple_live_text(language: str):
     try:
         import objc
         objc.loadBundle("VisionKit", {}, bundle_path="/System/Library/Frameworks/VisionKit.framework")
         from owocr.ocr import AppleLiveText
-        impl = AppleLiveText(language=language.profile.ocr_lang_apple)
+        impl = AppleLiveText(language=language)
     except Exception as exc:
         print(f"  Apple Live Text unavailable ({exc}), falling back to Apple Vision")
         return None

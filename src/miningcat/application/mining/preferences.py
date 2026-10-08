@@ -4,7 +4,7 @@ from miningcat.domain.words.status import WordError
 from miningcat.infrastructure.persistence.settings_store import settings
 
 _SCRIPTS_SETTING = "chinese_scripts"            # {language: traditional, simplified or both}
-_READING_SYSTEMS_SETTING = "reading_systems"    # {"zh": pinyin or zhuyin}
+_READING_SYSTEMS_SETTING = "reading_systems"    # {"zh": pinyin or zhuyin, "nan": tailo or poj}
 
 
 def chinese_script_preference(language: str) -> str:
@@ -21,12 +21,14 @@ def set_chinese_script_preference(language: str, script: str) -> None:
 
 
 def reading_system(language: str) -> str:
-    """How Mandarin readings are shown ("" for other languages)."""
-    return (settings.get(_READING_SYSTEMS_SETTING, {}) or {}).get(language, "pinyin") if language == "zh" else ""
+    """How Mandarin and Taigi readings are shown ("" for other languages)."""
+    if language not in READING_SYSTEMS:
+        return ""
+    return (settings.get(_READING_SYSTEMS_SETTING, {}) or {}).get(language, READING_SYSTEMS[language][0])
 
 
 def set_reading_system(language: str, system: str) -> None:
-    if language != "zh" or system not in READING_SYSTEMS:
+    if system not in READING_SYSTEMS.get(language, ()):
         raise WordError("Invalid reading setting.")
     prefs = settings.get(_READING_SYSTEMS_SETTING, {}) or {}
     prefs[language] = system

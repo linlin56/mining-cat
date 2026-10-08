@@ -1730,8 +1730,16 @@
     }, true);
   }
 
+  // What the card creator fills a card with, for cards made without it (a CSV import): the definition blocks a
+  // language can have ([key, label]), the HTML of an entry's chosen blocks, the word's recordings, the sentence's translation.
+  const cardParts = {
+    definitionKinds: (language) => BLOCKS.map(([key, label]) => [key, key === "monolingual" ? MONOLINGUAL[language] || label : label]),
+    definitionHtml: (entry, language, keys) => definitionHtml(definitionBlocks(entry, language), new Set(keys)),
+    wordAudio, translateSentence,
+  };
+
   window.MiningCatMining = {
     attach, hide: hidePopup, isOpen: () => Boolean(popup && !popup.hidden), renderGlossary, api,
-    colourWords, clearColours, updateColour, analyse, onAnalysis,
+    colourWords, clearColours, updateColour, analyse, onAnalysis, cardParts,
   };
 })();

@@ -14,7 +14,7 @@ from miningcat.application.converter.video_request import VideoRequestBuilder
 from miningcat.domain.languages import Language
 from miningcat.domain.ocr.regions import valid_region
 from miningcat.domain.ocr.sampling import OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
-from miningcat.interfaces.cli.command import CHINESE_SCRIPTS, Command
+from miningcat.interfaces.cli.command import CONVERT_TARGETS, Command
 
 
 def parse_ocr_region(value: str) -> tuple[float, float, float, float]:
@@ -87,10 +87,11 @@ class TranscribeCommand(Command):
 
 
 class TtsCommand(Command):
-    name, help = "tts", "Generate audio from EPUB text using edge-tts"
+    name, help = "tts", "Generate audio from EPUB text using edge-tts (or a local voice)"
 
     def configure(self, parser):
-        parser.add_argument("--voice", required=True, help="Edge-TTS voice name (e.g. zh-TW-HsiaoChenNeural)")
+        parser.add_argument("--voice", required=True,
+                            help="Edge-TTS voice name (e.g. zh-TW-HsiaoChenNeural), or nan-TW-MmsTaigi for Taigi (local)")
         self.add_language(parser)
 
     def run(self, args):
@@ -113,12 +114,13 @@ class ExportCommand(Command):
 
 
 class ConvertCommand(Command):
-    name, help = "convert", "Convert SRT character script with OpenCC"
+    name, help = "convert", "Convert SRT character script with OpenCC, or Taigi's writing system"
 
     def configure(self, parser):
-        parser.add_argument("--source", required=True, choices=["s", "tw"],
-                            help="Source script (s=Simplified, tw=Traditional Taiwan)")
-        parser.add_argument("--target", required=True, choices=CHINESE_SCRIPTS, help="Target script")
+        parser.add_argument("--source", required=True, choices=["s", "tw", "hk", "nan"],
+                            help="Source script (s=Simplified, tw=Traditional Taiwan, hk=Hong Kong, nan=any Taigi text)")
+        parser.add_argument("--target", required=True, choices=CONVERT_TARGETS,
+                            help="Target script (Taigi: hanji, tailo or poj)")
 
     def run(self, args):
         script_conversion.convert_srt_dir(args.source, args.target)
@@ -152,7 +154,7 @@ class VideoCommand(Command):
         self.add_language(parser)
         parser.add_argument("--app-id", dest="app_id", default="web",
                             help="Instagram X-IG-App-ID (numeric id, 'ios', or 'web')")
-        parser.add_argument("--convert-to", dest="convert_to", default=None, choices=CHINESE_SCRIPTS,
+        parser.add_argument("--convert-to", dest="convert_to", default=None, choices=CONVERT_TARGETS,
                             help="Convert the generated SRT to this script (e.g. s=Simplified)")
         parser.add_argument("--audio-track", dest="audio_track", type=int, default=None,
                             help="Index of the audio track to transcribe, if the video has several (0-based)")

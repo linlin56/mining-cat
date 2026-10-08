@@ -69,10 +69,10 @@ class AudiobookJob(Job):
             listener.status(step.label + "…", step.pct)
             listener.log(f"\n{step.label}\n")
             self._run_command(self.command(step), step.command, listener)
-            if step.command in ("align", "tts") and request.convert_target is not None:
+            if step.command in ("align", "transcribe", "tts") and request.convert_target is not None:
                 listener.status("Step 3.5 - Character conversion…", 45)
                 listener.log("\nStep 3.5 - Character conversion\n")
-                convert_srt_dir(request.language.profile.chinese_script, request.convert_target)
+                convert_srt_dir(request.language.profile.script, request.convert_target)
                 listener.log("  Done.\n")
         listener.status("Done", 100)
         listener.log("\nPipeline complete.\n")

@@ -1,12 +1,14 @@
 import base64
 import mimetypes
 import re
+import urllib.error
 import urllib.request
 import uuid
 from pathlib import Path
 
 from miningcat.config.paths import paths
-from miningcat.domain.cards.errors import AnkiError
+from miningcat.domain.cards.errors import AnkiError, MediaUnavailable
+from miningcat.infrastructure import http
 
 
 def card_media_dir() -> Path:
@@ -53,9 +55,23 @@ def store_media(kind: str, value: dict | None) -> dict | None:
     return None
 
 
+# A linked media (an online recording) is downloaded by MiningCat once, then sent as a file: Anki downloading every
+# link itself gets refused by Wikimedia (429) during a big import, and the card would fail.
+def media_file(media: dict) -> Path:
+    """The local file of a card's media, downloaded first when it's a link."""
+    path = card_media_dir() / media["filename"]
+    if media.get("url") and not path.exists():
+        try:
+            data = http.get(media["url"], timeout=30)
+        except (urllib.error.URLError, OSError, ValueError) as exc:
+            raise MediaUnavailable(f"Couldn't download {media['url']} ({getattr(exc, 'reason', exc)}): "
+                                   "the card will be sent at the next sync.")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    return path
+
+
 def anki_payload(media: dict) -> dict:
-    """The storeMediaFile parameters of a media file: its data, or the link Anki downloads it from."""
-    if media.get("url"):
-        return {"filename": media["filename"], "url": media["url"]}
-    data = (card_media_dir() / media["filename"]).read_bytes()
+    """The storeMediaFile parameters of a media file: its data (a link's file is downloaded first)."""
+    data = media_file(media).read_bytes()
     return {"filename": media["filename"], "data": base64.b64encode(data).decode("ascii")}

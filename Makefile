@@ -1,4 +1,4 @@
-.PHONY: help gui reader player install test coverage audio epub align export chapter1 chapter run clean video game-setup game
+.PHONY: help gui reader player install install-taigi test coverage audio epub align export chapter1 chapter run clean video game-setup game
 
 # Defaults
 CHAPTER  ?= 1
@@ -44,6 +44,7 @@ help:
 	@echo ""
 	@echo "Usage:"
 	@echo "  make install                    Install dependencies"
+	@echo "  make install-taigi              Install the local speech engines for Taigi (Qwen3-ASR, MMS)"
 	@echo "  make gui [PORT=5050]            Open the GUI in your browser"
 	@echo "  make reader                     Open the ebook reader in your browser"
 	@echo "  make player                     Open the video player in your browser"
@@ -72,6 +73,11 @@ install:
 	$(PYTHON) -m pip install -r requirements.txt
 # Install separately with --no-deps to avoid the PyGObject build error on Linux.
 	$(PYTHON) -m pip install --no-deps "owocr>=1.26.8"
+
+# Taigi's local speech engines, not in regular install because very large and not needed for all.
+install-taigi:
+	$(PYTHON) -m pip install -r requirements-taigi.txt
+	$(PYTHON) -m pip install --no-deps "qwen-asr==0.0.6"
 
 test:
 	$(PYTHON) -m pytest

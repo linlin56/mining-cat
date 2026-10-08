@@ -1,13 +1,31 @@
+import re
 import threading
 import urllib.error
+import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 
 from miningcat.domain.languages import CHINESE_LANGUAGES
 from miningcat.domain.text.chinese_script import chinese_counterpart
+from miningcat.domain.text.readings import reading_match
+from miningcat.domain.text.zhuyin import pinyin_to_zhuyin
 from miningcat.infrastructure import http
 from miningcat.infrastructure.word_audio.japanesepod101 import JapanesePod101Source
 from miningcat.infrastructure.word_audio.source import MAX_SOURCES, AudioSource, HttpGet
 from miningcat.infrastructure.word_audio.wikimedia import LinguaLibreSource, WiktionarySource
+
+
+# Wiktionary names Mandarin recordings after their pinyin (Zh-zhōng.ogg): those of the reading come first, those of
+# another reading (中 zhòng for zhōng) are left out. Recordings named after the characters keep their place.
+def _for_reading(found: list[dict], reading: str) -> list[dict]:
+    ranked = []
+    for source in found:
+        name = urllib.parse.unquote(source["url"].rsplit("/", 1)[-1])
+        stem = re.sub(r"^zh-", "", name.split(".", 1)[0], flags=re.I)
+        if not re.fullmatch(r"[A-Za-zÀ-ɏ'\s]+", stem) or not pinyin_to_zhuyin(stem):
+            ranked.append((1, source))  # not a pinyin name
+        elif reading_match(stem, reading, "zh") == 2:
+            ranked.append((0, source))
+    return [source for _, source in sorted(ranked, key=lambda r: r[0])]
 
 
 class WordAudioFinder:
@@ -42,6 +60,8 @@ class WordAudioFinder:
                         found.append(recording)
             except (urllib.error.URLError, OSError, ValueError, KeyError):
                 failed = True
+        if language == "zh" and reading:
+            found = _for_reading(found, reading)
         found = found[:MAX_SOURCES]
         if found or not failed:  # an offline failure is retried next time
             with self._lock:

@@ -6,6 +6,18 @@ from miningcat.infrastructure.persistence.database import as_dict
 # SQLite limits the number of parameters of a query.
 _CHUNK = 500
 
+# Orders of search(): by the last change, or by the date added (see _word), newest or oldest first.
+_ADDED = "COALESCE(anki_note_id / 1000.0, created)"
+WORD_ORDERS = {"updated": "updated DESC", "added": f"{_ADDED} DESC", "added_asc": f"{_ADDED} ASC"}
+
+
+def _word(row) -> dict:
+    word = as_dict(row)
+    # added: when the word was first studied. An Anki note's id is its creation time (ms), older than the row of a
+    # word synced from Anki; the others were added in MiningCat.
+    word["added"] = word["anki_note_id"] / 1000 if word.get("anki_note_id") else word["created"]
+    return word
+
 
 class WordRepository:
     """The user's words (table `words`), within a database session."""
@@ -20,10 +32,10 @@ class WordRepository:
         ).fetchall()
         exact = next((r for r in rows if r["reading"] == reading), None)
         if exact is not None:
-            return as_dict(exact)
+            return _word(exact)
         # A word saved without a reading, or looked up without one, matches any reading.
         loose = next((r for r in rows if not r["reading"] or not reading), None)
-        return as_dict(loose) if loose is not None else None
+        return _word(loose) if loose is not None else None
 
     def insert(self, language: str, expression: str, reading: str, status: str, source: str,
                anki_note_id: int | None, anki_interval: int | None, now: float) -> None:
@@ -46,7 +58,8 @@ class WordRepository:
     def delete(self, word_id: int) -> None:
         self._conn.execute("DELETE FROM words WHERE id = ?", (word_id,))
 
-    def search(self, language: str | None = None, status: str | None = None, limit: int = 500, offset: int = 0) -> list[dict]:
+    def search(self, language: str | None = None, status: str | None = None, limit: int = 500, offset: int = 0,
+               order: str = "updated") -> list[dict]:
         query, params = "SELECT * FROM words WHERE 1 = 1", []
         if language:
             query += " AND language = ?"
@@ -54,9 +67,9 @@ class WordRepository:
         if status:
             query += " AND status = ?"
             params.append(status)
-        query += " ORDER BY updated DESC LIMIT ? OFFSET ?"
+        query += f" ORDER BY {WORD_ORDERS.get(order, WORD_ORDERS['updated'])}, id DESC LIMIT ? OFFSET ?"
         params += [limit, offset]
-        return [as_dict(r) for r in self._conn.execute(query, params).fetchall()]
+        return [_word(r) for r in self._conn.execute(query, params).fetchall()]
 
     def counts(self) -> dict[str, dict[str, int]]:
         """{language: {status: number of words}}."""

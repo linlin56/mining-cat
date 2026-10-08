@@ -3,6 +3,7 @@ import re
 from collections import Counter
 
 from miningcat.domain.languages import Language, WordSegmentation
+from miningcat.domain.text import taigi
 
 
 def _segment_chinese(text: str) -> list[str]:
@@ -17,6 +18,11 @@ def _segment_japanese(text: str) -> list[str]:
     return [token.surface for token in t.tokenize(text)]
 
 
+# Hanji words (taibun's tokenizer) and romanized words (tsia̍h-pn̄g), keeping the tone marks.
+def _segment_taigi(text: str) -> list[str]:
+    return taigi.tokenize(text)
+
+
 def _segment_generic(text: str) -> list[str]:
     return re.findall(r"[^\W\d_]+", text, re.UNICODE)
 
@@ -24,6 +30,7 @@ def _segment_generic(text: str) -> list[str]:
 _SEGMENTERS = {
     WordSegmentation.CHINESE: _segment_chinese,
     WordSegmentation.JAPANESE: _segment_japanese,
+    WordSegmentation.TAIGI: _segment_taigi,
     WordSegmentation.SPACES: _segment_generic,
 }
 

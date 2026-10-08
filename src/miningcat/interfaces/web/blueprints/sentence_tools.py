@@ -1,9 +1,11 @@
-"""Tools of the card creator: readings of a sentence's words, word recordings, sentence audio and translation."""
+"""Tools of the card creator: readings of a sentence's words, word recordings, sentence audio and translation; and
+Taigi's writing systems, for the Clipboard page."""
 import base64
 
 from flask import Blueprint, jsonify, request
 
 from miningcat.application.mining import sentence_readings, sentence_tts, translation, word_audio
+from miningcat.domain.text import taigi
 from miningcat.interfaces.web.errors import UserError
 from miningcat.interfaces.web.requests import json_body, study_language
 
@@ -17,6 +19,17 @@ def api_sentence_readings():
     return jsonify(sentence_readings.annotate(study_language(body.get("language")), sentence, str(body.get("reading") or "")))
 
 
+# A Taigi text written in Hanji, Tâi-lô or POJ (from any of them, or a mix): the Clipboard page's "Write in".
+@bp.post("/api/taigi/convert")
+def api_taigi_convert():
+    body = json_body()
+    text, target = str(body.get("text") or ""), str(body.get("target") or "")
+    if len(text) > 200_000:
+        raise UserError("Error", "The text is too long to convert (200,000 characters at most).")
+    try:
+        return jsonify(text=taigi.convert(text, target, numbers=bool(body.get("numbers"))))
+    except (ValueError, RuntimeError) as exc:
+        raise UserError("Error", str(exc))
 
 
 @bp.get("/api/dict/audio")
@@ -31,7 +44,9 @@ def api_word_audio():
 @bp.get("/api/tts/voices")
 def api_tts_voices():
     language = study_language(request.args.get("language"))
-    return jsonify(**sentence_tts.voices(language), chosen=sentence_tts.default_voice(language))
+    chosen = sentence_tts.default_voice(language)
+    sentence_tts.preload(chosen)
+    return jsonify(**sentence_tts.voices(language), chosen=chosen)
 
 
 @bp.post("/api/tts")

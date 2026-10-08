@@ -6,6 +6,7 @@ from miningcat.domain.dictionary import glossary
 from miningcat.domain.dictionary.definitions import merge_definitions, move_other_readings, readable
 from miningcat.domain.dictionary.deinflection import Deinflection, LanguageTransformer, transformer_for
 from miningcat.domain.languages import CHINESE_LANGUAGES, is_no_space
+from miningcat.domain.text import taigi
 from miningcat.domain.text.chinese_script import chinese_counterpart, chinese_script
 from miningcat.domain.text.readings import reading_key
 from miningcat.domain.text.scripts import HAN_CHARACTER
@@ -19,16 +20,19 @@ MAX_RESULTS = 12
 STRICT_PART_OF_SPEECH = {"ja", "ko"}
 
 _WORD_END = re.compile(r"[\w’'\-]+", re.UNICODE)
+# Romanized Taigi: words with their tone marks (tsia̍h-pn̄g, POJ's o͘ and ⁿ).
+_TAIGI_WORD_END = re.compile(r"[\w\u0300-\u036f’'\-]+", re.UNICODE)
 
 
 def _sources(text: str, language: str) -> list[str]:
     """Candidate texts starting at the cursor, longest first."""
     text = text.strip("\n")
-    if is_no_space(language):
+    romanized = language == "nan" and bool(re.match(r"[A-Za-z\u00c0-\u024f\u1e00-\u1eff]", text))
+    if is_no_space(language) and not romanized:
         text = text[:MAX_SCAN]
         return [text[:n] for n in range(len(text), 0, -1) if text[:n].strip()]
     ends = []
-    for m in _WORD_END.finditer(text):
+    for m in (_TAIGI_WORD_END if romanized else _WORD_END).finditer(text):
         ends.append(m.end())
         if len(ends) >= MAX_WORDS:
             break
@@ -61,6 +65,13 @@ def _convert_senses(entries: list[dict], language: str) -> None:
                         convert(example)
 
 
+def _taigi_readings(entries: list[dict]) -> None:
+    """Taigi dictionaries in Hanji only (no reading): taibun's Tâi-lô reading."""
+    for g in entries:
+        if not g["reading"] or g["reading"] == g["expression"]:
+            g["reading"] = taigi.reading(g["expression"]) or g["reading"]
+
+
 class DictionaryLookup:
     """The entries of the enabled dictionaries for the text at the cursor, longest match first: every spelling
     and deinflection of the candidate texts is looked up, then the rows are grouped by headword and pronunciation,
@@ -90,6 +101,8 @@ class DictionaryLookup:
             self._add_characters(queries, dicts, ordered)
         if self.language in CHINESE_LANGUAGES:
             _convert_senses(ordered, self.language)
+        if self.language == "nan":
+            _taigi_readings(ordered)
         self._add_statuses(ordered)
         return self._result(ordered, len(dicts))
 

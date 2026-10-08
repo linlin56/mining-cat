@@ -175,6 +175,11 @@ function renderSource() {
   $("screen-video").hidden = S.source !== "Video";
   $("screen-game").hidden = S.source !== "Video game / Screen share";
   $("game-actions").hidden = S.source !== "Video game / Screen share";
+  const csv = S.source === "CSV to cards";
+  $("screen-csv").hidden = $("csv-actions").hidden = !csv;
+  // cards are made in the language studied: its variant and script conversions don't apply
+  $("convert").closest(".field").hidden = csv;
+  $("language-field").hidden = csv || S.opts.languages.length <= 1;
 }
 
 function renderMode() {
@@ -681,6 +686,7 @@ function refreshBusy() {
   $("start").disabled = blocked;
   $("video-start").disabled = blocked;
   renderGame();
+  renderCsvActions();  // csv_cards.js
 }
 
 function setRunning(running, kind = null) {
@@ -816,7 +822,7 @@ function connectEvents() {
 // ---------------------------------------------------------------- drag & drop
 
 function setupDropzones() {
-  const handlers = { audio: addAudio, ebook: selectEbook, video: selectVideo };
+  const handlers = { audio: addAudio, ebook: selectEbook, video: selectVideo, csv: selectCsv };
   for (const zone of document.querySelectorAll(".dropzone")) {
     const handler = handlers[zone.dataset.kind];
     zone.addEventListener("dragover", (e) => {

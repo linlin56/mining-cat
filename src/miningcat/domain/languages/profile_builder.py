@@ -1,7 +1,14 @@
 import re
 from typing import Self
 
-from miningcat.domain.languages.profile import CharacterList, LanguageProfile, Voice, WordSegmentation
+from miningcat.domain.languages.profile import (
+    CharacterList,
+    LanguageProfile,
+    LatinOcr,
+    SpeechEngine,
+    Voice,
+    WordSegmentation,
+)
 from miningcat.domain.text import scripts
 
 
@@ -28,10 +35,13 @@ class LanguageProfileBuilder:
         self._ocr_lang_apple: str | None = None
         self._ocr_lang_easyocr: str | None = None
         self._ocr_script = scripts.LATIN_LETTER
+        self._latin_ocr: LatinOcr | None = None
         self._voices: tuple[Voice, ...] = ()
         self._youtube_caption_codes: tuple[str, ...] = ()
-        self._chinese_script: str | None = None
+        self._script: str | None = None
         self._large_whisper_models_only = False
+        self._transcriber = SpeechEngine.WHISPER
+        self._aligner = SpeechEngine.WHISPER
         self._word_segmentation = WordSegmentation.SPACES
         self._character_list: CharacterList | None = None
 
@@ -53,8 +63,13 @@ class LanguageProfileBuilder:
         self._ocr_lang_apple, self._ocr_lang_easyocr, self._ocr_script = apple, easyocr, script
         return self
 
+    def latin_ocr(self, *, apple: str, easyocr: str) -> Self:
+        """OCR languages for the lines written in Latin letters, read again by a Latin model."""
+        self._latin_ocr = LatinOcr(apple, easyocr)
+        return self
+
     def voices(self, *voices: tuple[str, str]) -> Self:
-        """(label, edge-tts voice id) pairs, the default voice first."""
+        """(label, voice id) pairs, the default voice first."""
         self._voices = tuple(Voice(label, voice_id) for label, voice_id in voices)
         return self
 
@@ -62,8 +77,15 @@ class LanguageProfileBuilder:
         self._youtube_caption_codes = codes
         return self
 
-    def chinese_script(self, script: str) -> Self:
-        self._chinese_script = script
+    def script(self, script: str) -> Self:
+        """The script its subtitles are converted from: "s", "tw" or "hk" (OpenCC), "nan" (Taigi)."""
+        self._script = script
+        return self
+
+    def speech(self, *, transcriber: SpeechEngine = SpeechEngine.WHISPER,
+               aligner: SpeechEngine = SpeechEngine.WHISPER) -> Self:
+        """The engines of a language Whisper doesn't know."""
+        self._transcriber, self._aligner = transcriber, aligner
         return self
 
     def large_whisper_models_only(self) -> Self:
@@ -94,10 +116,13 @@ class LanguageProfileBuilder:
             ocr_lang_apple=self._ocr_lang_apple,
             ocr_lang_easyocr=self._ocr_lang_easyocr,
             ocr_script=self._ocr_script,
+            latin_ocr=self._latin_ocr,
             voices=self._voices,
             youtube_caption_codes=self._youtube_caption_codes or (self._whisper_code,),
-            chinese_script=self._chinese_script,
+            script=self._script,
             large_whisper_models_only=self._large_whisper_models_only,
+            transcriber=self._transcriber,
+            aligner=self._aligner,
             word_segmentation=self._word_segmentation,
             character_list=self._character_list,
         )

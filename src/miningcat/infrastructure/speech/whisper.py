@@ -29,6 +29,8 @@ def segments_of(result) -> list[Segment]:
 class Whisper:
     """A stable-whisper model: forced alignment of a text on its audio, and free transcription."""
 
+    name = "Whisper"
+
     def __init__(self, model):
         self._model = model
 

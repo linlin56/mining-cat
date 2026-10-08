@@ -3,8 +3,10 @@ from abc import ABC, abstractmethod
 
 from miningcat.domain.languages import Language
 
-WHISPER_MODELS = ["tiny", "base", "small", "medium", "large", "turbo"]
-CHINESE_SCRIPTS = ["s", "tw", "t", "hk"]
+# Whisper sizes, and Qwen3-ASR's for the languages it transcribes (Taigi: a Whisper size picks one of them too).
+SPEECH_MODELS = ["tiny", "base", "small", "medium", "large", "turbo", "qwen3-0.6b", "qwen3-1.7b"]
+# Chinese scripts (s=Simplified, tw/t/hk=Traditional), and Taigi's writing systems.
+CONVERT_TARGETS = ["s", "tw", "t", "hk", "hanji", "tailo", "poj"]
 DEFAULT_LANGUAGE = "mandarin_tw"
 
 
@@ -27,4 +29,4 @@ class Command(ABC):
 
     @staticmethod
     def add_model(parser: argparse.ArgumentParser) -> None:
-        parser.add_argument("--model", default="tiny", choices=WHISPER_MODELS)
+        parser.add_argument("--model", default="tiny", choices=SPEECH_MODELS)

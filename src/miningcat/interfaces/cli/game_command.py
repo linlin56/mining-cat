@@ -1,7 +1,7 @@
 import argparse
 
 from miningcat.infrastructure.hotkeys import DEFAULT_HOTKEY, HOTKEYS
-from miningcat.interfaces.cli.command import CHINESE_SCRIPTS, Command
+from miningcat.interfaces.cli.command import CONVERT_TARGETS, Command
 
 
 class GameCommand(Command):
@@ -19,7 +19,7 @@ class GameCommand(Command):
                            help="Keep the saved window, only select the areas again")
         serve = game_sub.add_parser("serve", help="Start capturing and serve the web page (Ctrl+C to stop)")
         self.add_language(serve)
-        serve.add_argument("--convert-to", dest="convert_to", default=None, choices=CHINESE_SCRIPTS,
+        serve.add_argument("--convert-to", dest="convert_to", default=None, choices=CONVERT_TARGETS,
                            help="Convert the OCR'd text to this Chinese script (e.g. s=Simplified)")
         serve.add_argument("--port", type=int, default=None, help="Web page port (default: 6677)")
         serve.add_argument("--hotkey", default=DEFAULT_HOTKEY, choices=HOTKEYS,

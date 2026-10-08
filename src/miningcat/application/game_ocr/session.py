@@ -10,7 +10,7 @@ from miningcat.domain.ocr import segment_builder
 from miningcat.domain.ocr.frame_similarity import frames_are_similar
 from miningcat.domain.ocr.plausibility import is_plausible_text
 from miningcat.domain.ocr.regions import FULL_REGION, Region, region_to_pixels
-from miningcat.domain.text.chinese_conversion import convert_text
+from miningcat.domain.text.script_conversion import convert_text
 from miningcat.infrastructure import capture
 from miningcat.infrastructure.capture import CaptureBackend, CaptureError
 
@@ -89,7 +89,7 @@ class GameOcrSession:
         self._backend = backend
         self._settings = settings
         self._language = language
-        self._convert_source = language.profile.chinese_script if convert_target else None
+        self._convert_source = language.profile.script if convert_target else None
         self._convert_target = convert_target
         self._join = join
         if engine is None:

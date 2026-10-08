@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import types
+import urllib.error
 import zipfile
 
 import pytest
@@ -14,7 +15,9 @@ from miningcat.domain.dictionary.language_guess import guess_dictionary_language
 from miningcat.domain.languages import language_key
 from miningcat.domain.text import chinese_script
 from miningcat.domain.text.chinese_script import ChineseScripts, OpenCcConverter
+from miningcat.domain.text.readings import reading_match
 from miningcat.domain.text.variants import text_variants
+from miningcat.infrastructure import http
 from miningcat.infrastructure.persistence.database import Database
 from miningcat.infrastructure.persistence.settings_store import settings
 
@@ -86,6 +89,15 @@ def test_language_keys():
     assert language_key("yue-Hant") == "yue"
     assert language_key("ja-JP") == "ja"
     assert language_key("und") == ""
+
+
+def test_reading_match():
+    assert reading_match("huán", "ㄏㄨㄢˊ", "zh") == 2
+    assert reading_match("hai2", "hái", "zh") == 2
+    assert reading_match("biānr", "ㄅㄧㄢ˙ㄦ", "zh") == 1  # erhua written with a neutral tone
+    assert reading_match("hái", "ㄏㄨㄢˊ", "zh") == 0
+    assert reading_match("たべる", "タベル", "ja") == 2
+    assert reading_match("", "ㄏㄨㄢˊ", "zh") == 0
 
 
 def test_dictionary_language_guess():
@@ -266,6 +278,16 @@ def test_word_without_reading_matches_any_reading():
     assert words.list_words("zh")[0]["reading"] == "tiānqì"
 
 
+def test_words_sorted_by_date_added():
+    # an Anki note's id is its creation time (ms): the word was added then, not when it was synced
+    words.set_status("zh", "早", "zǎo", "learning", source="anki", anki_note_id=1_600_000_000_000)
+    words.set_status("zh", "晚", "wǎn", "learning")
+    words.set_status("zh", "中", "zhōng", "learning", source="anki", anki_note_id=1_700_000_000_000)
+    assert [w["expression"] for w in words.list_words("zh", order="added")] == ["晚", "中", "早"]
+    assert [w["expression"] for w in words.list_words("zh", order="added_asc")] == ["早", "中", "晚"]
+    assert words.list_words("zh", order="added_asc")[0]["added"] == 1_600_000_000
+
+
 def test_other_script_is_linked():
     words.set_status("zh", "说话", "shuōhuà", "known")
     status = words.status_of("zh", "說話", "shuōhuà")
@@ -348,13 +370,68 @@ def test_card_is_sent_with_media(fake_anki):
     assert words.status_of("zh", "公園", "gōngyuán")["status"] == "learning"
 
 
-# Word audio from Wiktionary is a link: Anki downloads it itself (storeMediaFile's "url" param).
-def test_card_is_sent_with_linked_audio(fake_anki):
+# Word audio from Wiktionary is a link: MiningCat downloads it (Anki downloading every link gets refused by
+# Wikimedia during a big import) and sends the file.
+def test_card_is_sent_with_linked_audio(fake_anki, monkeypatch):
     setup_chinese_notes()
     audio_url = "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/Zh-zh%C5%8Dngy%C4%81ng.oga/Zh-zh%C5%8Dngy%C4%81ng.oga.mp3"
+    monkeypatch.setattr(http, "get", lambda url, timeout=8: b"ID3 audio")
     card = anki.create_card("zh", {"word": "中央", "definition": "center"}, {"audio": {"url": audio_url}})
     assert card["status"] == "sent", card["error"]
-    assert fake_anki.media[card["media"]["audio"]["filename"]] == {"url": audio_url}
+    assert fake_anki.media[card["media"]["audio"]["filename"]] == {"data": base64.b64encode(b"ID3 audio").decode()}
+    downloaded = anki.card_media_dir() / card["media"]["audio"]["filename"]
+    assert downloaded.exists()
+    anki.delete_card(card["id"])
+    assert not downloaded.exists()
+
+
+def test_card_waits_when_its_audio_cant_be_downloaded(fake_anki, monkeypatch):
+    setup_chinese_notes()
+
+    def refused(url, timeout=8):
+        raise urllib.error.HTTPError(url, 429, "Too Many Requests", {}, None)
+    monkeypatch.setattr(http, "get", refused)
+    card = anki.create_card("zh", {"word": "中央", "definition": "center"}, {"audio": {"url": "https://upload.wikimedia.org/a.mp3"}})
+    assert card["status"] == "pending" and "next sync" in card["error"]
+    monkeypatch.setattr(http, "get", lambda url, timeout=8: b"ID3")
+    assert anki.send_pending() == {"sent": 1, "failed": 0, "pending": 0}
+
+
+def test_wikimedia_refusals_are_retried(monkeypatch):
+    calls, waits = [], []
+
+    class Answer:
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self): return b"audio"
+
+    def urlopen(request, timeout, context):
+        calls.append(request.full_url)
+        if len(calls) < 3:
+            raise urllib.error.HTTPError(request.full_url, 429, "Too Many Requests", {"Retry-After": "5"}, None)
+        return Answer()
+    monkeypatch.setattr(http.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(http.time, "sleep", waits.append)
+    assert http.get("https://upload.wikimedia.org/a.mp3") == b"audio"
+    assert len(calls) == 3 and [w for w in waits if w >= 5] == [5, 5]  # the Retry-After asked for
+
+    calls.clear()
+    monkeypatch.setattr(http.urllib.request, "urlopen",
+                        lambda r, timeout, context: (_ for _ in ()).throw(urllib.error.HTTPError(r.full_url, 404, "Not Found", {}, None)))
+    with pytest.raises(urllib.error.HTTPError):
+        http.get("https://upload.wikimedia.org/b.mp3")  # a missing file isn't retried
+
+
+def test_same_sentence_of_another_word_isnt_a_duplicate(fake_anki):
+    # Migaku's note type starts with the sentence, the only field Anki compares
+    fake_anki.models["Migaku"] = ["Sentence", "Target Word"]
+    anki.save_config({"notes": {"zh": {"deck": "Mining::Chinese", "model": "Migaku",
+                                       "fields": {"Sentence": "{sentence}", "Target Word": "{word}"}}}})
+    sentence = "感冒一定愛配溫開水"
+    assert anki.create_card("zh", {"word": "開水", "sentence": sentence}, {})["status"] == "sent"
+    assert anki.create_card("zh", {"word": "配", "sentence": sentence}, {})["status"] == "sent"
+    again = anki.create_card("zh", {"word": "配", "sentence": sentence}, {})
+    assert again["status"] == "failed" and "duplicate" in again["error"]
 
 
 def test_duplicate_is_refused(fake_anki):
@@ -445,6 +522,11 @@ def test_http_lookup_status_and_cards(client, zh_dict, fake_anki):
     res = client.post("/api/dict/lookup", json={"language": "zh-Hant", "text": "說話"}, headers=HEADERS).get_json()
     assert res["language"] == "zh" and res["entries"][0]["expression"] == "說話"
     assert client.post("/api/dict/lookup", json={"language": "klingon", "text": "x"}, headers=HEADERS).status_code == 400
+    # a known reading (a CSV import) tells the entry of that pronunciation
+    entry = client.post("/api/dict/lookup", json={"language": "zh", "text": "說話", "reading": "shuo1hua4"}, headers=HEADERS).get_json()["entries"][0]
+    assert entry["reading_match"] == 2
+    entry = client.post("/api/dict/lookup", json={"language": "zh", "text": "說話", "reading": "shuòhuà"}, headers=HEADERS).get_json()["entries"][0]
+    assert entry["reading_match"] == 1
 
     assert client.post("/api/words/status", json={"language": "zh", "expression": "說話", "reading": "shuōhuà", "status": "known"},
                        headers=HEADERS).get_json() == {"status": "known"}
@@ -642,10 +724,10 @@ def test_every_syllable_both_ways(tone):
 
 def test_readings_shown_in_the_chosen_system():
     preferences.set_reading_system("zh", "pinyin")
-    assert words.display_reading("zh", "ㄒㄧㄥˊ") == "xíng"  # a zhuyin dictionary, read in pinyin
+    assert words.display_reading("zh", "行", "ㄒㄧㄥˊ") == "xíng"  # a zhuyin dictionary, read in pinyin
     preferences.set_reading_system("zh", "zhuyin")
-    assert words.display_reading("zh", "xing2") == "ㄒㄧㄥˊ"
-    assert words.display_reading("zh", "ㄒㄧㄥˊ") == "ㄒㄧㄥˊ"
+    assert words.display_reading("zh", "行", "xing2") == "ㄒㄧㄥˊ"
+    assert words.display_reading("zh", "行", "ㄒㄧㄥˊ") == "ㄒㄧㄥˊ"
 
 
 def test_zhuyin_field_of_a_card():
@@ -835,6 +917,15 @@ def test_mandarin_audio_excludes_other_chinese_languages():
     assert is_language_file("File:Zh-yue-你好.opus", "yue")
 
 
+def test_mandarin_audio_of_the_reading():
+    from miningcat.application.mining.word_audio import _for_reading
+    found = [{"name": "Wiktionary", "url": "https://x/Zh-zh%C3%B2ng.ogg/Zh-zh%C3%B2ng.ogg.mp3"},
+             {"name": "Lingua Libre", "url": "https://x/LL-Q9192_%28cmn%29-A-%E4%B8%AD.wav/LL-Q9192_%28cmn%29-A-%E4%B8%AD.wav.mp3"},
+             {"name": "Wiktionary", "url": "https://x/Zh-zh%C5%8Dng.ogg/Zh-zh%C5%8Dng.ogg.mp3"}]
+    # 中 zhōng: its recording first, zhòng's left out, the one named after the characters kept
+    assert [s["url"] for s in _for_reading(found, "ㄓㄨㄥ")] == [found[2]["url"], found[1]["url"]]
+
+
 def test_offline_audio_is_retried(fake_web):
     import urllib.error
     fake_web["wiktionary"] = urllib.error.URLError("offline")
@@ -926,6 +1017,15 @@ class FakeArgos:
         return f"[{source}>{target}] {text}"
 
 
+def test_local_voice_preloaded_with_the_voices(client, monkeypatch):
+    from miningcat.infrastructure.speech import mms_tts
+    preloaded = []
+    monkeypatch.setattr(mms_tts, "preload", preloaded.append)
+    assert client.get("/api/tts/voices?language=nan").get_json()["chosen"] == "nan-TW-MmsTaigi"
+    client.get("/api/tts/voices?language=ja")
+    assert preloaded == ["nan-TW-MmsTaigi", "ja-JP-NanamiNeural"]  # preload() ignores the Edge voices
+
+
 @pytest.fixture
 def fake_argos(monkeypatch):
     argos = FakeArgos(installed={("zh", "en")})
@@ -959,7 +1059,7 @@ def test_zhuyin_readings(client, zh_dict, fake_anki):
     lookup_entry = lambda: client.post("/api/dict/lookup", json={"language": "zh", "text": "說話"}, headers=HEADERS).get_json()["entries"][0]
     assert lookup_entry()["display_reading"] == "shuōhuà"
     assert client.post("/api/mining/reading", json={"language": "zh", "system": "zhuyin"}, headers=HEADERS).status_code == 200
-    assert client.get("/api/mining/languages").get_json()["readings"] == {"zh": "zhuyin"}
+    assert client.get("/api/mining/languages").get_json()["readings"] == {"zh": "zhuyin", "nan": "tailo"}
     entry = lookup_entry()
     assert entry["reading"] == "shuōhuà" and entry["display_reading"] == "ㄕㄨㄛ ㄏㄨㄚˋ"
     assert client.post("/api/mining/reading", json={"language": "ja", "system": "zhuyin"}, headers=HEADERS).status_code == 400

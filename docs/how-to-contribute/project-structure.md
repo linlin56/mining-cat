@@ -41,7 +41,8 @@ src/miningcat/
 │   └── runtime.py            # the Python interpreter, and `python -m` command lines of the package
 ├── domain/
 │   ├── languages/            # Language (the converter's variants, built with LanguageProfileBuilder), study languages
-│   ├── text/                 # writing systems, kana, readings, Chinese scripts (ChineseScripts), zhuyin, Hangul
+│   ├── text/                 # writing systems, kana, readings, Chinese scripts (ChineseScripts), zhuyin, Hangul,
+│   │                         #   taigi/ (Hanji, Tâi-lô, Pe̍h-ōe-jī and the conversions between them)
 │   ├── subtitles/            # Segment, SRT, punctuation fixes, finding a sentence in subtitles
 │   ├── dictionary/           # deinflection (+ Yomitan's transforms/), glossaries, definition merging, frequency ranks
 │   ├── segmentation/         # splitting a text into dictionary words (lexicon, splitter)
@@ -52,7 +53,7 @@ src/miningcat/
 ├── infrastructure/
 │   ├── persistence/          # Database, SettingsStore, repositories (words, cards, dictionaries), DictionaryQueries
 │   ├── media/                # ffmpeg: FfmpegCommand builder, m4b chapters, video files, browser copies, title cards...
-│   ├── speech/               # Whisper, edge-tts
+│   ├── speech/               # Whisper, edge-tts; local engines for the languages they lack (Taigi): Qwen3-ASR, MMS
 │   ├── downloads/            # one VideoHandler per platform (yt-dlp), and their registry
 │   ├── capture/ hotkeys/     # window capture and the global capture key, one module per OS
 │   ├── ocr/                  # OcrEngine (owocr), and the OCR worker process of comics
@@ -61,7 +62,7 @@ src/miningcat/
 │   ├── translation/          # Argos Translate
 │   ├── dictionaries/ ebooks/ files/ system/ http.py
 ├── application/
-│   ├── converter/            # steps/ (audio, ebook, subtitles, tts, export), video pipeline, jobs, options
+│   ├── converter/            # steps/ (audio, ebook, subtitles, tts, export), speech engines, video pipeline, jobs...
 │   ├── mining/               # lookup, segmentation, words, preferences, dictionaries, comprehension, translation...
 │   ├── anki/                 # Anki setup, card queue, AnkiSync, .apkg export
 │   ├── library/              # books/, comics/, videos/ of the reader and the player, the audio of converted books
@@ -97,7 +98,9 @@ Generate audio) says which ones run; `AudiobookJob` runs them one by one with `C
 `AudiobookRequestBuilder` and `VideoRequestBuilder`, which check the user's choices as they go.
 
 `Alignment` and `Transcription` share their loop over the chapters (`ChapterSubtitles`, a template method): they only
-say what the chapters are and how their subtitles are made.
+say what the chapters are, their speech model and how their subtitles are made. `speech_engines.py` picks the model of
+the language's profile: Whisper, or the local engines of the languages it doesn't know (Qwen3-ASR transcribes Taigi,
+Meta's MMS aligner aligns it).
 
 ## Video pipeline
 
@@ -106,8 +109,8 @@ say what the chapters are and how their subtitles are made.
 1. gets the video: `download_video()` picks a handler from `infrastructure/downloads/` based on the URL domain, or uses
    the local file directly;
 2. keeps the subtitles the video came with (platform captions, sidecar `.srt`, embedded text tracks);
-3. makes its own with a `SubtitleMaker`: `WhisperSubtitles` on the extracted audio, or `OcrSubtitles` for hardsubs;
-4. converts the Chinese script if asked, then muxes every subtitle track into the final MP4.
+3. makes its own with a `SubtitleMaker`: `SpeechSubtitles` on the extracted audio, or `OcrSubtitles` for hardsubs;
+4. converts the script if asked (Chinese characters, or Taigi's writing systems), then muxes every subtitle track into the final MP4.
 
 ## Web GUI
 
@@ -121,6 +124,8 @@ the browser can't drive it) and the error handlers of `errors.py` (each error of
 - `blueprints/converter*.py`: the converter's options, jobs, files and results; `words.py`, `dictionaries.py`,
   `cards.py`, `sentence_tools.py`: the dictionary popup and the card creator; `books.py`, `book_audio.py`, `comics.py`:
   the reader; `videos.py`: the player; `game.py`: the video game capture.
+- `static/csv_cards.js`: the converter's *CSV to cards* source, which makes a card per row with the card creator's
+  own parts (`MiningCatMining.cardParts` of `static/mining.js`).
 
 ## Mining (dictionaries, words, Anki)
 

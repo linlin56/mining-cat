@@ -2,6 +2,7 @@ import re
 from dataclasses import dataclass, field
 
 from miningcat.domain.dictionary.deinflection import LanguageTransformer
+from miningcat.domain.text import taigi
 from miningcat.domain.text.kana import hiragana_to_katakana, katakana_to_hiragana
 from miningcat.domain.text.variants import text_variants
 
@@ -14,6 +15,12 @@ _RARE_TAGS = frozenset(("dialect", "dialectal", "archaic", "obsolete", "rare", "
 _KANA_END = re.compile(r"[぀-ヿ]$")
 
 
+def taigi_reading_form(reading: str) -> str:
+    """How a Taigi dictionary's reading is kept to find romanized words: lower-case Tâi-lô with tone marks,
+    syllables joined by hyphens (tsia̍h-pn̄g, whether the dictionary writes chia̍h-pn̄g or tsiah8 png7)."""
+    return re.sub(r"\s+", "-", taigi.respell(reading.strip().lower(), "tailo"))
+
+
 @dataclass
 class Lexicon:
     """The headwords of the enabled dictionaries of a language, as the segmentation needs them."""
@@ -22,6 +29,7 @@ class Lexicon:
     signature: tuple
     # headword -> part of speech flags of its entries (for deinflection), -1 when any form is accepted
     entries: dict[str, int] = field(default_factory=dict)
+    # Taigi: romanized reading (taigi_reading_form) -> headword, to read romanized text with Hanji dictionaries.
     # Japanese: kana reading -> headword, for the words usually written in kana (どこ -> 何処, だけ -> 丈). Only those,
     # when their main sense is: any reading would let kana text be read as unrelated words (した as 下 instead of
     # the past of する, はま as 浜 whose 2nd sense only is usually kana).
@@ -99,6 +107,8 @@ def build_lexicon(language: str, signature: tuple, rows, transformer: LanguageTr
             lex.max_chars = min(len(expression), MAX_CHARS)
         if language == "ja" and reading and reading != expression and _usually_kana(def_tags, score):
             lex.readings.setdefault(katakana_to_hiragana(reading), expression)
+        elif language == "nan" and reading and reading != expression and re.search(r"[A-Za-z]", reading):
+            lex.readings.setdefault(taigi_reading_form(reading), expression)
     # a reading that is itself a headword stays that headword
     for reading in [r for r in lex.readings if r in lex.entries]:
         del lex.readings[reading]

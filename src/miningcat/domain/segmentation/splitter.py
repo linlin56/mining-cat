@@ -28,6 +28,10 @@ _SPLIT_INSIDE_WORDS = {"ko"}
 
 _PARTICLE = ""
 
+# Taigi: runs of Hanji, and romanized words (Tâi-lô, POJ) with their tone marks, syllables joined by hyphens.
+_HAN_RUN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U0003134f]+")
+_ROMAN_WORD = re.compile(r"[^\W\d_](?:[^\W_]|[\u0300-\u036f])*(?:-+[^\W\d_](?:[^\W_]|[\u0300-\u036f])*)*")
+
 
 # Cost of a word in the best split of a run of text: fewer words is better, rare words cost more, and a
 # character no dictionary knows costs most. Chinese has no rare words in CC-CEDICT, so this is "longest words".
@@ -103,10 +107,27 @@ def _segment_words(text: str, lex: Lexicon, transformer) -> list[tuple[int, int,
     return tokens
 
 
+# Taigi: Hanji split like Chinese, romanized words looked up whole (by their reading in Hanji dictionaries).
+def _segment_taigi(text: str, lex: Lexicon) -> list[tuple[int, int, str | None]]:
+    tokens = []
+    memo: dict[str, str | None] = {}
+    position = 0
+    for run in [*_HAN_RUN.finditer(text), None]:
+        end = run.start() if run else len(text)
+        for word in _ROMAN_WORD.finditer(text, position, end):
+            tokens.append((word.start(), len(word.group()), match(lex, word.group())))
+        if run:
+            tokens += _split_run(run.group(), run.start(), lex, None, memo)
+            position = run.end()
+    return tokens
+
+
 def split_words(lex: Lexicon, text: str, transformer: LanguageTransformer | None) -> list[tuple[int, int, str | None]]:
     """Words of `text` as (start, length, headword), headword None for a word missing from the dictionaries."""
     if not lex.entries:
         return []
+    if lex.language == "nan":
+        return _segment_taigi(text, lex)
     if is_no_space(lex.language) or lex.language in _SPLIT_INSIDE_WORDS:
         return _segment_no_space(text, lex, transformer)
     return _segment_words(text, lex, transformer)

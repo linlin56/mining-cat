@@ -5,7 +5,8 @@ from miningcat.application.anki.card_media import anki_payload, card_media_dir, 
 from miningcat.application.anki.config import anki, note_setup
 from miningcat.application.anki.note_fields import note_fields
 from miningcat.application.mining import words
-from miningcat.domain.cards.errors import AnkiError, AnkiUnavailable
+from miningcat.domain.cards.errors import AnkiError, AnkiUnavailable, MediaUnavailable
+from miningcat.domain.cards.field_text import plain_field_text
 from miningcat.domain.cards.fields import CARD_FIELDS, MEDIA_FIELDS
 from miningcat.domain.languages import LANGUAGES
 from miningcat.infrastructure.persistence.card_repository import CardRepository
@@ -50,7 +51,7 @@ def list_cards(status: str | None = None, limit: int = 200, language: str | None
 def delete_card(card_id: int) -> None:
     card = get_card(card_id)
     for media in card["media"].values():
-        if media and not media.get("url"):
+        if media:  # a link's file too, once downloaded (card_media.media_file)
             (card_media_dir() / media["filename"]).unlink(missing_ok=True)
     with database.session() as conn:
         CardRepository(conn).delete(card_id)
@@ -59,6 +60,22 @@ def delete_card(card_id: int) -> None:
 def set_card(card_id: int, **values) -> None:
     with database.session() as conn:
         CardRepository(conn).update(card_id, **values)
+
+
+def _search_text(text: str) -> str:
+    return re.sub(r'([\\"*_])', r"\\\1", text)
+
+
+def _word_in_deck(client, setup: dict, expression: str) -> bool:
+    """Whether the deck has a note of this word, in the note field holding the word (True when there's none)."""
+    field = next((name for name, template in setup["fields"].items() if re.search(r"\{word(_readings)?\}", template)), None)
+    if field is None:
+        return True
+    note_ids = client.invoke("findNotes", query=f'"deck:{_search_text(setup["deck"])}" "{_search_text(field)}:*{_search_text(expression)}*"')
+    for note in client.in_batches("notesInfo", "notes", note_ids, 500):
+        if plain_field_text(note["fields"].get(field, {}).get("value", "")) == expression:
+            return True
+    return False
 
 
 def send_card(card_id: int) -> dict:
@@ -82,8 +99,16 @@ def send_card(card_id: int) -> dict:
             "tags": [t for t in re.split(r"[\s,]+", f"{setup.get('tags', '')} {card['tags']}") if t],
             "options": {"allowDuplicate": False, "duplicateScope": "deck"},
         }
-        note_id = client.invoke("addNote", note=note)
-    except AnkiUnavailable as exc:
+        try:
+            note_id = client.invoke("addNote", note=note)
+        except AnkiError as exc:
+            if "duplicate" not in str(exc) or _word_in_deck(client, setup, card["expression"]):
+                raise
+            # Anki only compares the first field: in note types starting with the sentence (Migaku's), another
+            # word's card with the same sentence isn't a duplicate of this one.
+            note["options"]["allowDuplicate"] = True
+            note_id = client.invoke("addNote", note=note)
+    except (AnkiUnavailable, MediaUnavailable) as exc:
         set_card(card_id, status="pending", error=str(exc))
         return get_card(card_id)
     except (AnkiError, OSError) as exc:

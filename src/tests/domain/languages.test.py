@@ -158,7 +158,7 @@ def test_builder_defaults():
     assert profile.ocr_script is scripts.LATIN_LETTER
     assert profile.word_segmentation is WordSegmentation.SPACES
     assert profile.voices == () and profile.default_voice is None
-    assert profile.closing_punct == frozenset() and profile.chinese_script is None
+    assert profile.closing_punct == frozenset() and profile.script is None
 
 
 def test_builder_needs_codes_and_ocr():
@@ -182,7 +182,8 @@ def test_every_language_has_voices_and_a_study_language():
 def test_variants_of_a_study_language():
     assert Language.variants_of("zh") == [Language.MANDARIN_TW, Language.MANDARIN_CN]
     assert Language.variants_of("en") == [Language.ENGLISH_US, Language.ENGLISH_UK]
-    assert Language.variants_of("nan") == []
+    assert Language.variants_of("nan") == [Language.TAIGI]
+    assert Language.for_tag("nan-Hant") is Language.TAIGI
 
 
 @pytest.mark.parametrize("tag,expected", [

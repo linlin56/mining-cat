@@ -54,8 +54,9 @@ class FakeAnki:
                 first = note["fields"].get(fields[0], "")
                 if not first:
                     raise ValueError("cannot create note because it is empty")
+                allowed = (note.get("options") or {}).get("allowDuplicate")
                 for existing in self.notes.values():
-                    if existing["deck"] == note["deckName"] and existing["fields"].get(fields[0]) == first:
+                    if not allowed and existing["deck"] == note["deckName"] and existing["fields"].get(fields[0]) == first:
                         raise ValueError("cannot create note because it is a duplicate")
                 note_id = self._id()
                 card_id = self._id()

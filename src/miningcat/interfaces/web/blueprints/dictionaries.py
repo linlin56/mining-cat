@@ -7,6 +7,7 @@ from flask import Blueprint, jsonify, request, send_file
 from miningcat.application import study_language as studied
 from miningcat.application.mining import dictionaries, frequency, lookup, words
 from miningcat.domain.languages import LANGUAGES, same_family
+from miningcat.domain.text.readings import reading_match
 from miningcat.interfaces.web.errors import UserError
 from miningcat.interfaces.web.requests import json_body, study_language
 
@@ -18,12 +19,16 @@ def api_lookup():
     body = json_body()
     text = str(body.get("text") or "")[:200]
     language = study_language(body.get("language"))
+    # a known reading (a CSV's pinyin column): tells the entry of that pronunciation (還 huán, not hái)
+    wanted = str(body.get("reading") or "").strip()[:100]
     result = lookup.lookup(language, text)
     ranker = frequency.Ranker(language)
     for entry in result["entries"]:
-        entry["display_reading"] = words.display_reading(language, entry.get("reading") or "")
+        entry["display_reading"] = words.display_reading(language, entry["expression"], entry.get("reading") or "")
         # rank in the frequency list of the language, shown in the popup and the card creator
         entry["frequency_rank"] = ranker.rank(entry["expression"], entry.get("form") or "")
+        if wanted:
+            entry["reading_match"] = reading_match(wanted, entry.get("reading") or "", language)
     result["frequency"] = ranker.frontier
     return jsonify(result)
 

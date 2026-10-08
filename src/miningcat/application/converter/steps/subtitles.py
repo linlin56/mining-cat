@@ -5,18 +5,18 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from miningcat.application.converter import transcription
+from miningcat.application.converter import speech_engines, transcription
 from miningcat.application.converter.errors import ConverterError
 from miningcat.application.converter.steps.script_conversion import normalize_whisper_script
 from miningcat.config.paths import paths
 from miningcat.domain.languages import Language
 from miningcat.infrastructure.files.srt_files import save_srt
 from miningcat.infrastructure.media.audio_files import glob_audio_files
-from miningcat.infrastructure.speech.whisper import Whisper
 
 
 class ChapterSubtitles(ABC):
-    """Writes output/srt/<chapter>.srt for each chapter of output/chapters_audio, with a Whisper model.
+    """Writes output/srt/<chapter>.srt for each chapter of output/chapters_audio, with a speech model (Whisper, or the
+    language's local engine).
 
     Chapters already done are skipped, unless the run starts `from_ch` (a retry); `only_ch` does one chapter.
     Subclasses say what the chapters are and how their subtitles are made."""
@@ -27,11 +27,15 @@ class ChapterSubtitles(ABC):
         self.language = language
         self.only_ch = only_ch
         self.from_ch = only_ch if only_ch is not None else from_ch
-        self.whisper: Whisper | None = None
+        self.model = None
 
     @abstractmethod
     def _chapters(self) -> list[tuple]:
         """The chapters, as tuples starting with their audio file."""
+
+    @abstractmethod
+    def _load_model(self):
+        """The speech model making the subtitles."""
 
     @abstractmethod
     def _subtitle(self, chapter: tuple, srt_path: Path) -> tuple[int, str]:
@@ -48,9 +52,7 @@ class ChapterSubtitles(ABC):
         chapters = chapters[start_idx:]
         print()
 
-        print(f"Loading stable-whisper model '{self.model_name}'...")
-        self.whisper = Whisper.load(self.model_name)
-        self.whisper.ensure_supports(self.language)
+        self.model = self._load_model()
         print()
 
         for i, chapter in enumerate(tqdm(chapters, desc="Chapters"), start=start_idx):
@@ -84,15 +86,18 @@ class Alignment(ChapterSubtitles):
                   f"processing min({len(audio_files)}, {len(text_files)}).")
         return list(zip(audio_files, text_files))
 
+    def _load_model(self):
+        return speech_engines.load_aligner(self.model_name, self.language)
+
     def _subtitle(self, chapter: tuple[Path, Path], srt_path: Path) -> tuple[int, str]:
         audio_file, text_file = chapter
-        segs, text_len = transcription.align_chapter(self.whisper, audio_file, text_file, self.language)
+        segs, text_len = transcription.align_chapter(self.model, audio_file, text_file, self.language)
         save_srt(segs, srt_path)
         return len(segs), f"ebook={text_len:,}c"
 
 
 class Transcription(ChapterSubtitles):
-    """Whisper's transcription of each chapter, without a book: less accurate, but needs only the audio."""
+    """The transcription of each chapter, without a book: less accurate, but needs only the audio."""
 
     def _chapters(self) -> list[tuple[Path]]:
         self._require(paths.chapters_audio, "Run 'audio' first")
@@ -100,8 +105,11 @@ class Transcription(ChapterSubtitles):
         print(f"Audio chapters: {len(audio_files)}")
         return [(audio_file,) for audio_file in audio_files]
 
+    def _load_model(self):
+        return speech_engines.load_transcriber(self.model_name, self.language)
+
     def _subtitle(self, chapter: tuple[Path], srt_path: Path) -> tuple[int, str]:
-        segs = transcription.transcribe(self.whisper, chapter[0], self.language)
+        segs = transcription.transcribe(self.model, chapter[0], self.language)
         save_srt(segs, srt_path)
         normalize_whisper_script(srt_path, self.language)
         return len(segs), ""

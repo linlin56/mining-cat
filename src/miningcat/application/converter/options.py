@@ -1,15 +1,17 @@
 """What the converter offers for a language: the dropdowns of the GUIs, and the checks of their values."""
 from miningcat.application.converter.modes import ConversionMode
 from miningcat.config.app_info import GITHUB_URL
-from miningcat.domain.languages import Language
+from miningcat.domain.languages import Language, SpeechEngine
 from miningcat.domain.ocr.sampling import DEFAULT_REGION, OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
-from miningcat.domain.text.chinese_conversion import CONVERSION_TARGETS
+from miningcat.domain.text.script_conversion import CONVERSION_TARGETS
 from miningcat.infrastructure.downloads.registry import video_handlers
 from miningcat.infrastructure.media.audio_files import AUDIO_EXTENSIONS
 
-SOURCES = ["Audiobook / Ebook", "Video", "Video game / Screen share"]
+SOURCES = ["Audiobook / Ebook", "Video", "Video game / Screen share", "CSV to cards"]
 PRECISION_VALUES = ["Tiny", "Base (default)", "Small", "Medium", "Large", "Turbo (fast, large-v3)"]
 DEFAULT_PRECISION = "Base (default)"
+# Precision of the languages transcribed by Qwen3-ASR instead of Whisper (Taigi).
+QWEN3_PRECISION_VALUES = ["Qwen3-ASR 0.6B (default)", "Qwen3-ASR 1.7B (more accurate, slower)"]
 INPUT_MODES = ["From web", "Local file"]
 NO_CONVERSION = "No conversion"
 
@@ -20,31 +22,36 @@ _CHANNEL_LABELS = {1: "mono", 2: "stereo"}
 
 
 def convert_labels_for(lang: Language) -> list[str]:
-    """The character conversions offered for a language: none, or the other Chinese scripts."""
-    script = lang.profile.chinese_script
+    """The script conversions offered for a language: none, the other Chinese scripts, or Taigi's writing systems."""
+    script = lang.profile.script
     return [NO_CONVERSION] + [label for label, _ in CONVERSION_TARGETS.get(script, [])]
 
 
 def convert_target(label: str | None, lang: Language) -> str | None:
-    """The OpenCC script of a conversion label, None for no (or an unknown) conversion."""
-    return dict(CONVERSION_TARGETS.get(lang.profile.chinese_script, [])).get(label)
+    """The script of a conversion label, None for no (or an unknown) conversion."""
+    return dict(CONVERSION_TARGETS.get(lang.profile.script, [])).get(label)
 
 
 def precision_values_for(lang: Language) -> list[str]:
-    """Whisper's models offered for a language. Some languages (like Cantonese) are only known to the
-    large-v3 and turbo checkpoints: smaller models are hidden rather than left to fail."""
+    """The speech models offered for a language: Whisper's, or Qwen3-ASR's. Some languages (like Cantonese) are only
+    known to the large-v3 and turbo checkpoints: smaller models are hidden rather than left to fail."""
+    if lang.profile.transcriber is SpeechEngine.QWEN3_ASR:
+        return QWEN3_PRECISION_VALUES
     if not lang.profile.large_whisper_models_only:
         return PRECISION_VALUES
     return [v for v in PRECISION_VALUES if v.split()[0] in ("Large", "Turbo")]
 
 
 def model_from_precision(label: str) -> str:
-    """"Base (default)" -> "base", the model name of the CLI."""
-    return label.split()[0].lower()
+    """"Base (default)" -> "base", "Qwen3-ASR 1.7B (...)" -> "qwen3-1.7b": the model name of the CLI."""
+    words = label.split()
+    if words[0] == "Qwen3-ASR":
+        return f"qwen3-{words[1].lower()}"
+    return words[0].lower()
 
 
 def model_for(label: str | None, lang: Language) -> str:
-    """The Whisper model of a precision label, the default one (or the first offered) for an unknown label."""
+    """The speech model of a precision label, the default one (or the first offered) for an unknown label."""
     values = precision_values_for(lang)
     if label not in values:
         label = DEFAULT_PRECISION if DEFAULT_PRECISION in values else values[0]

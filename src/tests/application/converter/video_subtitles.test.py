@@ -80,7 +80,9 @@ def _make_pipeline_mocks(tmp_path, call_order):
 
 def _patched_modules(m):
     stack = contextlib.ExitStack()
-    stack.enter_context(patch.object(video.Whisper, "load", m["stable_whisper"].load_model))
+    m["stable_whisper"].load_model.return_value.name = "Whisper"
+    stack.enter_context(patch.object(video.speech_engines, "load_transcriber",
+                                     lambda name, lang: m["stable_whisper"].load_model(name)))
     stack.enter_context(patch.object(video.transcription, "transcribe", m["align"].transcribe_chapter))
     stack.enter_context(patch.object(video, "save_srt", m["align"].save_srt))
     stack.enter_context(patch.object(video, "convert_srt_dir", m["chinese_converter"].convert_srt_dir))

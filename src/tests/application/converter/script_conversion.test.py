@@ -3,7 +3,7 @@ import shutil
 import pytest
 
 from miningcat.application.converter.steps import script_conversion as chinese_converter
-from miningcat.domain.text.chinese_conversion import convert_text
+from miningcat.domain.text.script_conversion import convert_text
 
 from shared import MOCK_SRT_CN, MOCK_SRT_TW, redirect_path, skip_if_no_srt_cn, skip_if_no_srt_tw
 

@@ -12,7 +12,7 @@ from pathlib import Path
 from mining import db
 from mining.word_audio import _ssl_context
 from mining import words as words_mod
-from mining.languages import LANGUAGES
+from miningcat.domain.languages import LANGUAGES
 
 DEFAULT_URL = "http://127.0.0.1:8765"
 ANKICONNECT_VERSION = 6
@@ -257,7 +257,7 @@ def derived_fields(language: str, fields: dict) -> dict:
     derived = {}
     if language == "zh":
         from mining import sentence_readings
-        from mining.zhuyin import pinyin_to_zhuyin
+        from miningcat.domain.text.zhuyin import pinyin_to_zhuyin
         reading = re.sub(r"<[^>]+>", "", fields.get("reading", ""))
         if not fields.get("zhuyin"):
             derived["zhuyin"] = pinyin_to_zhuyin(reading)

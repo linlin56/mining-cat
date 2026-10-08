@@ -3,9 +3,10 @@ import re
 
 from mining import db, glossary as glossary_mod
 from mining.deinflect import Deinflection, transformer_for
-from mining.languages import (
-    CHINESE_LANGUAGES, chinese_counterpart, is_no_space, reading_key, text_variants,
-)
+from miningcat.domain.languages import CHINESE_LANGUAGES, is_no_space
+from miningcat.domain.text.chinese_script import chinese_counterpart
+from miningcat.domain.text.readings import reading_key
+from miningcat.domain.text.variants import text_variants
 from mining import words as words_mod
 
 MAX_SCAN = 20          # characters tried from the cursor in languages without spaces

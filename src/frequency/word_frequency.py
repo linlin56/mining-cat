@@ -2,7 +2,7 @@ import re
 from collections import Counter
 from pathlib import Path
 
-from language import Language
+from miningcat.domain.languages import Language, WordSegmentation
 
 
 def _segment_chinese(text: str) -> list[str]:
@@ -22,14 +22,14 @@ def _segment_generic(text: str) -> list[str]:
 
 
 _SEGMENTERS = {
-    Language.MANDARIN_TW: _segment_chinese,
-    Language.MANDARIN_CN: _segment_chinese,
-    Language.JAPANESE: _segment_japanese,
+    WordSegmentation.CHINESE: _segment_chinese,
+    WordSegmentation.JAPANESE: _segment_japanese,
+    WordSegmentation.SPACES: _segment_generic,
 }
 
 
 def compute(text: str, language: Language, min_length: int = 1) -> Counter:
-    segment = _SEGMENTERS.get(language, _segment_generic)
+    segment = _SEGMENTERS[language.profile.word_segmentation]
     words = segment(text)
     return Counter(w for w in words if len(w) >= min_length and w.strip())
 

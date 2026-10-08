@@ -4,7 +4,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, render_template, request, send_file
 
 from mining import anki, dictionaries, frequency, lookup, segment, words
-from mining.languages import CHINESE_LANGUAGES, LANGUAGES, language_key
+from miningcat.domain.languages import CHINESE_LANGUAGES, LANGUAGES, language_key, same_family
 
 bp = Blueprint("mining", __name__)
 
@@ -287,7 +287,7 @@ def api_import_dictionary():
     except dictionaries.DictionaryError:
         tmp.unlink(missing_ok=True)
         raise
-    if language and info["language"] and not profile.same_family(info["language"], language):
+    if language and info["language"] and not same_family(info["language"], language):
         tmp.unlink(missing_ok=True)
         raise ApiError(f"“{info['title']}” looks like a {LANGUAGES.get(info['language'], info['language'])} dictionary, "
                        f"not a {LANGUAGES[language]} one. To import it, choose {LANGUAGES.get(info['language'], info['language'])} "

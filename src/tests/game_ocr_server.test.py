@@ -9,7 +9,7 @@ from PIL import Image
 from game_ocr import server
 from game_ocr.capture import CaptureError
 from game_ocr.session import CaptureResult
-from language import Language
+from miningcat.domain.languages import Language
 
 
 # Stands in for GameOcrSession: returns queued capture outcomes.

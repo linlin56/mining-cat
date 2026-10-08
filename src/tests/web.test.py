@@ -6,7 +6,7 @@ import pytest
 
 pytest.importorskip("flask")
 
-from language import Language
+from miningcat.domain.languages import Language
 from web import app as web_app
 from web import files, options
 from web.state import AppState, EventBus, JobBusyError

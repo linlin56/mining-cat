@@ -144,7 +144,7 @@ def test_import_tar_archives_with_bsdtar(library, tmp_path):
 
 
 def test_ocr_language_follows_the_script():
-    from language import Language
+    from miningcat.domain.languages import Language
     assert comics.ocr_language("ja") is Language.JAPANESE
     assert comics.ocr_language("zh-Hant") is Language.MANDARIN_TW
     assert comics.ocr_language("zh-Hans") is Language.MANDARIN_CN
@@ -229,7 +229,7 @@ def test_worker_reads_vertical_japanese(tmp_path):
     img.save(tmp_path / "page.png")
     worker = comics._OcrWorker()
     try:
-        from language import Language
+        from miningcat.domain.languages import Language
         result = worker.read(Language.JAPANESE, tmp_path / "page.png")
     except comics.ComicError as exc:
         pytest.skip(f"OCR unavailable: {exc}")

@@ -137,7 +137,7 @@ def sources(language: str, expression: str, reading: str = "") -> list[dict]:
             return _cache[key]
     words = [expression]
     if language in ("zh", "yue", "nan"):
-        from mining.languages import chinese_counterpart
+        from miningcat.domain.text.chinese_script import chinese_counterpart
         other = chinese_counterpart(expression, language)
         if other:
             words.append(other[1])

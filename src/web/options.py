@@ -1,12 +1,9 @@
-from language import Language
+from miningcat.domain.languages import Language
 from gui_components.constants import (
     _CONVERT_OPTIONS_FOR_SCRIPT,
-    DEFAULT_VOICE_FOR_LANGUAGE,
     INPUT_MODES,
-    LARGE_ONLY_WHISPER_CODES,
     TARGET_WEBSITES,
     URL_HINT_BY_WEBSITE,
-    VOICES_FOR_LANGUAGE,
 )
 
 MODES = ["Standard", "Generate subtitles", "Generate audio"]
@@ -19,17 +16,8 @@ EBOOK_EXTENSIONS = ("epub", "txt")
 
 _CHANNEL_LABELS = {1: "mono", 2: "stereo"}
 
-# Chinese script per language, duplicated from chinese_converter.SCRIPT_FOR_LANGUAGE
-# so that building the dropdowns doesn't require importing opencc.
-_SCRIPT_FOR_LANGUAGE = {
-    Language.MANDARIN_CN: "s",
-    Language.MANDARIN_TW: "tw",
-    Language.CANTONESE_HK: "hk",
-}
-
-
 def convert_labels_for(lang: Language) -> list[str]:
-    script = _SCRIPT_FOR_LANGUAGE.get(lang)
+    script = lang.profile.chinese_script
     if script is None:
         return ["No conversion"]
     return [label for label, _ in _CONVERT_OPTIONS_FOR_SCRIPT[script]]
@@ -38,7 +26,7 @@ def convert_labels_for(lang: Language) -> list[str]:
 # Some languages (like Cantonese) are only known to Whisper's large-v3/turbo checkpoints:
 # smaller models are hidden rather than left in the list to fail during transcription.
 def precision_values_for(lang: Language) -> list[str]:
-    if lang.value.whisper_code not in LARGE_ONLY_WHISPER_CODES:
+    if not lang.profile.large_whisper_models_only:
         return PRECISION_VALUES
     return [v for v in PRECISION_VALUES if v.split()[0] in ("Large", "Turbo")]
 
@@ -54,13 +42,13 @@ def supports_character_list(lang: Language) -> bool:
 
 
 def language_options(lang: Language) -> dict:
-    voices = VOICES_FOR_LANGUAGE.get(lang, [])
+    voices = lang.profile.voices
     return {
         "id": lang.name.lower(),
-        "label": lang.value.label,
+        "label": lang.profile.label,
         "convert": convert_labels_for(lang),
-        "voices": [label for label, _ in voices],
-        "default_voice": DEFAULT_VOICE_FOR_LANGUAGE.get(lang, voices[0][0] if voices else ""),
+        "voices": [voice.label for voice in voices],
+        "default_voice": voices[0].label if voices else "",
         "precision": precision_values_for(lang),
         "char_list": supports_character_list(lang),
     }

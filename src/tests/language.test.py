@@ -1,13 +1,13 @@
 import re
 import pytest
-from language import Language
+from miningcat.domain.languages import Language
 
 
 # vocab_annotation_pattern :
 
-MANDARIN_PATTERN = re.compile(Language.MANDARIN_TW.value.vocab_annotation_pattern)
-JAPANESE_PATTERN = re.compile(Language.JAPANESE.value.vocab_annotation_pattern)
-CANTONESE_PATTERN = re.compile(Language.CANTONESE_HK.value.vocab_annotation_pattern)
+MANDARIN_PATTERN = re.compile(Language.MANDARIN_TW.profile.vocab_annotation_pattern)
+JAPANESE_PATTERN = re.compile(Language.JAPANESE.profile.vocab_annotation_pattern)
+CANTONESE_PATTERN = re.compile(Language.CANTONESE_HK.profile.vocab_annotation_pattern)
 
 @pytest.mark.parametrize("text,expected", [
     ("學習[1]很重要", "學習很重要"),
@@ -71,20 +71,20 @@ def test_japanese_vocab_annotation_no_false_positives(text):
 # iso639_2 used for subtitles in mp4
 
 def test_iso639_2_values():
-    assert Language.MANDARIN_TW.value.iso639_2 == "zho"
-    assert Language.MANDARIN_CN.value.iso639_2 == "zho"
-    assert Language.JAPANESE.value.iso639_2 == "jpn"
-    assert Language.FRENCH.value.iso639_2 == "fra"
-    assert Language.ENGLISH_US.value.iso639_2 == "eng"
-    assert Language.ENGLISH_UK.value.iso639_2 == "eng"
-    assert Language.ITALIAN.value.iso639_2 == "ita"
-    assert Language.SPANISH.value.iso639_2 == "spa"
-    assert Language.POLISH.value.iso639_2 == "pol"
-    assert Language.KOREAN.value.iso639_2 == "kor"
-    assert Language.GERMAN.value.iso639_2 == "deu"
-    assert Language.PORTUGUESE.value.iso639_2 == "por"
-    assert Language.VIETNAMESE.value.iso639_2 == "vie"
-    assert Language.CANTONESE_HK.value.iso639_2 == "yue"
+    assert Language.MANDARIN_TW.profile.iso639_2 == "zho"
+    assert Language.MANDARIN_CN.profile.iso639_2 == "zho"
+    assert Language.JAPANESE.profile.iso639_2 == "jpn"
+    assert Language.FRENCH.profile.iso639_2 == "fra"
+    assert Language.ENGLISH_US.profile.iso639_2 == "eng"
+    assert Language.ENGLISH_UK.profile.iso639_2 == "eng"
+    assert Language.ITALIAN.profile.iso639_2 == "ita"
+    assert Language.SPANISH.profile.iso639_2 == "spa"
+    assert Language.POLISH.profile.iso639_2 == "pol"
+    assert Language.KOREAN.profile.iso639_2 == "kor"
+    assert Language.GERMAN.profile.iso639_2 == "deu"
+    assert Language.PORTUGUESE.profile.iso639_2 == "por"
+    assert Language.VIETNAMESE.profile.iso639_2 == "vie"
+    assert Language.CANTONESE_HK.profile.iso639_2 == "yue"
 
 
 # from_id / from_label / ids / all_labels
@@ -141,3 +141,64 @@ def test_all_labels():
     assert "Japanese" in labels
     assert "French" in labels
     assert len(labels) == len(list(Language))
+
+
+# LanguageProfile: built with LanguageProfileBuilder, one per Language
+
+def test_builder_defaults():
+    from miningcat.domain.languages import WordSegmentation
+    from miningcat.domain.languages.profile_builder import LanguageProfileBuilder
+    from miningcat.domain.text import scripts
+
+    profile = (LanguageProfileBuilder("Test").codes(key="xx", whisper="xx", iso639_2="xxx")
+               .ocr(apple="xx-XX", easyocr="xx").build())
+    assert profile.tag == "xx-XX"  # the Apple OCR code, when no tag is given
+    assert profile.youtube_caption_codes == ("xx",)
+    assert profile.ocr_script is scripts.LATIN_LETTER
+    assert profile.word_segmentation is WordSegmentation.SPACES
+    assert profile.voices == () and profile.default_voice is None
+    assert profile.closing_punct == frozenset() and profile.chinese_script is None
+
+
+def test_builder_needs_codes_and_ocr():
+    from miningcat.domain.languages.profile_builder import LanguageProfileBuilder
+
+    with pytest.raises(ValueError):
+        LanguageProfileBuilder("Test").ocr(apple="xx-XX", easyocr="xx").build()
+    with pytest.raises(ValueError):
+        LanguageProfileBuilder("Test").codes(key="xx", whisper="xx", iso639_2="xxx").build()
+
+
+def test_every_language_has_voices_and_a_study_language():
+    from miningcat.domain.languages import LANGUAGES
+
+    for lang in Language:
+        assert lang.profile.voices, lang
+        assert lang.profile.key in LANGUAGES, lang
+        assert lang.profile.voice_id(lang.profile.default_voice.label) == lang.profile.default_voice.voice_id
+
+
+def test_variants_of_a_study_language():
+    assert Language.variants_of("zh") == [Language.MANDARIN_TW, Language.MANDARIN_CN]
+    assert Language.variants_of("en") == [Language.ENGLISH_US, Language.ENGLISH_UK]
+    assert Language.variants_of("nan") == []
+
+
+@pytest.mark.parametrize("tag,expected", [
+    ("zh-Hant", Language.MANDARIN_TW),
+    ("zh-Hans", Language.MANDARIN_CN),
+    ("zh-CN-x-hans", Language.MANDARIN_CN),
+    ("yue-Hant", Language.CANTONESE_HK),
+    ("ja", Language.JAPANESE),
+    ("en-GB", Language.ENGLISH_UK),
+    ("en", Language.ENGLISH_US),
+    ("ru", None),
+    ("", None),
+])
+def test_language_for_tag(tag, expected):
+    assert Language.for_tag(tag) is expected
+
+
+def test_ids():
+    assert Language.MANDARIN_TW.id == "mandarin_tw"
+    assert Language.from_id("Cantonese_HK") is Language.CANTONESE_HK

@@ -4,7 +4,7 @@ import zipfile
 import pytest
 
 from mining import dictionaries, lookup
-from mining.languages import reading_key
+from miningcat.domain.text.readings import reading_key
 
 
 def make_dictionary(path, title, terms):

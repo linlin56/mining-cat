@@ -6,11 +6,10 @@ from pathlib import Path
 from typing import Callable
 
 import chinese_converter
-from language import Language
+from miningcat.domain.languages import Language
 from gui_components.constants import (
     DIR_AUDIOBOOK, DIR_EBOOK, SRC_DIR,
     STEPS, STEPS_WHISPER, STEPS_TTS,
-    VOICE_ID_BY_LABEL,
 )
 
 
@@ -90,7 +89,7 @@ def run_pipeline(
             elif cmd == "export":
                 extra += ["--language", lang.name.lower()]
             elif cmd == "tts":
-                extra += ["--voice", VOICE_ID_BY_LABEL[voice_label], "--language", lang.name.lower()]
+                extra += ["--voice", lang.profile.voice_id(voice_label), "--language", lang.name.lower()]
             schedule(0, set_status, label + "…", pct_start)
             schedule(0, log, f"\n{label}\n")
             rc = _run_cmd([python_exe, str(SRC_DIR / "main.py"), cmd] + extra,
@@ -98,7 +97,7 @@ def run_pipeline(
             if rc != 0:
                 raise RuntimeError(f"Command '{cmd}' failed (code {rc})")
             if cmd in ("align", "tts") and convert_target is not None:
-                source = chinese_converter.SCRIPT_FOR_LANGUAGE[lang]
+                source = lang.profile.chinese_script
                 schedule(0, set_status, "Step 3.5 - Character conversion…", 45)
                 schedule(0, log, "\nStep 3.5 - Character conversion\n")
                 chinese_converter.convert_srt_dir(source, convert_target)

@@ -1,8 +1,7 @@
 import asyncio
 import re
 
-from gui_components.constants import DEFAULT_VOICE_FOR_LANGUAGE, VOICES_FOR_LANGUAGE
-from mining.languages import language_key
+from miningcat.domain.languages import Language, language_key
 
 MAX_CHARS = 1000
 
@@ -20,13 +19,13 @@ def _voice_language(voice_id: str) -> str:
 def voices(language: str) -> dict:
     """{voices: [{id, label}], default: id} for a language key ("zh", "ja"...)."""
     found, default = [], ""
-    for lang, pairs in VOICES_FOR_LANGUAGE.items():
-        for label, voice_id in pairs:
-            if _voice_language(voice_id) != language:
+    for lang in Language:
+        for voice in lang.profile.voices:
+            if _voice_language(voice.voice_id) != language:
                 continue
-            found.append({"id": voice_id, "label": label})
-            if not default and label == DEFAULT_VOICE_FOR_LANGUAGE.get(lang):
-                default = voice_id
+            found.append({"id": voice.voice_id, "label": voice.label})
+            if not default and voice == lang.profile.default_voice:
+                default = voice.voice_id
     return {"voices": found, "default": default or (found[0]["id"] if found else "")}
 
 

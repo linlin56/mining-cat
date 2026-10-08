@@ -8,7 +8,12 @@ import zipfile
 import pytest
 
 from mining import anki, db, dictionaries, lookup, words
-from mining import languages
+from miningcat.domain.dictionary.language_guess import guess_dictionary_language
+from miningcat.domain.languages import language_key
+from miningcat.domain.text import chinese_script
+from miningcat.domain.text.chinese_script import ChineseScripts, OpenCcConverter
+from miningcat.domain.text.variants import text_variants
+from shared import FakeOpenCc
 from mining.deinflect import transformer_for
 
 pytest.importorskip("flask")
@@ -20,18 +25,13 @@ HEADERS = {"X-MiningCat": "1"}
 # A tiny two-script table so that the tests don't depend on OpenCC.
 T2S = dict(zip("說話們國時", "说话们国时"))
 S2T = {v: k for k, v in T2S.items()}
-REAL_CONVERTERS = {"to_simplified": languages.to_simplified, "to_traditional": languages.to_traditional}
 
 
 @pytest.fixture(autouse=True)
 def database(tmp_path, monkeypatch):
     monkeypatch.setattr(db, "DB_PATH", tmp_path / "library" / "miningcat.db")
     db.reset_cache()
-    monkeypatch.setattr(languages, "to_simplified", lambda t, language="zh": "".join(T2S.get(c, c) for c in t))
-    monkeypatch.setattr(languages, "to_traditional", lambda t, language="zh": "".join(S2T.get(c, c) for c in t))
-    monkeypatch.setattr(languages, "_script_tables", (set(S2T), set(T2S)))
-    monkeypatch.setattr(words, "to_simplified", languages.to_simplified)
-    monkeypatch.setattr(words, "to_traditional", languages.to_traditional)
+    monkeypatch.setattr(chinese_script, "chinese_scripts", ChineseScripts(FakeOpenCc(T2S)))
     yield
     db.reset_cache()
 
@@ -81,57 +81,54 @@ def ja_dict(tmp_path):
 # ---------------------------------------------------------------- languages
 
 def test_language_keys():
-    assert languages.language_key("zh-Hant") == "zh"
-    assert languages.language_key("zh-HK") == "zh"
-    assert languages.language_key("yue-Hant") == "yue"
-    assert languages.language_key("ja-JP") == "ja"
-    assert languages.language_key("und") == ""
+    assert language_key("zh-Hant") == "zh"
+    assert language_key("zh-HK") == "zh"
+    assert language_key("yue-Hant") == "yue"
+    assert language_key("ja-JP") == "ja"
+    assert language_key("und") == ""
 
 
 def test_dictionary_language_guess():
-    assert languages.guess_dictionary_language([("食べる", "たべる")]) == "ja"
-    assert languages.guess_dictionary_language([("說話", "shuōhuà"), ("我們", "wǒmen")]) == "zh"
-    assert languages.guess_dictionary_language([("食飯", "sik6 faan6"), ("我哋", "ngo5 dei6")]) == "yue"
-    assert languages.guess_dictionary_language([("사랑", "")]) == "ko"
+    assert guess_dictionary_language([("食べる", "たべる")]) == "ja"
+    assert guess_dictionary_language([("說話", "shuōhuà"), ("我們", "wǒmen")]) == "zh"
+    assert guess_dictionary_language([("食飯", "sik6 faan6"), ("我哋", "ngo5 dei6")]) == "yue"
+    assert guess_dictionary_language([("사랑", "")]) == "ko"
 
 
 def test_text_variants():
-    assert "たべる" in languages.text_variants("タベル", "ja")
-    assert "ガ" in languages.text_variants("ｶﾞ", "ja")  # half width becomes full width
-    assert "l'homme" in languages.text_variants("L’homme", "fr")
+    assert "たべる" in text_variants("タベル", "ja")
+    assert "ガ" in text_variants("ｶﾞ", "ja")  # half width becomes full width
+    assert "l'homme" in text_variants("L’homme", "fr")
 
 
 def test_chinese_scripts():
-    assert languages.chinese_script("說話") == "traditional"
-    assert languages.chinese_script("说话") == "simplified"
-    assert languages.chinese_script("說话") == "mixed"
-    assert languages.chinese_script("天氣") in ("both", "traditional")
-    assert languages.chinese_counterpart("說話") == ("simplified", "说话")
-    assert languages.chinese_counterpart("我") is None
+    assert chinese_script.chinese_script("說話") == "traditional"
+    assert chinese_script.chinese_script("说话") == "simplified"
+    assert chinese_script.chinese_script("說话") == "mixed"
+    assert chinese_script.chinese_script("天氣") in ("both", "traditional")
+    assert chinese_script.chinese_counterpart("說話") == ("simplified", "说话")
+    assert chinese_script.chinese_counterpart("我") is None
 
 
 # With the real OpenCC tables: characters valid in both scripts don't make a word simplified.
-def test_chinese_scripts_with_opencc(monkeypatch):
+def test_chinese_scripts_with_opencc():
     pytest.importorskip("opencc")
-    for name, function in REAL_CONVERTERS.items():
-        monkeypatch.setattr(languages, name, function)
-    monkeypatch.setattr(languages, "_script_tables", None)
-    monkeypatch.setattr(languages, "_converters", {})
-    if not any(languages._load_script_tables()):
+    scripts = ChineseScripts(OpenCcConverter())
+    if not any(scripts.converter.tables()):
         pytest.skip("OpenCC character tables not available")
-    assert languages.chinese_script("了解") == "both"
-    assert languages.chinese_script("里面") == "both"
-    assert languages.chinese_script("台灣") == "traditional"
-    assert languages.chinese_script("说话") == "simplified"
-    assert languages.chinese_counterpart("里边") == ("traditional", "裡邊")
-    assert languages.chinese_counterpart("说话", "yue") == ("traditional", "説話")
+    assert scripts.script("了解") == "both"
+    assert scripts.script("里面") == "both"
+    assert scripts.script("台灣") == "traditional"
+    assert scripts.script("说话") == "simplified"
+    assert scripts.counterpart("里边") == ("traditional", "裡邊")
+    assert scripts.counterpart("说话", "yue") == ("traditional", "説話")
 
 
-def test_script_detection_without_tables(monkeypatch):
-    monkeypatch.setattr(languages, "_script_tables", (set(), set()))
-    assert languages.chinese_script("說話") == "traditional"
-    assert languages.chinese_script("说话") == "simplified"
-    assert languages.chinese_script("我") == "both"
+def test_script_detection_without_tables():
+    scripts = ChineseScripts(FakeOpenCc(T2S, tables=(set(), set())))
+    assert scripts.script("說話") == "traditional"
+    assert scripts.script("说话") == "simplified"
+    assert scripts.script("我") == "both"
 
 
 def test_words_in_both_scripts_keep_their_form():
@@ -567,7 +564,7 @@ def test_http_segment(client, zh_dict):
 
 # ---------------------------------------------------------------- zhuyin
 
-from mining.zhuyin import pinyin_to_zhuyin, zhuyin_to_pinyin
+from miningcat.domain.text.zhuyin import pinyin_to_zhuyin, zhuyin_to_pinyin
 
 
 @pytest.mark.parametrize("pinyin, zhuyin", [
@@ -634,7 +631,7 @@ def test_not_zhuyin(text):
 
 @pytest.mark.parametrize("tone", [1, 2, 3, 4, 5])
 def test_every_syllable_both_ways(tone):
-    from mining.zhuyin import ZHUYIN_OF
+    from miningcat.domain.text.zhuyin import ZHUYIN_OF
 
     for syllable in ZHUYIN_OF:
         numbered = f"{syllable}{tone}"
@@ -660,7 +657,7 @@ def test_zhuyin_field_of_a_card():
 
 # ---------------------------------------------------------------- Korean
 
-from mining import hangul
+from miningcat.domain.text import hangul
 
 
 @pytest.mark.parametrize("text, jamo", [

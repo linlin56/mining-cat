@@ -7,7 +7,7 @@ from PIL import Image
 from game_ocr import cli
 from game_ocr.capture import CaptureBackend, CaptureError, WindowInfo
 from game_ocr.settings import GameOcrSettings
-from language import Language
+from miningcat.domain.languages import Language
 
 WINDOWS = [WindowInfo(1, "Launcher", "Game A"), WindowInfo(2, "SampleApp", "Sample Quest")]
 MACOS = MagicMock(id="macos", label="macOS")

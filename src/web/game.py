@@ -75,12 +75,6 @@ def describe(settings: GameOcrSettings) -> dict:
     }
 
 
-# Tag of a language for the /game/ page (dictionary popup, fonts): Cantonese isn't Mandarin's zh-Hant.
-def language_tag(lang) -> str:
-    from language import Language
-    return "yue-Hant" if lang is Language.CANTONESE_HK else lang.value.ocr_lang_apple
-
-
 @bp.get("/state")
 def api_state():
     from game_ocr.server import page_url
@@ -225,7 +219,7 @@ def run_capture(
 
     try:
         # The /game/ page of MiningCat replaces the capture server's own page (opened by the web GUI).
-        state.game_language = language_tag(lang)
+        state.game_language = lang.profile.tag
         state.game_proc = pipeline.start_game_server(
             python_exe=PYTHON, lang=lang, convert_target=convert_target,
             continuous=continuous, hotkey=hotkey,

@@ -289,7 +289,7 @@ def save_settings(values: dict) -> dict:
 
 
 def right_to_left(comic_id: str, language: str) -> bool:
-    from mining.languages import language_key
+    from miningcat.domain.languages import language_key
 
     direction = get_prefs(comic_id).get("direction")
     if direction:
@@ -300,26 +300,19 @@ def right_to_left(comic_id: str, language: str) -> bool:
 # ---------------------------------------------------------------- text of the pages
 
 def ocr_language(tag: str):
-    """The OCR language (language.Language) of a text tagged `tag`: zh-Hans reads simplified characters."""
-    from language import Language
-    from mining.languages import LANGUAGES, language_key
-    from web.game import language_tag
+    """The OCR language (Language) of a text tagged `tag`: zh-Hans reads simplified characters."""
+    from miningcat.domain.languages import LANGUAGES, Language, language_key
 
-    key = language_key(tag)
-    variants = [lang for lang in Language if language_key(language_tag(lang)) == key]
-    if not variants:
+    lang = Language.for_tag(tag)
+    if lang is None:
+        key = language_key(tag)
         raise ComicError(f"Text recognition isn't available for {LANGUAGES.get(key, tag or 'this language')} yet.")
-    for lang in variants:
-        if lang.value.ocr_lang_apple.lower() == (tag or "").lower():
-            return lang
-    if key == "zh" and "hans" in (tag or "").lower():
-        return Language.MANDARIN_CN
-    return variants[0]
+    return lang
 
 
 def page_text(comic_id: str, number: int, language: str, again: bool = False) -> dict:
     """The text blocks of a page, read by OCR the first time (or `again`): {"blocks": [...], "engine_error"?}."""
-    from mining.languages import is_no_space, language_key
+    from miningcat.domain.languages import is_no_space, language_key
     from ocr_mining import layout
     from ocr_mining.dedup import is_plausible_text
 

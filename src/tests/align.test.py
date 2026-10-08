@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 import align
 from align import Segment, save_srt, fix_leading_punct, fix_trailing_opening_punct, restore_opening_punct, prepare_text, _extract_segments, get_device
-from language import Language
+from miningcat.domain.languages import Language
 
 
 def test_run_exits_if_no_audio_dir(tmp_path, monkeypatch):

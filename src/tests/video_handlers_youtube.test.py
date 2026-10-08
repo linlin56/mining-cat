@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 import video_handlers.youtube as youtube
-from language import Language
+from miningcat.domain.languages import Language
 
 
 def test_domains():
@@ -10,10 +10,9 @@ def test_domains():
     assert "youtu.be" in youtube.DOMAINS
 
 
-def test_lang_codes_cover_all_languages():
+def test_every_language_has_caption_codes():
     for lang in Language:
-        assert lang in youtube.LANG_CODES
-        assert youtube.LANG_CODES[lang]
+        assert lang.profile.youtube_caption_codes
 
 
 def test_download_uses_requested_downloads_filepath(tmp_path):
@@ -44,7 +43,7 @@ def test_download_requests_subtitles_for_language(tmp_path):
     opts = mock_cls.call_args[0][0]
     assert opts["writesubtitles"] is True
     assert opts["writeautomaticsub"] is True
-    assert opts["subtitleslangs"] == youtube.LANG_CODES[Language.MANDARIN_TW]
+    assert opts["subtitleslangs"] == ["zh-Hant", "zh-TW", "zh"]
     assert opts["subtitlesformat"] == "srt"
 
 

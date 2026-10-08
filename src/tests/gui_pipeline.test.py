@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from gui_components import pipeline
-from language import Language
+from miningcat.domain.languages import Language
 
 
 # _find_video_srt

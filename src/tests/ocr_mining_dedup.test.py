@@ -1,6 +1,6 @@
 from PIL import Image
 
-from language import Language
+from miningcat.domain.languages import Language
 from ocr_mining import dedup
 
 

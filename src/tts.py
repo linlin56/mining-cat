@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from config import DIR_CHAPTERS_TEXT, DIR_CHAPTERS_AUDIO, DIR_SRT
 from align import Segment, save_srt, restore_opening_punct
-from language import Language
+from miningcat.domain.languages import Language
 
 _TICKS_PER_SECOND = 10_000_000
 

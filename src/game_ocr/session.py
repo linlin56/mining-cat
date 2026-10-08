@@ -4,11 +4,11 @@ from typing import Callable
 
 from PIL import Image
 
-import chinese_converter
+from miningcat.domain.text.chinese_conversion import convert_text
 from game_ocr import capture
 from game_ocr.capture import CaptureBackend, CaptureError
 from game_ocr.settings import FULL_REGION, GameOcrSettings, Region
-from language import Language
+from miningcat.domain.languages import Language
 from ocr_mining import builder, dedup, frames
 
 # Languages written without spaces: lines wrapped by the game's dialog box are glued back together as-is.
@@ -89,7 +89,7 @@ class GameOcrSession:
         self._backend = backend
         self._settings = settings
         self._language = language
-        self._convert_source = chinese_converter.SCRIPT_FOR_LANGUAGE.get(language) if convert_target else None
+        self._convert_source = language.profile.chinese_script if convert_target else None
         self._convert_target = convert_target
         self._join = join
         if engine is None:
@@ -117,7 +117,7 @@ class GameOcrSession:
     def _format(self, reading: str) -> str:
         text = join_lines(reading, self._language) if self._join else reading
         if text and self._convert_source is not None:
-            text = chinese_converter.convert_text(text, self._convert_source, self._convert_target)
+            text = convert_text(text, self._convert_source, self._convert_target)
         return text.strip()
 
     # `force` (manual trigger) skips the change detection. Returns (result, "") or (None, reason it was skipped).

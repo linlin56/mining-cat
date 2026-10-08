@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 import video
-from language import Language
+from miningcat.domain.languages import Language
 
 
 # extract_audio

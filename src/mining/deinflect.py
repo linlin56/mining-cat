@@ -161,6 +161,6 @@ def transformer_for(language: str) -> LanguageTransformer | None:
         return None
     descriptor = json.loads(path.read_text(encoding="utf-8"))
     if language == "ko":
-        from mining.hangul import assemble, disassemble
+        from miningcat.domain.text.hangul import assemble, disassemble
         return LanguageTransformer(descriptor, disassemble, assemble)
     return LanguageTransformer(descriptor)

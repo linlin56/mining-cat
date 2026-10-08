@@ -138,7 +138,7 @@ def _forget(book_id: str) -> None:
 def normalize(text: str, language: str = "") -> str:
     text = _NOT_WORD.sub("", unicodedata.normalize("NFKC", text)).lower()
     if language in ("zh", "yue", "nan"):
-        from mining.languages import to_simplified
+        from miningcat.domain.text.chinese_script import to_simplified
         text = to_simplified(text)
     return text
 

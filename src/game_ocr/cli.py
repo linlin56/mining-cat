@@ -4,7 +4,7 @@ from typing import Callable
 from game_ocr import capture
 from game_ocr.capture import CaptureBackend, CaptureError, WindowInfo
 from game_ocr.settings import GameOcrSettings
-from language import Language
+from miningcat.domain.languages import Language
 
 # Asks the user to choose a window from a list of windows
 def choose_window(windows: list[WindowInfo], query: str | None, ask: Callable[[str], str] = input) -> WindowInfo:
@@ -101,7 +101,7 @@ def serve(
     backend = open_saved_window(settings)
     try:
         print(f"Window:    {settings.window_label}")
-        print(f"Language:  {language.value.label}")
+        print(f"Language:  {language.profile.label}")
         print("Loading the OCR engine…", flush=True)
         session = GameOcrSession(backend, settings, language, convert_target=convert_target, join=join)
         # Continuous capture replaces the capture key.

@@ -5,8 +5,8 @@ from urllib.parse import urlparse
 
 from flask import Flask, Response, jsonify, render_template, request, send_file
 
-from language import Language
-from gui_components.constants import CONVERT_BY_LABEL, PYTHON, ROOT, VOICE_ID_BY_LABEL
+from miningcat.domain.languages import Language
+from gui_components.constants import CONVERT_BY_LABEL, PYTHON, ROOT
 from web import files, options
 from web.state import AppState, JobBusyError
 
@@ -286,7 +286,7 @@ def create_app(state: AppState | None = None) -> Flask:
                 raise UserError("No chapters selected", "Select at least one chapter.")
 
         voice = body.get("voice")
-        if mode == "Generate audio" and voice not in VOICE_ID_BY_LABEL:
+        if mode == "Generate audio" and lang.profile.voice_id(voice) is None:
             raise UserError("Missing voice", "Pick a voice.")
 
         def on_done() -> None:
@@ -378,7 +378,7 @@ def create_app(state: AppState | None = None) -> Flask:
             raise UserError("Unknown list", f"Unknown frequency list: {kind!r}")
         lang = _language(body.get("language"))
         if kind == "char" and not character_frequency.supports_language(lang):
-            raise UserError("Not supported", f"Character lists are not available for {lang.value.label}.")
+            raise UserError("Not supported", f"Character lists are not available for {lang.profile.label}.")
 
         if body.get("source") == "video":
             srt_path = state.last_video_srt
@@ -447,7 +447,6 @@ def create_app(state: AppState | None = None) -> Flask:
     def api_player_from_output():
         from config import DIR_FINAL
         from web import videos
-        from web.game import language_tag
 
         if state.running:
             raise UserError("Busy", "Wait for the current job to finish.", 409)
@@ -455,7 +454,7 @@ def create_app(state: AppState | None = None) -> Flask:
         finals = sorted(DIR_FINAL.glob("*.mp4"), key=lambda p: p.stat().st_mtime, reverse=True) if DIR_FINAL.exists() else []
         if not finals:
             raise UserError("No video", "No converted video found in output/final: generate one first.")
-        language = language_tag(_language(body["language"])) if body.get("language") else None
+        language = _language(body["language"]).profile.tag if body.get("language") else None
         try:
             meta = videos.import_file(finals[0], language=language)
         except videos.VideoError as exc:

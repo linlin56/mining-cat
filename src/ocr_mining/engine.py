@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from language import Language
+from miningcat.domain.languages import Language
 
 
 class OcrEngine:
@@ -51,13 +51,13 @@ def _build_impl(language: Language, vertical: bool = False):
     if sys.platform == "darwin":
         from owocr.ocr import AppleVision
         _ensure_owocr_objc_global()
-        impl = AppleVision(language=language.value.ocr_lang_apple)
+        impl = AppleVision(language=language.profile.ocr_lang_apple)
         if getattr(impl, "available", False):
             return impl
         print("  Apple Vision unavailable on this system, falling back to EasyOCR")
 
     from owocr.ocr import EasyOCR
-    impl = EasyOCR(config={}, language=language.value.ocr_lang_easyocr)
+    impl = EasyOCR(config={}, language=language.profile.ocr_lang_easyocr)
     if not getattr(impl, "available", False):
         raise RuntimeError(
             "No usable OCR engine available (macOS 13+ is needed for Apple Vision, "
@@ -72,7 +72,7 @@ def _apple_live_text(language: Language):
         import objc
         objc.loadBundle("VisionKit", {}, bundle_path="/System/Library/Frameworks/VisionKit.framework")
         from owocr.ocr import AppleLiveText
-        impl = AppleLiveText(language=language.value.ocr_lang_apple)
+        impl = AppleLiveText(language=language.profile.ocr_lang_apple)
     except Exception as exc:
         print(f"  Apple Live Text unavailable ({exc}), falling back to Apple Vision")
         return None

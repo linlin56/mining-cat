@@ -31,7 +31,7 @@ def page(video_id: str | None = None):
 # Only the videos of the language studied (and those of no known language yet) are in the library.
 @bp.get("/api/videos")
 def api_videos():
-    from mining.languages import language_key
+    from miningcat.domain.languages import language_key
 
     study = profile.current()
     shown = [v for v in videos.list_videos() if not study or language_key(v["language"]) in (study, "")]
@@ -51,7 +51,7 @@ def api_import():
 @bp.post("/api/videos/url")
 def api_import_url():
     import video_handlers
-    from language import Language
+    from miningcat.domain.languages import Language
 
     body = _body()
     url = str(body.get("url") or "").strip()
@@ -87,7 +87,7 @@ def api_video(video_id: str):
 @bp.get("/api/videos/<video_id>/comprehension")
 def api_comprehension(video_id: str):
     from mining import comprehension
-    from mining.languages import language_key
+    from miningcat.domain.languages import language_key
 
     meta = videos.get_meta(video_id)
     prefs = videos.get_prefs(video_id)

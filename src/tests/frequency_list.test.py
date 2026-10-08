@@ -3,7 +3,10 @@ import zipfile
 
 import pytest
 
-from mining import comprehension, dictionaries, frequency, languages, segment, words
+from mining import comprehension, dictionaries, frequency, segment, words
+from miningcat.domain.text import chinese_script
+from miningcat.domain.text.chinese_script import ChineseScripts
+from shared import FakeOpenCc
 
 HEADERS = {"X-MiningCat": "1"}
 
@@ -107,8 +110,7 @@ def test_choosing_another_list(tmp_path):
 
 
 def test_chinese_ranks_ignore_the_script(tmp_path, monkeypatch):
-    monkeypatch.setattr(languages, "to_simplified", lambda t, language="zh": t.replace("說", "说"))
-    monkeypatch.setattr(languages, "to_traditional", lambda t, language="zh": t.replace("说", "說"))
+    monkeypatch.setattr(chinese_script, "chinese_scripts", ChineseScripts(FakeOpenCc({"說": "说"})))
     path = tmp_path / "zh.json"
     path.write_text(json.dumps(["的", "说"], ensure_ascii=False), encoding="utf-8")
     dictionaries.import_dictionary(path, "zh", filename="zh.json")

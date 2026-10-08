@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from language import Language
+from miningcat.domain.languages import Language
 from ocr_mining import pipeline
 
 

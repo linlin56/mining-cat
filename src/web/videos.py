@@ -681,11 +681,10 @@ def _download(job: dict, language, tag: str | None = None) -> None:
         import video
         import video_downloader
         from config import DIR_VIDEOS
-        from web.game import language_tag
 
         path = video_downloader.download_video(job["url"], DIR_VIDEOS, app_id="web", language=language)
         subtitles = [(p, video._sidecar_tag(p, path.stem)) for p in video.find_platform_subtitles(path.parent, path.stem)]
-        meta = import_file(path, title=_online_title(job["url"]), language=language_tag(language) if language else tag,
+        meta = import_file(path, title=_online_title(job["url"]), language=language.profile.tag if language else tag,
                            subtitles=subtitles)
         job.update(status="done", video=meta["id"])
     except Exception as exc:

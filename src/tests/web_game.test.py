@@ -7,7 +7,7 @@ from PIL import Image
 from game_ocr import capture
 from game_ocr.capture import BackendInfo, CaptureBackend, CaptureError, WindowInfo
 from game_ocr.settings import GameOcrSettings
-from language import Language
+from miningcat.domain.languages import Language
 from web import app as web_app
 from web import game
 from web.state import AppState
@@ -303,8 +303,8 @@ def test_stop_terminates_the_subprocess(client, state, monkeypatch):
 def test_language_tag_of_the_running_game(client, state, backend):
     state.game_proc, state.game_language = FakeProc(), "zh-Hant"
     assert client.get("/api/game/state").get_json()["language_tag"] == "zh-Hant"
-    assert game.language_tag(Language.CANTONESE_HK) == "yue-Hant"
-    assert game.language_tag(Language.JAPANESE) == "ja-JP"
+    assert Language.CANTONESE_HK.profile.tag == "yue-Hant"
+    assert Language.JAPANESE.profile.tag == "ja-JP"
 
 
 def test_game_page(client):

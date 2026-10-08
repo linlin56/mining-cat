@@ -7,7 +7,9 @@ from dataclasses import dataclass, field
 from mining import db
 from mining import words as words_mod
 from mining.deinflect import transformer_for
-from mining.languages import CHINESE_LANGUAGES, hiragana_to_katakana, is_no_space, katakana_to_hiragana, text_variants
+from miningcat.domain.languages import CHINESE_LANGUAGES, is_no_space
+from miningcat.domain.text.kana import hiragana_to_katakana, katakana_to_hiragana
+from miningcat.domain.text.variants import text_variants
 
 # Longest headword tried, in characters (no-space languages) or words (other languages).
 MAX_CHARS = 16

@@ -1,7 +1,6 @@
 import sys
 from pathlib import Path
 
-from language import Language
 
 # gui_components/ -> src/ -> project root
 ROOT    = Path(__file__).parent.parent.parent
@@ -58,118 +57,6 @@ CONVERT_BY_LABEL: dict[str, str | None] = {
     for options in _CONVERT_OPTIONS_FOR_SCRIPT.values()
     for label, code in options
 }
-
-_VOICES_FOR_LANGUAGE: dict[Language, list[tuple[str, str]]] = {
-    Language.MANDARIN_TW: [
-        ("HsiaoChen - Mandarin (Taiwan), female", "zh-TW-HsiaoChenNeural"),
-        ("HsiaoYu - Mandarin (Taiwan), female",   "zh-TW-HsiaoYuNeural"),
-        ("YunJhe - Mandarin (Taiwan), male",       "zh-TW-YunJheNeural"),
-    ],
-    Language.MANDARIN_CN: [
-        ("Xiaoxiao - Mandarin (China), female",    "zh-CN-XiaoxiaoNeural"),
-        ("Xiaoyi - Mandarin (China), female",      "zh-CN-XiaoyiNeural"),
-        ("Yunxi - Mandarin (China), male",         "zh-CN-YunxiNeural"),
-        ("Yunjian - Mandarin (China), male",       "zh-CN-YunjianNeural"),
-        ("Yunxia - Mandarin (China), male",        "zh-CN-YunxiaNeural"),
-        ("Yunyang - Mandarin (China), male",       "zh-CN-YunyangNeural"),
-    ],
-    Language.JAPANESE: [
-        ("Nanami - Japanese, female",  "ja-JP-NanamiNeural"),
-        ("Keita - Japanese, male",     "ja-JP-KeitaNeural"),
-        ("Mayu - Japanese, female",    "ja-JP-MayuNeural"),
-        ("Naoki - Japanese, male",     "ja-JP-NaokiNeural"),
-        ("Shiori - Japanese, female",  "ja-JP-ShioriNeural"),
-    ],
-    Language.FRENCH: [
-        ("Denise - French (France), female",  "fr-FR-DeniseNeural"),
-        ("Eloise - French (France), female",  "fr-FR-EloiseNeural"),
-        ("Henri - French (France), male",     "fr-FR-HenriNeural"),
-        ("Sylvie - French (Canada), female",  "fr-CA-SylvieNeural"),
-        ("Jean - French (Canada), male",      "fr-CA-JeanNeural"),
-    ],
-    Language.ENGLISH_US: [
-        ("Jenny - English (US), female",    "en-US-JennyNeural"),
-        ("Aria - English (US), female",     "en-US-AriaNeural"),
-        ("Michelle - English (US), female", "en-US-MichelleNeural"),
-        ("Guy - English (US), male",        "en-US-GuyNeural"),
-        ("Eric - English (US), male",       "en-US-EricNeural"),
-        ("Roger - English (US), male",      "en-US-RogerNeural"),
-    ],
-    Language.ENGLISH_UK: [
-        ("Sonia - English (UK), female",  "en-GB-SoniaNeural"),
-        ("Libby - English (UK), female",  "en-GB-LibbyNeural"),
-        ("Maisie - English (UK), female", "en-GB-MaisieNeural"),
-        ("Ryan - English (UK), male",     "en-GB-RyanNeural"),
-        ("Oliver - English (UK), male",   "en-GB-OliverNeural"),
-        ("Thomas - English (UK), male",   "en-GB-ThomasNeural"),
-    ],
-    Language.ITALIAN: [
-        ("Elsa - Italian, female",      "it-IT-ElsaNeural"),
-        ("Isabella - Italian, female",  "it-IT-IsabellaNeural"),
-        ("Diego - Italian, male",       "it-IT-DiegoNeural"),
-        ("Benigno - Italian, male",     "it-IT-BenignoNeural"),
-    ],
-    Language.SPANISH: [
-        ("Elvira - Spanish (Spain), female",    "es-ES-ElviraNeural"),
-        ("Alvaro - Spanish (Spain), male",      "es-ES-AlvaroNeural"),
-        ("Dalia - Spanish (Mexico), female",    "es-MX-DaliaNeural"),
-        ("Jorge - Spanish (Mexico), male",      "es-MX-JorgeNeural"),
-    ],
-    Language.POLISH: [
-        ("Zofia - Polish, female",  "pl-PL-ZofiaNeural"),
-        ("Marek - Polish, male",    "pl-PL-MarekNeural"),
-    ],
-    Language.KOREAN: [
-        ("SunHi - Korean, female",   "ko-KR-SunHiNeural"),
-        ("InJoon - Korean, male",    "ko-KR-InJoonNeural"),
-    ],
-    Language.GERMAN: [
-        ("Katja - German, female",    "de-DE-KatjaNeural"),
-        ("Amala - German, female",    "de-DE-AmalaNeural"),
-        ("Conrad - German, male",     "de-DE-ConradNeural"),
-        ("Killian - German, male",    "de-DE-KillianNeural"),
-    ],
-    Language.PORTUGUESE: [
-        ("Francisca - Portuguese (Brazil), female",   "pt-BR-FranciscaNeural"),
-        ("Antonio - Portuguese (Brazil), male",       "pt-BR-AntonioNeural"),
-        ("Raquel - Portuguese (Portugal), female",    "pt-PT-RaquelNeural"),
-        ("Duarte - Portuguese (Portugal), male",      "pt-PT-DuarteNeural"),
-    ],
-    Language.VIETNAMESE: [
-        ("HoaiMy - Vietnamese, female",  "vi-VN-HoaiMyNeural"),
-        ("NamMinh - Vietnamese, male",   "vi-VN-NamMinhNeural"),
-    ],
-    Language.CANTONESE_HK: [
-        ("HiuMaan - Cantonese (Hong Kong), female",  "zh-HK-HiuMaanNeural"),
-        ("HiuGaai - Cantonese (Hong Kong), female",  "zh-HK-HiuGaaiNeural"),
-        ("WanLung - Cantonese (Hong Kong), male",    "zh-HK-WanLungNeural"),
-    ],
-}
-DEFAULT_VOICE_FOR_LANGUAGE: dict[Language, str] = {
-    Language.MANDARIN_TW: "HsiaoChen - Mandarin (Taiwan), female",
-    Language.MANDARIN_CN: "Xiaoxiao - Mandarin (China), female",
-    Language.JAPANESE:    "Nanami - Japanese, female",
-    Language.FRENCH:      "Denise - French (France), female",
-    Language.ENGLISH_US:  "Jenny - English (US), female",
-    Language.ENGLISH_UK:  "Sonia - English (UK), female",
-    Language.ITALIAN:     "Elsa - Italian, female",
-    Language.SPANISH:     "Elvira - Spanish (Spain), female",
-    Language.POLISH:      "Zofia - Polish, female",
-    Language.KOREAN:      "SunHi - Korean, female",
-    Language.GERMAN:      "Katja - German, female",
-    Language.PORTUGUESE:  "Francisca - Portuguese (Brazil), female",
-    Language.VIETNAMESE:  "HoaiMy - Vietnamese, female",
-    Language.CANTONESE_HK: "HiuMaan - Cantonese (Hong Kong), female",
-}
-VOICE_ID_BY_LABEL: dict[str, str] = {
-    label: voice_id
-    for voices in _VOICES_FOR_LANGUAGE.values()
-    for label, voice_id in voices
-}
-VOICES_FOR_LANGUAGE = _VOICES_FOR_LANGUAGE
-
-# This is mostly for Cantonese, which only works with large or turbo models.
-LARGE_ONLY_WHISPER_CODES = {"yue"}  # Cantonese
 
 GITHUB_URL = "https://github.com/linlin56/mining-cat"
 

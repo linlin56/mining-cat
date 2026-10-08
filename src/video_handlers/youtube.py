@@ -2,29 +2,10 @@ from pathlib import Path
 
 import yt_dlp
 
-from language import Language
+from miningcat.domain.languages import Language
 from video_handlers._common import BASE_YDL_OPTS, resolve_downloaded_path
 
 DOMAINS = ("youtube.com", "youtu.be", "m.youtube.com")
-
-# Candidate YouTube caption language codes to try, per Language (manual or auto-generated).
-LANG_CODES: dict[Language, list[str]] = {
-    Language.MANDARIN_TW: ["zh-Hant", "zh-TW", "zh"],
-    Language.MANDARIN_CN: ["zh-Hans", "zh-CN", "zh"],
-    Language.JAPANESE:    ["ja"],
-    Language.FRENCH:      ["fr"],
-    Language.ENGLISH_US:  ["en"],
-    Language.ENGLISH_UK:  ["en-GB", "en"],
-    Language.ITALIAN:     ["it"],
-    Language.SPANISH:     ["es"],
-    Language.POLISH:      ["pl"],
-    Language.KOREAN:      ["ko"],
-    Language.GERMAN:      ["de"],
-    Language.PORTUGUESE:  ["pt-PT", "pt-BR", "pt"],
-    Language.VIETNAMESE:  ["vi"],
-    Language.CANTONESE_HK: ["yue", "zh-HK", "zh-Hant", "zh"],
-}
-
 
 def download(url: str, output_dir: Path, language: Language | None = None, **_ignored) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -39,7 +20,7 @@ def download(url: str, output_dir: Path, language: Language | None = None, **_ig
         subtitle_opts = {
             "writesubtitles": True,
             "writeautomaticsub": True,
-            "subtitleslangs": LANG_CODES.get(language, [language.value.whisper_code]),
+            "subtitleslangs": list(language.profile.youtube_caption_codes),
             "subtitlesformat": "srt",
             # yt-dlp's default subtitle download rate limit is 1 request/sec, which is too slow for YouTube's timedtext endpoint and often triggers a 429 rate limit. 
             # Set to 2 seconds to be safe, since the pipeline already falls back to Whisper/OCR when no platform subs come through.

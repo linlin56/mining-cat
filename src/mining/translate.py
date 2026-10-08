@@ -5,7 +5,8 @@ import threading
 import urllib.request
 from pathlib import Path
 
-from mining.languages import LANGUAGES, chinese_script
+from miningcat.domain.languages import LANGUAGES
+from miningcat.domain.text.chinese_script import chinese_script
 from mining.word_audio import USER_AGENT, _ssl_context
 
 INDEX_URL = "https://raw.githubusercontent.com/argosopentech/argospm-index/main/index.json"

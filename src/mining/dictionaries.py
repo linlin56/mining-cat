@@ -8,7 +8,8 @@ import zipfile
 from pathlib import Path
 
 from mining import db
-from mining.languages import LANGUAGES, guess_dictionary_language
+from miningcat.domain.languages import LANGUAGES
+from miningcat.domain.dictionary.language_guess import guess_dictionary_language
 
 MEDIA_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".avif", ".tif", ".tiff"}
 BATCH = 5000

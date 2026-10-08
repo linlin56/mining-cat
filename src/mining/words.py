@@ -1,10 +1,9 @@
 import time
 
 from mining import db
-from mining.languages import (
-    CHINESE_LANGUAGES, LANGUAGES, chinese_counterpart, chinese_script, normalize_reading,
-    to_simplified, to_traditional,
-)
+from miningcat.domain.languages import CHINESE_LANGUAGES, LANGUAGES
+from miningcat.domain.text.chinese_script import chinese_counterpart, chinese_script, to_simplified, to_traditional
+from miningcat.domain.text.readings import normalize_reading
 
 STATUSES = ("learning", "known", "ignored")
 SCRIPTS = ("traditional", "simplified", "both")
@@ -48,7 +47,7 @@ def set_reading_system(language: str, system: str) -> None:
 def display_reading(language: str, expression: str, reading: str) -> str:
     """The reading as the user wants to see it, whichever the dictionary uses: zhuyin or pinyin, as chosen."""
     if reading and language == "zh":
-        from mining.zhuyin import is_zhuyin, pinyin_to_zhuyin, zhuyin_to_pinyin
+        from miningcat.domain.text.zhuyin import is_zhuyin, pinyin_to_zhuyin, zhuyin_to_pinyin
 
         if reading_system(language) == "zhuyin":
             return pinyin_to_zhuyin(reading) or reading

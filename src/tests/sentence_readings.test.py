@@ -5,7 +5,7 @@ import pytest
 
 from mining import anki, dictionaries, segment
 from mining.sentence_readings import annotate, word_field
-from mining.zhuyin import numbered_pinyin
+from miningcat.domain.text.zhuyin import numbered_pinyin
 
 
 def cedict_entry(senses):

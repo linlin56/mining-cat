@@ -1,8 +1,9 @@
 import json
 import threading
 
-from mining import db, languages
-from mining.languages import CHINESE_LANGUAGES
+from mining import db
+from miningcat.domain.languages import CHINESE_LANGUAGES
+from miningcat.domain.text.chinese_script import to_simplified, to_traditional
 
 SETTING = "frequency_lists"  # {language: dictionary id}
 LIMIT_BASE = 1000
@@ -81,7 +82,7 @@ def _variants(language: str, words: tuple[str, ...]) -> list[str]:
     found = [w for w in dict.fromkeys(words) if w]
     if language in CHINESE_LANGUAGES:
         # a list in one script still ranks the words of the other (説 / 说)
-        found += [v for w in list(found) for v in (languages.to_simplified(w, language), languages.to_traditional(w, language)) if v not in found]
+        found += [v for w in list(found) for v in (to_simplified(w, language), to_traditional(w, language)) if v not in found]
     return found
 
 

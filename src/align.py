@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 import chinese_converter
 from config import DIR_CHAPTERS_AUDIO, DIR_CHAPTERS_TEXT, DIR_SRT, glob_audio_files
-from language import Language
+from miningcat.domain.languages import Language
 
 
 def get_device() -> str:
@@ -22,7 +22,7 @@ def get_device() -> str:
 # This is mostly for Cantonese, which only works with large or turbo models.
 def ensure_language_supported(model, lang: Language) -> None:
     from whisper.tokenizer import LANGUAGES
-    code = lang.value.whisper_code
+    code = lang.profile.whisper_code
     if code not in tuple(LANGUAGES.keys())[:model.num_languages]:
         raise ValueError(
             f"This Whisper checkpoint only supports {model.num_languages} languages and "
@@ -57,7 +57,7 @@ def save_srt(segs: list[Segment], path: Path) -> None:
 
 # Move leading closing punctuation to the end of the previous segment.
 def fix_leading_punct(segs: list[Segment], lang: Language = Language.MANDARIN_TW) -> list[Segment]:
-    closing_punct = lang.value.closing_punct
+    closing_punct = lang.profile.closing_punct
     result: list[Segment] = []
     for seg in segs:
         text = seg.text
@@ -81,7 +81,7 @@ def fix_leading_punct(segs: list[Segment], lang: Language = Language.MANDARIN_TW
 # Move trailing opening punctuation (e.g. ¿ ¡) to the start of the next segment.
 # Whisper may align ¿/¡ to the tail of the previous segment rather than the head of the question/exclamation, causing it to be dropped or misplaced in the SRT.
 def fix_trailing_opening_punct(segs: list[Segment], lang: Language = Language.MANDARIN_TW) -> list[Segment]:
-    opening_punct = lang.value.opening_punct
+    opening_punct = lang.profile.opening_punct
     if not opening_punct:
         return segs
     result: list[Segment] = list(segs)
@@ -106,7 +106,7 @@ def fix_trailing_opening_punct(segs: list[Segment], lang: Language = Language.MA
 # aligned segments. Searches each segment's text in the reference to detect a
 # directly-preceding opening punct char and prepends it when found.
 def restore_opening_punct(segs: list[Segment], reference: str, lang: Language) -> list[Segment]:
-    opening_punct = lang.value.opening_punct
+    opening_punct = lang.profile.opening_punct
     if not opening_punct:
         return segs
     result = []
@@ -135,7 +135,7 @@ def restore_opening_punct(segs: list[Segment], reference: str, lang: Language) -
 
 # This is the main alignment function, which takes an audio file and a text file, and returns a list of aligned segments.
 def prepare_text(raw: str, lang: Language = Language.MANDARIN_TW) -> str:
-    text = re.sub(lang.value.vocab_annotation_pattern, '', raw)
+    text = re.sub(lang.profile.vocab_annotation_pattern, '', raw)
     lines = [l for l in text.splitlines() if l.strip()]
     return '\n'.join(lines).strip()
 
@@ -163,7 +163,7 @@ def align_chapter(
     result = model.align(
         str(audio_file),
         chapter_text,
-        language=lang.value.whisper_code,
+        language=lang.profile.whisper_code,
         verbose=False,
     )
     segs = _extract_segments(result, lang)
@@ -177,7 +177,7 @@ def transcribe_chapter(
 ) -> list[Segment]:
     result = model.transcribe(
         str(audio_file),
-        language=lang.value.whisper_code,
+        language=lang.profile.whisper_code,
         verbose=False,
     )
     return _extract_segments(result, lang)

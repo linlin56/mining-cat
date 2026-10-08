@@ -37,7 +37,7 @@ def comic_page(comic_id: str):
 
 
 def _language_of(book_id: str, declared: str | None) -> str:
-    from mining.languages import language_key
+    from miningcat.domain.languages import language_key
     return language_key(books.get_prefs(book_id).get("language") or declared)
 
 
@@ -51,7 +51,7 @@ def api_books():
 
 @bp.post("/api/books")
 def api_import():
-    from mining.languages import LANGUAGES
+    from miningcat.domain.languages import LANGUAGES, same_family
 
     study = profile.current()
     added, errors, elsewhere = [], [], []
@@ -61,7 +61,7 @@ def api_import():
             meta = books.import_book(name, upload.read())
             language = _language_of(meta["id"], meta["language"])
             # Detection can't tell Cantonese from Mandarin: a Chinese book belongs to the Chinese language studied.
-            if study and language != study and (not language or profile.same_family(language, study)):
+            if study and language != study and (not language or same_family(language, study)):
                 books.save_prefs(meta["id"], {"language": profile.default_tag(study)})
             elif study and language != study:
                 elsewhere.append(f"{meta['title']} ({LANGUAGES.get(language, language)})")
@@ -133,7 +133,7 @@ def api_save_settings():
 # ---------- audio of a converted book (see book_audio.py) ----------
 
 def _book_language(book_id: str) -> str:
-    from mining.languages import language_key
+    from miningcat.domain.languages import language_key
     return language_key(books.get_prefs(book_id).get("language") or books.get_meta(book_id).get("language"))
 
 
@@ -192,7 +192,7 @@ def api_audio_clip(book_id: str):
 
 @bp.get("/api/comics")
 def api_comics():
-    from mining.languages import language_key
+    from miningcat.domain.languages import language_key
 
     study = profile.current()
     shown = [c for c in comics.list_comics() if not study or language_key(c["language"]) in (study, "")]

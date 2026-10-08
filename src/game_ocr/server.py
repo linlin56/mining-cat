@@ -12,7 +12,7 @@ from PIL import Image
 from game_ocr.capture import CaptureError
 from game_ocr.hotkey import Hotkey
 from game_ocr.session import CaptureResult, GameOcrSession
-from language import Language
+from miningcat.domain.languages import Language
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 6677
@@ -195,7 +195,7 @@ async def handle_index(request: web.Request) -> web.Response:
     language: Language = request.app[LANGUAGE_KEY]
     html = PAGE_FILE.read_text(encoding="utf-8")
     html = (html
-            .replace("{{LANG}}", language.value.ocr_lang_apple)
+            .replace("{{LANG}}", language.profile.ocr_lang_apple)
             .replace("{{AUTO}}", "true" if request.app[AUTO_KEY] else "false")
             .replace("{{HOTKEY}}", request.app[HOTKEY_KEY].key if request.app[HOTKEY_KEY] else ""))
     return web.Response(text=html, content_type="text/html")

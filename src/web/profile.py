@@ -1,17 +1,11 @@
 from flask import Blueprint, jsonify, redirect, request
 
 from mining import db
-from mining.languages import CHINESE_LANGUAGES, LANGUAGES, language_key
+from miningcat.domain.languages import CHINESE_LANGUAGES, LANGUAGES, NATIVE_NAMES
 
 bp = Blueprint("profile", __name__)
 
 SETTING = "study_language"
-
-NATIVE_NAMES = {
-    "zh": "中文", "yue": "粵語", "nan": "台語", "ja": "日本語", "ko": "한국어", "en": "English",
-    "fr": "Français", "de": "Deutsch", "es": "Español", "it": "Italiano", "pt": "Português",
-    "pl": "Polski", "vi": "Tiếng Việt", "ru": "Русский",
-}
 
 # Pages that need a language: without one, they send the user to the home page to choose it.
 GUARDED_PREFIXES = ("/converter/", "/reader/", "/clipboard/", "/player/", "/settings/")
@@ -28,11 +22,6 @@ def set_current(language: str) -> None:
     db.set_setting(SETTING, language)
 
 
-def same_family(a: str, b: str) -> bool:
-    """Whether a text tagged `a` may belong to `b`: book detection can't tell Mandarin from Cantonese."""
-    return a == b or (a in CHINESE_LANGUAGES and b in CHINESE_LANGUAGES)
-
-
 def _prefers_simplified(language: str) -> bool:
     from mining import words
     return language in CHINESE_LANGUAGES and words.chinese_script_preference(language) == "simplified"
@@ -40,12 +29,11 @@ def _prefers_simplified(language: str) -> bool:
 
 def converter_languages(language: str | None) -> list:
     """The converter's variants of a study language, the script the user learns first."""
-    from language import Language
-    from web.game import language_tag
+    from miningcat.domain.languages import Language
 
     if not language:
         return []
-    variants = [lang for lang in Language if language_key(language_tag(lang)) == language]
+    variants = Language.variants_of(language)
     if _prefers_simplified(language):
         variants.sort(key=lambda lang: lang is not Language.MANDARIN_CN)
     return variants

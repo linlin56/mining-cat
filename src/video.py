@@ -7,7 +7,7 @@ import ffmpeg
 
 import video_downloader
 from config import AUDIO_BITRATE, DIR_FINAL, DIR_SRT, DIR_TEMP, DIR_VIDEOS
-from language import Language
+from miningcat.domain.languages import Language
 
 
 # Skips re-extraction if the mp3 is already sitting in output_dir from a previous run on the
@@ -226,7 +226,7 @@ def run(
             print("  Nothing transcribed: is there speech in the selected language?")
 
     # Convert script if requested (applies to every SRT in DIR_SRT, source and whisper alike)
-    source_script = chinese_converter.SCRIPT_FOR_LANGUAGE.get(language)
+    source_script = language.profile.chinese_script
     if convert_target is not None and source_script is not None:
         print(f"\n=== Character conversion ({source_script} -> {convert_target}) ===")
         chinese_converter.convert_srt_dir(source_script, convert_target)
@@ -236,7 +236,7 @@ def run(
     # An empty subtitle file can't be muxed: without any track, or when ffmpeg fails, the run fails (and the GUI says so).
     if not subtitle_tracks:
         raise RuntimeError("No subtitles to add to the video.")
-    if not mux_subtitles(video_file, subtitle_tracks, output_file, subtitle_lang=language.value.iso639_2):
+    if not mux_subtitles(video_file, subtitle_tracks, output_file, subtitle_lang=language.profile.iso639_2):
         raise RuntimeError("Could not add the subtitles to the video (see the ffmpeg error above).")
     size_mb = output_file.stat().st_size / (1024 * 1024)
     print(f"\nOK: {output_file}  ({size_mb:.1f} MB)")

@@ -1,38 +1,23 @@
 import json
-import re
 from collections import Counter
 from pathlib import Path
 
-from language import Language
-
-
-_CHAR_PATTERN: dict[Language, re.Pattern] = {
-    Language.MANDARIN_TW: re.compile(r"[一-鿿㐀-䶿]"),
-    Language.MANDARIN_CN: re.compile(r"[一-鿿㐀-䶿]"),
-    # Kanji (CJK + Extension A) + hiragana + katakana
-    Language.JAPANESE: re.compile(r"[一-鿿㐀-䶿぀-ゟ゠-ヿ]"),
-}
-
-_LANG_CODE: dict[Language, str] = {
-    Language.MANDARIN_TW: "zh-Hant",
-    Language.MANDARIN_CN: "zh-Hans",
-    Language.JAPANESE: "ja",
-}
-
-SUPPORTED_LANGUAGES: frozenset[Language] = frozenset(_CHAR_PATTERN)
+from miningcat.domain.languages import Language
 
 
 def supports_language(language: Language) -> bool:
-    return language in SUPPORTED_LANGUAGES
+    """Character lists (Kanji Grid) are only made for languages written with Chinese characters."""
+    return language.profile.character_list is not None
 
 
 def compute(text: str, language: Language) -> Counter:
-    if language not in _CHAR_PATTERN:
+    character_list = language.profile.character_list
+    if character_list is None:
+        supported = [lang.profile.label for lang in Language if supports_language(lang)]
         raise ValueError(
-            f"character_frequency does not support {language.value.label}. "
-            f"Supported: {', '.join(l.value.label for l in SUPPORTED_LANGUAGES)}"
+            f"character_frequency does not support {language.profile.label}. Supported: {', '.join(supported)}"
         )
-    return Counter(_CHAR_PATTERN[language].findall(text))
+    return Counter(character_list.characters.findall(text))
 
 
 def build_json(name: str, language: Language, counter: Counter, group_size: int = 1000) -> dict:
@@ -48,7 +33,7 @@ def build_json(name: str, language: Language, counter: Counter, group_size: int 
     return {
         "version": 1,
         "name": name,
-        "lang": _LANG_CODE[language],
+        "lang": language.profile.character_list.tag,
         "leftover_group": "Not in book",
         "groups": groups,
     }

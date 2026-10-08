@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from language import Language
+from miningcat.domain.languages import Language
 from ocr_mining import engine
 
 

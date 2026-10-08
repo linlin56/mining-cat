@@ -9,17 +9,13 @@ from tkinter import messagebox, ttk
 # Visual constants: colors, fonts, window title and fixed dimensions
 from gui_config import COLORS, WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT
 from gui_config import FONT_DEFAULT, FONT_LABEL, FONT_SMALL, FONT_BUTTON_LARGE
-# Chinese script conversion utilities (Traditional ↔ Simplified)
-import chinese_converter
-from language import Language
+from miningcat.domain.languages import Language
 from frequency import word_frequency, character_frequency
 
 # Shared constants: URLs, file paths, voice/conversion option mappings
 from gui_components.constants import (
     GITHUB_URL, ROOT,
     _CONVERT_OPTIONS_FOR_SCRIPT, CONVERT_BY_LABEL,
-    VOICES_FOR_LANGUAGE, DEFAULT_VOICE_FOR_LANGUAGE,
-    LARGE_ONLY_WHISPER_CODES,
     PYTHON,
 )
 # Reusable UI panels for audio files, epub file, video source, video game source, and log output
@@ -127,7 +123,7 @@ class App(tk.Tk):
         lang_row = tk.Frame(outer, bg=c["BG"])
         lang_row.pack(fill="x", pady=(0, 8))
         ttk.Label(lang_row, text="Language :").pack(side="left", padx=(0, 8))
-        self._lang_var = tk.StringVar(value=Language.MANDARIN_TW.value.label)
+        self._lang_var = tk.StringVar(value=Language.MANDARIN_TW.profile.label)
         self._lang_combo = ttk.Combobox(
             lang_row, textvariable=self._lang_var,
             values=Language.all_labels(), state="readonly", width=34,
@@ -196,10 +192,10 @@ class App(tk.Tk):
         voice_row = tk.Frame(self._voice_lf, bg=c["PANEL"])
         voice_row.pack(fill="x")
         _init_lang = Language.MANDARIN_TW
-        self._voice_var = tk.StringVar(value=DEFAULT_VOICE_FOR_LANGUAGE[_init_lang])
+        self._voice_var = tk.StringVar(value=_init_lang.profile.default_voice.label)
         self._voice_combo = ttk.Combobox(
             voice_row, textvariable=self._voice_var,
-            values=[lbl for lbl, _ in VOICES_FOR_LANGUAGE[_init_lang]],
+            values=[voice.label for voice in _init_lang.profile.voices],
             state="readonly", width=42,
         )
         self._voice_combo.pack(side="left")
@@ -324,7 +320,7 @@ class App(tk.Tk):
 
     # Returns the list of conversion options available for the given language
     def _convert_labels_for(self, lang: Language) -> list[str]:
-        script = chinese_converter.SCRIPT_FOR_LANGUAGE.get(lang)
+        script = lang.profile.chinese_script
         if script is None:
             return ["No conversion"]
         return [label for label, _ in _CONVERT_OPTIONS_FOR_SCRIPT[script]]
@@ -333,7 +329,7 @@ class App(tk.Tk):
     # some languages (like Cantonese) are only known to Whisper's large-v3/turbo checkpoints
     # smaller models are hidden rather than left in the list to fail during transcription.
     def _precision_values_for(self, lang: Language) -> list[str]:
-        if lang.value.whisper_code not in LARGE_ONLY_WHISPER_CODES:
+        if not lang.profile.large_whisper_models_only:
             return PRECISION_VALUES
         return [v for v in PRECISION_VALUES if v.split()[0] in ("Large", "Turbo")]
 
@@ -344,9 +340,9 @@ class App(tk.Tk):
         self._convert_combo["values"] = labels
         self._convert_var.set("No conversion")
         self._convert_combo.config(state="readonly" if len(labels) > 1 else "disabled")
-        voices = VOICES_FOR_LANGUAGE.get(lang, [])
-        self._voice_combo["values"] = [lbl for lbl, _ in voices]
-        self._voice_var.set(DEFAULT_VOICE_FOR_LANGUAGE.get(lang, voices[0][0] if voices else ""))
+        voices = lang.profile.voices
+        self._voice_combo["values"] = [voice.label for voice in voices]
+        self._voice_var.set(voices[0].label if voices else "")
         self._char_freq_btn.config(
             state="normal" if character_frequency.supports_language(lang) else "disabled"
         )

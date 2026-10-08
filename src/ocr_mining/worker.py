@@ -9,7 +9,7 @@ def main() -> None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from PIL import Image
 
-    from language import Language
+    from miningcat.domain.languages import Language
     from ocr_mining.engine import OcrEngine
 
     engine = OcrEngine(Language.from_id(sys.argv[1]), vertical=True)

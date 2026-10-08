@@ -2,7 +2,7 @@ import argparse
 import sys
 
 from game_ocr.hotkey import DEFAULT_HOTKEY, HOTKEYS
-from language import Language
+from miningcat.domain.languages import Language
 from ocr_mining.frames import OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
 
 
@@ -36,7 +36,7 @@ def cmd_epub(args: argparse.Namespace) -> None:
 
 def cmd_align(args: argparse.Namespace) -> None:
     import align
-    from language import Language
+    from miningcat.domain.languages import Language
     align.run(
         model_name=args.model,
         language=Language.from_id(args.language),
@@ -49,7 +49,7 @@ def cmd_align(args: argparse.Namespace) -> None:
 # It's not as accurate but great if you don't have the ebook.
 def cmd_transcribe(args: argparse.Namespace) -> None:
     import align
-    from language import Language
+    from miningcat.domain.languages import Language
     align.run_transcribe(
         model_name=args.model,
         language=Language.from_id(args.language),
@@ -70,7 +70,7 @@ def cmd_export(args: argparse.Namespace) -> None:
         chapter_num=args.chapter,
         all_chapters=args.all,
         preset=args.preset,
-        subtitle_lang=lang.value.iso639_2,
+        subtitle_lang=lang.profile.iso639_2,
     )
 
 

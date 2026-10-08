@@ -3,7 +3,7 @@ import json
 import re
 
 from mining import db, segment
-from mining.zhuyin import numbered_pinyin, pinyin_to_zhuyin, zhuyin_to_pinyin
+from miningcat.domain.text.zhuyin import numbered_pinyin, pinyin_to_zhuyin, zhuyin_to_pinyin
 
 LANGUAGES = {"zh"}
 

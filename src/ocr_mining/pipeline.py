@@ -5,7 +5,7 @@ from PIL import Image
 
 from align import Segment
 from config import DIR_OCR_FRAMES
-from language import Language
+from miningcat.domain.languages import Language
 from ocr_mining import builder, dedup, frames
 from ocr_mining.engine import OcrEngine
 

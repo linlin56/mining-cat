@@ -3,7 +3,7 @@ import pytest
 from collections import Counter
 
 from frequency import character_frequency, word_frequency
-from language import Language
+from miningcat.domain.languages import Language
 
 
 # --- character_frequency ---

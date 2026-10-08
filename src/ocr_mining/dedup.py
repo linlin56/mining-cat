@@ -1,9 +1,8 @@
 import difflib
-import re
 
 from PIL import Image, ImageChops, ImageStat
 
-from language import Language
+from miningcat.domain.languages import Language
 
 TEXT_SIMILARITY_THRESHOLD = 0.85
 MAX_PIXEL_DIFF_RATIO = 0.02
@@ -72,29 +71,9 @@ def is_near_duplicate(a: str, b: str, max_edits: int = 1) -> bool:
     return levenshtein_distance(a, b) <= max_edits
 
 
-# CJK ideographs + hiragana/katakana (incl. halfwidth katakana).
-_CJK_PATTERN = re.compile(r"[一-鿿぀-ヿｦ-ﾟ]")
-# Hangul syllables + compatibility jamo.
-_HANGUL_PATTERN = re.compile(r"[가-힣ㄱ-ㅎㅏ-ㅣ]")
-_LATIN_LETTER_PATTERN = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ]")
-
-# Script pattern per language
-# anything not listed falls back to Latin.
-# Missing a language here silently zeroes out all its OCR text (see is_plausible_text)
-# so every non-Latin script needs its own entry
-_PATTERN_FOR_LANGUAGE: dict[Language, re.Pattern] = {
-    Language.MANDARIN_TW: _CJK_PATTERN,
-    Language.MANDARIN_CN: _CJK_PATTERN,
-    Language.JAPANESE: _CJK_PATTERN,
-    Language.CANTONESE_HK: _CJK_PATTERN,
-    Language.KOREAN: _HANGUL_PATTERN,
-}
-
-
 # Frames with no real subtitle sometimes still OCR
 # Rejecting text that doesn't contain at least one character from the target language's script is a cheap filter since the language is already known ahead of time.
 def is_plausible_text(text: str, language: Language) -> bool:
     if not text:
         return False
-    pattern = _PATTERN_FOR_LANGUAGE.get(language, _LATIN_LETTER_PATTERN)
-    return bool(pattern.search(text))
+    return bool(language.profile.ocr_script.search(text))

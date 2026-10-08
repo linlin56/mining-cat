@@ -12,7 +12,7 @@ pytestmark = pytest.mark.gui
 import tkinter as tk
 
 from game_ocr.settings import GameOcrSettings
-from language import Language
+from miningcat.domain.languages import Language
 
 
 @pytest.fixture
@@ -64,7 +64,7 @@ def test_toggle_game_without_selection_warns(app):
 
 def test_start_then_stop_then_exit(app):
     _make_ready(app)
-    app._lang_var.set(Language.JAPANESE.value.label)
+    app._lang_var.set(Language.JAPANESE.profile.label)
     proc = MagicMock()
     with patch("gui.pipeline.start_game_server", return_value=proc) as start:
         app._toggle_game()

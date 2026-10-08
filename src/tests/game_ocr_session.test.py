@@ -7,7 +7,7 @@ from game_ocr import session as game_session
 from game_ocr.capture import CaptureBackend, CaptureError
 from game_ocr.session import ChangeDetector, GameOcrSession, crop_areas, crop_region, join_lines
 from game_ocr.settings import GameOcrSettings
-from language import Language
+from miningcat.domain.languages import Language
 
 
 class FakeBackend(CaptureBackend):

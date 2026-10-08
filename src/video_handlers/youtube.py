@@ -23,6 +23,7 @@ LANG_CODES: dict[Language, list[str]] = {
     Language.PORTUGUESE:  ["pt-PT", "pt-BR", "pt"],
     Language.VIETNAMESE:  ["vi"],
     Language.CANTONESE_HK: ["yue", "zh-HK", "zh-Hant", "zh"],
+    Language.TAIGI: ["nan", "nan-TW", "zh-min-nan", "zh-TW", "zh-Hant"],
 }
 
 

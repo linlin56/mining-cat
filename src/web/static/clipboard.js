@@ -120,6 +120,33 @@ function init() {
     if (C.reading) { edit(); read(); }
   });
 
+  // Taigi: the text in Hanji, Tâi-lô or POJ, whichever (or whichever mix) it's written in
+  const convert = $("taigi-convert");
+  convert.hidden = C.study.id !== "nan";
+  convert.addEventListener("change", async () => {
+    const target = convert.value;
+    convert.value = "";
+    if (!target || !$("editor").value.trim()) return;
+    convert.disabled = true;
+    try {
+      const res = await fetch("/api/taigi/convert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-MiningCat": "1" },
+        body: JSON.stringify({ text: $("editor").value, target }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      $("editor").value = data.text;
+      store(STORE_TEXT, data.text);
+      showCount();
+      if (C.reading) { edit(); read(); }
+    } catch (err) {
+      alert(`The text couldn't be converted: ${err.message}`);
+    } finally {
+      convert.disabled = false;
+    }
+  });
+
   const editor = $("editor");
   editor.value = load(STORE_TEXT) || "";
   showCount();

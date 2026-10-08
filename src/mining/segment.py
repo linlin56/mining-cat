@@ -32,6 +32,16 @@ _SPLIT_INSIDE_WORDS = {"ko"}
 _PARTICLE = ""
 
 _KANA_END = re.compile(r"[぀-ヿ]$")
+# Taigi: runs of Hanji, and romanized words (Tâi-lô, POJ) with their tone marks, syllables joined by hyphens.
+_HAN_RUN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U0003134f]+")
+_ROMAN_WORD = re.compile(r"[^\W\d_](?:[^\W_]|[\u0300-\u036f])*(?:-+[^\W\d_](?:[^\W_]|[\u0300-\u036f])*)*")
+
+
+def taigi_reading_form(reading: str) -> str:
+    """How a Taigi dictionary's reading is kept to find romanized words: lower-case Tâi-lô with tone marks,
+    syllables joined by hyphens (tsia̍h-pn̄g, whether the dictionary writes chia̍h-pn̄g or tsiah8 png7)."""
+    from mining.taigi import respell
+    return re.sub(r"\s+", "-", respell(reading.strip().lower(), "tailo"))
 
 
 @dataclass
@@ -40,6 +50,7 @@ class Lexicon:
     signature: tuple
     # headword -> part of speech flags of its entries (for deinflection), -1 when any form is accepted
     entries: dict[str, int] = field(default_factory=dict)
+    # Taigi: romanized reading (taigi_reading_form) -> headword, to read romanized text with Hanji dictionaries.
     # Japanese: kana reading -> headword, for the words usually written in kana (どこ -> 何処, だけ -> 丈). Only those,
     # when their main sense is: any reading would let kana text be read as unrelated words (した as 下 instead of
     # the past of する, はま as 浜 whose 2nd sense only is usually kana).
@@ -107,6 +118,8 @@ def lexicon(language: str) -> Lexicon:
                     lex.max_chars = min(len(expression), MAX_CHARS)
                 if language == "ja" and reading and reading != expression and _usually_kana(def_tags, score):
                     lex.readings.setdefault(katakana_to_hiragana(reading), expression)
+                elif language == "nan" and reading and reading != expression and re.search(r"[A-Za-z]", reading):
+                    lex.readings.setdefault(taigi_reading_form(reading), expression)
         # a reading that is itself a headword stays that headword
         for reading in [r for r in lex.readings if r in lex.entries]:
             del lex.readings[reading]
@@ -201,6 +214,21 @@ def _segment_no_space(text: str, lex: Lexicon, transformer) -> list[tuple[int, i
     return tokens
 
 
+# Taigi: Hanji split like Chinese, romanized words looked up whole (by their reading in Hanji dictionaries).
+def _segment_taigi(text: str, lex: Lexicon) -> list[tuple[int, int, str | None]]:
+    tokens = []
+    memo: dict[str, str | None] = {}
+    position = 0
+    for run in [*_HAN_RUN.finditer(text), None]:
+        end = run.start() if run else len(text)
+        for word in _ROMAN_WORD.finditer(text, position, end):
+            tokens.append((word.start(), len(word.group()), match(lex, word.group())))
+        if run:
+            tokens += _split_run(run.group(), run.start(), lex, None, memo)
+            position = run.end()
+    return tokens
+
+
 # Same for languages with spaces: whole words, or a few words making a dictionary expression ("a lot of").
 def _segment_words(text: str, lex: Lexicon, transformer) -> list[tuple[int, int, str | None]]:
     spans = [(m.start(), m.end()) for m in _SPACE_WORD.finditer(text) if _LETTER.search(m.group())]
@@ -237,6 +265,8 @@ def segment(language: str, text: str) -> list[tuple[int, int, str | None]]:
             return _cache[key]
     if not lex.entries:
         tokens = []
+    elif language == "nan":
+        tokens = _segment_taigi(text, lex)
     elif is_no_space(language) or language in _SPLIT_INSIDE_WORDS:
         tokens = _segment_no_space(text, lex, transformer_for(language))
     else:

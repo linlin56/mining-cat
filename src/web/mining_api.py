@@ -72,7 +72,7 @@ def api_languages():
     return jsonify(
         languages=[{"id": k, "name": v, "chinese": k in CHINESE_LANGUAGES, "studied": k in studied} for k, v in LANGUAGES.items()],
         scripts={lang: words.chinese_script_preference(lang) for lang in CHINESE_LANGUAGES},
-        readings={"zh": words.reading_system("zh")},
+        readings={language: words.reading_system(language) for language in words.READING_SYSTEMS},
         counts=counts,
     )
 
@@ -161,6 +161,21 @@ def api_sentence_readings():
     return jsonify(sentence_readings.annotate(_language(body.get("language")), sentence, str(body.get("reading") or "")))
 
 
+# A Taigi text written in Hanji, Tâi-lô or POJ (from any of them, or a mix): the Clipboard page's "Write in".
+@bp.post("/api/taigi/convert")
+def api_taigi_convert():
+    from mining import taigi
+
+    body = _body()
+    text, target = str(body.get("text") or ""), str(body.get("target") or "")
+    if len(text) > 200_000:
+        raise ApiError("The text is too long to convert (200,000 characters at most).")
+    try:
+        return jsonify(text=taigi.convert(text, target, numbers=bool(body.get("numbers"))))
+    except (ValueError, RuntimeError) as exc:
+        raise ApiError(str(exc))
+
+
 # ---------------------------------------------------------------- frequency list
 
 @bp.get("/api/frequency/lists")
@@ -198,9 +213,12 @@ def api_word_audio():
 @bp.get("/api/tts/voices")
 def api_tts_voices():
     from mining import sentence_tts
+    from speech import mms_tts
 
     language = _language(request.args.get("language"))
-    return jsonify(**sentence_tts.voices(language), chosen=sentence_tts.default_voice(language))
+    chosen = sentence_tts.default_voice(language)
+    mms_tts.preload(chosen)  # a local voice loads while the card is being made
+    return jsonify(**sentence_tts.voices(language), chosen=chosen)
 
 
 @bp.post("/api/tts")

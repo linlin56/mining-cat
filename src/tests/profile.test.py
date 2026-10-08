@@ -48,7 +48,7 @@ def test_home_lists_every_language_with_its_words(client):
     words.set_status("ja", "猫", "ねこ", "known")
     languages = {l["id"]: l for l in client.get("/api/profile").get_json()["languages"]}
     assert languages["ja"]["words"] == 1 and languages["ja"]["native"] == "日本語"
-    assert languages["nan"]["converter"] is False
+    assert languages["nan"]["converter"] is True
     assert languages["yue"]["converter"] is True
 
 
@@ -66,7 +66,10 @@ def test_converter_only_offers_the_variants_of_the_language(client):
     assert [l["id"] for l in client.get("/api/options").get_json()["languages"]] == ["french"]
     choose(client, "nan")
     options = client.get("/api/options").get_json()
-    assert options["languages"] == [] and options["default_language"] is None
+    assert [l["id"] for l in options["languages"]] == ["taigi"] and options["default_language"] == "taigi"
+    taigi = options["languages"][0]
+    assert taigi["precision"][0].startswith("Qwen3-ASR") and taigi["voices"] == ["MMS - Taigi (local, Meta MMS-TTS)"]
+    assert taigi["convert"] == ["No conversion", "Hanji (漢字)", "Tâi-lô", "Pe̍h-ōe-jī (POJ)"]
 
 
 def test_reader_library_holds_the_books_of_the_language(client):

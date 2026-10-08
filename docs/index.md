@@ -25,6 +25,7 @@ On top of that, MiningCat converts between simplified and traditional Chinese ch
 | ---------- | --------------------------------------------------- |
 | Mandarin   | Taiwan (traditional), China (simplified)            |
 | Cantonese  | Hong Kong (traditional)                             |
+| Taigi      | Hanji, Tâi-lô, Pe̍h-ōe-jī ([local speech engines](how-to-use/taigi.md)) |
 | Japanese   |                                                     |
 | Korean     |                                                     |
 | Vietnamese |                                                     |

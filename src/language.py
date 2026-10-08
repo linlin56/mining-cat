@@ -18,6 +18,10 @@ class LangConfig:
     # 'mms' (CTC forced alignment of the romanized text, local) to align a book on its audiobook.
     asr: str = 'whisper'
     aligner: str = 'whisper'
+    # OCR languages for the lines of a language also written in Latin letters (Taigi's romanizations): their tone
+    # marks are lost by the CJK model, a Latin one sees them. None: the language's own OCR reads everything.
+    ocr_lang_apple_latin: str | None = None
+    ocr_lang_easyocr_latin: str | None = None
 
 
 class Language(Enum):
@@ -173,6 +177,10 @@ class Language(Enum):
         ocr_lang_easyocr='ch_tra',
         asr='qwen3',
         aligner='mms',
+        # Vietnamese: the Latin model with the most diacritics (Tâi-lô's and POJ's come back as look-alikes,
+        # see mining/taigi.py repair_ocr).
+        ocr_lang_apple_latin='vi-VT',
+        ocr_lang_easyocr_latin='vi',
     )
     # TODO : Add more! Priorities are languages that me (the owner) can understand enough to test
 

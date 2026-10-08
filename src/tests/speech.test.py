@@ -20,6 +20,22 @@ def test_require_explains_how_to_install():
         speech.require("no_such_package_here", "Something")
 
 
+def test_local_model(monkeypatch, tmp_path):
+    hub = pytest.importorskip("huggingface_hub")
+    asked = []
+
+    def snapshot_download(repo, local_files_only=False):
+        asked.append(local_files_only)
+        if repo != "org/cached":
+            raise hub.errors.LocalEntryNotFoundError("not in the cache")
+        return str(tmp_path)
+
+    monkeypatch.setattr(hub, "snapshot_download", snapshot_download)
+    assert speech.local_model("org/cached") == str(tmp_path)
+    assert speech.local_model("org/missing") == "org/missing"  # downloaded when it's loaded
+    assert asked == [True, True]  # never asks huggingface.co
+
+
 def test_mp3_round_trip(tmp_path):
     tone = np.sin(np.arange(16000) * 2 * np.pi * 440 / 16000).astype(np.float32) * 0.5
     path = tmp_path / "tone.mp3"
@@ -93,7 +109,7 @@ def test_transcribe(monkeypatch):
     model = FakeQwen()
     segments = qwen3.transcribe(model, "audio.mp3", "nan", progress=False)
     assert [c[0] for c in model.calls] == [8, 2]
-    assert model.calls[0][1:] == ("Chinese", "台語（閩南語）")
+    assert model.calls[0][1:] == ("Chinese", "")  # a context is written out as is
     assert len(segments) == 5 and segments[1].start == 2.0 and segments[1].end == 2.5 and segments[1].text == "我欲食飯。"
 
 
@@ -127,6 +143,7 @@ def test_load_model(monkeypatch):
     monkeypatch.setitem(sys.modules, "qwen_asr", types.SimpleNamespace(Qwen3ASRModel=Model))
     monkeypatch.setitem(sys.modules, "nagisa", None)  # not installed: a placeholder replaces it
     monkeypatch.setattr(qwen3, "torch_device", lambda: "cpu")
+    monkeypatch.setattr(qwen3, "local_model", lambda repo: repo)
     assert isinstance(qwen3.load_model("large"), Model)
     assert loaded["repo"] == "Qwen/Qwen3-ASR-1.7B" and loaded["device_map"] == "cpu" and loaded["dtype"] is torch.float32
 
@@ -240,6 +257,7 @@ def fake_voice(monkeypatch):
         VitsModel=types.SimpleNamespace(from_pretrained=lambda repo: FakeVits()),
         AutoTokenizer=types.SimpleNamespace(from_pretrained=lambda repo: Tokenizer()),
     ))
+    monkeypatch.setattr(mms_tts, "local_model", lambda repo: repo)
     mms_tts._models.clear()
     yield texts
     mms_tts._models.clear()
@@ -255,6 +273,27 @@ def test_synthesize(fake_voice):
     assert mms_tts.synthesize_mp3("guá", "nan-TW-MmsTaigi")[:3] in (b"ID3", b"\xff\xfb", b"\xff\xf3")
     with pytest.raises(speech.SpeechError, match="nothing"):
         mms_tts.synthesize_mp3("123", "nan-TW-MmsTaigi")
+
+
+def test_preload(fake_voice, monkeypatch):
+    started = []
+    monkeypatch.setattr(mms_tts.threading, "Thread", lambda target, args, daemon: types.SimpleNamespace(
+        start=lambda: started.append(args) or target(*args)))
+    mms_tts.preload("fr-FR-DeniseNeural")  # an Edge voice: nothing to load
+    mms_tts.preload("")
+    assert started == [] and not mms_tts._models
+    mms_tts.preload("nan-TW-MmsTaigi")
+    assert "nan-TW-MmsTaigi" in mms_tts._models
+    mms_tts.preload("nan-TW-MmsTaigi")  # already loaded
+    assert started == [("nan-TW-MmsTaigi",)]
+
+
+def test_preload_errors_are_left_to_the_reading(monkeypatch):
+    monkeypatch.setitem(sys.modules, "transformers", None)
+    mms_tts._models.clear()
+    mms_tts._preload("nan-TW-MmsTaigi")  # doesn't raise in the thread
+    with pytest.raises(speech.SpeechError, match="make install-taigi"):
+        mms_tts.synthesize("guá", "nan-TW-MmsTaigi")
 
 
 def test_synthesize_chapter(fake_voice, tmp_path):

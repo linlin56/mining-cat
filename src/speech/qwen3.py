@@ -8,15 +8,15 @@ import types
 
 from tqdm import tqdm
 
-from speech import SAMPLE_RATE, SpeechError, load_audio, require, torch_device
+from speech import SAMPLE_RATE, SpeechError, load_audio, local_model, require, torch_device
 
 MODELS = {"qwen3-0.6b": "Qwen/Qwen3-ASR-0.6B", "qwen3-1.7b": "Qwen/Qwen3-ASR-1.7B"}
 DEFAULT_MODEL = "qwen3-0.6b"
 # The CLI's Whisper sizes, for a language transcribed by Qwen3-ASR: the large ones get the large model.
 _FROM_WHISPER_SIZE = {"medium": "qwen3-1.7b", "large": "qwen3-1.7b", "turbo": "qwen3-1.7b"}
-# Qwen3-ASR's language for ours (Minnan is one of its Chinese dialects), and words telling it what it hears.
+# Qwen3-ASR's language for ours (Minnan is one of its Chinese dialects). No context: it's written out as is on
+# music and silences ("臺語（閩南語）。").
 QWEN_LANGUAGES = {"nan": "Chinese"}
-CONTEXTS = {"nan": "台語（閩南語）"}
 
 MAX_UTTERANCE_SECONDS = 20
 BATCH_SIZE = 8
@@ -47,7 +47,7 @@ def load_model(name: str | None = None):
     repo = MODELS[model_name(name)]
     print(f"Loading Qwen3-ASR ({repo}) on {device}...")
     return qwen_asr.Qwen3ASRModel.from_pretrained(
-        repo, dtype=dtype, device_map=device, max_inference_batch_size=BATCH_SIZE, max_new_tokens=256,
+        local_model(repo), dtype=dtype, device_map=device, max_inference_batch_size=BATCH_SIZE, max_new_tokens=256,
     )
 
 
@@ -102,7 +102,7 @@ def transcribe(model, audio_file, language: str = "nan", progress: bool = True) 
         try:
             results = model.transcribe(
                 audio=[(samples[s:e], SAMPLE_RATE) for s, e in batch],
-                language=QWEN_LANGUAGES.get(language), context=CONTEXTS.get(language, ""),
+                language=QWEN_LANGUAGES.get(language),
             )
         except Exception as exc:  # out of memory, a model that couldn't be downloaded...
             raise SpeechError(f"Qwen3-ASR couldn't transcribe the audio: {exc}") from exc

@@ -1,14 +1,18 @@
 """Local speech engines, for the languages Whisper and Edge don't cover: Taigi is transcribed with Qwen3-ASR
 (speech/qwen3.py), aligned on its book with Meta's MMS aligner (speech/mms_align.py) and read by Meta's MMS voice
 (speech/mms_tts.py). Their models are downloaded from Hugging Face the first time they're used, and their
-packages are installed with `make install-taigi`."""
+packages are installed with `make install-taigi`. Once downloaded, they're loaded from the cache without contacting
+huggingface.co."""
 
+import os
 import subprocess
 
 import numpy as np
 
 SAMPLE_RATE = 16000
 INSTALL_HINT = "Install the local speech engines with `make install-taigi`."
+
+os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
 
 class SpeechError(RuntimeError):
@@ -22,6 +26,16 @@ def require(module: str, purpose: str):
         return importlib.import_module(module)
     except ImportError as exc:
         raise SpeechError(f"{purpose} needs the {module} package ({exc}). {INSTALL_HINT}") from exc
+
+
+def local_model(repo: str) -> str:
+    """The folder of a Hugging Face model in the local cache: loaded from there, it doesn't ask huggingface.co whether
+    the model changed. The repo's name when it isn't downloaded yet (loading it downloads it)."""
+    try:
+        from huggingface_hub import snapshot_download
+        return snapshot_download(repo, local_files_only=True)
+    except (ImportError, OSError):  # not downloaded yet: LocalEntryNotFoundError is an OSError
+        return repo
 
 
 def load_audio(path, sample_rate: int = SAMPLE_RATE) -> np.ndarray:

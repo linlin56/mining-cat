@@ -60,9 +60,9 @@ def test_build_impl_uses_apple_vision_on_darwin():
 
     with patch.object(engine.sys, "platform", "darwin"), \
          patch.dict("sys.modules", {"owocr.ocr": fake_module}):
-        impl = engine._build_impl(Language.FRENCH)
+        impl = engine._build_impl("fr-FR", "fr")
 
-    mock_apple_vision_cls.assert_called_once_with(language="fr-FR")
+    mock_apple_vision_cls.assert_called_once_with(language="fr-FR", config={"language_correction": True})
     assert impl is mock_apple_vision_cls.return_value
 
 
@@ -73,7 +73,7 @@ def test_build_impl_falls_back_to_easyocr_when_apple_vision_unavailable():
 
     with patch.object(engine.sys, "platform", "darwin"), \
          patch.dict("sys.modules", {"owocr.ocr": fake_module}):
-        impl = engine._build_impl(Language.FRENCH)
+        impl = engine._build_impl("fr-FR", "fr")
 
     mock_easyocr_cls.assert_called_once_with(config={}, language="fr")
     assert impl is mock_easyocr_cls.return_value
@@ -85,7 +85,7 @@ def test_build_impl_uses_easyocr_on_non_darwin():
 
     with patch.object(engine.sys, "platform", "linux"), \
          patch.dict("sys.modules", {"owocr.ocr": fake_module}):
-        impl = engine._build_impl(Language.ENGLISH_US)
+        impl = engine._build_impl("en-US", "en")
 
     mock_easyocr_cls.assert_called_once_with(config={}, language="en")
     assert impl is mock_easyocr_cls.return_value
@@ -98,7 +98,7 @@ def test_build_impl_raises_when_no_engine_available():
     with patch.object(engine.sys, "platform", "linux"), \
          patch.dict("sys.modules", {"owocr.ocr": fake_module}):
         with pytest.raises(RuntimeError):
-            engine._build_impl(Language.ENGLISH_US)
+            engine._build_impl("en-US", "en")
 
 
 # OcrEngine.read_text
@@ -148,3 +148,32 @@ def test_read_text_can_keep_narrow_lines():
         text = engine.OcrEngine(Language.FRENCH).read_text("frame.jpg", drop_narrow_lines=False)
 
     assert text == "a long first line of dialogue\nshort."
+
+
+# OcrEngine - Latin lines of Taigi
+def _boxed_line(text, left, top, width, height):
+    box = SimpleNamespace(left=left, top=top, width=width, height=height, center_y=top + height / 2)
+    return SimpleNamespace(text=text, bounding_box=box)
+
+
+def test_taigi_latin_lines_are_read_again_by_a_latin_model_and_repaired():
+    from PIL import Image
+    cjk = MagicMock(return_value=(True, SimpleNamespace(paragraphs=[SimpleNamespace(lines=[
+        _boxed_line("我欲食飯", 0.3, 0.1, 0.4, 0.3), _boxed_line("Gua beh tsiah-png", 0.2, 0.6, 0.6, 0.3)])])))
+    latin = MagicMock(return_value=(True, _fake_ocr_result("Guá beh tsiàh-pñg")))
+
+    with patch.object(engine, "_build_impl", side_effect=[cjk, latin]) as build:
+        text = engine.OcrEngine(Language.TAIGI).read_text(Image.new("RGB", (200, 100)))
+
+    assert text == "我欲食飯\nGuá beh tsia̍h-pn̄g"
+    assert build.call_args_list[1].args == ("vi-VT", "vi")
+    assert build.call_args_list[1].kwargs == {"latin": True}
+    assert latin.call_count == 1  # only the Latin line, cropped
+    assert latin.call_args.args[0].size[1] < 100
+
+
+def test_hanji_only_frames_build_no_latin_model():
+    cjk = MagicMock(return_value=(True, _fake_ocr_result("我欲食飯")))
+    with patch.object(engine, "_build_impl", return_value=cjk) as build:
+        assert engine.OcrEngine(Language.TAIGI).read_text("frame.jpg") == "我欲食飯"
+    build.assert_called_once()

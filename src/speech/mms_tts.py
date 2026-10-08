@@ -2,9 +2,11 @@
 non-commercial use only), for the languages Edge has no voice for. The Taigi voice was trained on Bible
 recordings written in Pe̍h-ōe-jī: the text is read in POJ, whatever it's written in."""
 
+import threading
+
 import numpy as np
 
-from speech import SpeechError, encode_mp3, require
+from speech import SpeechError, encode_mp3, local_model, require
 
 # voice id -> (Hugging Face model, language). Ids look like Edge's (locale first), so that the voice lists can
 # tell their language.
@@ -18,6 +20,7 @@ PAUSE_SECONDS = 0.3   # silence between two sentences of a chapter
 SEED = 0              # VITS draws its durations at random: the same text always sounds the same
 
 _models: dict[str, tuple] = {}
+_loading = threading.Lock()  # a sentence read while the voice is preloaded waits for it instead of loading it again
 
 
 def is_local(voice: str) -> bool:
@@ -25,12 +28,28 @@ def is_local(voice: str) -> bool:
 
 
 def _model(voice: str):
-    if voice not in _models:
-        transformers = require("transformers", "The MMS voices")
-        repo = VOICES[voice][0]
-        print(f"Loading the MMS voice ({repo})...")
-        _models[voice] = (transformers.VitsModel.from_pretrained(repo).eval(), transformers.AutoTokenizer.from_pretrained(repo))
-    return _models[voice]
+    with _loading:
+        if voice not in _models:
+            transformers = require("transformers", "The MMS voices")
+            repo = VOICES[voice][0]
+            print(f"Loading the MMS voice ({repo})...")
+            path = local_model(repo)
+            _models[voice] = (transformers.VitsModel.from_pretrained(path).eval(), transformers.AutoTokenizer.from_pretrained(path))
+        return _models[voice]
+
+
+def preload(voice: str) -> None:
+    """Loads a local voice in the background (importing transformers takes seconds), so that its first sentence is
+    read without waiting."""
+    if is_local(voice) and voice not in _models:
+        threading.Thread(target=_preload, args=(voice,), daemon=True).start()
+
+
+def _preload(voice: str) -> None:
+    try:
+        _model(voice)
+    except Exception:  # reported when a sentence is read
+        pass
 
 
 def _text_for(voice: str, text: str) -> str:

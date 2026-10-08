@@ -280,3 +280,22 @@ def test_convert_api(client):
 def test_reading_setting_api(client):
     assert client.post("/api/mining/reading", json={"language": "nan", "system": "poj"}, headers=HEADERS).status_code == 200
     assert client.get("/api/mining/languages").get_json()["readings"]["nan"] == "poj"
+
+
+# ---------------------------------------------------------------- OCR
+
+@pytest.mark.parametrize("ocr, repaired", [
+    ("Liân siã-thuân mã bồ tsham-ka", "Liân siā-thuân mā bô tsham-ka"),     # ã -> ā, ồ -> ô
+    ("Siunn-beh bih-sio-tshue ê lâng lãi tsia tsip-hàp", "Siunn-beh bih-sio-tshue ê lâng lāi tsia tsip-ha̍p"),
+    ("Lóng-sĩ tshù lí ê sìn-sít", "Lóng-sī tshù lí ê sìn-si̍t"),             # any mark on -t: the 8th tone
+    ("Put-chai-put-kak chiân-chò kơ tan-it", "Put-chai-put-kak chiân-chò ko͘ tan-it"),  # POJ's o͘
+    ("Huan-l6 kau bue", "Huan-lo kau bue"),                                  # digits read for letters
+    ("Li u leh khuann-b6", "Li u leh khuann-bo"),
+    ("|ai 1ang", "lai lang"),
+    ('chiâ"-chò Siu -beh', "chiâⁿ-chò Siuⁿ-beh"),                             # POJ's ⁿ read as a quote or a space
+    ('tsit jī "ah" tsiânn - hó', 'tsit jī "ah" tsiânn - hó'),               # but quotes and dashes stay
+    ("tsiah8-png7 ho2", "tsiah8-png7 ho2"),                                  # tone numbers stay
+    ("gi-ta（吉他）", "gi-ta（吉他）"),
+])
+def test_repair_ocr(ocr, repaired):
+    assert taigi.repair_ocr(ocr) == repaired

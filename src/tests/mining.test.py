@@ -985,6 +985,15 @@ def test_sentence_voice_from_settings(client):
     assert client.get("/api/tts/voices?language=ja").get_json()["chosen"] == ""
 
 
+def test_local_voice_preloaded_with_the_voices(client, monkeypatch):
+    from speech import mms_tts
+    preloaded = []
+    monkeypatch.setattr(mms_tts, "preload", preloaded.append)
+    assert client.get("/api/tts/voices?language=nan").get_json()["chosen"] == "nan-TW-MmsTaigi"
+    client.get("/api/tts/voices?language=ja")
+    assert preloaded == ["nan-TW-MmsTaigi", "ja-JP-NanamiNeural"]  # preload() ignores the Edge voices
+
+
 @pytest.fixture
 def fake_argos(monkeypatch):
     from mining import translate

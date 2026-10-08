@@ -213,9 +213,12 @@ def api_word_audio():
 @bp.get("/api/tts/voices")
 def api_tts_voices():
     from mining import sentence_tts
+    from speech import mms_tts
 
     language = _language(request.args.get("language"))
-    return jsonify(**sentence_tts.voices(language), chosen=sentence_tts.default_voice(language))
+    chosen = sentence_tts.default_voice(language)
+    mms_tts.preload(chosen)  # a local voice loads while the card is being made
+    return jsonify(**sentence_tts.voices(language), chosen=chosen)
 
 
 @bp.post("/api/tts")

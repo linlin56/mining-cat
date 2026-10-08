@@ -117,7 +117,7 @@ The lines of the dialog box are joined back together, since games wrap long sent
 ## From the terminal
 
 ```bash
-python -m miningcat game setup                       # pick the window, then draw both areas
+python -m miningcat game setup                       # pick the window, then draw both areas in the browser
 python -m miningcat game serve --language japanese   # start capturing (F9), Ctrl+C to stop
 python -m miningcat game serve --hotkey F2           # another capture key
 python -m miningcat game serve --continuous          # continuous capture instead of the key

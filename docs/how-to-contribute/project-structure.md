@@ -68,7 +68,7 @@ src/miningcat/
 │   ├── game_ocr/             # the saved window and areas, the capture session, the `game serve` process
 │   └── study_language.py     # the language the user studies
 └── interfaces/
-    ├── cli/                  # main.py, one Command per subcommand, `game setup` and its area picker (Tk)
+    ├── cli/                  # main.py, one Command per subcommand, `game setup` and its area picker (in the browser)
     ├── web/                  # app.py (factory), blueprints/ (one per screen or API), templates/, static/
     └── game_page/            # the page of `game serve` (aiohttp + websocket)
 ```

@@ -1,4 +1,4 @@
-.PHONY: help gui reader player install test test-gui coverage audio epub align export chapter1 chapter run clean video game-setup game
+.PHONY: help gui reader player install test coverage audio epub align export chapter1 chapter run clean video game-setup game
 
 # Defaults
 CHAPTER  ?= 1
@@ -47,8 +47,7 @@ help:
 	@echo "  make gui [PORT=5050]            Open the GUI in your browser"
 	@echo "  make reader                     Open the ebook reader in your browser"
 	@echo "  make player                     Open the video player in your browser"
-	@echo "  make test                       Run tests (without the tests that open windows)"
-	@echo "  make test-gui                   Run the tests that open windows (game setup's area picker)"
+	@echo "  make test                       Run tests"
 	@echo "  make audio                      Step 1: prepare audio chapters"
 	@echo "  make epub [RANGE=4-9]           Step 2: extract epub text"
 	@echo "  make align [CHAPTER=1|all]      Step 3: align chapter(s)"
@@ -76,9 +75,6 @@ install:
 
 test:
 	$(PYTHON) -m pytest
-
-test-gui:
-	$(PYTHON) -m pytest -m gui
 
 coverage:
 	$(PYTHON) -m pytest --cov=src/miningcat --cov-report=xml --cov-report=term-missing

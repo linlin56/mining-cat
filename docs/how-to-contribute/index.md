@@ -26,8 +26,7 @@ The [Project structure](project-structure.md) page gives an overview of the code
 Tests use [pytest](https://docs.pytest.org/) and live in `src/tests/`, in folders that mirror the layers of the package: `tests/domain/`, `tests/application/`, `tests/infrastructure/` and `tests/interfaces/`. Test files are named after what they test, as `<module>.test.py` (e.g. `tests/application/converter/ebook_extraction.test.py` tests `application/converter/steps/ebook_extraction.py`).
 
 ```bash
-make test                              # run the tests (without the ones opening windows)
-make test-gui                          # run the tests opening windows (the area picker of `game setup`)
+make test                              # run the tests
 make coverage                          # run the tests with a coverage report
 .venv/bin/python -m pytest src/tests/application/converter/ebook_extraction.test.py -k chapters   # run a subset
 ```
@@ -39,11 +38,10 @@ A few rules:
 - Shared mock paths and `skipif` markers are declared in `src/tests/shared.py`, with test helpers (`redirect_path()`, `FakeOpenCc`).
 - **Never touch the user's files.** `conftest.py` points every folder of `paths` (sources/, output/, library/ and its database) to a temporary folder in every test: use `paths.srt`, `paths.ebook`... rather than building paths yourself.
 - **The layers are checked**: `architecture.test.py` fails when a module imports a layer above its own (see [Project structure](project-structure.md)).
-- **Mark tests that create Tk windows** with `pytestmark = pytest.mark.gui`: they're excluded from `make test` (so it never opens windows), and run with `make test-gui`, windows hidden.
 
 ### Coverage
 
-The CI fails if coverage drops below **80%**. The rules are in `.coveragerc`: the Tk area picker of `game setup` (`src/miningcat/interfaces/cli/area_picker.py`) is excluded from the coverage calculation, but its tests must still pass: run `make test-gui` before opening a pull request that touches it.
+The CI fails if coverage drops below **80%**. The rules are in `.coveragerc`.
 PR with a failed CI will not be merged.
 
 ## Continuous integration

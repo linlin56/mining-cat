@@ -137,7 +137,7 @@ The selection is saved in `sources/game_ocr.json`, so `setup` is only needed onc
 
 ### `game setup`
 
-Asks for the window (GNOME's sharing dialog on Linux, a numbered list on macOS), then opens two windows to draw the screenshot area and the text area.
+Asks for the window (GNOME's sharing dialog on Linux, a numbered list on macOS), then opens two pages in your browser, one after the other, to draw the screenshot area and the text area.
 
 | Option         | Description                                                                                     |
 | -------------- | ----------------------------------------------------------------------------------------------- |

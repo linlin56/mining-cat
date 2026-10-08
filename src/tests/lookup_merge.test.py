@@ -3,7 +3,7 @@ import zipfile
 
 import pytest
 
-from mining import dictionaries, lookup
+from miningcat.application.mining import dictionaries, lookup
 from miningcat.domain.text.readings import reading_key
 
 
@@ -102,8 +102,8 @@ def test_script_g_reading_is_the_same_pronunciation():
 
 
 def test_examples_are_in_the_script_learnt(tmp_path):
-    from mining import words
-    words.set_chinese_script_preference("zh", "traditional")
+    from miningcat.application.mining import preferences
+    preferences.set_chinese_script_preference("zh", "traditional")
     make_dictionary(tmp_path / "a.zip", "Dict A", [term("除非", "chúfēi", ["1。unless\n例: 除非业务好转。\nUnless business improves."])])
     [entry] = [e for e in lookup.lookup("zh", "除非")["entries"] if e["expression"] == "除非"]
     assert entry["definitions"][0]["glossary"][0]["examples"][0]["text"] == "除非業務好轉。"

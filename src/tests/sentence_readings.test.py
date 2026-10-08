@@ -3,8 +3,10 @@ import zipfile
 
 import pytest
 
-from mining import anki, dictionaries, segment
-from mining.sentence_readings import annotate, word_field
+from miningcat.application import anki
+from miningcat.application.mining import dictionaries, segmentation
+from miningcat.application.mining.sentence_readings import annotate
+from miningcat.domain.sentence_readings.card_sentence import word_field
 from miningcat.domain.text.zhuyin import numbered_pinyin
 
 
@@ -69,9 +71,9 @@ def cedict(tmp_path):
         z.writestr("term_bank_1.json", json.dumps(
             [[e, r, "", "", 0, cedict_entry(s), 0, ""] for e, r, s in TERMS], ensure_ascii=False))
     dictionaries.import_dictionary(path, "zh")
-    segment.clear_cache()
+    segmentation.clear_cache()
     yield
-    segment.clear_cache()
+    segmentation.clear_cache()
 
 
 @pytest.mark.parametrize("reading, numbered", [

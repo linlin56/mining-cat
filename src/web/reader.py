@@ -103,7 +103,7 @@ def api_prefs(book_id: str):
 # Share of the book's words the user knows, and its recommended (i+1) sentences (see mining/comprehension.py).
 @bp.get("/api/books/<book_id>/comprehension")
 def api_comprehension(book_id: str):
-    from mining import comprehension
+    from miningcat.application.mining import comprehension
 
     meta = books.get_meta(book_id)
     language = _language_of(book_id, meta["language"])

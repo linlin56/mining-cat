@@ -1,20 +1,23 @@
 import io
 import base64
 import json
-import sys
 import types
 import zipfile
 
 import pytest
 
-from mining import anki, db, dictionaries, lookup, words
+from miningcat.application import anki
+from miningcat.application.mining import dictionaries, lookup, preferences, words
+from miningcat.domain.cards.field_text import plain_field_text
+from miningcat.domain.dictionary.deinflection import transformer_for
 from miningcat.domain.dictionary.language_guess import guess_dictionary_language
 from miningcat.domain.languages import language_key
 from miningcat.domain.text import chinese_script
 from miningcat.domain.text.chinese_script import ChineseScripts, OpenCcConverter
 from miningcat.domain.text.variants import text_variants
+from miningcat.infrastructure.persistence.database import Database
+from miningcat.infrastructure.persistence.settings_store import settings
 from shared import FakeOpenCc
-from mining.deinflect import transformer_for
 
 pytest.importorskip("flask")
 
@@ -28,12 +31,8 @@ S2T = {v: k for k, v in T2S.items()}
 
 
 @pytest.fixture(autouse=True)
-def database(tmp_path, monkeypatch):
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "library" / "miningcat.db")
-    db.reset_cache()
+def fake_opencc(monkeypatch):
     monkeypatch.setattr(chinese_script, "chinese_scripts", ChineseScripts(FakeOpenCc(T2S)))
-    yield
-    db.reset_cache()
 
 
 def make_dictionary(path, title, terms, meta=None, tags=None, index_extra=None, images=None):
@@ -132,11 +131,11 @@ def test_script_detection_without_tables():
 
 
 def test_words_in_both_scripts_keep_their_form():
-    words.set_chinese_script_preference("zh", "traditional")
+    preferences.set_chinese_script_preference("zh", "traditional")
     assert words.preferred_form("zh", "说话") == "說話"
     assert words.preferred_form("zh", "我們") == "我們"
     assert words.preferred_form("zh", "天氣") == "天氣"
-    words.set_chinese_script_preference("zh", "simplified")
+    preferences.set_chinese_script_preference("zh", "simplified")
     assert words.preferred_form("zh", "說話") == "说话"
     assert words.preferred_form("zh", "天") == "天"
 
@@ -275,12 +274,12 @@ def test_other_script_is_linked():
 
 def test_script_preference(zh_dict):
     assert words.preferred_form("zh", "说话") == "说话"
-    words.set_chinese_script_preference("zh", "traditional")
+    preferences.set_chinese_script_preference("zh", "traditional")
     assert words.preferred_form("zh", "说话") == "說話"
     entry = next(e for e in lookup.lookup("zh", "说话")["entries"] if e["expression"] == "说话")
     assert entry["form"] == "說話"
     with pytest.raises(words.WordError):
-        words.set_chinese_script_preference("ja", "traditional")
+        preferences.set_chinese_script_preference("ja", "traditional")
 
 
 def test_anki_state_never_overrides_manual_known():
@@ -404,9 +403,9 @@ def test_sync_sends_pending_cards_and_reads_statuses(fake_anki):
 
 
 def test_plain_field_values():
-    assert anki._plain("<b>漢字</b>&nbsp;") == "漢字"
-    assert anki._plain("漢字[かんじ]") == "漢字"
-    assert anki._plain("[sound:a.mp3]word") == "word"
+    assert plain_field_text("<b>漢字</b>&nbsp;") == "漢字"
+    assert plain_field_text("漢字[かんじ]") == "漢字"
+    assert plain_field_text("[sound:a.mp3]word") == "word"
 
 
 def test_config_validation():
@@ -486,18 +485,18 @@ def test_http_dictionary_import(client, tmp_path):
 
 # ---------------------------------------------------------------- word colours (segmentation)
 
-from mining import segment
+from miningcat.application.mining import segmentation
 
 
 @pytest.fixture(autouse=True)
 def _fresh_segmentation():
-    segment.clear_cache()
+    segmentation.clear_cache()
     yield
-    segment.clear_cache()
+    segmentation.clear_cache()
 
 
 def words_of(language, text):
-    return [(text[start:start + length], headword) for start, length, headword in segment.segment(language, text)]
+    return [(text[start:start + length], headword) for start, length, headword in segmentation.segment(language, text)]
 
 
 def test_chinese_longest_words(zh_dict):
@@ -546,9 +545,9 @@ def test_segmentation_follows_dictionary_changes(tmp_path, zh_dict):
 
 
 def test_colours_use_the_saved_form(zh_dict):
-    words.set_chinese_script_preference("zh", "traditional")
+    preferences.set_chinese_script_preference("zh", "traditional")
     words.set_status("zh", "說話", "", "learning")
-    result = segment.colour("zh", "说话，说话")
+    result = segmentation.colour("zh", "说话，说话")
     assert result["words"] == [{"headword": "说话", "form": "說話", "status": "learning", "rank": None}]
     assert result["tokens"] == [[0, 2, 0], [3, 2, 0]]
 
@@ -641,11 +640,11 @@ def test_every_syllable_both_ways(tone):
 
 
 def test_readings_shown_in_the_chosen_system():
-    words.set_reading_system("zh", "pinyin")
-    assert words.display_reading("zh", "行", "ㄒㄧㄥˊ") == "xíng"  # a zhuyin dictionary, read in pinyin
-    words.set_reading_system("zh", "zhuyin")
-    assert words.display_reading("zh", "行", "xing2") == "ㄒㄧㄥˊ"
-    assert words.display_reading("zh", "行", "ㄒㄧㄥˊ") == "ㄒㄧㄥˊ"
+    preferences.set_reading_system("zh", "pinyin")
+    assert words.display_reading("zh", "ㄒㄧㄥˊ") == "xíng"  # a zhuyin dictionary, read in pinyin
+    preferences.set_reading_system("zh", "zhuyin")
+    assert words.display_reading("zh", "xing2") == "ㄒㄧㄥˊ"
+    assert words.display_reading("zh", "ㄒㄧㄥˊ") == "ㄒㄧㄥˊ"
 
 
 def test_zhuyin_field_of_a_card():
@@ -753,7 +752,7 @@ def test_old_databases_get_new_columns(tmp_path, monkeypatch):
                  " imported REAL NOT NULL)")
     conn.commit()
     conn.close()
-    with db.session(path) as conn:
+    with Database(lambda: path).session() as conn:
         assert "kanji_count" in {row[1] for row in conn.execute("PRAGMA table_info(dictionaries)")}
 
 
@@ -778,13 +777,14 @@ def test_pitch_and_ipa_in_lookups(tmp_path, ja_dict):
 
 import urllib.parse
 
-from mining import word_audio
+from miningcat.application.mining import translation, word_audio
+from miningcat.infrastructure.word_audio.japanesepod101 import JapanesePod101Source
+from miningcat.infrastructure.word_audio.wikimedia import is_language_file
 
 
 @pytest.fixture
 def fake_web(monkeypatch):
     """Answers word_audio's requests from a table: {url prefix: bytes or dict}."""
-    word_audio._cache.clear()
     answers = {}
 
     def get(url, params=None):
@@ -796,23 +796,19 @@ def fake_web(monkeypatch):
                 return answer if isinstance(answer, bytes) else json.dumps(answer).encode()
         return json.dumps({}).encode()
 
-    monkeypatch.setattr(word_audio, "_get", get)
-    yield answers
-    word_audio._cache.clear()
+    monkeypatch.setattr(word_audio, "finder", word_audio.WordAudioFinder(get))
+    return answers
 
 
-def test_japanesepod101_skips_its_missing_clip(fake_web):
+def test_japanesepod101_skips_its_missing_clip(fake_web, monkeypatch):
     import hashlib
     fake_web["languagepod101"] = b"real audio"
     assert word_audio.sources("ja", "食べる", "たべる")[0]["name"] == "JapanesePod101"
-    word_audio._cache.clear()
     missing = b"missing clip"
-    word_audio.JPOD_MISSING_SHA256, saved = hashlib.sha256(missing).hexdigest(), word_audio.JPOD_MISSING_SHA256
-    try:
-        fake_web["languagepod101"] = missing
-        assert word_audio.sources("ja", "食べる", "たべる") == []
-    finally:
-        word_audio.JPOD_MISSING_SHA256 = saved
+    monkeypatch.setattr(JapanesePod101Source, "MISSING_SHA256", hashlib.sha256(missing).hexdigest())
+    fake_web["languagepod101"] = missing
+    word_audio.finder.clear_cache()
+    assert word_audio.sources("ja", "食べる", "たべる") == []
 
 
 def test_wiktionary_and_lingua_libre(fake_web):
@@ -833,9 +829,9 @@ def test_wiktionary_and_lingua_libre(fake_web):
 
 
 def test_mandarin_audio_excludes_other_chinese_languages():
-    assert word_audio._language_file("File:Zh-xièxie.ogg", "zh")
-    assert not word_audio._language_file("File:Zh-wuu-謝謝.opus", "zh")
-    assert word_audio._language_file("File:Zh-yue-你好.opus", "yue")
+    assert is_language_file("File:Zh-xièxie.ogg", "zh")
+    assert not is_language_file("File:Zh-wuu-謝謝.opus", "zh")
+    assert is_language_file("File:Zh-yue-你好.opus", "yue")
 
 
 def test_offline_audio_is_retried(fake_web):
@@ -843,7 +839,7 @@ def test_offline_audio_is_retried(fake_web):
     fake_web["wiktionary"] = urllib.error.URLError("offline")
     fake_web["commons"] = urllib.error.URLError("offline")
     assert word_audio.sources("ko", "먹다") == []
-    assert ("ko", "먹다", "") not in word_audio._cache
+    assert not word_audio.finder.is_cached("ko", "먹다")
 
 
 def test_http_word_audio(client, monkeypatch):
@@ -853,7 +849,7 @@ def test_http_word_audio(client, monkeypatch):
 
 
 def test_tts_voices_by_language():
-    from mining import sentence_tts
+    from miningcat.application.mining import sentence_tts
     zh = sentence_tts.voices("zh")
     assert zh["default"] == "zh-TW-HsiaoChenNeural" and "zh-CN-XiaoxiaoNeural" in [v["id"] for v in zh["voices"]]
     assert [v["id"] for v in sentence_tts.voices("yue")["voices"]][0].startswith("zh-HK-")
@@ -861,11 +857,9 @@ def test_tts_voices_by_language():
 
 
 def test_http_sentence_tts(client, monkeypatch):
-    from mining import sentence_tts
+    from miningcat.application.mining import sentence_tts
 
-    async def fake_stream(text, voice):
-        return f"{voice}:{text}".encode()
-    monkeypatch.setattr(sentence_tts, "_stream", fake_stream)
+    monkeypatch.setattr(sentence_tts, "tts", types.SimpleNamespace(synthesize=lambda text, voice: f"{voice}:{text}".encode()))
     assert client.get("/api/tts/voices?language=ja").get_json()["default"] == "ja-JP-NanamiNeural"
     res = client.post("/api/tts", json={"language": "zh", "text": " 位處大陸\n中央 ", "voice": "zh-TW-YunJheNeural"}, headers=HEADERS)
     assert res.status_code == 200
@@ -880,12 +874,12 @@ def test_default_tag_is_mining_cat():
     # cards set up with the old default tag get the new one
     config = anki.get_config()
     config["notes"]["zh"]["tags"] = "miningcat"
-    db.set_setting("anki", config)
+    settings.set("anki", config)
     assert anki.get_config()["notes"]["zh"]["tags"] == "mining-cat"
 
 
 def test_sentence_voice_from_settings(client):
-    from mining import sentence_tts
+    from miningcat.application.mining import sentence_tts
     assert sentence_tts.default_voice("zh") == "zh-TW-HsiaoChenNeural"
     anki.save_config({"tts_voices": {"zh": "zh-CN-YunxiNeural", "ja": ""}})
     assert sentence_tts.default_voice("zh") == "zh-CN-YunxiNeural"
@@ -895,35 +889,62 @@ def test_sentence_voice_from_settings(client):
     assert client.get("/api/tts/voices?language=ja").get_json()["chosen"] == ""
 
 
+class FakeArgos:
+    """Argos Translate with a few models to download, translating "text" to "[source>target] text"."""
+
+    def __init__(self, installed: set):
+        self.models = {("zh", "en"), ("zt", "en"), ("en", "fr"), ("ja", "en")}
+        self.installed_pairs = set(installed)
+        self.downloads = []
+
+    def available(self) -> bool:
+        return True
+
+    def require(self) -> None:
+        pass
+
+    def has_model(self, source, target) -> bool:
+        return (source, target) in self.models
+
+    def installed(self) -> set:
+        return set(self.installed_pairs)
+
+    def installed_models(self) -> list:
+        return []
+
+    def install(self, source, target, progress=None) -> None:
+        self.downloads.append((source, target))
+        self.installed_pairs.add((source, target))
+
+    def uninstall(self, source, target) -> None:
+        if (source, target) not in self.installed_pairs:
+            raise translation.TranslateError("This model isn't installed.")
+        self.installed_pairs.remove((source, target))
+
+    def translate(self, text, source, target) -> str:
+        return f"[{source}>{target}] {text}"
+
+
 @pytest.fixture
 def fake_argos(monkeypatch):
-    from mining import translate
-    installed, downloads = {("zh", "en")}, []
-    monkeypatch.setattr(translate, "_index", [{"from_code": a, "to_code": b, "code": f"translate-{a}_{b}", "links": [f"https://x/{a}_{b}"]}
-                                              for a, b in [("zh", "en"), ("zt", "en"), ("en", "fr"), ("ja", "en")]])
-    monkeypatch.setattr(translate, "_installed", lambda: set(installed))
-    monkeypatch.setattr(translate, "_install", lambda a, b, progress=None: (downloads.append((a, b)), installed.add((a, b))))
-    fake = types.ModuleType("argostranslate.translate")
-    fake.translate = lambda text, source, target: f"[{source}>{target}] {text}"
-    monkeypatch.setitem(sys.modules, "argostranslate", types.SimpleNamespace(translate=fake))
-    monkeypatch.setitem(sys.modules, "argostranslate.translate", fake)
-    return downloads
+    argos = FakeArgos(installed={("zh", "en")})
+    monkeypatch.setattr(translation, "argos", argos)
+    return argos.downloads
 
 
 def test_sentence_translation(fake_argos):
-    from mining import translate
-    assert translate.translate("zh", " 我们去\n公园 ") == "[zh>en] 我们去 公园"
-    assert translate.translate("zh", "我們去公園") == "[zt>en] 我們去公園"  # traditional characters
+    assert translation.translate("zh", " 我们去\n公园 ") == "[zh>en] 我们去 公园"
+    assert translation.translate("zh", "我們去公園") == "[zt>en] 我們去公園"  # traditional characters
     assert fake_argos == [("zt", "en")]
     anki.save_config({"translation_language": "fr"})
-    assert translate.translate("ja", "公園") == "[ja>fr] 公園"
+    assert translation.translate("ja", "公園") == "[ja>fr] 公園"
     assert fake_argos[1:] == [("ja", "en"), ("en", "fr")]  # through English
-    assert translate.translate("fr", "le parc") is None  # already in French
+    assert translation.translate("fr", "le parc") is None  # already in French
     anki.save_config({"translation_language": ""})
-    assert translate.translate("zh", "公园") is None
-    with pytest.raises(translate.TranslateError):
+    assert translation.translate("zh", "公园") is None
+    with pytest.raises(translation.TranslateError):
         anki.save_config({"translation_language": "en"})
-        translate.translate("yue", "公園")
+        translation.translate("yue", "公園")
 
 
 def test_http_translate(client, fake_argos):
@@ -958,18 +979,16 @@ def test_script_settings_only_for_studied_languages(client, zh_dict):
 
 
 def test_translation_models(client, fake_argos, monkeypatch):
-    from mining import translate
-    monkeypatch.setattr(translate, "_job", {"state": "idle", "language": "", "done": 0, "total": 0, "error": None})
-    monkeypatch.setattr(translate.threading, "Thread", lambda target, **kw: types.SimpleNamespace(start=target))
-    fake_package = types.SimpleNamespace(get_installed_packages=lambda: [], uninstall=lambda p: None)
-    sys.modules["argostranslate"].package = fake_package
-    monkeypatch.setitem(sys.modules, "argostranslate.package", fake_package)
-    words.set_chinese_script_preference("zh", "traditional")
+    monkeypatch.setattr(translation, "_download", translation.ModelDownload())
+    monkeypatch.setattr(translation.threading, "Thread",
+                        lambda target, args=(), **kw: types.SimpleNamespace(start=lambda: target(*args)))
+    preferences.set_chinese_script_preference("zh", "traditional")
     res = client.post("/api/translate/models", json={"language": "zh"}, headers=HEADERS).get_json()
     assert res["job"]["state"] == "done", res
     assert fake_argos == [("zt", "en")]  # only the script the user reads
-    words.set_chinese_script_preference("zh", "both")
-    translate.start_download("ja")
+    preferences.set_chinese_script_preference("zh", "both")
+    translation.start_download("ja")
     assert fake_argos[1:] == [("ja", "en")]
     assert client.post("/api/translate/models", json={"language": "en"}, headers=HEADERS).status_code == 400
-    assert client.post("/api/translate/models/zt/en/delete", json={}, headers=HEADERS).status_code == 400  # not installed here
+    assert client.post("/api/translate/models/ko/en/delete", json={}, headers=HEADERS).status_code == 400  # not installed
+    assert client.post("/api/translate/models/zt/en/delete", json={}, headers=HEADERS).status_code == 200

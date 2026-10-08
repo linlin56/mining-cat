@@ -1,4 +1,5 @@
-from mining.glossary import meaning_keys, new_senses, split_senses, structure
+from miningcat.domain.dictionary.glossary import split_senses, structure
+from miningcat.domain.dictionary.meanings import meaning_keys, new_senses
 
 
 def test_plain_gloss_is_kept():

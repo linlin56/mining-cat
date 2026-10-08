@@ -4,7 +4,7 @@ import zipfile
 
 import pytest
 
-from mining import comprehension, dictionaries, segment, words
+from miningcat.application.mining import comprehension, dictionaries, preferences, segmentation, words
 
 HEADERS = {"X-MiningCat": "1"}
 
@@ -17,7 +17,7 @@ def en_dict(tmp_path):
     with zipfile.ZipFile(path, "w") as z:
         z.writestr("index.json", json.dumps({"title": "Test English", "revision": "1", "format": 3}))
         z.writestr("term_bank_1.json", json.dumps(EN_TERMS))
-    segment.clear_cache()
+    segmentation.clear_cache()
     return dictionaries.import_dictionary(path, "en")
 
 
@@ -59,7 +59,7 @@ def test_lines_are_whole_sentences():
 
 
 def test_colour_gives_the_sentences():
-    data = segment.colour("en", "The cat. A dog.")
+    data = segmentation.colour("en", "The cat. A dog.")
     assert data["sentences"] == [[0, 8], [9, 15]]
 
 

@@ -6,15 +6,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
-# Never read or write the user's real video game OCR selection (sources/game_ocr.json) from tests.
-@pytest.fixture(autouse=True)
-def _isolated_game_ocr_settings(tmp_path, monkeypatch):
-    import game_ocr.settings
-    path = tmp_path / "game_ocr.json"
-    monkeypatch.setattr(game_ocr.settings, "GAME_OCR_SETTINGS", path)
-    return path
-
-
 # Never read or write the user's files (sources/, output/, library/ and its database): everything goes to a
 # temporary folder. Every page reads the language studied from the database.
 @pytest.fixture(autouse=True)

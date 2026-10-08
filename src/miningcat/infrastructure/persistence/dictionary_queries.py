@@ -3,9 +3,6 @@ import sqlite3
 
 from miningcat.domain.text.scripts import HAN_CHARACTER
 
-
-
-
 # Character details kept for the popup: the rest of a kanji dictionary's stats are reference numbers.
 _KANJI_STATS = ("strokes", "grade", "jlpt", "freq")
 

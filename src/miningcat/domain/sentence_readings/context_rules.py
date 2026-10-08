@@ -3,17 +3,13 @@ from miningcat.domain.text.scripts import HAN_CHARACTER
 
 PRONOUNS = frozenset("我 你 妳 您 他 她 它 牠 我們 你們 妳們 他們 她們 它們 咱 咱們 大家 自己 誰 人家 別人 這 那".split())
 
-
 # Before 得, these make it děi ("must"): 還得去, 就得走.
 _DEI_AFTER = frozenset("就 還 也 都 總 可 非 只 真 又 必 才 先 一定 還是 總是 恐怕 可能 大概 也許".split())
 
-
 _NUMERALS = frozenset("一 二 三 四 五 六 七 八 九 十 兩 幾 每 半 這 那 哪 好幾".split())
-
 
 # Verbs after which 著 is zháo (reached the result): 睡著, 找著, 猜著.
 _ZHAO_VERBS = frozenset("睡 找 猜 點 燒 碰 見 摸 夠 搆 撈 逮".split())
-
 
 # The reading of characters said alone, when no rule decides and the dictionary can't tell.
 USUAL = {

@@ -10,78 +10,50 @@ You can add a language you don't speak, but please ask a native speaker to doubl
 
 ## 1. Define the language
 
-**`src/language.py`**: add a member to the `Language` enum.
+Everything MiningCat knows about a language variant is in its **profile**, a member of the `Language` enum in `src/miningcat/domain/languages/language.py`, built with a `LanguageProfileBuilder`. Only state what differs from the defaults:
 
 ```python
-YOUR_LANGUAGE = LangConfig(
-    # Displayed in the GUI dropdown. Add a region for languages with several standards
+YOUR_LANGUAGE = (
+    # Displayed in the dropdowns. Add a region for languages with several standards
     # (e.g. 'Mandarin - Taiwan (Traditional)').
-    label='Your Language - Region',
-    # Whisper language code (e.g. 'ko', 'fr').
-    whisper_code='xx',
-    # ISO 639-2 three-letter code, used in the MP4 subtitle track metadata.
-    iso639_2='xxx',
-    # Sentence-closing punctuation.
-    closing_punct=frozenset('.?!…'),
-    # Sentence-opening punctuation (opening quotes, brackets...).
-    opening_punct=frozenset('“'),
-    # Regex matching vocabulary annotations to strip from the ebook text, r'' if none.
-    vocab_annotation_pattern=r'',
-    # Language code for Apple Vision OCR (BCP-47, e.g. 'ko-KR').
-    ocr_lang_apple='xx-XX',
-    # Language code for EasyOCR (e.g. 'ko', 'ch_tra').
-    ocr_lang_easyocr='xx',
+    LanguageProfileBuilder("Your Language - Region")
+    # The study language it belongs to (see study_language.py), its Whisper code, and its ISO 639-2 code.
+    .codes(key="xx", whisper="xx", iso639_2="xxx")
+    # Sentence-closing and sentence-opening punctuation (opening quotes, brackets...).
+    .punctuation(closing=".?!…", opening="“")
+    # Language codes of Apple Vision OCR (BCP-47) and EasyOCR. Non-Latin scripts also give their script.
+    .ocr(apple="xx-XX", easyocr="xx", script=scripts.LATIN_LETTER)
+    # edge-tts voices, (label, voice id), the default one first.
+    .voices(
+        ("VoiceName - Language (Region), female", "xx-REGION-VoiceNameNeural"),
+        ("VoiceName - Language (Region), male", "xx-REGION-VoiceNameNeural"),
+    )
+    .build()
 )
 ```
 
-What each field is used for:
+What each step of the builder is for:
 
-| Field                      | Used for                                                                                                                                                                 |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `whisper_code`             | Transcription and alignment. See Whisper's list of supported languages.                                                                                                  |
-| `iso639_2`                 | Subtitle language metadata in the MP4 files.                                                                                                                             |
-| `closing_punct`            | Whisper sometimes puts sentence-final punctuation at the start of the next segment: `align.fix_leading_punct()` moves it back.                                             |
-| `opening_punct`            | Avoids orphaned opening marks at segment boundaries (`align.fix_trailing_opening_punct()`, `align.restore_opening_punct()`). Use `frozenset('')` if your language has none. |
-| `vocab_annotation_pattern` | Glossary or ruby annotations embedded in ebooks, stripped before alignment (e.g. `\[\d+\]` for Chinese, `［＃.+?］` for Japanese Aozora Bunko). Use `r''` if unused.          |
-| `ocr_lang_apple`           | OCR on macOS ([Apple Vision supported languages](https://developer.apple.com/documentation/vision/vnrecognizetextrequest)).                                                |
-| `ocr_lang_easyocr`         | OCR on other platforms ([EasyOCR supported languages](https://www.jaided.ai/easyocr/)).                                                                                   |
+| Step                        | Default                       | Used for                                                                                                                                                    |
+| --------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `codes(key, whisper, iso639_2, tag)` | required             | `key`: the study language (dictionaries, words). `whisper`: transcription and alignment. `iso639_2`: subtitle metadata in the MP4 files. `tag`: the BCP-47 tag of its texts, when it isn't the Apple OCR code (Cantonese is `yue-Hant`). |
+| `punctuation(closing, opening)` | none                      | Whisper sometimes puts sentence-final punctuation at the start of the next segment, and drops opening marks (`domain/subtitles/punctuation.py`).               |
+| `vocab_annotations(pattern)` | none                         | Glossary or ruby annotations embedded in ebooks, stripped before alignment (e.g. `\[\d+\]` for Chinese, `［＃.+?］` for Japanese Aozora Bunko).               |
+| `ocr(apple, easyocr, script)` | required (script: Latin)   | OCR on macOS ([Apple Vision languages](https://developer.apple.com/documentation/vision/vnrecognizetextrequest)) and elsewhere ([EasyOCR languages](https://www.jaided.ai/easyocr/)). **Non-Latin scripts must give their `script`** (`scripts.CJK`, `scripts.HANGUL`...): OCR text without a character of the script is rejected as noise. |
+| `voices(...)`               | none                          | The "Generate audio" mode and the sentence audio of cards. List them with `edge-tts --list-voices \| grep xx-`.                                             |
+| `youtube_captions(*codes)`  | the Whisper code              | YouTube caption codes to try, in order of preference.                                                                                                       |
+| `word_segmentation(...)`    | `SPACES`                      | Languages written without spaces need a tokenizer for word frequency lists (`CHINESE`: jieba, `JAPANESE`: janome).                                           |
+| `character_list(tag, pattern)` | none                       | CJK languages only: enables the Kanji Grid character list.                                                                                                  |
+| `chinese_script(script)`    | none                          | Chinese variants only: their OpenCC script (`s`, `tw`, `hk`), for the simplified / traditional conversions (`domain/text/chinese_conversion.py`).            |
+| `large_whisper_models_only()` | no                          | Languages Whisper only knows with its large-v3 and turbo models (like Cantonese): the GUI only offers **Large** and **Turbo**.                               |
 
 Verify the punctuation sets against real text samples: quotes differ a lot between languages (`« »`, `„ "`, `「 」`...).
 
-Nothing else is needed in `language.py`: `all_labels()`, `ids()` and `from_id()` are derived from the enum. The CLI `--language` choices and the GUI dropdown pick up the new member automatically.
+Nothing else is needed: the CLI `--language` choices, the dropdowns, the voices, the YouTube captions and the OCR all read the profile.
 
-## 2. Add TTS voices
+## 2. A new study language
 
-**`src/gui_components/constants.py`**: add the language's edge-tts voices to `_VOICES_FOR_LANGUAGE`:
-
-```python
-Language.YOUR_LANGUAGE: [
-    ("VoiceName - Language (Region), female", "xx-REGION-VoiceNameNeural"),
-    ("VoiceName - Language (Region), male",   "xx-REGION-VoiceNameNeural"),
-],
-```
-
-and pick the default one in `DEFAULT_VOICE_FOR_LANGUAGE`:
-
-```python
-Language.YOUR_LANGUAGE: "VoiceName - Language (Region), female",
-```
-
-List the available voices with `edge-tts --list-voices | grep xx-`.
-
-If Whisper only supports the language with its large models (like Cantonese), add its `whisper_code` to `LARGE_ONLY_WHISPER_CODES` in the same file, so that the GUI only offers **Large** and **Turbo**.
-
-## 3. Language-specific tables
-
-Depending on the language, update the following tables (all keyed by `Language`):
-
-| File                                        | Table                   | When                                                                                                    |
-| ------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------- |
-| `src/video_handlers/youtube.py`             | `LANG_CODES`            | Always: YouTube caption codes to try, in order of preference.                                            |
-| `src/ocr_mining/dedup.py`                   | `_PATTERN_FOR_LANGUAGE` | **Required for non-Latin scripts**, otherwise all OCR text is rejected as implausible.                   |
-| `src/frequency/word_frequency.py`           | `_SEGMENTERS`           | Languages written without spaces between words need a tokenizer (like jieba for Chinese).               |
-| `src/frequency/character_frequency.py`      | `_CHAR_PATTERN`, `_LANG_CODE` | Only for CJK languages, to enable the Kanji Grid character list.                                         |
-| `src/chinese_converter.py`                  | `SCRIPT_FOR_LANGUAGE`, `_CONFIGS`, `_PUNCT_MAP` | Only for Chinese variants: OpenCC script and conversion paths.                   |
+If the variant belongs to a language MiningCat doesn't know yet (dictionaries, saved words, cards), add it to `STUDY_LANGUAGES` in `src/miningcat/domain/languages/study_language.py`, with its English and native names. A language written without spaces between words (`without_spaces=True`) is looked up character by character.
 
 ## 4. Tests
 
@@ -111,15 +83,15 @@ skip_if_no_txt_xx  = pytest.mark.skipif(not MOCK_TXT_XX.exists(),  reason="tests
 skip_if_no_srt_xx  = pytest.mark.skipif(not MOCK_SRT_XX.exists(),  reason="tests/mock/srt_xx.srt not available")
 ```
 
-**`src/tests/language.test.py`**:
+**`src/tests/domain/languages.test.py`**:
 
 - add `vocab_annotation_pattern` cases (true positives and false positives);
 - add the `iso639_2` value in `test_iso639_2_values()`;
 - add `Language.from_id("your_language")` cases in `test_from_id_case_insensitive()`.
 
-**`src/tests/epub.test.py`**: add the EPUB and TXT parametrize entries (follow the `zh-TW`, `zh-CN`, `ja` pattern) with a matching `EXPECTED_LINES_XX` list, and add the SRT content and timecode tests.
+**`src/tests/application/converter/ebook_extraction.test.py`**: add the EPUB and TXT parametrize entries (follow the `zh-TW`, `zh-CN`, `ja` pattern) with a matching `EXPECTED_LINES_XX` list, and add the SRT content and timecode tests.
 
-If you updated the tables of step 3, add the matching cases in the related test files (`ocr_mining_dedup.test.py`, `frequency.test.py`...).
+If the profile uses a script, a segmentation or a character list, add the matching cases in the related test files (`domain/ocr/similarity.test.py`, `domain/frequency_lists.test.py`...).
 
 ## 5. Documentation
 
@@ -127,16 +99,15 @@ Add the language to the list on the [home page](../index.md), to the [language i
 
 ## Checklist
 
-- [ ] New `Language` member in `src/language.py`
-- [ ] `closing_punct` and `opening_punct` checked against real text samples
-- [ ] `vocab_annotation_pattern` tested (or confirmed unused)
-- [ ] OCR codes set (`ocr_lang_apple`, `ocr_lang_easyocr`)
-- [ ] edge-tts voices added in `src/gui_components/constants.py` (or documented as unavailable)
-- [ ] YouTube caption codes added in `src/video_handlers/youtube.py`
-- [ ] OCR script pattern added in `src/ocr_mining/dedup.py` (non-Latin scripts)
-- [ ] Frequency and Chinese conversion tables updated if relevant
+- [ ] New `Language` member in `src/miningcat/domain/languages/language.py`
+- [ ] New study language in `src/miningcat/domain/languages/study_language.py` (if needed)
+- [ ] Punctuation checked against real text samples
+- [ ] Vocabulary annotations tested (or confirmed unused)
+- [ ] OCR codes set, and the script for non-Latin languages
+- [ ] edge-tts voices added (or documented as unavailable)
+- [ ] YouTube caption codes, word segmentation, character list and Chinese script set if relevant
 - [ ] Mock files created and documented in `src/tests/mock/`
 - [ ] Constants and skip markers added in `src/tests/shared.py`
-- [ ] Test cases added in `src/tests/language.test.py` and `src/tests/epub.test.py`
+- [ ] Test cases added in `src/tests/domain/languages.test.py` and `src/tests/application/converter/ebook_extraction.test.py`
 - [ ] Docs and README updated
 - [ ] `make test` passes

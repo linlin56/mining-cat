@@ -1,5 +1,6 @@
-import pytest
 from pathlib import Path
+
+import pytest
 
 MOCK_DIR = Path(__file__).parent / "mock"
 MOCK_EPUB_TW = MOCK_DIR / "book_zh-TW.epub"
@@ -232,3 +233,10 @@ class FakeOpenCc:
 
     def tables(self) -> tuple[set[str], set[str]]:
         return self._tables
+
+
+def redirect_path(monkeypatch, name: str, path) -> None:
+    """Points one folder of ProjectPaths (paths.srt, paths.temp...) to a folder of the test."""
+    from miningcat.config.paths import ProjectPaths
+
+    monkeypatch.setattr(ProjectPaths, name, property(lambda self: path))

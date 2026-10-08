@@ -1,4 +1,4 @@
-.PHONY: help gui reader player gui-tk install test test-gui coverage audio epub align export chapter1 chapter run clean video game-setup game
+.PHONY: help gui reader player install test test-gui coverage audio epub align export chapter1 chapter run clean video game-setup game
 
 # Defaults
 CHAPTER  ?= 1
@@ -21,25 +21,23 @@ ifeq ($(wildcard $(_VENV_PYTHON)),)
 else
   PYTHON ?= $(_VENV_PYTHON)
 endif
-MAIN     := $(PYTHON) src/main.py
+# The package lives in src/: `python -m miningcat` runs the CLI, `python -m miningcat.interfaces.web` the web GUI.
+MAIN     := PYTHONPATH=src $(PYTHON) -m miningcat
+WEB      := PYTHONPATH=src $(PYTHON) -m miningcat.interfaces.web
 
 PORT     ?= 5050
 
 # Web GUI (opens in your browser)
 gui:
-	$(PYTHON) src/web_gui.py --port $(PORT)
+	$(WEB) --port $(PORT)
 
 # Ebook reader (same server, opens the library)
 reader:
-	$(PYTHON) src/web_gui.py --port $(PORT) --reader
+	$(WEB) --port $(PORT) --reader
 
 # Video player (same server, opens the video library)
 player:
-	$(PYTHON) src/web_gui.py --port $(PORT) --player
-
-# Previous Tkinter GUI, kept until the web GUI has been validated
-gui-tk:
-	$(PYTHON) src/gui.py
+	$(WEB) --port $(PORT) --player
 
 help:
 	@echo "MiningCat"
@@ -49,9 +47,8 @@ help:
 	@echo "  make gui [PORT=5050]            Open the GUI in your browser"
 	@echo "  make reader                     Open the ebook reader in your browser"
 	@echo "  make player                     Open the video player in your browser"
-	@echo "  make gui-tk                     Open the previous Tkinter GUI"
-	@echo "  make test                       Run tests (without the GUI tests, which open windows)"
-	@echo "  make test-gui                   Run the GUI tests"
+	@echo "  make test                       Run tests (without the tests that open windows)"
+	@echo "  make test-gui                   Run the tests that open windows (game setup's area picker)"
 	@echo "  make audio                      Step 1: prepare audio chapters"
 	@echo "  make epub [RANGE=4-9]           Step 2: extract epub text"
 	@echo "  make align [CHAPTER=1|all]      Step 3: align chapter(s)"
@@ -84,7 +81,7 @@ test-gui:
 	$(PYTHON) -m pytest -m gui
 
 coverage:
-	$(PYTHON) -m pytest --cov=src --cov-report=xml --cov-report=term-missing
+	$(PYTHON) -m pytest --cov=src/miningcat --cov-report=xml --cov-report=term-missing
 
 audio:
 	$(MAIN) audio

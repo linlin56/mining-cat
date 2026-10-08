@@ -3,7 +3,12 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, render_template, request, send_file
 
-from mining import anki, dictionaries, frequency, lookup, segment, words
+from miningcat.application import anki
+from miningcat.application.mining import (
+    dictionaries, frequency, lookup, preferences, segmentation, sentence_readings, sentence_tts, translation,
+    word_audio, words,
+)
+from miningcat.domain.words.status import WordError
 from miningcat.domain.languages import CHINESE_LANGUAGES, LANGUAGES, language_key, same_family
 
 bp = Blueprint("mining", __name__)
@@ -28,7 +33,7 @@ def _dict_error(exc):
     return jsonify(title="Dictionary", error=str(exc)), 400
 
 
-@bp.errorhandler(words.WordError)
+@bp.errorhandler(WordError)
 def _word_error(exc):
     return jsonify(title="Words", error=str(exc)), 400
 
@@ -71,8 +76,8 @@ def api_languages():
     studied = set(counts) | {d["language"] for d in dictionaries.list_dictionaries()}
     return jsonify(
         languages=[{"id": k, "name": v, "chinese": k in CHINESE_LANGUAGES, "studied": k in studied} for k, v in LANGUAGES.items()],
-        scripts={lang: words.chinese_script_preference(lang) for lang in CHINESE_LANGUAGES},
-        readings={"zh": words.reading_system("zh")},
+        scripts={lang: preferences.chinese_script_preference(lang) for lang in CHINESE_LANGUAGES},
+        readings={"zh": preferences.reading_system("zh")},
         counts=counts,
     )
 
@@ -80,14 +85,14 @@ def api_languages():
 @bp.post("/api/mining/script")
 def api_script():
     body = _body()
-    words.set_chinese_script_preference(_language(body.get("language")), str(body.get("script")))
+    preferences.set_chinese_script_preference(_language(body.get("language")), str(body.get("script")))
     return jsonify(ok=True)
 
 
 @bp.post("/api/mining/reading")
 def api_reading_system():
     body = _body()
-    words.set_reading_system(_language(body.get("language")), str(body.get("system")))
+    preferences.set_reading_system(_language(body.get("language")), str(body.get("system")))
     return jsonify(ok=True)
 
 
@@ -126,7 +131,7 @@ def api_segment():
         raise ApiError("Expected a text.")
     if len(text) > SEGMENT_MAX_CHARS:
         raise ApiError(f"Texts are limited to {SEGMENT_MAX_CHARS} characters.")
-    return jsonify(segment.colour(_language(body.get("language")), text))
+    return jsonify(segmentation.colour(_language(body.get("language")), text))
 
 
 # ---------------------------------------------------------------- dictionaries
@@ -139,7 +144,7 @@ def api_lookup():
     result = lookup.lookup(language, text)
     ranker = frequency.Ranker(language)
     for entry in result["entries"]:
-        entry["display_reading"] = words.display_reading(language, entry["expression"], entry.get("reading") or "")
+        entry["display_reading"] = words.display_reading(language, entry.get("reading") or "")
         # rank in the frequency list of the language, shown in the popup and the card creator
         entry["frequency_rank"] = ranker.rank(entry["expression"], entry.get("form") or "")
     result["frequency"] = ranker.frontier
@@ -149,8 +154,6 @@ def api_lookup():
 # The reading of every word of a card's sentence (HTML, the card's word in bold), chosen from the context.
 @bp.post("/api/sentence/readings")
 def api_sentence_readings():
-    from mining import sentence_readings
-
     body = _body()
     sentence = str(body.get("sentence") or "")[:5000]
     return jsonify(sentence_readings.annotate(_language(body.get("language")), sentence, str(body.get("reading") or "")))
@@ -180,8 +183,6 @@ def api_choose_frequency_list():
 # Online recordings of a word (JapanesePod101, Wiktionary, Lingua Libre), fetched when the user asks for them.
 @bp.get("/api/dict/audio")
 def api_word_audio():
-    from mining import word_audio
-
     expression = str(request.args.get("expression") or "").strip()[:100]
     if not expression:
         raise ApiError("Missing word.")
@@ -192,8 +193,6 @@ def api_word_audio():
 # Edge-TTS voices for a card's sentence audio, when the sentence has none.
 @bp.get("/api/tts/voices")
 def api_tts_voices():
-    from mining import sentence_tts
-
     language = _language(request.args.get("language"))
     return jsonify(**sentence_tts.voices(language), chosen=sentence_tts.default_voice(language))
 
@@ -201,8 +200,6 @@ def api_tts_voices():
 @bp.post("/api/tts")
 def api_tts():
     import base64
-
-    from mining import sentence_tts
 
     body = _body()
     try:
@@ -215,51 +212,41 @@ def api_tts():
 # Offline translation of a card's sentence (Argos Translate), to the language chosen in the settings.
 @bp.get("/api/translate/languages")
 def api_translate_languages():
-    from mining import translate
-
-    return jsonify(languages=translate.targets(), chosen=translate.target_language())
+    return jsonify(languages=translation.targets(), chosen=translation.target_language())
 
 
 @bp.post("/api/translate")
 def api_translate():
-    from mining import translate
-
     body = _body()
     try:
-        translation = translate.translate(_language(body.get("language")), str(body.get("text") or ""),
-                                          download=not body.get("prefetch"))
-    except translate.TranslateError as exc:
+        translated = translation.translate(_language(body.get("language")), str(body.get("text") or ""),
+                                           download=not body.get("prefetch"))
+    except translation.TranslateError as exc:
         raise ApiError(str(exc), title="Translation")
-    return jsonify(translation=translation, target=translate.target_language())
+    return jsonify(translation=translated, target=translation.target_language())
 
 
 @bp.get("/api/translate/models")
 def api_translate_models():
-    from mining import translate
-
-    return jsonify(translate.models())
+    return jsonify(translation.models())
 
 
 @bp.post("/api/translate/models")
 def api_download_translate_models():
-    from mining import translate
-
     try:
-        translate.start_download(_language(_body().get("language")))
-    except translate.TranslateError as exc:
+        translation.start_download(_language(_body().get("language")))
+    except translation.TranslateError as exc:
         raise ApiError(str(exc), title="Translation")
-    return jsonify(translate.models())
+    return jsonify(translation.models())
 
 
 @bp.post("/api/translate/models/<source>/<target>/delete")
 def api_delete_translate_model(source: str, target: str):
-    from mining import translate
-
     try:
-        translate.delete_model(source, target)
-    except translate.TranslateError as exc:
+        translation.delete_model(source, target)
+    except translation.TranslateError as exc:
         raise ApiError(str(exc), title="Translation")
-    return jsonify(translate.models())
+    return jsonify(translation.models())
 
 
 @bp.get("/api/dict")

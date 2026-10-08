@@ -15,12 +15,16 @@ def _isolated_game_ocr_settings(tmp_path, monkeypatch):
     return path
 
 
-# Never read or write the user's real database (library/miningcat.db): every page reads the language studied from it.
+# Never read or write the user's files (sources/, output/, library/ and its database): everything goes to a
+# temporary folder. Every page reads the language studied from the database.
 @pytest.fixture(autouse=True)
-def _isolated_database(tmp_path, monkeypatch):
-    from mining import db
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "library" / "miningcat.db")
-    db.reset_cache()
+def _isolated_paths(tmp_path, monkeypatch):
+    from miningcat.config.paths import paths
+    from miningcat.infrastructure.persistence.database import database
+    monkeypatch.setattr(paths, "root", tmp_path)
+    database.reset_cache()
+    yield
+    database.reset_cache()
 
 
 # GUI tests (`make test-gui`): keep their windows hidden. Widgets work the same while withdrawn.

@@ -11,3 +11,6 @@ LATIN_LETTER = re.compile(r"[A-Za-z\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u00ff]")
 HAN = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf]")
 # Chinese characters, hiragana and katakana: what a Japanese character list counts.
 HAN_AND_KANA = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff]")
+
+# One Chinese character or kanji (CJK, extension A, compatibility ideographs and the supplementary planes).
+HAN_CHARACTER = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U0002ffff]")

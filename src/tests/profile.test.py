@@ -4,7 +4,8 @@ import pytest
 
 pytest.importorskip("flask")
 
-from mining import anki, words
+from miningcat.application import anki
+from miningcat.application.mining import preferences, words
 from web import app as web_app
 from web import books, profile
 from web.state import AppState
@@ -58,7 +59,7 @@ def test_converter_only_offers_the_variants_of_the_language(client):
     assert [l["id"] for l in options["languages"]] == ["mandarin_tw", "mandarin_cn"]
     assert options["default_language"] == "mandarin_tw"
 
-    words.set_chinese_script_preference("zh", "simplified")
+    preferences.set_chinese_script_preference("zh", "simplified")
     assert client.get("/api/options").get_json()["default_language"] == "mandarin_cn"
     assert profile.default_tag("zh") == "zh-Hans"
 

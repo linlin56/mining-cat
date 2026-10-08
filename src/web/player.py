@@ -86,7 +86,7 @@ def api_video(video_id: str):
 # (see mining/comprehension.py). Each subtitle line is a sentence, as in the subtitle list.
 @bp.get("/api/videos/<video_id>/comprehension")
 def api_comprehension(video_id: str):
-    from mining import comprehension
+    from miningcat.application.mining import comprehension
     from miningcat.domain.languages import language_key
 
     meta = videos.get_meta(video_id)

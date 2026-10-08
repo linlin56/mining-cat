@@ -3,7 +3,7 @@ import zipfile
 
 import pytest
 
-from mining import comprehension, dictionaries, frequency, segment, words
+from miningcat.application.mining import comprehension, dictionaries, frequency, preferences, segmentation, words
 from miningcat.domain.text import chinese_script
 from miningcat.domain.text.chinese_script import ChineseScripts
 from shared import FakeOpenCc
@@ -19,7 +19,7 @@ def en_dict(tmp_path):
     with zipfile.ZipFile(path, "w") as z:
         z.writestr("index.json", json.dumps({"title": "Test English", "revision": "1", "format": 3}))
         z.writestr("term_bank_1.json", json.dumps(EN_TERMS))
-    segment.clear_cache()
+    segmentation.clear_cache()
     frequency.clear_cache()
     return dictionaries.import_dictionary(path, "en")
 
@@ -86,7 +86,7 @@ def test_only_frequent_words_are_recommended(tmp_path, monkeypatch):
     assert result["i1"] == 2 and result["recommended"] == 1  # dog is too rare for now
     assert result["frequency"]["limit"] == 10
 
-    colours = segment.colour("en", text)
+    colours = segmentation.colour("en", text)
     ranks = {w["headword"]: w["rank"] for w in colours["words"]}
     assert ranks["fish"] == 4 and ranks["dog"] == 45 and colours["frequency"]["limit"] == 10
 

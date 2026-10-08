@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, redirect, request
 
-from mining import db
+from miningcat.application.mining import preferences
+from miningcat.infrastructure.persistence.settings_store import settings
 from miningcat.domain.languages import CHINESE_LANGUAGES, LANGUAGES, NATIVE_NAMES
 
 bp = Blueprint("profile", __name__)
@@ -12,19 +13,18 @@ GUARDED_PREFIXES = ("/converter/", "/reader/", "/clipboard/", "/player/", "/sett
 
 
 def current() -> str | None:
-    language = db.get_setting(SETTING)
+    language = settings.get(SETTING)
     return language if language in LANGUAGES else None
 
 
 def set_current(language: str) -> None:
     if language not in LANGUAGES:
         raise ValueError(f"Unknown language: {language!r}")
-    db.set_setting(SETTING, language)
+    settings.set(SETTING, language)
 
 
 def _prefers_simplified(language: str) -> bool:
-    from mining import words
-    return language in CHINESE_LANGUAGES and words.chinese_script_preference(language) == "simplified"
+    return language in CHINESE_LANGUAGES and preferences.chinese_script_preference(language) == "simplified"
 
 
 def converter_languages(language: str | None) -> list:
@@ -77,7 +77,7 @@ def guard():
 
 @bp.get("/api/profile")
 def api_profile():
-    from mining import dictionaries, words
+    from miningcat.application.mining import dictionaries, words
 
     counts = words.counts()
     dict_counts: dict[str, int] = {}

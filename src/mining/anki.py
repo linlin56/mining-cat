@@ -21,11 +21,13 @@ CARD_FIELDS = {
     "word": "Word",
     "reading": "Reading",
     "zhuyin": "Zhuyin (Mandarin, from the reading)",
+    "tailo": "Tâi-lô (Taigi, from the reading)",
+    "poj": "Pe̍h-ōe-jī (Taigi, from the reading)",
     "definition": "Definition",
     "sentence": "Sentence",
     "sentence_translation": "Sentence translation",
-    "word_readings": "Word with its reading (Mandarin: 字[zi4])",
-    "sentence_readings": "Sentence with the reading of every word (Mandarin: 你[ni3]好[hao3])",
+    "word_readings": "Word with its reading (Mandarin: 字[zi4], Taigi: 字[jī])",
+    "sentence_readings": "Sentence with the reading of every word (Mandarin: 你[ni3]好[hao3], Taigi: 你[lí]好[hó])",
     "notes": "Notes",
     "source": "Source",
     "frequency": "Frequency (rank in your frequency list)",
@@ -45,6 +47,8 @@ _GUESSES = [
     (re.compile(r"(translation|english|meaning).*sentence|sentence.*(translation|meaning|english)", re.I), "{sentence_translation}"),
     (re.compile(r"(sentence|example|context|phrase)", re.I), "{sentence}"),
     (re.compile(r"(zhuyin|bopomofo)", re.I), "{zhuyin}"),
+    (re.compile(r"(t[aâ]i-?l[oô]|tailo)", re.I), "{tailo}"),
+    (re.compile(r"(poj|p[eē]h-?[oō]e-?j[iī])", re.I), "{poj}"),
     (re.compile(r"(reading|pinyin|furigana|kana|jyutping|pronunciation|romaji)", re.I), "{reading}"),
     (re.compile(r"(definition|meaning|gloss)", re.I), "{definition}"),
     (re.compile(r"(word|expression|vocab|term|hanzi|kanji|front|target|key)", re.I), "{word}"),
@@ -268,7 +272,40 @@ def derived_fields(language: str, fields: dict) -> dict:
             derived["word_readings"] = sentence_readings.word_field(re.sub(r"<[^>]+>", "", fields.get("word", "")).strip(), reading)
         if not fields.get("sentence_readings") and fields.get("sentence"):
             derived["sentence_readings"] = sentence_readings.annotate(language, fields["sentence"], reading)["field"]
+    elif language == "nan":
+        derived.update(_taigi_fields(fields))
     return derived
+
+
+# Taigi: the reading in both romanizations (taibun's when the card has none), the readings of the word and of the
+# sentence's Hanji words, in the reading system chosen in the settings.
+def _taigi_fields(fields: dict) -> dict:
+    from mining import taigi
+    word = re.sub(r"<[^>]+>", "", fields.get("word", "")).strip()
+    reading = re.sub(r"<[^>]+>", "", fields.get("reading", "")).strip() or taigi.reading(word)
+    system = words_mod.reading_system("nan")
+    derived = {}
+    for key in ("tailo", "poj"):
+        if not fields.get(key) and reading:
+            derived[key] = taigi.respell(reading, key)
+    if not fields.get("word_readings") and word:
+        derived["word_readings"] = f"{word}[{taigi.respell(reading, system)}]" if reading and reading != word else word
+    if not fields.get("sentence_readings") and fields.get("sentence"):
+        derived["sentence_readings"] = _taigi_sentence(fields["sentence"], system)
+    return derived
+
+
+# The sentence's Hanji words followed by their reading, its HTML (the card's word in bold) kept around them.
+def _taigi_sentence(sentence: str, system: str) -> str:
+    from mining import taigi
+    out = []
+    for part in re.split(r"(<[^>]+>)", sentence):
+        if part.startswith("<"):
+            out.append(part)
+            continue
+        for word, reading in taigi.annotate(html.unescape(part), system):
+            out.append(html.escape(word, quote=False) + (f"[{reading}]" if reading else ""))
+    return "".join(out)
 
 
 def note_fields(setup: dict, fields: dict, media: dict, language: str = "") -> dict[str, str]:

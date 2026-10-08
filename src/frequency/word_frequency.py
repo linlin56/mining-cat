@@ -17,6 +17,12 @@ def _segment_japanese(text: str) -> list[str]:
     return [token.surface for token in t.tokenize(text)]
 
 
+# Hanji words (taibun's tokenizer) and romanized words (tsia̍h-pn̄g), keeping the tone marks.
+def _segment_taigi(text: str) -> list[str]:
+    from mining.taigi import tokenize
+    return tokenize(text)
+
+
 def _segment_generic(text: str) -> list[str]:
     return re.findall(r"[^\W\d_]+", text, re.UNICODE)
 
@@ -25,6 +31,7 @@ _SEGMENTERS = {
     Language.MANDARIN_TW: _segment_chinese,
     Language.MANDARIN_CN: _segment_chinese,
     Language.JAPANESE: _segment_japanese,
+    Language.TAIGI: _segment_taigi,
 }
 
 

@@ -4,7 +4,7 @@ This page lists every place in the codebase to touch when adding a language. It'
 
 Priority goes to languages that are supported by [Whisper](https://github.com/openai/whisper#available-models-and-languages) and [edge-tts](https://github.com/rany2/edge-tts).
 
-Other TTS and means of transcriptions may be added in the future.
+For a language they don't support, local engines can take over (see `src/speech/`): Taigi is transcribed with Qwen3-ASR, aligned with Meta's MMS aligner and read by an MMS voice (see the `asr` and `aligner` fields below, and `speech/mms_tts.py` for the voices).
 
 You can add a language you don't speak, but please ask a native speaker to double-check the results, and say so in your pull request.
 
@@ -45,6 +45,8 @@ What each field is used for:
 | `vocab_annotation_pattern` | Glossary or ruby annotations embedded in ebooks, stripped before alignment (e.g. `\[\d+\]` for Chinese, `［＃.+?］` for Japanese Aozora Bunko). Use `r''` if unused.          |
 | `ocr_lang_apple`           | OCR on macOS ([Apple Vision supported languages](https://developer.apple.com/documentation/vision/vnrecognizetextrequest)).                                                |
 | `ocr_lang_easyocr`         | OCR on other platforms ([EasyOCR supported languages](https://www.jaided.ai/easyocr/)).                                                                                   |
+| `asr` (optional)           | `'whisper'` (default), or `'qwen3'` to transcribe with Qwen3-ASR (`speech/qwen3.py`: add the language to `QWEN_LANGUAGES`).                                              |
+| `aligner` (optional)       | `'whisper'` (default), or `'mms'` to align a book with Meta's MMS aligner on its romanized text (`speech/mms_align.py`: add a romanizer for a non-Latin script).              |
 
 Verify the punctuation sets against real text samples: quotes differ a lot between languages (`« »`, `„ "`, `「 」`...).
 
@@ -67,7 +69,7 @@ and pick the default one in `DEFAULT_VOICE_FOR_LANGUAGE`:
 Language.YOUR_LANGUAGE: "VoiceName - Language (Region), female",
 ```
 
-List the available voices with `edge-tts --list-voices | grep xx-`.
+List the available voices with `edge-tts --list-voices | grep xx-`. Without an Edge voice, an [MMS voice](https://huggingface.co/models?search=facebook/mms-tts) can be added to `VOICES` in `src/speech/mms_tts.py` (non-commercial licence), with an Edge-like id (`xx-XX-Name`).
 
 If Whisper only supports the language with its large models (like Cantonese), add its `whisper_code` to `LARGE_ONLY_WHISPER_CODES` in the same file, so that the GUI only offers **Large** and **Turbo**.
 

@@ -6,6 +6,12 @@ from language import Language
 from ocr_mining.frames import OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
 
 
+# Whisper sizes, and Qwen3-ASR's for the languages it transcribes (Taigi: a Whisper size picks one of them too).
+MODEL_CHOICES = ["tiny", "base", "small", "medium", "large", "turbo", "qwen3-0.6b", "qwen3-1.7b"]
+# Chinese scripts (s=Simplified, tw/t/hk=Traditional), and Taigi's writing systems.
+CONVERT_TARGETS = ["s", "tw", "t", "hk", "hanji", "tailo", "poj"]
+
+
 def _parse_ocr_region(value: str) -> tuple[float, float, float, float]:
     parts = value.split(",")
     if len(parts) != 4:
@@ -145,7 +151,7 @@ def main() -> None:
     # align
     p_align = sub.add_parser("align", help="Forced alignment of chapter text to audio")
     p_align.add_argument("--model", default="tiny",
-                         choices=["tiny", "base", "small", "medium", "large", "turbo"])
+                         choices=MODEL_CHOICES)
     p_align.add_argument("--language", default="mandarin_tw",
                          choices=Language.ids())
     p_align.add_argument("--from", dest="from_ch", type=int, default=None,
@@ -156,7 +162,7 @@ def main() -> None:
     # transcribe
     p_transcribe = sub.add_parser("transcribe", help="Whisper transcription (no epub alignment)")
     p_transcribe.add_argument("--model", default="tiny",
-                              choices=["tiny", "base", "small", "medium", "large", "turbo"])
+                              choices=MODEL_CHOICES)
     p_transcribe.add_argument("--language", default="mandarin_tw",
                               choices=Language.ids())
     p_transcribe.add_argument("--from", dest="from_ch", type=int, default=None,
@@ -165,8 +171,9 @@ def main() -> None:
                               help="Process only chapter N")
 
     # tts
-    p_tts = sub.add_parser("tts", help="Generate audio from EPUB text using edge-tts")
-    p_tts.add_argument("--voice", required=True, help="Edge-TTS voice name (e.g. zh-TW-HsiaoChenNeural)")
+    p_tts = sub.add_parser("tts", help="Generate audio from EPUB text using edge-tts (or a local voice)")
+    p_tts.add_argument("--voice", required=True,
+                       help="Edge-TTS voice name (e.g. zh-TW-HsiaoChenNeural), or nan-TW-MmsTaigi for Taigi (local)")
     p_tts.add_argument("--language", default="mandarin_tw", choices=Language.ids())
 
     # export
@@ -180,11 +187,11 @@ def main() -> None:
                                    "faster", "fast", "medium"])
 
     # convert
-    p_convert = sub.add_parser("convert", help="Convert SRT character script with OpenCC")
-    p_convert.add_argument("--source", required=True, choices=["s", "tw"],
-                           help="Source script (s=Simplified, tw=Traditional Taiwan)")
-    p_convert.add_argument("--target", required=True, choices=["s", "tw", "t", "hk"],
-                           help="Target script")
+    p_convert = sub.add_parser("convert", help="Convert SRT character script with OpenCC, or Taigi's writing system")
+    p_convert.add_argument("--source", required=True, choices=["s", "tw", "hk", "nan"],
+                           help="Source script (s=Simplified, tw=Traditional Taiwan, hk=Hong Kong, nan=any Taigi text)")
+    p_convert.add_argument("--target", required=True, choices=CONVERT_TARGETS,
+                           help="Target script (Taigi: hanji, tailo or poj)")
 
     # run
     p_run = sub.add_parser("run", help="Run all steps in sequence")
@@ -197,13 +204,13 @@ def main() -> None:
     video_source.add_argument("--url", help="Video URL (e.g. Instagram reel)")
     video_source.add_argument("--file", dest="video_path", help="Path to a local video file")
     p_video.add_argument("--model", default="tiny",
-                         choices=["tiny", "base", "small", "medium", "large", "turbo"])
+                         choices=MODEL_CHOICES)
     p_video.add_argument("--language", default="mandarin_tw",
                          choices=Language.ids())
     p_video.add_argument("--app-id", dest="app_id", default="web",
                          help="Instagram X-IG-App-ID (numeric id, 'ios', or 'web')")
     p_video.add_argument("--convert-to", dest="convert_to", default=None,
-                         choices=["s", "tw", "t", "hk"],
+                         choices=CONVERT_TARGETS,
                          help="Convert the generated SRT to this script (e.g. s=Simplified)")
     p_video.add_argument("--audio-track", dest="audio_track", type=int, default=None,
                          help="Index of the audio track to transcribe, if the video has several (0-based)")
@@ -225,7 +232,7 @@ def main() -> None:
                               help="Keep the saved window, only select the areas again")
     p_game_serve = game_sub.add_parser("serve", help="Start capturing and serve the web page (Ctrl+C to stop)")
     p_game_serve.add_argument("--language", default="mandarin_tw", choices=Language.ids())
-    p_game_serve.add_argument("--convert-to", dest="convert_to", default=None, choices=["s", "tw", "t", "hk"],
+    p_game_serve.add_argument("--convert-to", dest="convert_to", default=None, choices=CONVERT_TARGETS,
                               help="Convert the OCR'd text to this Chinese script (e.g. s=Simplified)")
     p_game_serve.add_argument("--port", type=int, default=None, help="Web page port (default: 6677)")
     p_game_serve.add_argument("--hotkey", default=DEFAULT_HOTKEY, choices=HOTKEYS,

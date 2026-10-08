@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from enum import Enum
 
@@ -13,6 +14,14 @@ class LangConfig:
     vocab_annotation_pattern: str
     ocr_lang_apple: str  # BCP-47 code for Apple Vision's setRecognitionLanguages_
     ocr_lang_easyocr: str  # short code for easyocr.Reader([...])
+    # Speech engines, for the languages Whisper doesn't know: 'whisper', or 'qwen3' (Qwen3-ASR, local) to transcribe,
+    # 'mms' (CTC forced alignment of the romanized text, local) to align a book on its audiobook.
+    asr: str = 'whisper'
+    aligner: str = 'whisper'
+    # OCR languages for the lines of a language also written in Latin letters (Taigi's romanizations): their tone
+    # marks are lost by the CJK model, a Latin one sees them. None: the language's own OCR reads everything.
+    ocr_lang_apple_latin: str | None = None
+    ocr_lang_easyocr_latin: str | None = None
 
 
 class Language(Enum):
@@ -156,7 +165,29 @@ class Language(Enum):
         ocr_lang_apple='zh-Hant',
         ocr_lang_easyocr='ch_tra',
     )
+    # Whisper has no Taigi: Qwen3-ASR transcribes it (in Hanji), and books are aligned on their romanization.
+    TAIGI = LangConfig(
+        label='Taiwanese Hokkien - Taigi',
+        whisper_code='nan',
+        iso639_2='nan',
+        closing_punct=frozenset('。？！」』.?!”'),
+        opening_punct=frozenset('「『“'),
+        vocab_annotation_pattern=r'\[\d+\]',
+        ocr_lang_apple='zh-Hant',
+        ocr_lang_easyocr='ch_tra',
+        asr='qwen3',
+        aligner='mms',
+        # Vietnamese: the Latin model with the most diacritics (Tâi-lô's and POJ's come back as look-alikes,
+        # see mining/taigi.py repair_ocr).
+        ocr_lang_apple_latin='vi-VT',
+        ocr_lang_easyocr_latin='vi',
+    )
     # TODO : Add more! Priorities are languages that me (the owner) can understand enough to test
+
+    # BCP-47 tag of a text in the language: the OCR's, except for the Chinese languages that share its zh-Hant.
+    @property
+    def tag(self) -> str:
+        return {'CANTONESE_HK': 'yue-Hant', 'TAIGI': 'nan-Hant'}.get(self.name, self.value.ocr_lang_apple)
 
     @classmethod
     def from_id(cls, lang_id: str) -> 'Language':
@@ -179,3 +210,32 @@ class Language(Enum):
     @classmethod
     def ids(cls) -> list[str]:
         return [lang.name.lower() for lang in cls]
+
+
+# A sentence end (a period only before a space or the end: 3.5 isn't one), then its closing quotes or brackets.
+_SENTENCE_END = re.compile(r"(?:[。？！?!…]+|\.(?=[\s」』”’\"')）]|$))[」』”’\"')）]*")
+_CLAUSE = re.compile(r"[^，,、；;：:]*(?:[，,、；;：:]+|$)")
+
+
+def split_sentences(text: str, max_chars: int = 80) -> list[str]:
+    """The sentences of a text, for engines working sentence by sentence (speech alignment and synthesis): cut after
+    the sentence-final punctuation and at line breaks, and a sentence longer than max_chars after its commas."""
+    sentences = []
+    for line in text.splitlines():
+        ends = [m.end() for m in _SENTENCE_END.finditer(line)]
+        for start, end in zip([0, *ends], [*ends, len(line)]):
+            sentence = line[start:end].strip()
+            if not sentence:
+                continue
+            if len(sentence) <= max_chars:
+                sentences.append(sentence)
+                continue
+            part = ""
+            for clause in _CLAUSE.findall(sentence):
+                if part and len(part) + len(clause) > max_chars:
+                    sentences.append(part.strip())
+                    part = ""
+                part += clause
+            if part.strip():
+                sentences.append(part.strip())
+    return sentences

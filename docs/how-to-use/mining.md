@@ -109,7 +109,7 @@ The rank is also shown:
 - tick other dictionaries to add their definitions;
 - add an image: *Choose a file*, drop one on the window, paste one with Ctrl+V, or paste a link;
 - add the word's audio or the sentence's audio the same way. The word's audio is filled in when an online recording exists (when there are several, pick another one under *Recording*); when there's none, the word is read by the voice of the settings, as below (pick another voice under *Word audio* and click **Generate**), and for a book [converted with its audio](reader.md#audio-of-a-converted-book), so is the sentence's;
-- when the sentence has no audio, it is read by the voice chosen for its language in **Settings › Anki** (*Voice reading sentences without audio*), with the same Edge-TTS voices as for generating a book's audio (an Internet connection is needed). Pick another voice under *Sentence audio* and click **Generate** to try it; choose *None* in the settings to only generate by hand;
+- when the sentence has no audio, it is read by the voice chosen for its language in **Settings › Anki** (*Voice reading sentences without audio*), with the same Edge-TTS voices as for generating a book's audio (an Internet connection is needed; Taigi's voice is local). Pick another voice under *Sentence audio* and click **Generate** to try it; choose *None* in the settings to only generate by hand;
 - the sentence's translation is filled in, offline, in the language chosen in **Settings › Anki** (*Sentence translation*, English by default, *None* to turn it off). It uses [Argos Translate](https://github.com/argosopentech/argos-translate): the first time a language is translated, its model (about 100 MB) is downloaded; to download it ahead of time, or to remove models, use *Models* in the same panel. Cantonese and Taiwanese Hokkien have no model;
 - edit the translation, add notes and tags.
 - Mandarin: under the sentence, *Readings* shows the reading of every word of the sentence, chosen from your dictionaries by the context (跑得快 *de*, 我得走 *děi*, 長得高 *zhǎng*, 很長 *cháng*). A dotted word has other readings in your dictionaries: click it for the next one.
@@ -160,6 +160,8 @@ When you study a Chinese language, choose the characters you learn: **Traditiona
 - If you learn Traditional and look up 说话 in a simplified book, the word is saved as 說話, with Taiwan's characters for Mandarin (里面 is saved as 裡面) and Hong Kong's for Cantonese.
 - Words written the same way in both scripts are saved as they are: 了解 and 台灣 are already traditional.
 - When you know a word in the other script, the popup tells you (“You know this word in Simplified: 说话”).
+
+For Taigi, choose the romanization of readings: **Tâi-lô** or **Pe̍h-ōe-jī** (see [Taigi](taigi.md)).
 
 For Mandarin, also choose how readings are shown: **Pinyin** or **Zhuyin**. With Zhuyin, the popup and the card's *Reading* field show ㄕㄨㄛ ㄏㄨㄚˋ instead of shuōhuà, and with Pinyin a dictionary written in zhuyin is shown in pinyin. Words keep their status whichever you choose.
 

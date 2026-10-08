@@ -167,8 +167,6 @@ def run(
     if use_ocr:
         from ocr_mining.frames import OCR_FPS_DEFAULT
         from ocr_mining.pipeline import generate_segments
-    else:
-        import stable_whisper
 
     if video_path is not None:
         video_file = Path(video_path)
@@ -214,14 +212,13 @@ def run(
         whisper_srt_file = DIR_SRT / f"{video_file.stem}_whisper.srt"
         if whisper_srt_file.exists():
             print(f"A previous transcription exists and will be overwritten: {whisper_srt_file}")
-        model = stable_whisper.load_model(model_name, device=align.get_device())
-        align.ensure_language_supported(model, language)
+        model = align.load_asr_model(model_name, language)
         segs = align.transcribe_chapter(model, audio_file, lang=language)
         align.save_srt(segs, whisper_srt_file)
         chinese_converter.normalize_whisper_script(whisper_srt_file, language)
         print(f"Subtitles: {whisper_srt_file}  ({len(segs)} segments)")
         if segs:
-            subtitle_tracks.append((whisper_srt_file, "Whisper"))
+            subtitle_tracks.append((whisper_srt_file, "Whisper" if language.value.asr == "whisper" else "Qwen3-ASR"))
         else:
             print("  Nothing transcribed: is there speech in the selected language?")
 

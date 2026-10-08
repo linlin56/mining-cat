@@ -42,8 +42,18 @@ async def _synthesize(text: str, voice: str, audio_path: Path, srt_path: Path, l
     return len(segments)
 
 
+# A local voice (Taigi's MMS voice) reads the chapter sentence by sentence: the subtitles are its sentences.
+def _synthesize_local(text: str, voice: str, audio_path: Path, srt_path: Path, lang: Language) -> int:
+    from language import split_sentences
+    from speech import mms_tts
+    timed = mms_tts.synthesize_chapter(split_sentences(text), voice, audio_path)
+    save_srt([Segment(0, start, end, sentence) for start, end, sentence in timed], srt_path)
+    return len(timed)
+
+
 def run(voice: str, lang: Language = Language.MANDARIN_TW) -> None:
     import sys
+    from speech import mms_tts
 
     if not DIR_CHAPTERS_TEXT.exists():
         print(f"Error: {DIR_CHAPTERS_TEXT} not found - Run 'epub' first")
@@ -71,7 +81,10 @@ def run(voice: str, lang: Language = Language.MANDARIN_TW) -> None:
             continue
 
         text = text_file.read_text(encoding="utf-8").strip()
-        n_segs = asyncio.run(_synthesize(text, voice, audio_path, srt_path, lang))
+        if mms_tts.is_local(voice):
+            n_segs = _synthesize_local(text, voice, audio_path, srt_path, lang)
+        else:
+            n_segs = asyncio.run(_synthesize(text, voice, audio_path, srt_path, lang))
         tqdm.write(f"  {text_file.stem}  {n_segs} seg")
 
     print("\nDone.")

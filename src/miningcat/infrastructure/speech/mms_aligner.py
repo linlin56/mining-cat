@@ -40,8 +40,8 @@ class MmsAligner:
     name = "MMS"
 
     def __init__(self):
-        torchaudio = require("torchaudio", "Aligning a book with the MMS aligner")
-        self.torch = require("torch", "Aligning a book with the MMS aligner")
+        torchaudio = require("torchaudio", "Aligning a book with the MMS aligner", "make install-taigi")
+        self.torch = require("torch", "Aligning a book with the MMS aligner", "make install-taigi")
         bundle = torchaudio.pipelines.MMS_FA
         print("Loading the MMS aligner...")
         self.device = "cuda" if self.torch.cuda.is_available() else "cpu"

@@ -1,15 +1,17 @@
 """Transcription with Qwen3-ASR (Alibaba, Apache 2.0), which knows Minnan among its Chinese dialects: it writes Taigi
-speech in Chinese characters. The audio is cut into utterances by a voice activity detector (Silero, shipped with
+speech in Chinese characters. It also knows the other languages of the app: it can replace Whisper for them, when it's
+installed (`make install-qwen`), with its own model names (qwen3-0.6b, qwen3-1.7b). The audio is cut into utterances by a voice activity detector (Silero, shipped with
 faster-whisper), each one transcribed: its subtitles take the utterance's times, shared between its sentences."""
 
-import re
+import importlib.util
 import sys
 import types
 
 from tqdm import tqdm
 
-from miningcat.domain.languages import Language
+from miningcat.domain.languages import Language, WordSegmentation
 from miningcat.domain.subtitles.segment import Segment
+from miningcat.domain.text.sentences import split_sentences
 from miningcat.infrastructure.speech.local_models import (
     SAMPLE_RATE,
     SpeechError,
@@ -25,9 +27,16 @@ DEFAULT_MODEL = "qwen3-0.6b"
 _FROM_WHISPER_SIZE = {"medium": "qwen3-1.7b", "large": "qwen3-1.7b", "turbo": "qwen3-1.7b"}
 # Qwen3-ASR's language for ours (Minnan is one of its Chinese dialects). No context: it's written out as is on
 # music and silences ("臺語（閩南語）。").
-QWEN_LANGUAGES = {"nan": "Chinese"}
+QWEN_LANGUAGES = {
+    "zh": "Chinese", "yue": "Cantonese", "nan": "Chinese", "ja": "Japanese", "ko": "Korean", "vi": "Vietnamese",
+    "en": "English", "fr": "French", "de": "German", "es": "Spanish", "it": "Italian", "pt": "Portuguese",
+    "pl": "Polish",
+}
 
 MAX_UTTERANCE_SECONDS = 20
+# Speech probability above which the voice activity detector hears speech. Its default (0.5) misses the lines shouted
+# or spoken over music (anime, films): lower, they're kept, still without the songs and the silences.
+VAD_THRESHOLD = 0.2
 BATCH_SIZE = 8
 
 
@@ -64,29 +73,34 @@ def utterances(samples, max_seconds: float = MAX_UTTERANCE_SECONDS) -> list[tupl
     """(start, end) sample positions of the speech of the audio, no longer than max_seconds each."""
     from faster_whisper.vad import VadOptions, get_speech_timestamps
 
-    options = VadOptions(min_silence_duration_ms=300, max_speech_duration_s=max_seconds, speech_pad_ms=200)
+    options = VadOptions(threshold=VAD_THRESHOLD, min_silence_duration_ms=300, max_speech_duration_s=max_seconds,
+                         speech_pad_ms=200)
     return [(chunk["start"], chunk["end"]) for chunk in get_speech_timestamps(samples, options, sampling_rate=SAMPLE_RATE)]
 
 
-# The text of an utterance cut into sentences: after the sentence-final punctuation, the commas of a long one.
-_SENTENCE = re.compile(r".+?(?:[。？！?!]+[」』”]*|$)", re.S)
+def is_model(name: str | None) -> bool:
+    """Whether a model name given to the CLI is Qwen3-ASR's (rather than a Whisper size)."""
+    return (name or "").lower() in MODELS
+
+
+def supports(lang: Language) -> bool:
+    return lang.profile.key in QWEN_LANGUAGES
+
+
+def installed() -> bool:
+    """Whether qwen-asr is installed (`make install-qwen`): it's optional, its models and packages are large."""
+    importlib.invalidate_caches()  # it may have been installed while the server runs
+    return importlib.util.find_spec("qwen_asr") is not None
+
+
+def max_subtitle_chars(lang: Language) -> int:
+    """The length of a subtitle cut from an utterance: a line of characters, or of words separated by spaces."""
+    return 80 if lang.profile.word_segmentation is WordSegmentation.SPACES else 30
 
 
 def _split_times(text: str, start: float, end: float, max_chars: int = 30) -> list[tuple[float, float, str]]:
-    sentences = [s.strip() for s in _SENTENCE.findall(text) if s.strip()]
-    pieces = []
-    for sentence in sentences:
-        if len(sentence) <= max_chars:
-            pieces.append(sentence)
-            continue
-        part = ""
-        for clause in re.findall(r".+?(?:[，,、；;]+|$)", sentence):
-            if part and len(part) + len(clause) > max_chars:
-                pieces.append(part)
-                part = ""
-            part += clause
-        if part:
-            pieces.append(part)
+    """The text of an utterance cut into sentences (the commas of a long one), its time shared between them."""
+    pieces = split_sentences(text, max_chars)
     total = sum(len(p) for p in pieces) or 1
     timed, position = [], start
     for piece in pieces:
@@ -96,7 +110,7 @@ def _split_times(text: str, start: float, end: float, max_chars: int = 30) -> li
     return timed
 
 
-def transcribe(model, audio_file, language: str = "nan", progress: bool = True) -> list:
+def transcribe(model, audio_file, language: str = "nan", progress: bool = True, max_chars: int = 30) -> list:
     """Subtitles of an audio file."""
     samples = load_audio(audio_file)
     spans = utterances(samples)
@@ -115,7 +129,7 @@ def transcribe(model, audio_file, language: str = "nan", progress: bool = True) 
             raise SpeechError(f"Qwen3-ASR couldn't transcribe the audio: {exc}") from exc
         for (s, e), result in zip(batch, results):
             text = (result.text or "").strip()
-            for start, end, piece in _split_times(text, s / SAMPLE_RATE, e / SAMPLE_RATE) if text else ():
+            for start, end, piece in _split_times(text, s / SAMPLE_RATE, e / SAMPLE_RATE, max_chars) if text else ():
                 segments.append(Segment(0, round(start, 3), round(end, 3), piece))
     return segments
 
@@ -133,4 +147,4 @@ class Qwen3Asr:
         return cls(load_model(model_name))
 
     def transcribe(self, audio_file, lang: Language) -> list[Segment]:
-        return transcribe(self._model, audio_file, language=lang.profile.key)
+        return transcribe(self._model, audio_file, language=lang.profile.key, max_chars=max_subtitle_chars(lang))

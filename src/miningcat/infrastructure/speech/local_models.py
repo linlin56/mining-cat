@@ -1,7 +1,8 @@
 """What the local speech engines share. They cover the languages Whisper and Edge don't: Taigi is transcribed with
 Qwen3-ASR (qwen3_asr.py), aligned on its book with Meta's MMS aligner (mms_aligner.py) and read by Meta's MMS voice
 (mms_tts.py). Their models are downloaded from Hugging Face the first time they're used, and their
-packages are installed with `make install-taigi`. Once downloaded, they're loaded from the cache without contacting
+packages are installed with `make install-taigi`, or `make install-qwen` for Qwen3-ASR alone (it can also replace
+Whisper for the languages it knows). Once downloaded, they're loaded from the cache without contacting
 huggingface.co."""
 
 import os
@@ -12,7 +13,6 @@ import numpy as np
 from miningcat.infrastructure.media.audio_files import AUDIO_BITRATE
 
 SAMPLE_RATE = 16000
-INSTALL_HINT = "Install the local speech engines with `make install-taigi`."
 
 os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
@@ -21,13 +21,13 @@ class SpeechError(RuntimeError):
     pass
 
 
-def require(module: str, purpose: str):
-    """Imports an optional package, or explains how to install it."""
+def require(module: str, purpose: str, install: str = "make install-qwen"):
+    """Imports an optional package, or explains how to install it (`install`: the command installing it)."""
     import importlib
     try:
         return importlib.import_module(module)
     except ImportError as exc:
-        raise SpeechError(f"{purpose} needs the {module} package ({exc}). {INSTALL_HINT}") from exc
+        raise SpeechError(f"{purpose} needs the {module} package ({exc}). Install it with `{install}`.") from exc
 
 
 def local_model(repo: str) -> str:

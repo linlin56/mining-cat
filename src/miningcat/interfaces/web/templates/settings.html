@@ -40,20 +40,26 @@
       </div>
 
       <div class="card">
-        <h2 class="card-header h6">{{ study.name }} frequency list</h2>
+        <h2 class="card-header h6">{{ study.name }} frequency lists</h2>
         <div class="card-body vstack gap-3">
           <p class="small text-body-secondary m-0">Recommended sentences (i+1) only teach frequent words: their new word must be high enough in your
-            frequency list. The more of its words you know, the further down the list they go. The list's rank is also
-            shown in the dictionary popup and the card creator.<br>
+            frequency lists. The more of their words you know, the further down the lists they go. With several lists, a
+            word ranks by its best rank in any of them. The rank is also shown in the dictionary popup and the card creator.<br>
             Import a Yomitan frequency dictionary (.zip), or a JSON frequency list (.json, the words from the most
             frequent; a text file with a word per line works too).</p>
-          <div class="d-flex flex-wrap align-items-end gap-3">
-            <div>
-              <label class="form-label" for="freq-list">Used for recommendations</label>
-              <select class="form-select" id="freq-list"></select>
-            </div>
+          <fieldset>
+            <legend class="form-label fs-6">Used for recommendations</legend>
+            <div id="freq-lists" class="vstack gap-1"></div>
+          </fieldset>
+          <div>
             <button type="button" class="btn btn-outline-secondary" id="freq-pick"><i class="bi bi-upload" aria-hidden="true"></i> Import a frequency list…</button>
             <input type="file" id="freq-file" accept=".zip,.json,.txt,.csv,.tsv" hidden>
+          </div>
+          <div id="freq-progress" hidden>
+            <div class="progress" role="progressbar" aria-label="Import" style="height: .5rem">
+              <div class="progress-bar" id="freq-progress-bar" style="width: 0%"></div>
+            </div>
+            <p class="small text-body-secondary mt-1 mb-0" id="freq-progress-text"></p>
           </div>
           <p class="text-body-secondary m-0" id="freq-frontier"></p>
         </div>

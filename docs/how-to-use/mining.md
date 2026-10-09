@@ -85,15 +85,15 @@ Everything is updated as you go: make a card or mark a word known, and the numbe
 
 ## Frequency list
 
-A frequency list tells MiningCat which words are worth learning first. Import it in **Settings › Dictionaries › Frequency list**:
+A frequency list tells MiningCat which words are worth learning first. Import it in **Settings › Dictionaries › Frequency lists**:
 
 - a Yomitan frequency dictionary (`.zip`), rank-based or occurrence-based;
 - a JSON frequency list (`.json`): an array of the words, the most frequent first (`["的", "是", ...]`, or `[["的", "de"], ...]` with readings);
 - a text file with a word per line, the most frequent first.
 
-When several are imported, choose the one used for recommendations. For Chinese, a list in one script also ranks the words of the other.
+When several are imported, tick the ones used for recommendations (a list imported in that panel is ticked at once). Ticked lists are combined into one: a word ranks by its best rank in any of them, then by its average rank, and the ranks are numbered again from #1. A word frequent in one list is frequent, and the words frequent in all of them come first. Untick them all to recommend every i+1 sentence. The bin next to a list deletes it (a dictionary with definitions too is deleted entirely: you're warned first). For Chinese, a list in one script also ranks the words of the other, and combined lists are first written in the script you learn (Traditional if you learn both), so that 说 in a Simplified list and 說 in a Traditional one are the same word.
 
-With a frequency list, a sentence is only recommended when its new word ranks high enough. The limit grows with the words of the list you know (as *known*): **1,000 + 2 per word you know**. A beginner gets the most frequent words; knowing 3,000 words of the list, recommendations go up to #7,000. The settings show where you are. Sentences with a rarer new word are still counted, but not recommended.
+With a frequency list, a sentence is only recommended when its new word ranks high enough. The limit grows with the words of the list you know (as *known*): **1,000 + 2 per word you know**, of the lists combined when you use several. A beginner gets the most frequent words; knowing 3,000 words of the list, recommendations go up to #7,000. The settings show where you are. Sentences with a rarer new word are still counted, but not recommended.
 
 The rank is also shown:
 

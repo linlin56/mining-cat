@@ -554,7 +554,7 @@ function showComprehension(key) {
     const i1 = a.units.filter((u) => u.i1).length;
     $("comp-summary").title = `${a.known} known, ${a.learning} learning and ${a.new} new words in these subtitles. `
       + `${i1} lines have only one new word`
-      + (a.frequency ? `, ${P.recommended.length} of them a frequent one (up to #${a.frequency.limit.toLocaleString()} of “${a.frequency.dictionary.title}”).` : ".");
+      + (a.frequency ? `, ${P.recommended.length} of them a frequent one (up to #${a.frequency.limit.toLocaleString()} of “${a.frequency.title}”).` : ".");
   }
 }
 

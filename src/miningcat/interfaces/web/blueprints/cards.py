@@ -26,8 +26,21 @@ def api_save_anki_config():
 @bp.get("/api/anki/fields")
 def api_anki_fields():
     model = request.args.get("model", "")
+    language = request.args.get("language")
     fields = anki.model_fields(model)
-    return jsonify(fields=fields, guess=anki.guess_field_templates(fields))
+    return jsonify(fields=fields, guess=anki.guess_field_templates(fields, study_language(language) if language else ""))
+
+
+@bp.post("/api/anki/deck")
+def api_anki_deck():
+    """Creates MiningCat's deck of a language in Anki."""
+    return jsonify(anki.create_deck(study_language(json_body().get("language"))))
+
+
+@bp.post("/api/anki/note-type")
+def api_anki_note_type():
+    """Creates (or updates) MiningCat's note type in Anki."""
+    return jsonify(anki.install_note_type(study_language(json_body().get("language"))))
 
 
 @bp.post("/api/anki/sync")

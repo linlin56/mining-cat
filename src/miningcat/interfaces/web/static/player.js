@@ -1046,6 +1046,7 @@ function onKey(e) {
   const action = actions[e.key];
   if (!action) return;
   e.preventDefault();
+  e.stopPropagation();  // the <video>'s own keys, when it has the focus, would play and pause it a second time
   action();
 }
 
@@ -1085,7 +1086,7 @@ function wireWatch() {
     history.pushState({}, "", "/player/");
     route();
   });
-  document.addEventListener("keydown", onKey);
+  document.addEventListener("keydown", onKey, true);  // before the focused <video> gets the key
   window.addEventListener("dragover", (e) => e.preventDefault());
   window.addEventListener("drop", (e) => {
     e.preventDefault();

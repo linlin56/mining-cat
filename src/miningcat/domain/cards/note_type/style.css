@@ -1,0 +1,125 @@
+/* MiningCat note type. The fonts follow the card's language (its Language field): the same characters are drawn
+   differently in Japanese, in traditional and simplified Chinese and in Korean. */
+
+.card {
+  --mc-text: #23232d;
+  --mc-muted: #6b6b7b;
+  --mc-page: #f3f4f7;
+  --mc-surface: #ffffff;
+  --mc-line: #e1e2e8;
+  --mc-accent: #d9480f;
+  --mc-tone1: #e03131;
+  --mc-tone2: #2f9e44;
+  --mc-tone3: #1c7ed6;
+  --mc-tone4: #9c36b5;
+  --mc-tone5: #868e96;
+  --mc-tone6: #e8590c;
+  margin: 0;
+  padding: 0;
+  background: var(--mc-page);
+  color: var(--mc-text);
+  font-size: 20px;
+  text-align: center;
+}
+
+.nightMode.card, .night_mode .card, .ankidroid_dark_mode.card, .card.nightMode {
+  --mc-text: #e9e9f0;
+  --mc-muted: #a3a3b3;
+  --mc-page: #1f2128;
+  --mc-surface: #2a2d36;
+  --mc-line: #3c404c;
+  --mc-accent: #ff8a50;
+  --mc-tone1: #ff6b6b;
+  --mc-tone2: #69db7c;
+  --mc-tone3: #74c0fc;
+  --mc-tone4: #da77f2;
+  --mc-tone5: #adb5bd;
+  --mc-tone6: #ffa94d;
+}
+
+.mc-card {
+  box-sizing: border-box;
+  max-width: 680px;
+  margin: 16px auto;
+  padding: 20px 18px;
+  border-radius: 12px;
+  background: var(--mc-surface);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.mc-card:lang(ja) { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "Noto Sans JP", "Noto Sans CJK JP", sans-serif; }
+.mc-card:lang(zh) { font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", sans-serif; }
+.mc-card:lang(zh-Hant), .mc-card:lang(zh-TW), .mc-card:lang(nan) { font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", "Noto Sans CJK TC", sans-serif; }
+.mc-card:lang(yue), .mc-card:lang(zh-HK) { font-family: "PingFang HK", "Microsoft JhengHei", "Noto Sans HK", "Noto Sans CJK HK", sans-serif; }
+.mc-card:lang(ko) { font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", "Noto Sans CJK KR", sans-serif; }
+/* Tâi-lô and POJ need fonts with their combining marks */
+.mc-card:lang(nan) rt, .mc-card:lang(nan) .mc-reading { font-family: system-ui, "Noto Sans", "Segoe UI", sans-serif; }
+
+.mc-card img { max-width: 100%; height: auto; border-radius: 8px; }
+
+/* front */
+.mc-front .mc-sentence { font-size: 28px; }
+.mc-headword { font-size: 34px; }
+.mc-front .mc-headword { font-size: 44px; }
+
+/* back */
+.mc-image { margin: -20px -18px 16px; }
+.mc-image img { width: 100%; max-height: 360px; object-fit: contain; border-radius: 12px 12px 0 0; }
+.mc-back .mc-sentence { font-size: 26px; }
+.mc-audio { margin-top: 6px; }
+.mc-translation { margin-top: 8px; color: var(--mc-muted); }
+.mc-separator { border: 0; border-top: 1px solid var(--mc-line); margin: 18px 0; }
+.mc-entry { text-align: left; }
+.mc-reading { color: var(--mc-muted); font-size: .6em; }
+.mc-definition { margin-top: 8px; }
+.mc-definition ul, .mc-definition ol { margin: 4px 0; padding-left: 1.4em; }
+.mc-notes { margin-top: 14px; text-align: left; font-size: 16px; }
+.mc-source { margin-top: 14px; font-size: 14px; color: var(--mc-muted); }
+
+.mc-sentence b, .mc-sentence strong { color: var(--mc-accent); }
+
+/* readings */
+.mc-readings { line-height: 2.1; }
+.mc-card ruby { ruby-position: over; ruby-align: center; }
+.mc-card rt { font-size: .48em; color: var(--mc-muted); letter-spacing: 0; }
+.mc-tone1, .mc-tone1 rt { color: var(--mc-tone1); }
+.mc-tone2, .mc-tone2 rt { color: var(--mc-tone2); }
+.mc-tone3, .mc-tone3 rt { color: var(--mc-tone3); }
+.mc-tone4, .mc-tone4 rt { color: var(--mc-tone4); }
+.mc-tone5, .mc-tone5 rt { color: var(--mc-tone5); }
+.mc-tone6, .mc-tone6 rt { color: var(--mc-tone6); }
+
+/* on the front, a word's reading (a hint above it, out of the line) and tones only show while it's hovered or tapped */
+.mc-hint { display: none; }
+.mc-front .mc-word { position: relative; cursor: pointer; }
+.mc-front .mc-word rt { display: none; }
+.mc-front .mc-hint {
+  display: flex;
+  gap: .3em;
+  position: absolute;
+  bottom: 85%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .48em;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--mc-muted);
+  visibility: hidden;
+  pointer-events: none;
+}
+.mc-front .mc-word:hover .mc-hint, .mc-front .mc-word.mc-shown .mc-hint { visibility: visible; }
+.mc-front .mc-word:not(:hover):not(.mc-shown) ruby { color: inherit; }
+
+/* Anki's replay buttons */
+.mc-card .replay-button svg { width: 32px; height: 32px; }
+.mc-card .replay-button svg circle { fill: var(--mc-accent); }
+
+@media (max-width: 600px) {
+  .mc-card { margin: 8px; padding: 16px 14px; }
+  .mc-image { margin: -16px -14px 14px; }
+  .mc-front .mc-sentence, .mc-back .mc-sentence { font-size: 24px; }
+  .mc-front .mc-headword { font-size: 38px; }
+}

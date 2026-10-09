@@ -1,0 +1,20 @@
+<!-- MiningCat note type. Readings written in brackets after their words are shown above them. -->
+<div class="mc-card mc-back" lang="{{Language}}">
+  {{#Image}}<div class="mc-image">{{Image}}</div>{{/Image}}
+  {{#Sentence}}
+  <div class="mc-sentence mc-readings">{{Sentence}}</div>
+  {{#Sentence audio}}<div class="mc-audio">{{Sentence audio}}</div>{{/Sentence audio}}
+  {{#Sentence translation}}<div class="mc-translation">{{Sentence translation}}</div>{{/Sentence translation}}
+  <hr class="mc-separator">
+  {{/Sentence}}
+  <div class="mc-entry">
+    <div class="mc-headword">
+      {{#Word with reading}}<span class="mc-word-field mc-readings">{{Word with reading}}</span>{{/Word with reading}}
+      {{^Word with reading}}<span class="mc-word-field mc-readings">{{Word}}</span>{{#Reading}} <span class="mc-reading">{{Reading}}</span>{{/Reading}}{{/Word with reading}}
+      <span class="mc-word-audio">{{Word audio}}</span>
+    </div>
+    {{#Definition}}<div class="mc-definition">{{Definition}}</div>{{/Definition}}
+  </div>
+  {{#Notes}}<div class="mc-notes">{{Notes}}</div>{{/Notes}}
+  {{#Source}}<div class="mc-source">{{Source}}</div>{{/Source}}
+</div>

@@ -1,32 +1,30 @@
-/* MiningCat comics & manga. Shares the reader's base styles (reader.css: themes, buttons, panels). */
-
-.comic { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+/* MiningCat comics & manga (on top of reader.css): the pages side by side, and the text read on them drawn over
+   each speech bubble. Everything else is Bootstrap. */
 
 .comic-stage {
-  position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center;
-  background: var(--panel); overflow: hidden;
+  position: relative; flex: 1; min-height: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
 }
-.spread { display: flex; align-items: center; justify-content: center; gap: 0; }
+.spread { display: flex; align-items: center; justify-content: center; }
 .spread.rtl { flex-direction: row-reverse; }
 
+/* The sides of the stage turn the pages */
 .turn {
   position: absolute; top: 0; bottom: 0; width: 48px; z-index: 2; border: 0; padding: 0;
   background: transparent; cursor: pointer;
 }
-.turn:hover { background: linear-gradient(to right, transparent, rgba(128,128,128,.08), transparent); }
+.turn:hover { background: linear-gradient(to right, transparent, rgba(128, 128, 128, .08), transparent); }
 .turn-left { left: 0; }
 .turn-right { right: 0; }
+@media (max-width: 600px) { .turn { width: 28px; } }
 
-.comic-page { position: relative; flex: none; background: #fff; box-shadow: 0 2px 14px rgba(0,0,0,.18); }
+.comic-page { position: relative; flex: none; background: #fff; box-shadow: 0 2px 14px rgba(0, 0, 0, .18); }
 .comic-page img {
   display: block; width: 100%; height: 100%; user-select: none; -webkit-user-select: none; -webkit-user-drag: none;
 }
-.page-status {
-  position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 1;
-  padding: 4px 10px; border-radius: 6px; background: rgba(0, 0, 0, .7); color: #fff; font-size: 12px;
-  white-space: nowrap; pointer-events: none;
-}
-.page-status.error { background: rgba(160, 30, 30, .85); pointer-events: auto; white-space: normal; max-width: 90%; }
+
+body.fullscreen #comic .mc-bar { display: none; }
+body.fullscreen .comic-stage { background: #000 !important; }
 
 /* ---------- text read on the page: one block per speech bubble, its lines where they were read ---------- */
 
@@ -41,10 +39,10 @@
 
 .cb:hover, .cb.active, .mode-always .cb {
   /* the white spreads a little around the lines: the box is exactly where the text was read */
-  color: #111; background: #fff; box-shadow: 0 0 0 4px #fff, 0 0 0 5px rgba(0,0,0,.25), 0 2px 12px 4px rgba(0,0,0,.18);
+  color: #111; background: #fff; box-shadow: 0 0 0 4px #fff, 0 0 0 5px rgba(0, 0, 0, .25), 0 2px 12px 4px rgba(0, 0, 0, .18);
   z-index: 1;
 }
-.mode-boxes .cb:not(:hover):not(.active) { box-shadow: 0 0 0 3px rgba(255, 107, 107, .75); }
+.mode-boxes .cb:not(:hover):not(.active) { box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), .75); }
 
 .mode-hover .cb:not(:hover):not(.active) .cl::highlight(mc-new),
 .mode-hover .cb:not(:hover):not(.active) .cl::highlight(mc-new-alt),
@@ -54,22 +52,3 @@
 .mode-boxes .cb:not(:hover):not(.active) .cl::highlight(mc-new-alt),
 .mode-boxes .cb:not(:hover):not(.active) .cl::highlight(mc-learning),
 .mode-boxes .cb:not(:hover):not(.active) .cl::highlight(mc-learning-alt) { background-color: transparent; }
-
-/* ---------- bottom bar ---------- */
-
-.comic-bottom { gap: 12px; padding: 0 16px; }
-.comic-bottom input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
-.page-count { white-space: nowrap; font-variant-numeric: tabular-nums; }
-#text-btn { font-size: 15px; font-weight: 700; }
-#read-again { margin: 2px 0 6px; }
-
-.osd {
-  position: absolute; top: 14px; right: 16px; z-index: 3; padding: 6px 10px; border-radius: 6px;
-  background: rgba(0, 0, 0, .7); color: #fff; font-size: 14px;
-  opacity: 0; transition: opacity .2s; pointer-events: none;
-}
-.osd.show { opacity: 1; }
-
-body.fullscreen .comic .bar { display: none; }
-body.fullscreen .comic-stage { background: #000; }
-@media (max-width: 600px) { .turn { width: 28px; } }

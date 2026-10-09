@@ -16,11 +16,12 @@ const G = {
 
 function setStatus(text, live = false) {
   $("status").textContent = text;
-  $("status").classList.toggle("live", live);
+  $("status").classList.toggle("text-success", live);
+  $("status").classList.toggle("text-body-secondary", !live);
 }
 
 function resetFeed() {
-  for (const el of document.querySelectorAll(".capture")) el.remove();
+  for (const el of document.querySelectorAll(".mc-capture")) el.remove();
   G.count = 0;
   $("count").textContent = "";
   $("empty").hidden = false;
@@ -37,8 +38,8 @@ function scheduleColours() {
 // Captures whose every word is known but one new word (i+1) are marked: the best ones to make a card with.
 function markRecommended(key) {
   if (key !== "main") return;
-  const a = MiningCatMining.analyse("main", (node) => node.parentElement && node.parentElement.closest(".capture"));
-  for (const article of $("feed").querySelectorAll(".capture")) {
+  const a = MiningCatMining.analyse("main", (node) => node.parentElement && node.parentElement.closest(".mc-capture"));
+  for (const article of $("feed").querySelectorAll(".mc-capture")) {
     article.classList.remove("i1");
     article.removeAttribute("title");
   }
@@ -52,17 +53,17 @@ function markRecommended(key) {
 function addCapture(data) {
   $("empty").hidden = true;
   const article = document.createElement("article");
-  article.className = "capture";
+  article.className = "mc-capture border-bottom pb-3";
   const meta = document.createElement("div");
-  meta.className = "capture-meta";
+  meta.className = "mc-capture-meta small text-body-secondary mb-2";
   // shown by CSS: not text, so that it's neither coloured nor looked up
   meta.dataset.meta = `${data.ts} · ${data.ms} ms`;
   const img = document.createElement("img");
-  img.className = "capture-shot";
+  img.className = "mc-capture-shot img-fluid w-100 rounded";
   img.src = data.image;
   img.alt = "";
   const line = document.createElement("p");
-  line.className = "capture-line";
+  line.className = "mc-text fs-2 lh-lg mt-2 mb-0";
   line.lang = G.language;
   line.textContent = data.text;
   article.append(meta, img, line);
@@ -114,10 +115,6 @@ function post(path) {
 }
 
 function init() {
-  const dark = matchMedia("(prefers-color-scheme: dark)");
-  const theme = () => document.body.classList.toggle("theme-dark", dark.matches);
-  theme();
-  dark.addEventListener("change", theme);
   resetFeed();
   $("capture").addEventListener("click", () => post("capture"));
   $("clear").addEventListener("click", () => post("clear"));
@@ -128,7 +125,7 @@ function init() {
     getMode: () => "click",
     isVertical: () => false,
     getImage: (node) => {
-      const article = node.parentElement && node.parentElement.closest(".capture");
+      const article = node.parentElement && node.parentElement.closest(".mc-capture");
       const data = article && G.images.get(article);
       return data ? { data, name: "screenshot.webp" } : null;
     },

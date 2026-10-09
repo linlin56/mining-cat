@@ -1,186 +1,181 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>MiningCat Reader</title>
-  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+{% extends "base.html" %}
+{% from "_macros.html" import navbar with context %}
+{% block viewport %}, viewport-fit=cover{% endblock %}
+{% block title %}MiningCat Reader{% endblock %}
+{% block styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='reader.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='mining.css') }}">
+{% endblock %}
+{% block scripts %}
   <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
   <script src="{{ url_for('static', filename='reader.js') }}" defer></script>
-</head>
-<body class="theme-light" data-study='{{ study|tojson }}'>
-
+{% endblock %}
+{% block body_attrs %}data-study='{{ study|tojson }}'{% endblock %}
+{% block body %}
   <!-- ===================== Library ===================== -->
-  <main id="library" class="library" hidden>
-    <header class="lib-header">
-      <h1 class="brand"><a class="brand-link" href="/"><span aria-hidden="true">🐱</span> Reader</a></h1>
-      <nav class="lib-nav">
-        {% include "_study.html" %}
-        <a href="/converter/" class="nav-link">Converter</a>
-        <a href="/player/" class="nav-link">Player</a>
-        <a href="/settings/" class="nav-link">Settings</a>
-        <button type="button" class="btn btn-primary" id="add-books">+ Add books</button>
-      </nav>
-    </header>
-    <p class="lib-hint dim" id="lib-formats"></p>
-    <div class="lib-drop" id="lib-drop">
-      <div class="book-grid" id="book-grid"></div>
-      <div class="lib-empty" id="lib-empty" hidden>
-        <p class="lib-empty-title">Your library is empty</p>
-        <p class="dim">Drop EPUB or TXT files here, or use “Add books”. Comics and manga too (.cbz, .cbr, .zip…).</p>
+  <main id="library" class="container pb-4" hidden>
+    {% call navbar("Reader") %}
+      <button type="button" class="btn btn-primary" id="add-books"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add books</button>
+    {% endcall %}
+    <p class="small text-body-secondary" id="lib-formats"></p>
+    <div class="rounded-3 p-2 mc-drop" id="lib-drop">
+      <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3" id="book-grid"></div>
+      <div class="text-center py-5" id="lib-empty" hidden>
+        <i class="bi bi-book display-4 text-body-secondary" aria-hidden="true"></i>
+        <p class="fs-5 fw-semibold mt-2 mb-1">Your library is empty</p>
+        <p class="text-body-secondary">Drop EPUB or TXT files here, or use “Add books”. Comics and manga too (.cbz, .cbr, .zip…).</p>
       </div>
     </div>
-    <p class="upload-status dim" id="lib-status"></p>
+    <p class="small text-body-secondary mt-2" id="lib-status"></p>
     <input type="file" id="book-input" multiple hidden>
   </main>
 
   <!-- ===================== Reading ===================== -->
-  <div id="reading" class="reading" hidden>
-    <header class="bar bar-top">
-      <a href="/reader/" class="bar-btn" id="back" title="Library (Esc)" aria-label="Back to library">←</a>
-      <div class="bar-title">
-        <span id="book-title"></span>
-        <span class="dim" id="chapter-title"></span>
+  <div id="reading" class="position-fixed top-0 bottom-0 start-0 end-0 d-flex flex-column bg-body" hidden>
+    <header class="d-flex align-items-center gap-1 px-2 border-bottom small mc-bar">
+      <a href="/reader/" class="btn btn-link link-body-emphasis" id="back" title="Library (Esc)" aria-label="Back to library"><i class="bi bi-arrow-left" aria-hidden="true"></i></a>
+      <div class="d-flex align-items-baseline gap-2 flex-grow-1 overflow-hidden">
+        <span class="fw-semibold text-truncate" id="book-title"></span>
+        <span class="text-body-secondary text-truncate flex-grow-1 d-none d-sm-inline" id="chapter-title"></span>
       </div>
-      <button type="button" class="bar-btn" id="i1-btn" title="Recommended sentences (R)" aria-label="Recommended sentences">i+1</button>
-      <button type="button" class="bar-btn" id="toc-btn" title="Contents (T)" aria-label="Contents">☰</button>
-      <button type="button" class="bar-btn" id="settings-btn" title="Settings (S)" aria-label="Settings">Aa</button>
+      <button type="button" class="btn btn-link link-body-emphasis fw-bold text-decoration-none" id="i1-btn" title="Recommended sentences (R)" aria-label="Recommended sentences">i+1</button>
+      <button type="button" class="btn btn-link link-body-emphasis" id="toc-btn" title="Contents (T)" aria-label="Contents"><i class="bi bi-list-ul" aria-hidden="true"></i></button>
+      <button type="button" class="btn btn-link link-body-emphasis" id="settings-btn" title="Settings (S)" aria-label="Settings"><i class="bi bi-sliders" aria-hidden="true"></i></button>
     </header>
 
     <div class="stage" id="stage">
-      <div class="zone zone-left" id="zone-left" aria-hidden="true"></div>
+      <div class="zone" id="zone-left" aria-hidden="true"></div>
       <div class="viewport" id="viewport">
         <article class="content" id="content"></article>
       </div>
-      <div class="zone zone-right" id="zone-right" aria-hidden="true"></div>
-      <div class="loading" id="loading" hidden>Loading…</div>
+      <div class="zone" id="zone-right" aria-hidden="true"></div>
+      <div class="position-absolute top-0 bottom-0 start-0 end-0 d-flex align-items-center justify-content-center gap-2 bg-body text-body-secondary" id="loading" hidden>
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading…
+      </div>
     </div>
 
-    <footer class="bar bar-bottom">
-      <span class="dim" id="page-info"></span>
-      <span class="dim comp-info" id="comp-info" title="Words of this chapter you know (from your cards and word statuses)"></span>
-      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
-      <span class="dim" id="percent-info"></span>
+    <footer class="d-flex align-items-center gap-3 px-3 border-top small text-body-secondary text-nowrap mc-bar mc-bar-bottom">
+      <span id="page-info"></span>
+      <span id="comp-info" title="Words of this chapter you know (from your cards and word statuses)"></span>
+      <div class="progress flex-grow-1" style="height: 3px" aria-hidden="true"><div class="progress-bar" id="progress-fill" style="width: 0%"></div></div>
+      <span id="percent-info"></span>
     </footer>
 
     <!-- Contents -->
-    <aside class="panel panel-left" id="toc-panel" hidden>
-      <div class="panel-head">
-        <h2>Contents</h2>
-        <button type="button" class="bar-btn" data-close aria-label="Close">×</button>
+    <aside class="offcanvas offcanvas-start" tabindex="-1" id="toc-panel" aria-labelledby="toc-title"
+      data-bs-backdrop="false" data-bs-scroll="true" data-bs-keyboard="false">
+      <div class="offcanvas-header">
+        <h2 class="offcanvas-title h5" id="toc-title">Contents</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
-      <ol class="toc" id="toc"></ol>
+      <div class="offcanvas-body pt-0">
+        <nav class="nav nav-pills flex-column" id="toc"></nav>
+      </div>
     </aside>
 
     <!-- Recommended sentences (i+1) -->
-    <aside class="panel panel-left" id="i1-panel" hidden>
-      <div class="panel-head">
-        <h2>Recommended sentences</h2>
-        <button type="button" class="bar-btn" data-close aria-label="Close">×</button>
+    <aside class="offcanvas offcanvas-start" tabindex="-1" id="i1-panel" aria-labelledby="i1-title"
+      data-bs-backdrop="false" data-bs-scroll="true" data-bs-keyboard="false">
+      <div class="offcanvas-header">
+        <h2 class="offcanvas-title h5" id="i1-title">Recommended sentences</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
-      <p class="dim small-note">Sentences of this chapter where you know every word but one new word, a frequent one: the
-        best ones to make a card with (i+1). Click one to go to it, then click its word.</p>
-      <p class="dim small-note" id="i1-summary"></p>
-      <ol class="i1-list" id="i1-list"></ol>
+      <div class="offcanvas-body pt-0">
+        <p class="small text-body-secondary">Sentences of this chapter where you know every word but one new word, a frequent one: the
+          best ones to make a card with (i+1). Click one to go to it, then click its word.</p>
+        <p class="small text-body-secondary" id="i1-summary"></p>
+        <div class="list-group list-group-flush" id="i1-list"></div>
+      </div>
     </aside>
 
     <!-- Settings -->
-    <aside class="panel panel-right" id="settings-panel" hidden>
-      <div class="panel-head">
-        <h2>Settings</h2>
-        <button type="button" class="bar-btn" data-close aria-label="Close">×</button>
+    <aside class="offcanvas offcanvas-end" tabindex="-1" id="settings-panel" aria-labelledby="settings-title"
+      data-bs-backdrop="false" data-bs-scroll="true" data-bs-keyboard="false">
+      <div class="offcanvas-header">
+        <h2 class="offcanvas-title h5" id="settings-title">Settings</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
-
-      <h3>This book</h3>
-      <label class="setting">
-        <span>Text direction</span>
-        <select id="set-writing">
-          <option value="auto">Automatic</option>
-          <option value="horizontal">Horizontal</option>
-          <option value="vertical">Vertical (縦書き)</option>
-        </select>
-      </label>
-      <label class="setting" id="language-setting">
-        <span>Characters</span>
-        <select id="set-language"></select>
-      </label>
-
-      <h3>Audio</h3>
-      <p class="dim small-note" id="audio-status"></p>
-      <div class="audio-actions">
-        <button type="button" class="btn" id="audio-link">Link the last conversion's audio</button>
-        <button type="button" class="btn" id="audio-remove" hidden>Remove</button>
-      </div>
-
-      <h3>Text</h3>
-      <label class="setting">
-        <span>Font size <output id="out-font-size"></output></span>
-        <input type="range" id="set-font-size" min="12" max="40" step="1">
-      </label>
-      <label class="setting">
-        <span>Line spacing <output id="out-line-height"></output></span>
-        <input type="range" id="set-line-height" min="1.2" max="2.6" step="0.1">
-      </label>
-      <label class="setting">
-        <span>Margins <output id="out-margin"></output></span>
-        <input type="range" id="set-margin" min="8" max="120" step="4">
-      </label>
-      <div class="setting">
-        <span>Font</span>
-        <div class="segmented" id="set-font">
-          <button type="button" data-value="serif">Serif</button>
-          <button type="button" data-value="sans">Sans</button>
+      <div class="offcanvas-body pt-0">
+        <h3 class="h6 text-uppercase small fw-bold text-primary-emphasis mb-3">This book</h3>
+        <div class="mb-3">
+          <label class="form-label small" for="set-writing">Text direction</label>
+          <select class="form-select" id="set-writing">
+            <option value="auto">Automatic</option>
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical (縦書き)</option>
+          </select>
         </div>
-      </div>
-      <div class="setting">
-        <span>Theme</span>
-        <div class="segmented" id="set-theme">
-          <button type="button" data-value="light">Light</button>
-          <button type="button" data-value="sepia">Sepia</button>
-          <button type="button" data-value="dark">Dark</button>
-          <button type="button" data-value="auto">Auto</button>
+        <div class="mb-3" id="language-setting">
+          <label class="form-label small" for="set-language">Characters</label>
+          <select class="form-select" id="set-language"></select>
         </div>
+
+        <h3 class="h6 text-uppercase small fw-bold text-primary-emphasis mt-4 mb-3">Audio</h3>
+        <p class="small text-body-secondary" id="audio-status"></p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="audio-link"><i class="bi bi-link-45deg" aria-hidden="true"></i> <span>Link the last conversion's audio</span></button>
+          <button type="button" class="btn btn-sm btn-outline-danger" id="audio-remove" hidden><i class="bi bi-trash" aria-hidden="true"></i> Remove</button>
+        </div>
+
+        <h3 class="h6 text-uppercase small fw-bold text-primary-emphasis mt-4 mb-3">Text</h3>
+        <div class="mb-2">
+          <label class="form-label small d-flex justify-content-between mb-0" for="set-font-size">Font size <output id="out-font-size"></output></label>
+          <input type="range" class="form-range" id="set-font-size" min="12" max="40" step="1">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small d-flex justify-content-between mb-0" for="set-line-height">Line spacing <output id="out-line-height"></output></label>
+          <input type="range" class="form-range" id="set-line-height" min="1.2" max="2.6" step="0.1">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small d-flex justify-content-between mb-0" for="set-margin">Margins <output id="out-margin"></output></label>
+          <input type="range" class="form-range" id="set-margin" min="8" max="120" step="4">
+        </div>
+        <div class="mb-3">
+          <span class="form-label small d-block" id="set-font-label">Font</span>
+          <div class="btn-group btn-group-sm w-100" id="set-font" role="group" aria-labelledby="set-font-label">
+            <button type="button" class="btn btn-outline-secondary" data-value="serif">Serif</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="sans">Sans</button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <span class="form-label small d-block" id="set-theme-label">Theme</span>
+          <div class="btn-group btn-group-sm w-100" id="set-theme" role="group" aria-labelledby="set-theme-label">
+            <button type="button" class="btn btn-outline-secondary" data-value="light"><i class="bi bi-sun" aria-hidden="true"></i> Light</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="sepia"><i class="bi bi-cup-hot" aria-hidden="true"></i> Sepia</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="dark"><i class="bi bi-moon" aria-hidden="true"></i> Dark</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="auto"><i class="bi bi-circle-half" aria-hidden="true"></i> Auto</button>
+          </div>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="set-furigana">
+          <label class="form-check-label" for="set-furigana">Show furigana / ruby</label>
+        </div>
+
+        <h3 class="h6 text-uppercase small fw-bold text-primary-emphasis mt-4 mb-3">Dictionary</h3>
+        <div class="mb-3">
+          <label class="form-label small" for="set-lookup">Look up words</label>
+          <select class="form-select" id="set-lookup">
+            <option value="click">Click on a word</option>
+            <option value="shift">Shift + hover (like Yomitan)</option>
+            <option value="off">Off (use Yomitan instead)</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small" for="set-colors">Colour words</label>
+          <select class="form-select" id="set-colors">
+            <option value="status">By status (new, learning)</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="set-i1">
+          <label class="form-check-label" for="set-i1">Underline recommended sentences (i+1)</label>
+        </div>
+        <p class="small text-body-secondary">Dictionaries, Anki and the script you learn are set in <a href="/settings/" target="_blank">Settings</a>.</p>
+
+        <p class="small text-body-secondary mt-4 mb-0">← → / Space: turn pages · T: contents · R: recommended sentences · S: settings · Esc: library.<br>
+          Click the side margins or swipe to turn pages; clicks on the text are for the dictionary.</p>
       </div>
-      <label class="check">
-        <input type="checkbox" id="set-furigana">
-        <span>Show furigana / ruby</span>
-      </label>
-
-      <h3>Dictionary</h3>
-      <label class="setting">
-        <span>Look up words</span>
-        <select id="set-lookup">
-          <option value="click">Click on a word</option>
-          <option value="shift">Shift + hover (like Yomitan)</option>
-          <option value="off">Off (use Yomitan instead)</option>
-        </select>
-      </label>
-      <label class="setting">
-        <span>Colour words</span>
-        <select id="set-colors">
-          <option value="status">By status (new, learning)</option>
-          <option value="off">Off</option>
-        </select>
-      </label>
-      <label class="check">
-        <input type="checkbox" id="set-i1">
-        <span>Underline recommended sentences (i+1)</span>
-      </label>
-      <p class="dim small-note">Dictionaries, Anki and the script you learn are set in <a href="/settings/" target="_blank">Settings</a>.</p>
-
-      <p class="dim shortcuts">← → / Space: turn pages · T: contents · R: recommended sentences · S: settings · Esc: library.<br>
-        Click the side margins or swipe to turn pages; clicks on the text are for the dictionary.</p>
     </aside>
   </div>
-
-  <dialog id="dialog" class="dialog">
-    <form method="dialog">
-      <h3 id="dialog-title"></h3>
-      <p id="dialog-message"></p>
-      <div class="dialog-actions" id="dialog-actions"></div>
-    </form>
-  </dialog>
-</body>
-</html>
+{% endblock %}

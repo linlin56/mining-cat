@@ -7,6 +7,7 @@ import secrets
 import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 from PIL import Image
 
@@ -15,29 +16,38 @@ from miningcat.domain.ocr.regions import FULL_REGION, Region, valid_region
 SCREENSHOT_AREA_TITLE = "Select the window's full size (screenshot sent to the page)"
 TEXT_AREA_TITLE = "Select the text area (read by OCR)"
 
+# Bootstrap and MiningCat's colours, from the web GUI, served next to the page
+_WEB_STATIC = Path(__file__).parent.parent / "web" / "static"
+_STYLES = {"bootstrap.min.css": _WEB_STATIC / "vendor" / "bootstrap" / "bootstrap.min.css",
+           "theme.css": _WEB_STATIC / "theme.css"}
+
 _PAGE = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>MiningCat - {title}</title>
+<link rel="stylesheet" href="bootstrap.min.css">
+<link rel="stylesheet" href="theme.css">
 <style>
-  body {{ font-family: system-ui, sans-serif; margin: 24px; background: #fdfbf7; color: #2d2d2d; }}
-  .frame {{ position: relative; display: inline-block; cursor: crosshair; user-select: none; }}
+  [hidden] {{ display: none !important; }}
+  .frame {{ position: relative; cursor: crosshair; user-select: none; }}
   .frame img {{ display: block; max-width: min(100%, 1200px); max-height: 75vh; }}
-  #rect {{ position: absolute; border: 2px solid #ff3b30; box-sizing: border-box; pointer-events: none; }}
-  .buttons {{ margin-top: 12px; display: flex; gap: 8px; }}
-  button {{ font: inherit; padding: 6px 14px; }}
+  #rect {{ position: absolute; border: 2px solid var(--bs-danger); pointer-events: none; }}
 </style>
 </head>
 <body>
-<h1>{title}</h1>
-<p>Drag a rectangle on the capture, then press OK.</p>
-<div class="frame" id="frame"><img id="image" src="frame.jpg" alt="Capture of the game" draggable="false"><div id="rect"></div></div>
-<div class="buttons">
-  <button id="reset">Reset</button><button id="full">Full frame</button>
-  <button id="cancel">Cancel</button><button id="ok">OK</button>
+<main class="container py-4">
+<h1 class="h4">{title}</h1>
+<p class="text-body-secondary">Drag a rectangle on the capture, then press OK.</p>
+<div class="frame d-inline-block" id="frame"><img id="image" class="rounded" src="frame.jpg" alt="Capture of the game" draggable="false"><div id="rect"></div></div>
+<div class="buttons d-flex flex-wrap gap-2 mt-3">
+  <button type="button" class="btn btn-outline-secondary" id="reset">Reset</button>
+  <button type="button" class="btn btn-outline-secondary me-auto" id="full">Full frame</button>
+  <button type="button" class="btn btn-outline-secondary" id="cancel">Cancel</button>
+  <button type="button" class="btn btn-primary" id="ok">OK</button>
 </div>
-<p id="done" hidden>Done: you can close this page and go back to the terminal.</p>
+<p class="alert alert-success mt-3" id="done" hidden>Done: you can close this page and go back to the terminal.</p>
+</main>
 <script>
 const defaultRegion = {default_region};
 let region = {initial_region};
@@ -126,6 +136,9 @@ class AreaPicker:
                     self._send(200, picker._page, "text/html; charset=utf-8")
                 elif self.path == f"/{picker.token}/frame.jpg":
                     self._send(200, picker._jpeg, "image/jpeg")
+                elif self.path.removeprefix(f"/{picker.token}/") in _STYLES:
+                    style = _STYLES[self.path.removeprefix(f"/{picker.token}/")]
+                    self._send(200, style.read_bytes(), "text/css; charset=utf-8")
                 else:
                     self._send(404)
 

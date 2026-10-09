@@ -82,31 +82,13 @@ function upload(kind, fileList, statusEl) {
 
 // ---------------------------------------------------------------- dialogs
 
-function showDialog(title, message, buttons = [{ label: "OK", value: true, primary: true }]) {
-  const dlg = $("dialog");
-  $("dialog-title").textContent = title;
-  $("dialog-message").textContent = message;
-  const actions = $("dialog-actions");
-  actions.replaceChildren();
-  for (const b of buttons) {
-    const btn = document.createElement("button");
-    btn.className = b.primary ? "btn btn-primary" : "btn";
-    btn.value = String(b.value);
-    btn.textContent = b.label;
-    actions.append(btn);
-  }
-  return new Promise((resolve) => {
-    dlg.addEventListener("close", () => resolve(dlg.returnValue === "true"), { once: true });
-    dlg.returnValue = "false";
-    dlg.showModal();
-    actions.querySelector(".btn-primary")?.focus();
-  });
+// Resolves to whether the button of value true was clicked (ui.js).
+function showDialog(title, message, buttons) {
+  return MiningCatUI.dialog(title, message, buttons).then((value) => value === "true");
 }
 
 // Like showDialog, but resolves to the value of the button that was clicked ("" if the dialog was dismissed).
-function chooseDialog(title, message, buttons) {
-  return showDialog(title, message, buttons).then(() => $("dialog").returnValue);
-}
+const chooseDialog = (title, message, buttons) => MiningCatUI.dialog(title, message, buttons);
 
 const alertBox = (title, message) => showDialog(title, message);
 const askYesNo = (title, message) => showDialog(title, message, [
@@ -151,6 +133,12 @@ async function offerPlayer() {
 
 // ---------------------------------------------------------------- helpers
 
+// A file or window label: dimmed until something is chosen.
+function setSelected(label, selected) {
+  label.classList.toggle("text-body-secondary", !selected);
+  label.classList.toggle("fw-medium", selected);
+}
+
 function fillSelect(select, values, value) {
   select.replaceChildren(...values.map((v) => new Option(v, v)));
   select.value = values.includes(value) ? value : values[0];
@@ -170,7 +158,10 @@ function onLanguageChange() {
 }
 
 function renderSource() {
-  for (const btn of $("source").children) btn.setAttribute("aria-checked", String(btn.dataset.value === S.source));
+  for (const btn of $("source").children) {
+    btn.setAttribute("aria-checked", String(btn.dataset.value === S.source));
+    btn.classList.toggle("active", btn.dataset.value === S.source);
+  }
   $("screen-audiobook").hidden = S.source !== "Audiobook / Ebook";
   $("screen-video").hidden = S.source !== "Video";
   $("screen-game").hidden = S.source !== "Video game / Screen share";
@@ -178,7 +169,7 @@ function renderSource() {
   const csv = S.source === "CSV to cards";
   $("screen-csv").hidden = $("csv-actions").hidden = !csv;
   // cards are made in the language studied: its variant and script conversions don't apply
-  $("convert").closest(".field").hidden = csv;
+  $("convert-field").hidden = csv;
   $("language-field").hidden = csv || S.opts.languages.length <= 1;
 }
 
@@ -198,21 +189,23 @@ function renderMode() {
 function renderAudio() {
   const list = $("audio-list");
   list.replaceChildren(...S.audio.map((f) => {
-    const li = document.createElement("li");
+    const item = document.createElement("div");
+    item.className = "list-group-item d-flex align-items-center gap-2 py-1";
     const name = document.createElement("span");
-    name.className = "file-name";
+    name.className = "text-truncate flex-grow-1";
     name.textContent = f.name;
     name.title = f.name;
     const rm = document.createElement("button");
     rm.type = "button";
-    rm.className = "remove-btn";
-    rm.textContent = "×";
+    rm.className = "btn btn-sm btn-link link-secondary";
+    rm.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
     rm.title = `Remove ${f.name}`;
     rm.setAttribute("aria-label", `Remove ${f.name}`);
     rm.addEventListener("click", () => removeAudio(f));
-    li.append(name, rm);
-    return li;
+    item.append(name, rm);
+    return item;
   }));
+  list.hidden = S.audio.length === 0;
   $("audio-empty").hidden = S.audio.length > 0;
 }
 
@@ -236,44 +229,41 @@ async function removeAudio(file) {
 
 function renderEbook() {
   const label = $("ebook-label");
-  if (!S.ebook.length) {
-    label.textContent = "No file selected";
-    label.className = "dim";
-  } else {
-    label.textContent = S.ebook.length === 1 ? S.ebook[0].name : `${S.ebook.length} TXT files selected`;
-    label.className = "selected";
-  }
+  label.textContent = !S.ebook.length ? "No file selected"
+    : S.ebook.length === 1 ? S.ebook[0].name : `${S.ebook.length} TXT files selected`;
+  setSelected(label, S.ebook.length > 0);
   label.title = S.ebook.map((f) => f.name).join("\n");
 
   const list = $("chapter-list");
   if (S.chaptersLoading) {
-    const li = document.createElement("li");
-    li.className = "loading";
-    li.textContent = "Loading chapters…";
-    list.replaceChildren(li);
+    const item = document.createElement("div");
+    item.className = "list-group-item text-body-secondary";
+    item.textContent = "Loading chapters…";
+    list.replaceChildren(item);
   } else {
     list.replaceChildren(...S.chapters.map((ch) => {
-      const li = document.createElement("li");
       const lab = document.createElement("label");
+      lab.className = "list-group-item d-flex align-items-center gap-2 py-1";
       const box = document.createElement("input");
       box.type = "checkbox";
+      box.className = "form-check-input flex-shrink-0 m-0";
       box.checked = S.selected.has(ch.index);
       box.addEventListener("change", () => {
         box.checked ? S.selected.add(ch.index) : S.selected.delete(ch.index);
         renderChapterCount();
       });
       const num = document.createElement("span");
-      num.className = "chapter-num";
+      num.className = "text-body-secondary font-monospace small flex-shrink-0";
       num.textContent = `Ch.${String(ch.index + 1).padStart(3, "0")}`;
       const title = document.createElement("span");
-      title.className = "file-name";
+      title.className = "text-truncate";
       title.textContent = ch.title;
       title.title = ch.title;
       lab.append(box, num, title);
-      li.append(lab);
-      return li;
+      return lab;
     }));
   }
+  list.hidden = !S.chaptersLoading && !S.chapters.length;
   renderChapterCount();
 }
 
@@ -336,7 +326,7 @@ function renderVideo() {
 
   const label = $("video-file-label");
   label.textContent = v.file ? v.file.name : "No file selected";
-  label.className = v.file ? "selected" : "dim";
+  setSelected(label, Boolean(v.file));
 
   const multi = v.tracks.length > 1;
   $("audio-track-field").hidden = !(local && multi);
@@ -414,13 +404,13 @@ async function openRegionDialog({ title, help, loading, region, load, onOk }) {
   $("ocr-title").textContent = title;
   $("ocr-help").textContent = help;
   $("ocr-loading").hidden = false;
-  $("ocr-loading").textContent = loading;
+  $("ocr-loading-text").textContent = loading;
   $("ocr-stage").hidden = true;
   $("ocr-nav").hidden = true;
-  dlg.showModal();
+  MiningCatUI.showModal(dlg);
   try {
     const data = await load();
-    if (token !== ocr.token || !dlg.open) return;
+    if (token !== ocr.token || !dlg.classList.contains("show")) return;
     ocr.frames = data.frames;
     if (data.region) ocr.region = data.region;
     $("ocr-loading").hidden = true;
@@ -430,7 +420,7 @@ async function openRegionDialog({ title, help, loading, region, load, onOk }) {
     drawOcrRect(ocr.region);
   } catch (err) {
     if (token !== ocr.token) return;
-    dlg.close();
+    MiningCatUI.hideModal(dlg);
     showError(err);
   }
 }
@@ -498,14 +488,13 @@ function setupOcrDialog() {
   });
   $("ocr-bottom").addEventListener("click", () => { ocr.region = S.opts.ocr.default_region; drawOcrRect(ocr.region); });
   $("ocr-full").addEventListener("click", () => { ocr.region = [0, 0, 1, 1]; drawOcrRect(ocr.region); });
-  $("ocr-cancel").addEventListener("click", () => { ocr.token++; $("ocr-dialog").close(); });
   $("ocr-ok").addEventListener("click", () => {
     const { onOk, region, frames } = ocr;
-    ocr.token++;
-    $("ocr-dialog").close();
+    MiningCatUI.hideModal($("ocr-dialog"));
     if (frames.length && onOk) onOk(region);
   });
-  $("ocr-dialog").addEventListener("cancel", () => { ocr.token++; });
+  // closed (OK, Cancel, Esc): frames still loading are dropped
+  $("ocr-dialog").addEventListener("hide.bs.modal", () => { ocr.token++; });
 }
 
 // ---------------------------------------------------------------- video game / screen share
@@ -526,7 +515,7 @@ const G = { info: null, busy: false, windows: [] };
 
 function setLabel(el, text, selected) {
   el.textContent = text;
-  el.className = selected ? "selected" : "dim";
+  setSelected(el, selected);
   el.title = text;
 }
 
@@ -589,13 +578,13 @@ async function selectGameWindow() {
     // Wayland: the OS shows its own dialog, which this request waits for.
     if (await loadWindowList()) return await gameRequest("/api/game/window", {});
   } catch (err) { return showError(err); }
-  $("window-dialog").showModal();
+  MiningCatUI.showModal($("window-dialog"));
 }
 
 async function confirmGameWindow() {
   const value = $("window-list").value;
   if (!value) return;
-  $("window-dialog").close();
+  MiningCatUI.hideModal($("window-dialog"));
   try { await gameRequest("/api/game/window", { id: Number(value) }); } catch (err) { showError(err); }
 }
 
@@ -646,7 +635,6 @@ function setupGame() {
   $("game-start").addEventListener("click", toggleGame);
   $("game-page").addEventListener("click", () => window.open("/game/", "miningcat-game"));
   $("window-refresh").addEventListener("click", () => loadWindowList().catch(showError));
-  $("window-cancel").addEventListener("click", () => $("window-dialog").close());
   $("window-ok").addEventListener("click", confirmGameWindow);
   $("window-list").addEventListener("dblclick", confirmGameWindow);
 }
@@ -821,19 +809,22 @@ function connectEvents() {
 
 // ---------------------------------------------------------------- drag & drop
 
+// A drop zone while files are dragged over it.
+const DRAG_OVER = ["border-primary", "bg-primary-subtle"];
+
 function setupDropzones() {
   const handlers = { audio: addAudio, ebook: selectEbook, video: selectVideo, csv: selectCsv };
-  for (const zone of document.querySelectorAll(".dropzone")) {
-    const handler = handlers[zone.dataset.kind];
+  for (const zone of document.querySelectorAll("[data-dropzone]")) {
+    const handler = handlers[zone.dataset.dropzone];
     zone.addEventListener("dragover", (e) => {
       if (S.running || !e.dataTransfer.types.includes("Files")) return;
       e.preventDefault();
-      zone.classList.add("dragover");
+      zone.classList.add(...DRAG_OVER);
     });
-    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+    zone.addEventListener("dragleave", () => zone.classList.remove(...DRAG_OVER));
     zone.addEventListener("drop", (e) => {
       e.preventDefault();
-      zone.classList.remove("dragover");
+      zone.classList.remove(...DRAG_OVER);
       if (!S.running) handler([...e.dataTransfer.files]);
     });
   }
@@ -870,6 +861,7 @@ function wire() {
   src.replaceChildren(...o.sources.map((s) => {
     const b = document.createElement("button");
     b.type = "button";
+    b.className = "btn btn-outline-primary";
     b.role = "radio";
     b.dataset.value = s;
     b.textContent = s;
@@ -939,7 +931,7 @@ async function init() {
       // The language studied has no converter (e.g. Taigi): only the reader and the player work with it.
       $("no-converter").hidden = false;
       for (const id of ["controls", "game-actions"]) $(id).hidden = true;
-      for (const block of document.querySelectorAll(".progress-block, .log-panel")) block.hidden = true;
+      for (const id of ["progress-block", "log-panel"]) $(id).hidden = true;
       return;
     }
     wire();

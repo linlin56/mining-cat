@@ -6,6 +6,9 @@ temp/
 /sources/
 /library/
 
+# The user's own settings (user-config.json)
+/user/
+
 # Python
 .venv/
 __pycache__/

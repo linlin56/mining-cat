@@ -1,0 +1,29 @@
+{# The header of the app's pages: the brand (back to the home page), the language studied and the other pages.
+   Imported "with context" (for `study`). A {% call %} block adds the page's own actions at its end. #}
+{% macro navbar(active) %}
+<nav class="navbar navbar-expand-md mb-3">
+  <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="/">
+    <img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="30" height="30"> MiningCat
+  </a>
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-links"
+    aria-controls="navbar-links" aria-expanded="false" aria-label="Menu">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse gap-3" id="navbar-links">
+    <ul class="navbar-nav ms-auto align-items-md-center">
+      {% if study %}<li class="nav-item me-md-2">{% include "_study.html" %}</li>{% endif %}
+      {% for href, label in [("/converter/", "Converter"), ("/reader/", "Reader"), ("/clipboard/", "Clipboard"), ("/player/", "Player"), ("/settings/", "Settings")] %}
+      <li class="nav-item">
+        <a class="nav-link{{ ' active' if label == active }}" href="{{ href }}"{{ ' aria-current="page"'|safe if label == active }}>{{ label }}</a>
+      </li>
+      {% endfor %}
+      <li class="nav-item">
+        <button type="button" class="nav-link" data-mc-theme-toggle title="Night mode" aria-label="Night mode">
+          <i class="bi bi-moon-stars" aria-hidden="true"></i>
+        </button>
+      </li>
+    </ul>
+    {% if caller %}{{ caller() }}{% endif %}
+  </div>
+</nav>
+{% endmacro %}

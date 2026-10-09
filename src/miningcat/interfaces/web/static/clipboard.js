@@ -57,7 +57,7 @@ function chunks(text) {
   let section = null, size = 0;
   for (const paragraph of paragraphs(text)) {
     if (!section || size + paragraph.length > CHUNK_CHARS) {
-      section = Object.assign(document.createElement("section"), { className: "clip-chunk" });
+      section = Object.assign(document.createElement("section"), { className: "mc-clip-chunk" });
       section.dataset.key = `clip-${sections.length}`;
       sections.push(section);
       size = 0;
@@ -95,7 +95,8 @@ function setReading(reading) {
   C.reading = reading;
   $("editor").hidden = reading;
   $("text").hidden = !reading;
-  $("toggle").textContent = reading ? "Edit" : "Read";
+  $("toggle").querySelector("i").className = `bi bi-${reading ? "pencil" : "book"}`;
+  $("toggle").querySelector("span").textContent = reading ? "Edit" : "Read";
   $("clear").hidden = reading;
   if (reading) read();
   else { edit(); $("editor").focus(); }
@@ -104,10 +105,6 @@ function setReading(reading) {
 
 function init() {
   C.study = JSON.parse(document.body.dataset.study || "null") || { tag: "und", tags: [] };
-  const dark = matchMedia("(prefers-color-scheme: dark)");
-  const theme = () => document.body.classList.toggle("theme-dark", dark.matches);
-  theme();
-  dark.addEventListener("change", theme);
 
   // Chinese: traditional or simplified characters
   const select = $("language");
@@ -141,7 +138,7 @@ function init() {
       showCount();
       if (C.reading) { edit(); read(); }
     } catch (err) {
-      alert(`The text couldn't be converted: ${err.message}`);
+      MiningCatUI.dialog("Write in…", `The text couldn't be converted: ${err.message}`);
     } finally {
       convert.disabled = false;
     }

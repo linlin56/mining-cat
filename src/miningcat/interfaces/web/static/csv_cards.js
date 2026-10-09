@@ -111,7 +111,7 @@ async function selectCsv(fileList) {
   CSV.header = rows[0].map((c) => c.trim());
   CSV.rows = rows.slice(1);
   $("csv-label").textContent = `${file.name} — ${CSV.rows.length.toLocaleString()} row${CSV.rows.length > 1 ? "s" : ""}`;
-  $("csv-label").classList.add("selected");
+  setSelected($("csv-label"), true);
   $("csv-source").value = file.name.replace(/\.(csv|tsv|txt)$/i, "");
 
   const taken = new Set();
@@ -148,9 +148,9 @@ async function setupCsv() {
 
   const kinds = MiningCatMining.cardParts.definitionKinds(language);
   $("csv-definitions").replaceChildren(...kinds.map(([key, label], i) => {
-    const item = Object.assign(document.createElement("label"), { className: "check" });
-    item.append(Object.assign(document.createElement("input"), { type: "checkbox", value: key, checked: i === 0 }),
-      Object.assign(document.createElement("span"), { textContent: label }));
+    const item = Object.assign(document.createElement("label"), { className: "form-check form-check-inline" });
+    item.append(Object.assign(document.createElement("input"), { className: "form-check-input", type: "checkbox", value: key, checked: i === 0 }),
+      Object.assign(document.createElement("span"), { className: "form-check-label", textContent: label }));
     return item;
   }));
   $("csv-readings-help").hidden = language !== "zh";
@@ -160,7 +160,7 @@ async function setupCsv() {
     $("csv-voice").replaceChildren(...voices.map((v) => new Option(v.label, v.id)));
     $("csv-voice").value = chosen || fallback;
     if (!voices.length) {
-      $("csv-voice").closest(".field").hidden = true;
+      $("csv-voice-field").hidden = true;
       $("csv-word-audio").value = "online";
       $("csv-word-audio").querySelector('option[value="voice"]').remove();
       $("csv-sentence-audio").value = "";

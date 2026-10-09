@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en" data-mc-theme="{{ preferences.theme }}" data-mc-highlights="{{ preferences.highlights }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1{% block viewport %}{% endblock %}">
+  <title>{% block title %}MiningCat{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  {% block styles %}{% endblock %}
+  <script src="{{ url_for('static', filename='theme.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='ui.js') }}" defer></script>
+  {% block scripts %}{% endblock %}
+</head>
+<body {% block body_attrs %}{% endblock %}>
+{% block body %}{% endblock %}
+</body>
+</html>

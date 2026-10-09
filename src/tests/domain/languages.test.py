@@ -85,6 +85,7 @@ def test_iso639_2_values():
     assert Language.GERMAN.profile.iso639_2 == "deu"
     assert Language.PORTUGUESE.profile.iso639_2 == "por"
     assert Language.VIETNAMESE.profile.iso639_2 == "vie"
+    assert Language.RUSSIAN.profile.iso639_2 == "rus"
     assert Language.CANTONESE_HK.profile.iso639_2 == "yue"
 
 
@@ -117,6 +118,8 @@ def test_from_id_case_insensitive():
     assert Language.from_id("PORTUGUESE") is Language.PORTUGUESE
     assert Language.from_id("vietnamese") is Language.VIETNAMESE
     assert Language.from_id("VIETNAMESE") is Language.VIETNAMESE
+    assert Language.from_id("russian") is Language.RUSSIAN
+    assert Language.from_id("RUSSIAN") is Language.RUSSIAN
     assert Language.from_id("cantonese_hk") is Language.CANTONESE_HK
     assert Language.from_id("CANTONESE_HK") is Language.CANTONESE_HK
 
@@ -194,7 +197,8 @@ def test_variants_of_a_study_language():
     ("ja", Language.JAPANESE),
     ("en-GB", Language.ENGLISH_UK),
     ("en", Language.ENGLISH_US),
-    ("ru", None),
+    ("ru", Language.RUSSIAN),
+    ("ar", None),
     ("", None),
 ])
 def test_language_for_tag(tag, expected):

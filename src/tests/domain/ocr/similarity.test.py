@@ -86,6 +86,11 @@ def test_is_plausible_text_rejects_symbols_only_for_latin_language():
     assert plausibility.is_plausible_text("）", Language.ENGLISH_US) is False
 
 
+def test_is_plausible_text_reads_cyrillic_for_russian():
+    assert plausibility.is_plausible_text("Привет", Language.RUSSIAN) is True
+    assert plausibility.is_plausible_text("IY", Language.RUSSIAN) is False
+
+
 # levenshtein_distance
 def test_levenshtein_distance_identical_strings():
     assert text_similarity.levenshtein_distance("hello", "hello") == 0

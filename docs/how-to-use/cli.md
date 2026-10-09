@@ -170,6 +170,7 @@ Serves the page on <http://127.0.0.1:6677/> and opens it in the browser. Capture
 | `japanese`     | Japanese                              |
 | `korean`       | Korean                                |
 | `vietnamese`   | Vietnamese                            |
+| `russian`      | Russian                               |
 | `english_us`   | English - United States               |
 | `english_uk`   | English - United Kingdom              |
 | `french`       | French                                |

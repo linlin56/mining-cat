@@ -6,6 +6,7 @@ CJK = re.compile(r"[\u4e00-\u9fff\u3040-\u30ff\uff66-\uff9f]")
 # Hangul syllables and compatibility jamo.
 HANGUL = re.compile(r"[\uac00-\ud7a3\u3131-\u314e\u314f-\u3163]")
 LATIN_LETTER = re.compile(r"[A-Za-z\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u00ff]")
+CYRILLIC = re.compile(r"[\u0400-\u04ff]")
 # Taigi is written in Hanji, in romanization (Tâi-lô, POJ), or both.
 HAN_OR_LATIN = re.compile(r"[\u4e00-\u9fffA-Za-z\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u00ff]")
 

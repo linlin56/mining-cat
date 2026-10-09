@@ -30,7 +30,7 @@ _FROM_WHISPER_SIZE = {"medium": "qwen3-1.7b", "large": "qwen3-1.7b", "turbo": "q
 QWEN_LANGUAGES = {
     "zh": "Chinese", "yue": "Cantonese", "nan": "Chinese", "ja": "Japanese", "ko": "Korean", "vi": "Vietnamese",
     "en": "English", "fr": "French", "de": "German", "es": "Spanish", "it": "Italian", "pt": "Portuguese",
-    "pl": "Polish",
+    "pl": "Polish", "ru": "Russian",
 }
 
 MAX_UTTERANCE_SECONDS = 20

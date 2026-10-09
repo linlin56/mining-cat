@@ -5,7 +5,8 @@ import webbrowser
 from flask import Flask
 
 from miningcat.application import study_language, user_preferences
-from miningcat.interfaces.web import errors, security, uploads
+from miningcat.infrastructure.system.discord_presence import DiscordPresence
+from miningcat.interfaces.web import discord_status, errors, security, uploads
 from miningcat.interfaces.web.blueprints import (
     book_audio,
     books,
@@ -39,6 +40,12 @@ def create_app(state: AppState | None = None) -> Flask:
     for blueprint in BLUEPRINTS:
         app.register_blueprint(blueprint)
     app.before_request(security.guard)
+
+    @app.before_request
+    def _discord_status():
+        if app.extensions["miningcat"].discord is not None:
+            app.extensions["miningcat"].discord.page_opened()
+
     errors.register(app)
 
     # The language studied, for every page's header, and the user's colours (base.html), set before the page is drawn.
@@ -52,7 +59,11 @@ def create_app(state: AppState | None = None) -> Flask:
 
 def main(port: int = 5050, open_browser: bool = True, page: str = "") -> None:
     uploads.clear_staging()
-    app = create_app()
+    presence = DiscordPresence(discord_status.client_id())
+    presence.start()
+    if not presence.available:
+        print(f"Discord status off: {discord_status.why_off()}")
+    app = create_app(AppState(discord=discord_status.DiscordStatus(presence)))
     url = f"http://127.0.0.1:{port}/{page}"
     print(f"MiningCat is running at {url}  (press Ctrl+C to stop)")
     if open_browser:
@@ -64,3 +75,4 @@ def main(port: int = 5050, open_browser: bool = True, page: str = "") -> None:
         capture = app.extensions["miningcat"].game_capture
         if capture is not None:
             capture.stop()
+        presence.stop()

@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, current_app, jsonify
 
 from miningcat.application import user_preferences
 from miningcat.interfaces.web.requests import json_body
@@ -13,4 +13,9 @@ def api_preferences():
 
 @bp.post("/api/preferences")
 def api_save_preferences():
-    return jsonify(user_preferences.save_preferences(json_body()))
+    saved = user_preferences.save_preferences(json_body())
+    # Turned on or off: the Discord status changes at once, not at the next page.
+    discord = current_app.extensions["miningcat"].discord
+    if discord is not None:
+        discord.refresh()
+    return jsonify(saved)

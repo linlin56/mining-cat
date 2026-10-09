@@ -1,16 +1,23 @@
 """Ranks of words in a frequency list (term_meta "freq" rows of a dictionary)."""
 import json
+import re
 
 from miningcat.domain.languages import CHINESE_LANGUAGES
 from miningcat.domain.text.chinese_script import to_simplified, to_traditional
 
+_NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
-# A frequency of term_meta: 1234, {"value": 1234, "displayValue": "1234㋕"}, or {"reading": ..., "frequency": either}.
+
+# A frequency of term_meta: 1234, "1234", {"value": 1234, "displayValue": "1234㋕"}, or {"reading": ..., "frequency": either}.
 def _value(data) -> float | None:
     if isinstance(data, dict) and "frequency" in data:
         data = data["frequency"]
     if isinstance(data, dict):
         data = data.get("value")
+    if isinstance(data, str):
+        # some lists write their ranks as text ("12", like Yomitan, reading its first number)
+        match = _NUMBER.search(data)
+        data = float(match.group()) if match else None
     return data if isinstance(data, (int, float)) and not isinstance(data, bool) else None
 
 
@@ -48,3 +55,29 @@ def ranks_from_rows(rows, occurrences: bool) -> dict[str, int]:
         ordered = sorted(values, key=values.get, reverse=True)
         return {expression: i + 1 for i, expression in enumerate(ordered)}
     return {expression: max(1, int(value)) for expression, value in values.items()}
+
+
+def _respelled(table: dict[str, int], spell) -> dict[str, int]:
+    """The list with its words respelled (说 -> 說), a word written two ways keeping its best rank."""
+    result: dict[str, int] = {}
+    for word, rank in table.items():
+        word = spell(word)
+        result[word] = min(rank, result.get(word, rank))
+    return result
+
+
+def combine(tables: list[dict[str, int]], spell=None) -> dict[str, int]:
+    """One list of several: a word ranks by its best rank in any of them, then by its average rank (a list without
+    the word counting as its end), and the ranks are renumbered 1, 2, 3... so that the lists share one scale.
+    `spell` writes the words of every list in one script first (a Simplified and a Traditional list: 说 is 說)."""
+    if len(tables) == 1:
+        return tables[0]
+    if spell:
+        tables = [_respelled(table, spell) for table in tables]
+    words = {w for table in tables for w in table}
+
+    def key(word: str):
+        ranks = [table.get(word, len(table) + 1) for table in tables]
+        return min(ranks), sum(ranks) / len(ranks), word
+
+    return {word: i + 1 for i, word in enumerate(sorted(words, key=key))}

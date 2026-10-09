@@ -40,7 +40,7 @@ def test_json_list_ranks_words_by_position(tmp_path):
     d = json_list(tmp_path, ["the", ["cat", ""], "fish", "the", "dog"])
     assert d["title"] == "English list" and d["meta_count"] == 4  # the repeated "the" counts once
     assert frequency.ranks(d["id"], d["imported"]) == {"the": 1, "cat": 2, "fish": 3, "dog": 5}
-    assert frequency.reference("en")["id"] == d["id"]
+    assert [ref["id"] for ref in frequency.references("en")] == [d["id"]]
 
 
 def test_text_list_and_errors(tmp_path):
@@ -101,13 +101,40 @@ def test_without_a_list_every_i1_sentence_is_recommended():
 def test_choosing_another_list(tmp_path):
     first = json_list(tmp_path, ["cat", "the"], "A.json")
     second = json_list(tmp_path, ["the", "cat"], "B.json")
-    assert frequency.reference("en")["id"] == first["id"]
-    frequency.choose("en", second["id"])
+    assert [ref["id"] for ref in frequency.references("en")] == [first["id"]]  # the first list, until one is chosen
+    frequency.choose("en", [second["id"]])
     assert frequency.Ranker("en").rank("cat") == 2
     dictionaries.update_dictionary(second["id"], enabled=False)  # a disabled list isn't used
-    assert frequency.reference("en")["id"] == first["id"]
+    assert frequency.references("en") == [] and frequency.frontier("en") is None
     with pytest.raises(ValueError):
-        frequency.choose("en", 999)
+        frequency.choose("en", [999])
+
+
+def test_combining_lists(tmp_path):
+    first = json_list(tmp_path, ["the", "cat", "fish"], "A.json")
+    second = json_list(tmp_path, ["dog", "the", "eats"], "B.json")
+    frequency.choose("en", [first["id"], second["id"]])
+    ranker = frequency.Ranker("en")
+    # best ranks: the 1 (and 2), dog 1 (and none), cat 2, eats 3, fish 3 (equal in average too: by spelling)
+    assert [ranker.rank(w) for w in ("the", "dog", "cat", "eats", "fish")] == [1, 2, 3, 4, 5]
+    assert ranker.frontier["title"] == "A + B" and ranker.frontier["words"] == 5
+    known("dog", "fish")
+    assert frequency.frontier("en")["known"] == 2
+
+
+def test_a_deleted_list_is_no_longer_combined(tmp_path):
+    first = json_list(tmp_path, ["the", "cat"], "A.json")
+    second = json_list(tmp_path, ["dog", "fish"], "B.json")
+    frequency.choose("en", [first["id"], second["id"]])
+    dictionaries.delete_dictionary(second["id"])
+    assert frequency.frontier("en")["dictionaries"] == [{"id": first["id"], "title": "A"}]
+    assert frequency.Ranker("en").rank("dog") is None
+
+
+def test_no_list_chosen(tmp_path):
+    json_list(tmp_path, ["the", "cat"])
+    frequency.choose("en", [])
+    assert frequency.frontier("en") is None and frequency.Ranker("en").frequent("cat")
 
 
 def test_chinese_ranks_ignore_the_script(tmp_path, monkeypatch):
@@ -116,6 +143,22 @@ def test_chinese_ranks_ignore_the_script(tmp_path, monkeypatch):
     path.write_text(json.dumps(["的", "说"], ensure_ascii=False), encoding="utf-8")
     dictionaries.import_dictionary(path, "zh", filename="zh.json")
     assert frequency.Ranker("zh").rank("說") == 2
+
+
+@pytest.mark.parametrize("learnt, word", [("traditional", "說"), ("simplified", "说"), ("both", "說")])
+def test_a_simplified_and_a_traditional_list_combined(tmp_path, monkeypatch, learnt, word):
+    monkeypatch.setattr(chinese_script, "chinese_scripts", ChineseScripts(FakeOpenCc({"說": "说", "話": "话"})))
+    preferences.set_chinese_script_preference("zh", learnt)
+    ids = []
+    for name, items in (("Simplified.json", ["说", "的", "话"]), ("Traditional.json", ["說", "的", "話"])):
+        path = tmp_path / name
+        path.write_text(json.dumps(items, ensure_ascii=False), encoding="utf-8")
+        ids.append(dictionaries.import_dictionary(path, "zh", filename=name)["id"])
+    frequency.choose("zh", ids)
+    ranker = frequency.Ranker("zh")
+    # 说 / 說 is one word (#1 in both lists), in the script learnt
+    assert ranker.frontier["words"] == 3 and word in ranker.table
+    assert [ranker.rank(w) for w in ("說", "说", "的", "話", "话")] == [1, 1, 2, 3, 3]
 
 
 def test_lookup_and_settings_api(tmp_path, monkeypatch):
@@ -127,11 +170,14 @@ def test_lookup_and_settings_api(tmp_path, monkeypatch):
     client = web_app.create_app(AppState()).test_client()
     d = json_list(tmp_path, ["the", "cat"])
     data = client.post("/api/dict/lookup", json={"language": "en", "text": "cat"}, headers=HEADERS).get_json()
-    assert data["entries"][0]["frequency_rank"] == 2 and data["frequency"]["dictionary"]["id"] == d["id"]
+    assert data["entries"][0]["frequency_rank"] == 2 and data["frequency"]["dictionaries"] == [{"id": d["id"], "title": "English list"}]
 
     lists = client.get("/api/frequency/lists?language=en").get_json()
-    assert lists["chosen"] == d["id"] and lists["frontier"]["words"] == 2
-    assert client.post("/api/frequency/list", json={"language": "en", "id": 999}, headers=HEADERS).status_code == 400
+    assert lists["chosen"] == [d["id"]] and lists["frontier"]["words"] == 2
+    assert [entry["has_terms"] for entry in lists["lists"]] == [False]
+    assert client.post("/api/frequency/list", json={"language": "en", "ids": [999]}, headers=HEADERS).status_code == 400
+    chosen = client.post("/api/frequency/list", json={"language": "en", "ids": []}, headers=HEADERS).get_json()
+    assert chosen["frontier"] is None
 
     # a JSON list goes through the same import as dictionaries
     client.post("/api/profile", json={"language": "en"}, headers=HEADERS)

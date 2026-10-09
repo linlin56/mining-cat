@@ -755,15 +755,15 @@
     return el("div", { class: "d-flex flex-wrap align-items-baseline column-gap-2" }, ...parts);
   }
 
-  // "#1,234" for a word's rank in the frequency list, highlighted when it's frequent enough to be recommended now.
+  // "#1,234" for a word's rank in the frequency lists (combined), highlighted when it's frequent enough to be recommended now.
   function frequencyText(entry) {
     const list = entry.frequency_list;
     if (!list) return null;
-    if (!entry.frequency_rank) return { text: "Not in your frequency list", frequent: false, title: `Not in “${list.dictionary.title}”: a rare word` };
+    if (!entry.frequency_rank) return { text: "Not in your frequency list", frequent: false, title: `Not in “${list.title}”: a rare word` };
     const frequent = entry.frequency_rank <= list.limit;
     return {
       text: `#${entry.frequency_rank.toLocaleString()}`, frequent,
-      title: `Rank in “${list.dictionary.title}” (1 = most frequent). You know ${list.known.toLocaleString()} of its words: `
+      title: `Rank in “${list.title}” (1 = most frequent). You know ${list.known.toLocaleString()} of their words: `
         + `sentences are recommended for words up to #${list.limit.toLocaleString()}`
         + (frequent ? ", like this one." : ", this one is further down the list."),
     };
@@ -812,7 +812,9 @@
       entry.frequency_list = data.frequency || null;
       const chip = frequencyChip(entry);
       if (chip) meta.append(chip);
-      const others = entry.frequencies.filter((f) => !data.frequency || f.dictionary !== data.frequency.dictionary.title);
+      // (a single list's rank is the chip: the lists combined still show their own ranks)
+      const used = data.frequency && data.frequency.dictionaries.length === 1 ? data.frequency.title : null;
+      const others = entry.frequencies.filter((f) => f.dictionary !== used);
       for (const f of others.slice(0, 3)) meta.append(el("span", { class: `${CHIP} bg-body-secondary text-body`, title: f.dictionary, text: `${f.dictionary.split(/[\s[(]/)[0]} ${f.display}` }));
       if (others.length > 3) {
         const rest = others.slice(3);

@@ -107,45 +107,71 @@ async function loadDictionaries() {
     }))));
 }
 
-// ---------------------------------------------------------------- frequency list
+// ---------------------------------------------------------------- frequency lists
 
 async function loadFrequency() {
   const { lists, chosen, frontier, limit_base: base, limit_per_known_word: perWord } = await api(`/api/frequency/lists?language=${STUDY}`);
-  const select = $("freq-list");
-  options(select, lists.length
-    ? lists.map((l) => [String(l.id), l.enabled ? l.title : `${l.title} (disabled)`])
-    : [["", "None: every i+1 sentence is recommended"]], chosen === null ? "" : String(chosen));
-  select.disabled = lists.length < 2;
+  const box = $("freq-lists");
+  // the ticked lists are combined (see frequency.py)
+  box.replaceChildren(...(lists.length ? lists.map((l) => {
+    const id = `freq-list-${l.id}`;
+    const check = el("input", { type: "checkbox", class: "form-check-input", id, value: String(l.id),
+      checked: chosen.includes(l.id), disabled: !l.enabled });
+    check.addEventListener("change", async () => {
+      const ids = [...box.querySelectorAll("input:checked")].map((c) => Number(c.value));
+      try { await api("/api/frequency/list", { language: STUDY, ids }); loadFrequency(); } catch (err) { showError(err); }
+    });
+    const remove = el("button", {
+      class: "btn btn-sm btn-link text-danger p-0", type: "button", title: "Delete", "aria-label": `Delete ${l.title}`,
+      onclick: async () => {
+        const what = l.has_terms ? `“${l.title}” is a dictionary too: its definitions will be deleted as well.` : `Delete “${l.title}”?`;
+        if (!(await confirmBox("Delete frequency list", `${what} You can import it again later.`, "Delete"))) return;
+        try { await api(`/api/dict/${l.id}/delete`, {}); loadDictionaries(); loadFrequency(); } catch (err) { showError(err); }
+      },
+    }, icon("trash"));
+    return el("div", { class: "d-flex align-items-center gap-2" },
+      el("div", { class: "form-check m-0" }, check,
+        el("label", { class: "form-check-label", for: id, text: l.enabled ? l.title : `${l.title} (disabled)` })),
+      remove);
+  }) : [el("p", { class: EMPTY, text: "No frequency list yet." })]));
+  const several = frontier && frontier.dictionaries.length > 1;
   $("freq-frontier").textContent = frontier
-    ? `You know ${frontier.known.toLocaleString()} of its ${frontier.words.toLocaleString()} words: sentences are recommended `
+    ? `You know ${frontier.known.toLocaleString()} of the ${frontier.words.toLocaleString()} words of ${several ? "these lists" : "this list"}: `
+      + "sentences are recommended "
       + `for words up to #${frontier.limit.toLocaleString()} (${base.toLocaleString()} + ${perWord} per word you know).`
-    : "No frequency list yet: every sentence with one new word is recommended, frequent or not.";
+    : "No frequency list used: every sentence with one new word is recommended, frequent or not.";
 }
 
-async function importDictionary(file) {
+// `kind` is "dict" or "freq": the card whose button and progress bar show the import.
+async function importDictionary(file, kind = "dict") {
   if (!file) return;
   const form = new FormData();
   form.append("file", file, file.name);
   form.append("language", STUDY);
-  const progress = $("dict-progress");
+  const progress = $(`${kind}-progress`);
   progress.hidden = false;
-  $("dict-progress-bar").style.width = "0%";
-  $("dict-progress-text").textContent = `Uploading ${file.name}…`;
-  $("dict-pick").disabled = true;
+  $(`${kind}-progress-bar`).style.width = "0%";
+  $(`${kind}-progress-text`).textContent = `Uploading ${file.name}…`;
+  $(`${kind}-pick`).disabled = true;
   try {
     const res = await fetch("/api/dict/import", { method: "POST", headers: { "X-MiningCat": "1" }, body: form });
     const data = await res.json();
     if (!res.ok) throw Object.assign(new Error(data.error), { title: data.title });
-    $("dict-progress-text").textContent = `Importing “${data.title}”…`;
+    $(`${kind}-progress-text`).textContent = `Importing “${data.title}”…`;
     for (;;) {
       await new Promise((r) => setTimeout(r, 600));
       const job = await api(`/api/dict/import/${data.job}`);
-      $("dict-progress-bar").style.width = `${Math.round(job.progress * 100)}%`;
-      if (!job.done) { $("dict-progress-text").textContent = `Importing “${data.title}”: ${job.message}`; continue; }
+      $(`${kind}-progress-bar`).style.width = `${Math.round(job.progress * 100)}%`;
+      if (!job.done) { $(`${kind}-progress-text`).textContent = `Importing “${data.title}”: ${job.message}`; continue; }
       if (job.error) throw Object.assign(new Error(job.error), { title: "Import failed" });
       const d = job.dictionary;
       const [count, unit] = d.term_count ? [d.term_count, "terms"] : d.kanji_count ? [d.kanji_count, "characters"] : [d.meta_count, "frequencies"];
-      $("dict-progress-text").textContent = `“${data.title}” imported: ${count.toLocaleString()} ${unit}.`;
+      $(`${kind}-progress-text`).textContent = `“${data.title}” imported: ${count.toLocaleString()} ${unit}.`;
+      if (kind === "freq" && d.meta_count) {
+        // a frequency list imported here is added to the lists used
+        const { chosen } = await api(`/api/frequency/lists?language=${STUDY}`);
+        if (!chosen.includes(d.id)) await api("/api/frequency/list", { language: STUDY, ids: [...chosen, d.id] });
+      }
       break;
     }
     loadDictionaries();
@@ -154,7 +180,7 @@ async function importDictionary(file) {
     progress.hidden = true;
     showError(err);
   } finally {
-    $("dict-pick").disabled = false;
+    $(`${kind}-pick`).disabled = false;
   }
 }
 
@@ -571,10 +597,7 @@ async function init() {
     $("dict-file").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; importDictionary(f); });
     await loadFrequency();
     $("freq-pick").addEventListener("click", () => $("freq-file").click());
-    $("freq-file").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; importDictionary(f); });
-    $("freq-list").addEventListener("change", async (e) => {
-      try { await api("/api/frequency/list", { language: STUDY, id: e.target.value }); loadFrequency(); } catch (err) { showError(err); }
-    });
+    $("freq-file").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; importDictionary(f, "freq"); });
     $("words-filter").addEventListener("change", loadWords);
     $("words-order").addEventListener("change", loadWords);
     $("anki-test").addEventListener("click", async () => {

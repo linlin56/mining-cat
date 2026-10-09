@@ -1,4 +1,4 @@
-"""Dictionaries: lookups, imports and settings, and the frequency list of each language."""
+"""Dictionaries: lookups, imports and settings, and the frequency lists of each language."""
 import tempfile
 from pathlib import Path
 
@@ -25,7 +25,7 @@ def api_lookup():
     ranker = frequency.Ranker(language)
     for entry in result["entries"]:
         entry["display_reading"] = words.display_reading(language, entry["expression"], entry.get("reading") or "")
-        # rank in the frequency list of the language, shown in the popup and the card creator
+        # rank in the frequency lists of the language (combined), shown in the popup and the card creator
         entry["frequency_rank"] = ranker.rank(entry["expression"], entry.get("form") or "")
         if wanted:
             entry["reading_match"] = reading_match(wanted, entry.get("reading") or "", language)
@@ -36,8 +36,8 @@ def api_lookup():
 @bp.get("/api/frequency/lists")
 def api_frequency_lists():
     language = study_language(request.args.get("language"))
-    ref = frequency.reference(language)
-    return jsonify(lists=frequency.lists(language), chosen=ref["id"] if ref else None, frontier=frequency.frontier(language),
+    chosen = [ref["id"] for ref in frequency.references(language)]
+    return jsonify(lists=frequency.lists(language), chosen=chosen, frontier=frequency.frontier(language),
                    limit_base=frequency.LIMIT_BASE, limit_per_known_word=frequency.LIMIT_PER_KNOWN_WORD)
 
 
@@ -46,7 +46,8 @@ def api_choose_frequency_list():
     body = json_body()
     language = study_language(body.get("language"))
     try:
-        frequency.choose(language, int(body["id"]) if body.get("id") not in (None, "") else None)
+        # the lists combined for the recommendations, none to recommend every i+1 sentence
+        frequency.choose(language, [int(i) for i in body.get("ids") or []])
     except (ValueError, TypeError) as exc:
         raise UserError("Frequency list", str(exc))
     return jsonify(frontier=frequency.frontier(language))

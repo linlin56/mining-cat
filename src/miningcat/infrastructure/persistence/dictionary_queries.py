@@ -136,11 +136,13 @@ class DictionaryQueries:
     def frequency_lists(self, language: str) -> list[dict]:
         """The dictionaries of a language that have word frequencies, in the dictionary order."""
         rows = self._conn.execute(
-            "SELECT d.id, d.title, d.enabled, d.imported FROM dictionaries d WHERE d.language = ? AND d.meta_count > 0"
+            "SELECT d.id, d.title, d.enabled, d.imported, d.term_count FROM dictionaries d WHERE d.language = ? AND d.meta_count > 0"
             " AND EXISTS (SELECT 1 FROM term_meta m WHERE m.dict_id = d.id AND m.mode = 'freq') ORDER BY d.priority, d.id",
             (language,),
         ).fetchall()
-        return [{"id": r["id"], "title": r["title"], "enabled": bool(r["enabled"]), "imported": r["imported"]} for r in rows]
+        # has_terms: a dictionary with definitions too, not only a frequency list
+        return [{"id": r["id"], "title": r["title"], "enabled": bool(r["enabled"]), "imported": r["imported"],
+                 "has_terms": bool(r["term_count"])} for r in rows]
 
     def counts_occurrences(self, dict_id: int) -> bool:
         """Whether a frequency list gives counts ("occurrence-based") instead of ranks."""

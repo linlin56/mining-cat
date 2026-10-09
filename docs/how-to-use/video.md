@@ -27,7 +27,7 @@ If the file has several audio tracks (e.g. several dubs), an **Audio track** dro
 ## How it works
 
 1. Provide the video and click **Generate From Source**.
-2. The audio is transcribed with Whisper (using the selected Language, Precision and audio track) into a `_whisper.srt` subtitle file.
+2. The audio is transcribed with Whisper, or [Qwen3-ASR](audiobook-ebook.md#qwen3-asr-optional) when it's installed and selected in Precision (using the selected Language, Precision and audio track), into a `_whisper.srt` subtitle file (`_qwen.srt` with Qwen3-ASR).
 3. If the video already has subtitles, they're kept as a `_source.srt` file:
     - **YouTube**: captions in the target language are downloaded alongside the video.
     - **Local file**: a sidecar `.srt` with the same name next to the video (e.g. `movie.mp4` + `movie.en.srt`) is reused, or else a text subtitle track already inside the video is extracted. Image-based subtitles (PGS, VobSub) can't be extracted this way, use [OCR](#burned-in-subtitles-ocr) instead.

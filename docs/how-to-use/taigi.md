@@ -20,11 +20,13 @@ Whisper doesn't know Taigi and Edge has no Taigi voice, so Taigi uses other open
 | Aligning a book on its audiobook (*Standard*) | Meta's [MMS aligner](https://pytorch.org/audio/stable/tutorials/forced_alignment_for_multilingual_data_tutorial.html), on the book's text read as Tâi-lô |
 | Speech synthesis (*Generate audio*, sentence audio of cards) | Meta's [MMS-TTS Taigi voice](https://huggingface.co/facebook/mms-tts-nan) |
 
-Install them once with:
+Install them once with (the converter also offers it, in a pop-up, when you choose Taigi and they aren't installed):
 
 ```bash
 make install-taigi
 ```
+
+It installs [Qwen3-ASR](audiobook-ebook.md#qwen3-asr-optional) (`make install-qwen`, which can also replace Whisper for the other languages), then Meta's MMS, only used for Taigi.
 
 Their models are downloaded the first time they're used: about 1.8 GB for Qwen3-ASR 0.6B (4.7 GB for 1.7B), 1.2 GB for the aligner, 140 MB for the voice. An NVIDIA GPU or an Apple Silicon Mac makes transcription much faster, but a CPU works.
 

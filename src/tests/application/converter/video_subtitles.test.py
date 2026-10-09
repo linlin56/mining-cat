@@ -118,6 +118,19 @@ def test_run_orchestrates_pipeline(tmp_path, monkeypatch):
     m["chinese_converter"].convert_srt_dir.assert_not_called()
 
 
+def test_a_qwen3_asr_transcription_is_named_after_it(tmp_path, monkeypatch):
+    for name in ("videos", "temp", "srt", "final"):
+        redirect_path(monkeypatch, name, tmp_path / name)
+    m = _make_pipeline_mocks(tmp_path, [])
+    with patch.object(video, "download_video", m["download"]), \
+         patch.object(video, "extract_audio", m["extract_audio"]), \
+         patch.object(video, "mux_subtitles", m["mux"]), \
+         patch("miningcat.infrastructure.media.video_file.extract_embedded_subtitles", m["extract_embedded_subtitles"]), \
+         _patched_modules(m):
+        run_video("https://www.instagram.com/reel/xxx/", model_name="qwen3-0.6b", language=Language.MANDARIN_TW)
+    assert m["mux"].call_args[0][1][0][0].name == "abc_qwen.srt"
+
+
 def test_run_logs_and_overwrites_previous_transcription(tmp_path, monkeypatch, capsys):
     redirect_path(monkeypatch, "videos", tmp_path / "videos")
     redirect_path(monkeypatch, "temp", tmp_path / "temp")

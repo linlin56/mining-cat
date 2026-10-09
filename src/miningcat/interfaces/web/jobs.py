@@ -6,6 +6,7 @@ from typing import Callable
 
 from miningcat.application.converter.jobs import Job, run_job
 from miningcat.application.game_ocr.capture_process import GameCaptureProcess
+from miningcat.interfaces.web.discord_status import DiscordStatus
 from miningcat.interfaces.web.event_bus import EventBus
 
 
@@ -32,6 +33,8 @@ class AppState:
     # The last previews: frames of a video for the subtitle region picker, a capture of the game for its areas.
     ocr_preview: dict = field(default_factory=lambda: {"frames": [], "version": 0})
     game_frame: dict = field(default_factory=lambda: {"data": None, "version": 0})
+    # The user's Discord status, while the server runs (see discord_status.py)
+    discord: DiscordStatus | None = None
     _lock: threading.Lock = field(default_factory=threading.Lock)
     _job: JobSnapshot = field(default_factory=JobSnapshot)
 

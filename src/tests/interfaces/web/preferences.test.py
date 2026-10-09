@@ -16,10 +16,10 @@ def client():
 
 
 def test_preferences_api(client):
-    assert client.get("/api/preferences").get_json() == {"theme": "system", "highlights": "default"}
+    assert client.get("/api/preferences").get_json() == {"theme": "system", "highlights": "default", "discord": "on"}
     res = client.post("/api/preferences", json={"theme": "dark", "highlights": "deutan"}, headers=HEADERS)
-    assert res.get_json() == {"theme": "dark", "highlights": "deutan"}
-    assert client.get("/api/preferences").get_json() == {"theme": "dark", "highlights": "deutan"}
+    assert res.get_json() == {"theme": "dark", "highlights": "deutan", "discord": "on"}
+    assert client.get("/api/preferences").get_json() == {"theme": "dark", "highlights": "deutan", "discord": "on"}
 
 
 def test_saving_needs_the_header(client):

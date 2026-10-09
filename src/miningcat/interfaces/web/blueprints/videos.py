@@ -117,7 +117,7 @@ def api_prepare(video_id: str):
 
 @bp.get("/api/videos/<video_id>/subtitles/<track_id>")
 def api_cues(video_id: str, track_id: str):
-    return jsonify(cues=videos.cues(video_id, track_id))
+    return jsonify(cues=videos.cues(video_id, track_id, request.args.get("punctuation", "")))
 
 
 @bp.post("/api/videos/<video_id>/subtitles")

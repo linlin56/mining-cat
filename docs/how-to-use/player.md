@@ -75,12 +75,14 @@ Click **Aa**. For this video:
 - **Characters of the subtitles** (Mandarin only): Traditional or Simplified, detected from the subtitles, or set by the converter or the download. It picks the fonts.
 
 The library only shows the videos of the language you study: the videos you add are filed under it.
-- **Subtitles** and **Second subtitles**: the second track (a translation, for example) is shown smaller, under the first one, and isn't looked up.
+- **Subtitles** and **Second subtitles**: the second track (a translation, for example) is shown smaller, under the first one, and isn't looked up. With **Use secondary subtitles as translation** (on by default), a card's sentence translation is the second track's lines at the same time; off, or without a second track, the sentence is translated offline.
 - **Subtitle timing**: when the subtitles are early or late (`[` `]`).
 - **Audio track**, for videos with several (e.g. dubs). A browser can only play the first audio track of a file, so MiningCat makes a copy with the chosen one.
 - **Add subtitles…** (or drop a subtitle file on the page) and **Remove these subtitles**.
 
 For every video: subtitle size, shown / blurred / hidden, auto-pause, [word colours](mining.md#word-colours), and the audio margin kept before and after the lines on cards (200 ms by default).
+
+**Chinese / Japanese punctuation** (on by default): in the subtitles studied, ASCII punctuation after Chinese or Japanese characters is shown as the language's own (`,` → `，`, `.` → `。`, `"…"` → `「…」`, or `“…”` in simplified characters, `、` in Japanese). Numbers, English words and romanized Taigi keep theirs. The subtitle file itself isn't changed.
 
 ## Current limits
 

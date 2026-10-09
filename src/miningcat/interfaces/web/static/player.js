@@ -461,10 +461,12 @@ function saveProgress(now = false) {
 
 // ---------------------------------------------------------------- subtitles
 
-async function fetchCues(trackId) {
+// `punctuation`: the subtitles studied, in the punctuation of their language when the settings say so (, → ，).
+async function fetchCues(trackId, punctuation = false) {
   if (!trackId) return [];
+  const query = punctuation && P.settings.fullwidth_punctuation ? `?punctuation=${encodeURIComponent(effectiveLanguage())}` : "";
   try {
-    return (await api(`/player/api/videos/${P.video.id}/subtitles/${trackId}`)).cues;
+    return (await api(`/player/api/videos/${P.video.id}/subtitles/${trackId}${query}`)).cues;
   } catch { return []; }
 }
 
@@ -474,7 +476,7 @@ async function loadTracks() {
   const ids = new Set(tracks.map((t) => t.id));
   const primary = ids.has(P.prefs.primary) ? P.prefs.primary : (P.prefs.primary === undefined && tracks[0] ? tracks[0].id : "");
   const secondary = ids.has(P.prefs.secondary) && P.prefs.secondary !== primary ? P.prefs.secondary : "";
-  const [cues, second] = await Promise.all([fetchCues(primary), fetchCues(secondary)]);
+  const [cues, second] = await Promise.all([fetchCues(primary, true), fetchCues(secondary)]);
   P.cues = cues;
   P.second = second;
   P.primaryId = primary;
@@ -765,17 +767,24 @@ function rangeOf(node) {
   return inSelection(i) ? { ...P.selection, clicked: i } : { first: i, last: i, clicked: i };
 }
 
+// The selected lines, one per line: two sentences on two lines aren't glued together.
 function expandSentence(node, sentence) {
   const r = rangeOf(node);
   if (!r || r.first === r.last) return sentence;
-  const joiner = /^(ja|zh|yue|nan)/.test(effectiveLanguage()) ? "" : " ";
-  const join = (parts) => parts.filter(Boolean).join(joiner);
-  const before = join([...P.cues.slice(r.first, r.clicked).map((c) => c.text), sentence.before]);
-  const after = join([sentence.after, ...P.cues.slice(r.clicked + 1, r.last + 1).map((c) => c.text)]);
-  // the separator between the clicked line and its neighbours
-  const lead = before && sentence.before === "" && joiner ? joiner : "";
-  const trail = after && sentence.after === "" && joiner ? joiner : "";
-  return { text: `${before}${lead}${sentence.word}${trail}${after}`, before: before + lead, word: sentence.word, after: trail + after };
+  const before = P.cues.slice(r.first, r.clicked).map((c) => `${c.text}\n`).join("") + sentence.before;
+  const after = sentence.after + P.cues.slice(r.clicked + 1, r.last + 1).map((c) => `\n${c.text}`).join("");
+  return { text: `${before}${sentence.word}${after}`, before, word: sentence.word, after };
+}
+
+// The card's sentence translation: the second subtitles' lines at the time of the line(s), when the settings
+// say so. null (no second track, nothing at that time): the sentence is translated offline.
+function getTranslation(node) {
+  const r = rangeOf(node);
+  if (!r || !P.settings.secondary_translation || !P.second.length) return null;
+  const start = P.cues[r.first].start, end = rangeEnd(r);
+  // the tracks' timings differ a little: a second line counts when it overlaps half of its own span or of the lines'
+  const lines = P.second.filter((c) => Math.min(c.end, end) - Math.max(c.start, start) > Math.min(c.end - c.start, end - start) / 2);
+  return lines.length ? lines.map((c) => c.text).join("\n") : null;
 }
 
 function getSource(node) {
@@ -834,6 +843,9 @@ function syncSettingsForm() {
   $("subs").classList.toggle("blur", s.sub_display === "blur");
   $("subs").classList.toggle("hidden", s.sub_display === "hidden");
   $("set-auto-pause").checked = s.auto_pause;
+  $("set-secondary-translation").checked = s.secondary_translation;
+  $("set-fullwidth-punctuation").checked = s.fullwidth_punctuation;
+  $("punctuation-setting").hidden = !["zh", "yue", "nan", "ja"].includes(STUDY.id);
   $("set-colors").value = s.colors;
   $("set-audio-before").value = s.audio_before;
   $("set-audio-after").value = s.audio_after;
@@ -954,6 +966,7 @@ function wireSettings() {
   });
   $("set-language").addEventListener("change", async (e) => {
     await savePrefs({ language: e.target.value });
+    if (P.settings.fullwidth_punctuation) return loadTracks();  // the punctuation of the language chosen
     renderList();
     P.active = null;
     update();
@@ -966,6 +979,11 @@ function wireSettings() {
     await savePrefs({ secondary: e.target.value });
     await loadTracks();
   });
+  $("set-fullwidth-punctuation").addEventListener("change", async (e) => {
+    await saveSettings({ fullwidth_punctuation: e.target.checked });
+    if (P.video) await loadTracks();
+  });
+  $("set-secondary-translation").addEventListener("change", (e) => saveSettings({ secondary_translation: e.target.checked }));
   for (const [id, key] of [["set-audio-before", "audio_before"], ["set-audio-after", "audio_after"]]) {
     $(id).addEventListener("change", (e) => saveSettings({ [key]: Number(e.target.value) }));
   }
@@ -1124,6 +1142,7 @@ async function init() {
       hasAudio: () => Boolean(P.video && P.video.audio && P.video.audio.length),
       playSentence,
       expandSentence,
+      getTranslation,
       onCard: clearSelection,
       sentenceClip,
       sentenceRange,

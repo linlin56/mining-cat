@@ -146,7 +146,7 @@ the markup with Bootstrap's components and utility classes (`card`, `btn`, `form
 - `discord_status.py`: the user's Discord status (Rich Presence), from the page last opened and the language studied;
   `infrastructure/system/discord_presence.py` sends it to the Discord app from a thread. It needs the Application ID
   of a Discord application (`DISCORD_CLIENT_ID`, or the `MININGCAT_DISCORD_CLIENT_ID` environment variable), whose
-  name is the one Discord shows and whose Rich Presence art asset `logo` is the image.
+  name is the one Discord shows and whose Rich Presence art asset `logo` is the image (`docs/assets/logo/miningcat.png`).
 - `static/ui.js`: the message dialogs (`MiningCatUI.dialog()`, a Bootstrap modal) and the toasts (`MiningCatUI.toast()`).
 - Custom CSS only for what Bootstrap has no class for, its classes starting with `mc-`: `static/app.css` (shared by
   the pages), and the engines of the screens: `reader.css` (the paginated book), `player.css` (the subtitles over the

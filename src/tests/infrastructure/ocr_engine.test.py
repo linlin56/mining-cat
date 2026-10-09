@@ -1,0 +1,179 @@
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from miningcat.domain.languages import Language
+from miningcat.infrastructure.ocr import engine
+
+
+def _fake_line(text, width=0.8, center_y=0.5):
+    return SimpleNamespace(text=text, bounding_box=SimpleNamespace(width=width, center_y=center_y))
+
+
+def _fake_ocr_result(*lines):
+    # Accepts either plain strings (wrapped with default bounding-box values) or
+    # pre-built fake lines (via _fake_line, for tests that need custom width/position).
+    wrapped = [line if hasattr(line, "bounding_box") else _fake_line(line) for line in lines]
+    return SimpleNamespace(paragraphs=[SimpleNamespace(lines=wrapped)])
+
+
+# _flatten_text
+def test_flatten_text_joins_lines_across_paragraphs():
+    result = SimpleNamespace(paragraphs=[
+        SimpleNamespace(lines=[_fake_line("line one", center_y=0.4), _fake_line("line two", center_y=0.6)]),
+        SimpleNamespace(lines=[_fake_line("line three", center_y=0.8)]),
+    ])
+    assert engine._flatten_text(result) == "line one\nline two\nline three"
+
+
+def test_flatten_text_no_lines_returns_empty_string():
+    result = _fake_ocr_result()
+    assert engine._flatten_text(result) == ""
+
+
+def test_flatten_text_drops_narrow_lines_relative_to_widest():
+    # A wide, centered subtitle line alongside a narrow staff-credit-like column.
+    result = _fake_ocr_result(_fake_line("dialogue subtitle line", width=0.8), _fake_line("原田", width=0.15))
+    assert engine._flatten_text(result) == "dialogue subtitle line"
+
+
+def test_flatten_text_keeps_comparably_wide_wrapped_lines_sorted_top_to_bottom():
+    # A subtitle wrapped across two comparably-wide lines should be kept, in reading order.
+    result = _fake_ocr_result(
+        _fake_line("second wrapped line", width=0.75, center_y=0.7),
+        _fake_line("first wrapped line", width=0.8, center_y=0.5),
+    )
+    assert engine._flatten_text(result) == "first wrapped line\nsecond wrapped line"
+
+
+def test_flatten_text_skips_none_lines():
+    result = _fake_ocr_result("hello", None)
+    assert engine._flatten_text(result) == "hello"
+
+
+# _build_impl - platform branching
+def test_build_impl_uses_apple_vision_on_darwin():
+    mock_apple_vision_cls = MagicMock(return_value=MagicMock(available=True))
+    fake_module = MagicMock(AppleVision=mock_apple_vision_cls)
+
+    with patch.object(engine.sys, "platform", "darwin"), \
+         patch.dict("sys.modules", {"owocr.ocr": fake_module}):
+        impl = engine._build_impl("fr-FR", "fr")
+
+    mock_apple_vision_cls.assert_called_once_with(language="fr-FR", config={"language_correction": True})
+    assert impl is mock_apple_vision_cls.return_value
+
+
+def test_build_impl_falls_back_to_easyocr_when_apple_vision_unavailable():
+    mock_apple_vision_cls = MagicMock(return_value=MagicMock(available=False))
+    mock_easyocr_cls = MagicMock(return_value=MagicMock(available=True))
+    fake_module = MagicMock(AppleVision=mock_apple_vision_cls, EasyOCR=mock_easyocr_cls)
+
+    with patch.object(engine.sys, "platform", "darwin"), \
+         patch.dict("sys.modules", {"owocr.ocr": fake_module}):
+        impl = engine._build_impl("fr-FR", "fr")
+
+    mock_easyocr_cls.assert_called_once_with(config={}, language="fr")
+    assert impl is mock_easyocr_cls.return_value
+
+
+def test_build_impl_uses_easyocr_on_non_darwin():
+    mock_easyocr_cls = MagicMock(return_value=MagicMock(available=True))
+    fake_module = MagicMock(EasyOCR=mock_easyocr_cls)
+
+    with patch.object(engine.sys, "platform", "linux"), \
+         patch.dict("sys.modules", {"owocr.ocr": fake_module}):
+        impl = engine._build_impl("en-US", "en")
+
+    mock_easyocr_cls.assert_called_once_with(config={}, language="en")
+    assert impl is mock_easyocr_cls.return_value
+
+
+def test_build_impl_raises_when_no_engine_available():
+    mock_easyocr_cls = MagicMock(return_value=MagicMock(available=False))
+    fake_module = MagicMock(EasyOCR=mock_easyocr_cls)
+
+    with patch.object(engine.sys, "platform", "linux"), \
+         patch.dict("sys.modules", {"owocr.ocr": fake_module}):
+        with pytest.raises(RuntimeError):
+            engine._build_impl("en-US", "en")
+
+
+# OcrEngine.read_text
+def test_read_text_returns_flattened_text_on_success():
+    result = _fake_ocr_result("recognized text")
+    fake_impl = MagicMock(return_value=(True, result))
+
+    with patch.object(engine, "_build_impl", return_value=fake_impl):
+        ocr_engine = engine.OcrEngine(Language.FRENCH)
+        text = ocr_engine.read_text("frame_000000.jpg")
+
+    assert text == "recognized text"
+    # owocr's engines do `isinstance(img, Path)` internally - a plain str is rejected,
+    # so read_text must convert it before calling the underlying engine.
+    fake_impl.assert_called_once_with(Path("frame_000000.jpg"))
+
+
+def test_read_text_returns_empty_string_on_failure():
+    fake_impl = MagicMock(return_value=(False, "Unknown error!"))
+
+    with patch.object(engine, "_build_impl", return_value=fake_impl):
+        ocr_engine = engine.OcrEngine(Language.FRENCH)
+        text = ocr_engine.read_text("frame_000000.jpg")
+
+    assert text == ""
+
+
+def test_read_text_passes_pil_images_through():
+    from PIL import Image
+    image = Image.new("RGB", (10, 10))
+    fake_impl = MagicMock(return_value=(True, _fake_ocr_result("in memory")))
+
+    with patch.object(engine, "_build_impl", return_value=fake_impl):
+        text = engine.OcrEngine(Language.FRENCH).read_text(image)
+
+    assert text == "in memory"
+    fake_impl.assert_called_once_with(image)
+
+
+def test_read_text_can_keep_narrow_lines():
+    # A game dialog box: the short last line must not be dropped like a hardsubs credit.
+    result = _fake_ocr_result(_fake_line("a long first line of dialogue", width=0.8, center_y=0.3),
+                              _fake_line("short.", width=0.1, center_y=0.6))
+    fake_impl = MagicMock(return_value=(True, result))
+
+    with patch.object(engine, "_build_impl", return_value=fake_impl):
+        text = engine.OcrEngine(Language.FRENCH).read_text("frame.jpg", drop_narrow_lines=False)
+
+    assert text == "a long first line of dialogue\nshort."
+
+
+# OcrEngine - Latin lines of Taigi
+def _boxed_line(text, left, top, width, height):
+    box = SimpleNamespace(left=left, top=top, width=width, height=height, center_y=top + height / 2)
+    return SimpleNamespace(text=text, bounding_box=box)
+
+
+def test_taigi_latin_lines_are_read_again_by_a_latin_model_and_repaired():
+    from PIL import Image
+    cjk = MagicMock(return_value=(True, SimpleNamespace(paragraphs=[SimpleNamespace(lines=[
+        _boxed_line("我欲食飯", 0.3, 0.1, 0.4, 0.3), _boxed_line("Gua beh tsiah-png", 0.2, 0.6, 0.6, 0.3)])])))
+    latin = MagicMock(return_value=(True, _fake_ocr_result("Guá beh tsiàh-pñg")))
+
+    with patch.object(engine, "_build_impl", side_effect=[cjk, latin]) as build:
+        text = engine.OcrEngine(Language.TAIGI).read_text(Image.new("RGB", (200, 100)))
+
+    assert text == "我欲食飯\nGuá beh tsia̍h-pn̄g"
+    assert build.call_args_list[1].args == ("vi-VT", "vi")
+    assert build.call_args_list[1].kwargs == {"latin": True}
+    assert latin.call_count == 1  # only the Latin line, cropped
+    assert latin.call_args.args[0].size[1] < 100
+
+
+def test_hanji_only_frames_build_no_latin_model():
+    cjk = MagicMock(return_value=(True, _fake_ocr_result("我欲食飯")))
+    with patch.object(engine, "_build_impl", return_value=cjk) as build:
+        assert engine.OcrEngine(Language.TAIGI).read_text("frame.jpg") == "我欲食飯"
+    build.assert_called_once()

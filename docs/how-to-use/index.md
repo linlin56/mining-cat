@@ -9,7 +9,7 @@
     - macOS: `brew install ffmpeg`
     - Debian/Ubuntu: `sudo apt install ffmpeg`
 - **A web browser**: the GUI is a local web page (nothing is sent online)
-- **make**, to use the shortcuts below (you can also call `python src/main.py` directly, see [CLI reference](cli.md))
+- **make**, to use the shortcuts below (you can also call `python -m miningcat` directly, see [CLI reference](cli.md))
 
 Everything else (Whisper, yt-dlp, edge-tts, OpenCC, [owocr](https://pypi.org/project/owocr/)...) is installed by `make install`.
 
@@ -49,9 +49,6 @@ From the home page, open the **Converter**, the [Reader](reader.md), the [Player
 ![The home page, once the language is chosen: Converter, Reader, Player and Settings](../assets/screenshots/home-hub.png)
 
 You can drag and drop files on the audio, book and video panels. The files you pick are copied into the project's `sources/` folder, like before.
-
-!!! note
-    The previous Tkinter window is still available with `make gui-tk` for now. It needs the Tk bindings for Python (`sudo apt install python3-tk` on Debian/Ubuntu, `brew install python-tk` with Homebrew's Python).
 
 The converter's header has three settings shared by every workflow:
 

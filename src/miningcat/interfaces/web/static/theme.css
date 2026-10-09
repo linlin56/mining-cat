@@ -1,0 +1,209 @@
+/* MiningCat's colours on Bootstrap (loaded after bootstrap.min.css): the orange primary and the warm palette,
+   in light, dark and sepia (the reader's) colour modes. Bootstrap is used without Sass: its variables are set here,
+   and the few components whose compiled CSS has the blue primary written in get the orange back. */
+
+:root,
+[data-bs-theme="light"],
+[data-bs-theme="sepia"] {
+  --mc-orange: #ff8c42;
+  --mc-orange-hover: #e67d3b;
+  --mc-orange-active: #d97638;
+  --mc-focus-ring: rgba(255, 140, 66, 0.3);
+
+  --bs-primary: var(--mc-orange);
+  --bs-primary-rgb: 255, 140, 66;
+  --bs-primary-text-emphasis: #a64b0c;
+  --bs-primary-bg-subtle: #ffe8d9;
+  --bs-primary-border-subtle: #ffd1b3;
+  --bs-link-color: #a64b0c;
+  --bs-link-color-rgb: 166, 75, 12;
+  --bs-link-hover-color: #7d3909;
+  --bs-link-hover-color-rgb: 125, 57, 9;
+  --bs-code-color: #a64b0c;
+  --bs-focus-ring-color: var(--mc-focus-ring);
+
+  --bs-body-bg: #fdfbf7;
+  --bs-body-bg-rgb: 253, 251, 247;
+  --bs-body-color: #2d2d2d;
+  --bs-body-color-rgb: 45, 45, 45;
+  --bs-emphasis-color: #1a1a1a;
+  --bs-secondary-color: #6f6a65;
+  --bs-secondary-bg: #ebe4df;
+  --bs-tertiary-bg: #f5ede8;
+  --bs-tertiary-bg-rgb: 245, 237, 232;
+  --bs-border-color: #e6dcd5;
+}
+
+[data-bs-theme="dark"] {
+  --mc-focus-ring: rgba(255, 140, 66, 0.4);
+  --bs-primary-text-emphasis: #ffa264;
+  --bs-primary-bg-subtle: #3d2414;
+  --bs-primary-border-subtle: #7a4321;
+  --bs-link-color: #ffa264;
+  --bs-link-color-rgb: 255, 162, 100;
+  --bs-link-hover-color: #ffbd91;
+  --bs-link-hover-color-rgb: 255, 189, 145;
+  --bs-code-color: #ffa264;
+
+  --bs-body-bg: #1d1a18;
+  --bs-body-bg-rgb: 29, 26, 24;
+  --bs-body-color: #ede6e1;
+  --bs-body-color-rgb: 237, 230, 225;
+  --bs-emphasis-color: #fff;
+  --bs-secondary-color: #a39a94;
+  --bs-secondary-bg: #36302d;
+  --bs-tertiary-bg: #282321;
+  --bs-tertiary-bg-rgb: 40, 35, 33;
+  --bs-border-color: #3a3330;
+}
+
+/* The reader's sepia theme: a light mode on paper. */
+[data-bs-theme="sepia"] {
+  color-scheme: light;
+  --bs-primary-text-emphasis: #9c4a1f;
+  --bs-link-color: #9c4a1f;
+  --bs-link-color-rgb: 156, 74, 31;
+  --bs-body-bg: #f4ecd8;
+  --bs-body-bg-rgb: 244, 236, 216;
+  --bs-body-color: #4a3a2a;
+  --bs-body-color-rgb: 74, 58, 42;
+  --bs-secondary-color: #7a6852;
+  --bs-secondary-bg: #e2d5b8;
+  --bs-tertiary-bg: #ebe0c7;
+  --bs-tertiary-bg-rgb: 235, 224, 199;
+  --bs-border-color: #ddd0b2;
+}
+
+/* ---------- components with the primary colour compiled in ---------- */
+
+.btn-primary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--mc-orange);
+  --bs-btn-border-color: var(--mc-orange);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--mc-orange-hover);
+  --bs-btn-hover-border-color: var(--mc-orange-hover);
+  --bs-btn-focus-shadow-rgb: 255, 140, 66;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--mc-orange-active);
+  --bs-btn-active-border-color: var(--mc-orange-active);
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: var(--mc-orange);
+  --bs-btn-disabled-border-color: var(--mc-orange);
+  font-weight: 600;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--bs-primary-text-emphasis);
+  --bs-btn-border-color: var(--mc-orange);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--mc-orange);
+  --bs-btn-hover-border-color: var(--mc-orange);
+  --bs-btn-focus-shadow-rgb: 255, 140, 66;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--mc-orange);
+  --bs-btn-active-border-color: var(--mc-orange);
+  --bs-btn-disabled-color: var(--mc-orange);
+  --bs-btn-disabled-border-color: var(--mc-orange);
+}
+
+.nav-pills { --bs-nav-pills-link-active-bg: var(--mc-orange); }
+.list-group { --bs-list-group-active-bg: var(--mc-orange); --bs-list-group-active-border-color: var(--mc-orange); }
+.dropdown-menu { --bs-dropdown-link-active-bg: var(--mc-orange); }
+.progress, .progress-stacked { --bs-progress-bar-bg: var(--mc-orange); }
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  border-color: var(--bs-primary-border-subtle);
+  box-shadow: 0 0 0 0.25rem var(--mc-focus-ring);
+}
+.nav-link:focus-visible { box-shadow: 0 0 0 0.25rem var(--mc-focus-ring); }
+.form-check-input:checked,
+.form-check-input[type="checkbox"]:indeterminate {
+  background-color: var(--mc-orange);
+  border-color: var(--mc-orange);
+}
+.form-range::-webkit-slider-thumb { background-color: var(--mc-orange); }
+.form-range::-moz-range-thumb { background-color: var(--mc-orange); }
+.form-range::-webkit-slider-thumb:active { background-color: var(--bs-primary-border-subtle); }
+.form-range::-moz-range-thumb:active { background-color: var(--bs-primary-border-subtle); }
+.form-range:focus::-webkit-slider-thumb { box-shadow: 0 0 0 1px var(--bs-body-bg), 0 0 0 0.25rem var(--mc-focus-ring); }
+.form-range:focus::-moz-range-thumb { box-shadow: 0 0 0 1px var(--bs-body-bg), 0 0 0 0.25rem var(--mc-focus-ring); }
+
+/* ---------- highlight colours of the text (mining.css, player.css) ----------
+   The words by status (new, learning; -alt: the other shade, for two touching words of the same status), the
+   recommended sentences (i1: underline, i1-focus: the one jumped to), the word looked up, and -strong: on the dark
+   box of the subtitles over a video. Chosen in Settings › User preferences (data-mc-highlights, set by theme.js);
+   the palettes for colour blindness keep every pair apart for the colour vision they're made for. */
+
+:root,
+[data-mc-highlights="default"] {
+  --mc-hl-new: rgba(70, 130, 240, .15);
+  --mc-hl-new-alt: rgba(70, 130, 240, .30);
+  --mc-hl-learning: rgba(255, 176, 0, .26);
+  --mc-hl-learning-alt: rgba(255, 176, 0, .46);
+  --mc-hl-i1: rgba(40, 160, 90, .75);
+  --mc-hl-i1-focus: rgba(40, 160, 90, .22);
+  --mc-hl-lookup: rgba(255, 140, 66, .35);
+  --mc-hl-new-strong: rgba(110, 160, 255, .42);
+  --mc-hl-new-alt-strong: rgba(110, 160, 255, .62);
+  --mc-hl-learning-strong: rgba(255, 190, 60, .42);
+  --mc-hl-learning-alt-strong: rgba(255, 190, 60, .62);
+}
+[data-bs-theme="dark"][data-mc-highlights="default"],
+[data-bs-theme="dark"] [data-mc-highlights="default"] {
+  --mc-hl-new: rgba(110, 160, 255, .20);
+  --mc-hl-new-alt: rgba(110, 160, 255, .36);
+  --mc-hl-learning: rgba(255, 190, 60, .22);
+  --mc-hl-learning-alt: rgba(255, 190, 60, .38);
+}
+
+/* Deuteranopia and protanopia (red and green look alike): blue and yellow-orange, a purple underline, a grey lookup */
+[data-mc-highlights="deutan"] {
+  --mc-hl-new: rgba(0, 114, 178, .20);
+  --mc-hl-new-alt: rgba(0, 114, 178, .38);
+  --mc-hl-learning: rgba(230, 159, 0, .32);
+  --mc-hl-learning-alt: rgba(230, 159, 0, .55);
+  --mc-hl-i1: rgba(204, 121, 167, .95);
+  --mc-hl-i1-focus: rgba(204, 121, 167, .28);
+  --mc-hl-lookup: rgba(40, 40, 40, .32);
+  --mc-hl-new-strong: rgba(86, 180, 233, .48);
+  --mc-hl-new-alt-strong: rgba(86, 180, 233, .68);
+  --mc-hl-learning-strong: rgba(230, 159, 0, .48);
+  --mc-hl-learning-alt-strong: rgba(230, 159, 0, .68);
+}
+[data-bs-theme="dark"][data-mc-highlights="deutan"],
+[data-bs-theme="dark"] [data-mc-highlights="deutan"] {
+  --mc-hl-new: rgba(86, 180, 233, .26);
+  --mc-hl-new-alt: rgba(86, 180, 233, .44);
+  --mc-hl-learning: rgba(230, 159, 0, .28);
+  --mc-hl-learning-alt: rgba(230, 159, 0, .48);
+  --mc-hl-i1-focus: rgba(204, 121, 167, .30);
+  --mc-hl-lookup: rgba(255, 255, 255, .32);
+}
+
+/* Tritanopia (blue and green, yellow and pink look alike): cyan and red, a dark underline, a grey lookup */
+[data-mc-highlights="tritan"] {
+  --mc-hl-new: rgba(0, 170, 190, .22);
+  --mc-hl-new-alt: rgba(0, 170, 190, .40);
+  --mc-hl-learning: rgba(220, 40, 60, .20);
+  --mc-hl-learning-alt: rgba(220, 40, 60, .36);
+  --mc-hl-i1: rgba(45, 45, 45, .85);
+  --mc-hl-i1-focus: rgba(40, 40, 40, .18);
+  --mc-hl-lookup: rgba(40, 40, 40, .32);
+  --mc-hl-new-strong: rgba(0, 190, 210, .48);
+  --mc-hl-new-alt-strong: rgba(0, 190, 210, .68);
+  --mc-hl-learning-strong: rgba(255, 80, 90, .48);
+  --mc-hl-learning-alt-strong: rgba(255, 80, 90, .68);
+}
+[data-bs-theme="dark"][data-mc-highlights="tritan"],
+[data-bs-theme="dark"] [data-mc-highlights="tritan"] {
+  --mc-hl-new: rgba(0, 190, 210, .24);
+  --mc-hl-new-alt: rgba(0, 190, 210, .42);
+  --mc-hl-learning: rgba(255, 80, 90, .26);
+  --mc-hl-learning-alt: rgba(255, 80, 90, .44);
+  --mc-hl-i1: rgba(235, 235, 235, .85);
+  --mc-hl-i1-focus: rgba(255, 255, 255, .20);
+  --mc-hl-lookup: rgba(255, 255, 255, .32);
+}

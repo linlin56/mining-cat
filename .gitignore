@@ -3,8 +3,11 @@ output/
 temp/
 
 # Ignore source files for obvious copyright reasons
-sources/
-library/
+/sources/
+/library/
+
+# The user's own settings (user-config.json)
+/user/
 
 # Python
 .venv/

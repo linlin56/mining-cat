@@ -117,10 +117,10 @@ The lines of the dialog box are joined back together, since games wrap long sent
 ## From the terminal
 
 ```bash
-python src/main.py game setup                       # pick the window, then draw both areas
-python src/main.py game serve --language japanese   # start capturing (F9), Ctrl+C to stop
-python src/main.py game serve --hotkey F2           # another capture key
-python src/main.py game serve --continuous          # continuous capture instead of the key
+python -m miningcat game setup                       # pick the window, then draw both areas in the browser
+python -m miningcat game serve --language japanese   # start capturing (F9), Ctrl+C to stop
+python -m miningcat game serve --hotkey F2           # another capture key
+python -m miningcat game serve --continuous          # continuous capture instead of the key
 ```
 
 Or with make: `make game-setup`, then `make game LANGUAGE=japanese HOTKEY=F9`.
@@ -128,7 +128,7 @@ Or with make: `make game-setup`, then `make game LANGUAGE=japanese HOTKEY=F9`.
 On macOS and Windows, `game setup` lists the windows and asks for a number, or use `--window` to pick the first window whose app name or title contains some text:
 
 ```bash
-python src/main.py game setup --window Ryujinx
+python -m miningcat game setup --window Ryujinx
 ```
 
 See the [CLI reference](cli.md#game) for all options.

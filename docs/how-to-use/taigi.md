@@ -36,7 +36,7 @@ In the converter, *Precision* picks Qwen3-ASR's size: **0.6B** (default) or **1.
 
 ## Converting between Hanji, Tâi-lô and POJ
 
-- **Converter**: *Convert subtitles to* writes the subtitles of a book, an audiobook or a video in Hanji, Tâi-lô or POJ. On the command line: `--convert-to hanji|tailo|poj`, or `main.py convert --source nan --target poj` for the files of `output/srt/`.
+- **Converter**: *Convert subtitles to* writes the subtitles of a book, an audiobook or a video in Hanji, Tâi-lô or POJ. On the command line: `--convert-to hanji|tailo|poj`, or `python -m miningcat convert --source nan --target poj` for the files of `output/srt/`.
 - **Clipboard**: *Write in…* rewrites the pasted text in the system you pick.
 - **Video game / Screen share**: the OCR'd text can be converted the same way.
 

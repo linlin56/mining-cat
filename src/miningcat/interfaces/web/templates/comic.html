@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block viewport %}, viewport-fit=cover{% endblock %}
+{% block title %}MiningCat Comics{% endblock %}
+{% block styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='reader.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mining.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='comic.css') }}">
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='comic.js') }}" defer></script>
+{% endblock %}
+{% block body_attrs %}data-study='{{ study|tojson }}'{% endblock %}
+{% block body %}
+  <div class="position-fixed top-0 bottom-0 start-0 end-0 d-flex flex-column bg-body" id="comic">
+    <header class="d-flex align-items-center gap-1 px-2 border-bottom small mc-bar">
+      <a href="/reader/" class="btn btn-link link-body-emphasis" id="back" title="Library" aria-label="Back to library"><i class="bi bi-arrow-left" aria-hidden="true"></i></a>
+      <div class="flex-grow-1 overflow-hidden"><span class="d-block fw-semibold text-truncate" id="comic-title"></span></div>
+      <button type="button" class="btn btn-link link-body-emphasis" id="text-btn" title="Text over the pages (T)" aria-label="Text over the pages"><i class="bi bi-chat-square-text" aria-hidden="true"></i></button>
+      <button type="button" class="btn btn-link link-body-emphasis" id="fullscreen-btn" title="Fullscreen (F)" aria-label="Fullscreen"><i class="bi bi-fullscreen" aria-hidden="true"></i></button>
+      <button type="button" class="btn btn-link link-body-emphasis" id="settings-btn" title="Settings" aria-label="Settings"><i class="bi bi-sliders" aria-hidden="true"></i></button>
+    </header>
+
+    <div class="comic-stage bg-body-tertiary" id="stage">
+      <button type="button" class="turn turn-left" id="turn-left" aria-label="Turn the page" data-mc-ignore></button>
+      <div class="spread" id="spread"></div>
+      <button type="button" class="turn turn-right" id="turn-right" aria-label="Turn the page" data-mc-ignore></button>
+      <div class="position-absolute top-0 end-0 m-3 badge text-bg-dark fs-6 fw-normal pe-none fade z-3" id="osd" aria-live="polite"></div>
+    </div>
+
+    <footer class="d-flex align-items-center gap-3 px-3 border-top small text-body-secondary mc-bar mc-bar-bottom">
+      <input type="range" class="form-range flex-grow-1" id="page-slider" min="1" max="1" step="1" aria-label="Page">
+      <span class="text-nowrap font-monospace" id="page-count"></span>
+    </footer>
+
+    <aside class="offcanvas offcanvas-end" tabindex="-1" id="settings-panel" aria-labelledby="settings-title"
+      data-bs-backdrop="false" data-bs-scroll="true" data-bs-keyboard="false">
+      <div class="offcanvas-header">
+        <h2 class="offcanvas-title h5" id="settings-title">Settings</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body pt-0">
+        <h3 class="h6 text-uppercase small fw-bold text-primary-emphasis mb-3">This comic</h3>
+        <div class="mb-3" id="language-setting">
+          <label class="form-label small" for="set-language">Characters of the text</label>
+          <select class="form-select" id="set-language"></select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small" for="set-direction">Reading direction</label>
+          <select class="form-select" id="set-direction">
+            <option value="">Automatic</option>
+            <option value="rtl">Right to left (manga)</option>
+            <option value="ltr">Left to right</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="read-again" title="Read the text of the pages shown again">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Read these pages again
+        </button>
+
+        <h3 class="h6 text-uppercase small fw-bold text-primary-emphasis mt-4 mb-3">Pages</h3>
+        <div class="mb-3">
+          <span class="form-label small d-block" id="set-spread-label">Pages shown</span>
+          <div class="btn-group btn-group-sm w-100" id="set-spread" role="group" aria-labelledby="set-spread-label">
+            <button type="button" class="btn btn-outline-secondary" data-value="auto">Auto</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="single">One</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="double">Two</button>
+          </div>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="set-first-single">
+          <label class="form-check-label" for="set-first-single">Cover alone (two pages)</label>
+        </div>
+
+        <h3 class="h6 text-uppercase small fw-bold text-primary-emphasis mt-4 mb-3">Text</h3>
+        <div class="mb-3">
+          <span class="form-label small d-block" id="set-text-label">Text read on the pages (T)</span>
+          <div class="btn-group btn-group-sm w-100" id="set-text" role="group" aria-labelledby="set-text-label">
+            <button type="button" class="btn btn-outline-secondary" data-value="hover">On hover</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="boxes">Outlined</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="always">Always</button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small" for="set-colors">Colour words</label>
+          <select class="form-select" id="set-colors">
+            <option value="status">By status (new, learning)</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+        <p class="small text-body-secondary">Dictionaries, Anki and the script you learn are set in <a href="/settings/" target="_blank">Settings</a>.</p>
+
+        <p class="small text-body-secondary mt-4 mb-0">
+          ← →: turn the page (in the reading direction) · Space: next page · Home / End: first / last page ·
+          T: text on hover / outlined / always · F: fullscreen.<br>
+          The text of each page is read when it's first shown (OCR). Click a word to look it up: the speech bubble is the
+          card's sentence, and the page its picture.
+        </p>
+      </div>
+    </aside>
+  </div>
+{% endblock %}

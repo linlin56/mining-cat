@@ -1,0 +1,7 @@
+{# The language studied, in every page's header: a link back to the home page to change it. #}
+{% if study %}
+<a class="badge rounded-pill bg-primary-subtle text-body border border-primary-subtle text-decoration-none fs-6 fw-semibold"
+  href="/" title="Change the language you study">
+  <span class="text-primary-emphasis" aria-hidden="true">{{ study.native }}</span> {{ study.name }}
+</a>
+{% endif %}

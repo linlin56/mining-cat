@@ -1,0 +1,77 @@
+/* MiningCat video player (on top of reader.css): the video with its subtitles over it, and the subtitle list.
+   Everything else is Bootstrap. */
+
+:root {
+  --sub-size: 34px;
+}
+
+.watch-body { flex: 1; min-height: 0; display: flex; }
+
+.screen {
+  position: relative; flex: 1; min-width: 0; background: #000;
+  display: flex; align-items: center; justify-content: center;
+}
+.screen video { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+
+/* ---------- subtitles over the video: above the native controls, clickable only on the text itself ---------- */
+
+.subs {
+  position: absolute; left: 0; right: 0; bottom: 64px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 0 4%; pointer-events: none;
+}
+.subs.hidden { display: none; }
+.subs p {
+  pointer-events: auto; margin: 0; padding: .08em .45em; max-width: 100%;
+  background: rgba(0, 0, 0, .62); color: #fff; border-radius: 6px;
+  font-family: var(--bs-body-font-family); text-align: center; line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
+}
+.sub-primary { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sub-primary p { font-size: var(--sub-size); cursor: pointer; }
+.sub-secondary p { font-size: calc(var(--sub-size) * .55); color: #e4e0dc; cursor: default; }
+.subs p.selected { box-shadow: 0 0 0 2px var(--bs-primary); }
+/* word colours (mining.css), stronger on the dark box over the video */
+.subs ::highlight(mc-new) { background-color: var(--mc-hl-new-strong); }
+.subs ::highlight(mc-new-alt) { background-color: var(--mc-hl-new-alt-strong); }
+.subs ::highlight(mc-learning) { background-color: var(--mc-hl-learning-strong); }
+.subs ::highlight(mc-learning-alt) { background-color: var(--mc-hl-learning-alt-strong); }
+.subs.blur p { filter: blur(.32em); transition: filter .15s; }
+.subs.blur p:hover { filter: none; }
+
+.subs :lang(ja), .cue-text:lang(ja) { font-family: "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; }
+.subs :lang(zh-Hant), .subs :lang(zh-TW), .subs :lang(yue), .cue-text:lang(zh-Hant), .cue-text:lang(zh-TW), .cue-text:lang(yue) {
+  font-family: "Noto Sans TC", "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+.subs :lang(zh-Hans), .subs :lang(zh-CN), .cue-text:lang(zh-Hans), .cue-text:lang(zh-CN) {
+  font-family: "Noto Sans SC", "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif; }
+.subs :lang(ko), .cue-text:lang(ko) { font-family: "Noto Sans KR", "Noto Sans CJK KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+
+/* ---------- subtitle list ---------- */
+
+.cue-panel {
+  flex: none; width: min(400px, 34vw); overflow-y: auto; overscroll-behavior: contain;
+  border-left: var(--bs-border-width) solid var(--bs-border-color);
+}
+.cue.current { background: var(--bs-tertiary-bg); box-shadow: inset 3px 0 var(--bs-primary); }
+.cue.selected { background: var(--bs-primary-bg-subtle); }
+/* Recommended lines (i+1): every word known but one new word */
+.cue.i1 { box-shadow: inset 3px 0 var(--bs-success); }
+.cue.i1.current { box-shadow: inset 3px 0 var(--bs-primary); }
+.cue.i1::after {
+  content: "i+1"; flex: none; align-self: center; padding: 0 6px; border-radius: 99px;
+  font-size: .7rem; font-weight: 600; line-height: 18px;
+  color: var(--bs-success-text-emphasis); background: var(--bs-success-bg-subtle);
+}
+.cues.i1-only .cue:not(.i1) { display: none; }
+
+body.no-list .cue-panel { display: none; }
+body.fullscreen .mc-watch-bar, body.fullscreen .cue-panel { display: none; }
+body.fullscreen .subs { bottom: 72px; }
+
+@media (max-width: 800px) {
+  .watch-body { flex-direction: column; }
+  .screen { flex: none; aspect-ratio: 16 / 9; max-height: 56vh; }
+  .cue-panel { flex: 1; width: auto; border-left: 0; border-top: var(--bs-border-width) solid var(--bs-border-color); }
+  .subs { bottom: 48px; }
+  .sub-primary p { font-size: min(var(--sub-size), 6vw); }
+}

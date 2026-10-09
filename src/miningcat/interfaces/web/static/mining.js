@@ -13,7 +13,8 @@
 // is the whole block that was clicked (a subtitle), not the sentence around the word. onLookup(): a word was
 // looked up. Elements marked data-mc-ignore aren't looked up (e.g. a translation under a subtitle).
 // expandSentence(node, sentence) -> sentence: the sentence of a lookup made longer (e.g. the subtitle lines selected
-// around the clicked one), {text, before, word, after}. onCard(card): a card was made.
+// around the clicked one), {text, before, word, after}. getTranslation(node) -> string or null: the sentence's
+// translation (e.g. the second subtitles), null to translate it offline. onCard(card): a card was made.
 "use strict";
 
 (() => {
@@ -624,11 +625,20 @@
     return translationCache.get(key);
   }
 
+  const givenTranslation = (node) => (options.getTranslation && node ? options.getTranslation(node) : null);
+
+  // The text of an editable box, its line breaks (<br>) as "\n".
+  function boxText(box) {
+    const copy = box.cloneNode(true);
+    for (const br of copy.querySelectorAll("br")) br.replaceWith("\n");
+    return copy.textContent;
+  }
+
   // What the card creator would wait for, asked while the popup is read: the card is complete when it opens.
   function prefetchCard(language, entries, sentence, node) {
     if (entries.length) wordAudio(entries[0], language).catch(() => {});
     const text = `${sentence.before}${sentence.word}${sentence.after}`;
-    if (sentence.text && text.trim()) translateSentence(language, text, true).catch(() => {});
+    if (sentence.text && text.trim() && !givenTranslation(node)) translateSentence(language, text, true).catch(() => {});
     prefetchWave(sentence, node);
   }
 
@@ -1466,7 +1476,7 @@
     definition.innerHTML = definitionHtml(blocks, selected);
     const sentenceBox = el("div", { class: "form-control mc-editable", contenteditable: "true", role: "textbox", lang: displayLang(language) });
     sentenceBox.innerHTML = sentence.text
-      ? `${escapeHtml(sentence.before)}<b>${escapeHtml(sentence.word)}</b>${escapeHtml(sentence.after)}` : "";
+      ? `${escapeHtml(sentence.before)}<b>${escapeHtml(sentence.word)}</b>${escapeHtml(sentence.after)}`.replace(/\n/g, "<br>") : "";
     const readings = language === "zh" ? sentenceReadings(language, sentenceBox, () => reading.value.trim() || entry.reading) : null;
     if (readings) reading.addEventListener("input", readings.schedule);
     const translation = el("textarea", { class: "form-control", rows: "2", placeholder: "Optional" });
@@ -1488,7 +1498,7 @@
       sentenceAudio.zone.insertBefore(wave.root, sentenceAudio.preview);
       sentenceAudio.setValue({ wave: true });
     }
-    const tts = ttsRow(language, () => sentenceBox.textContent, sentenceAudio);
+    const tts = ttsRow(language, () => boxText(sentenceBox), sentenceAudio);
     sentenceAudio.zone.insertBefore(tts.row, sentenceAudio.preview);
 
     const dictChoice = el("div", { class: "small" });
@@ -1650,10 +1660,12 @@
       audio.zone.insertBefore(el("div", { class: "d-flex align-items-center gap-2" }, el("span", { class: LABEL, text: "Recording" }), pick), audio.preview);
     }).catch(() => {});
 
-    // A translation of the sentence, made offline in the language of the settings.
-    if (sentence.text) {
+    // A translation of the sentence: given (the second subtitles), else made offline in the language of the settings.
+    const given = sentence.text ? givenTranslation(ctx && ctx.node) : null;
+    if (given !== null) translation.value = given;
+    else if (sentence.text) {
       translation.placeholder = "Translating…";
-      const text = sentenceBox.textContent;
+      const text = boxText(sentenceBox);
       translateSentence(language, text, true).catch(() => translateSentence(language, text)).then((text) => {
         if (text && !translation.value) translation.value = text;
         translation.placeholder = "Optional";

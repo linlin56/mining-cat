@@ -25,6 +25,15 @@ def derived_fields(language: str, fields: dict) -> dict:
     return derived
 
 
+def language_tag(language: str) -> str:
+    """The language of the cards, as a language tag telling the Chinese script learnt (zh-Hant): the fonts of
+    the note type follow it."""
+    if language == "zh":
+        script = preferences.chinese_script_preference(language)
+        return {"traditional": "zh-Hant", "simplified": "zh-Hans"}.get(script, "zh")
+    return language
+
+
 # Taigi: the reading in both romanizations (taibun's when the card has none), the readings of the word and of the
 # sentence's Hanji words, in the reading system chosen in the settings.
 def _taigi_fields(fields: dict) -> dict:
@@ -57,4 +66,6 @@ def _taigi_sentence(sentence: str, system: str) -> str:
 def note_fields(setup: dict, fields: dict, media: dict, language: str = "") -> dict[str, str]:
     """The fields of the Anki note of a card, from the templates of the note setup."""
     fields = {**fields, **derived_fields(language, fields)}
+    if language:
+        fields["language"] = language_tag(language)
     return {name: render_template(template, fields, media) for name, template in setup["fields"].items()}

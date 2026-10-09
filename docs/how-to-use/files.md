@@ -21,7 +21,7 @@ library/                     # the reader's books, the player's videos, dictiona
 ├── videos/                  #   one folder per video: the file, its subtitles, your position
 └── miningcat.db             #   dictionaries, word statuses and cards
 user/                        # your own settings (ignored by git)
-└── user-config.json         #   Settings › User preferences: theme, highlight colors
+└── user-config.json         #   Settings › User preferences: theme, highlight colors, Discord status
 ```
 
 When you pick files in the GUI, they're copied into `sources/` for you. With the [CLI](cli.md), put them there yourself.

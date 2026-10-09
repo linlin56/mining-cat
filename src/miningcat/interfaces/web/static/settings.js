@@ -500,10 +500,29 @@ async function exportCards() {
   } catch (err) { showError(err); }
 }
 
+// ---------------------------------------------------------------- user preferences: Discord (the colours: theme.js)
+function markDiscord(choice) {
+  for (const button of document.querySelectorAll("[data-mc-discord-choice]")) {
+    const on = button.dataset.mcDiscordChoice === choice;
+    button.classList.toggle("active", on);
+    button.setAttribute("aria-pressed", String(on));
+  }
+}
+
+async function loadDiscord() {
+  markDiscord((await api("/api/preferences")).discord);
+  for (const button of document.querySelectorAll("[data-mc-discord-choice]")) {
+    button.addEventListener("click", async () => {
+      try { markDiscord((await api("/api/preferences", { discord: button.dataset.mcDiscordChoice })).discord); } catch (err) { showError(err); }
+    });
+  }
+}
+
 // ---------------------------------------------------------------- init
 
 async function init() {
   try {
+    loadDiscord().catch(showError);
     await loadLanguages();
     await loadDictionaries();
     $("dict-pick").addEventListener("click", () => $("dict-file").click());

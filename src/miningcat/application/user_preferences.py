@@ -6,6 +6,7 @@ from miningcat.infrastructure.files.json_files import read_json, write_json
 CHOICES = {
     "theme": ("system", "light", "dark"),           # the colour mode; "system": the OS's
     "highlights": ("default", "deutan", "tritan"),  # the highlight colours of the text, for colour blindness
+    "discord": ("on", "off"),                       # the Discord status: what the user does in MiningCat
 }
 
 

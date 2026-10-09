@@ -37,7 +37,7 @@ the heavy libraries (Whisper, OCR) stay out of the server and the step's output 
 ```text
 src/miningcat/
 ├── config/
-│   ├── paths.py              # ProjectPaths: every folder (sources/, output/, library/), all under one root
+│   ├── paths.py              # ProjectPaths: every folder (sources/, output/, library/, user/), all under one root
 │   └── runtime.py            # the Python interpreter, and `python -m` command lines of the package
 ├── domain/
 │   ├── languages/            # Language (the converter's variants, built with LanguageProfileBuilder), study languages
@@ -126,6 +126,29 @@ the browser can't drive it) and the error handlers of `errors.py` (each error of
   the reader; `videos.py`: the player; `game.py`: the video game capture.
 - `static/csv_cards.js`: the converter's *CSV to cards* source, which makes a card per row with the card creator's
   own parts (`MiningCatMining.cardParts` of `static/mining.js`).
+
+### Pages: Bootstrap
+
+The pages are built with [Bootstrap 5.3](https://getbootstrap.com/docs/5.3/) and
+[Bootstrap Icons](https://icons.getbootstrap.com/), copied in `static/vendor/` (the app works offline: no CDN). Write
+the markup with Bootstrap's components and utility classes (`card`, `btn`, `form-select`, `modal`, `offcanvas`,
+`d-flex gap-2`...) and its icons (`<i class="bi bi-trash"></i>`), in the templates as in the scripts that build HTML.
+
+- `templates/base.html`: what every page loads (Bootstrap, the theme, `ui.js`); `_macros.html`: the header (`navbar()`).
+- `static/theme.css`: MiningCat's colours, as Bootstrap variables (the orange primary, light, dark and the reader's
+  sepia mode), and the highlight colours of the text (`--mc-hl-*`: the default palette and two for colour blindness).
+  Bootstrap is used without Sass: a colour changes here, not in the pages.
+- `static/theme.js`: the user's colour preferences (`application/user_preferences.py`, kept in
+  `user/user-config.json`, `/api/preferences`), written on `<html>` by `base.html` and applied before the page is
+  drawn: the colour mode (`data-bs-theme`: light, dark or the system's; the reader sets its own while a book is read
+  with `MiningCatTheme.set()`) and the highlight palette (`data-mc-highlights`). Controls only need an attribute:
+  `data-mc-theme-toggle`, `data-mc-theme-choice`, `data-mc-highlights-choice`.
+- `static/ui.js`: the message dialogs (`MiningCatUI.dialog()`, a Bootstrap modal) and the toasts (`MiningCatUI.toast()`).
+- Custom CSS only for what Bootstrap has no class for, its classes starting with `mc-`: `static/app.css` (shared by
+  the pages), and the engines of the screens: `reader.css` (the paginated book), `player.css` (the subtitles over the
+  video), `comic.css` (the text over the pages), `mining.css` (the words highlighted in the text, the definitions,
+  the waveform).
+- The scripts show and hide elements with the `hidden` attribute (`app.css` makes it win over `d-flex` and the like).
 
 ## Mining (dictionaries, words, Anki)
 

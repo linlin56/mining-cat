@@ -40,27 +40,11 @@ async function api(path, body) {
   return data;
 }
 
-function showDialog(title, message) {
-  const dlg = $("dialog");
-  $("dialog-title").textContent = title;
-  $("dialog-message").textContent = message;
-  const ok = document.createElement("button");
-  ok.className = "btn btn-primary";
-  ok.textContent = "OK";
-  $("dialog-actions").replaceChildren(ok);
-  return new Promise((resolve) => {
-    dlg.addEventListener("close", resolve, { once: true });
-    dlg.showModal();
-  });
-}
-const showError = (err) => showDialog(err.title || "Error", err.message || String(err));
+const showError = (err) => MiningCatUI.dialog(err.title || "Error", err.message || String(err));
 
 // The reader's theme (light, sepia, dark, or the system's).
 function applyTheme() {
-  let theme = C.theme || "auto";
-  if (theme === "auto") theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  document.body.classList.remove("theme-light", "theme-sepia", "theme-dark");
-  document.body.classList.add(`theme-${theme}`);
+  MiningCatTheme.set(C.theme);
 }
 
 function osd(text) {
@@ -234,14 +218,14 @@ function setStatus(box, text, isError = false, retry = null) {
     status.dataset.mcIgnore = "";
     box.append(status);
   }
-  status.className = `page-status${isError ? " error" : ""}`;
+  status.className = "page-status position-absolute bottom-0 start-50 translate-middle-x mb-2 z-1 badge fw-normal "
+    + (isError ? "text-bg-danger text-wrap mw-100" : "text-bg-dark pe-none");
   status.textContent = text;
   if (retry) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "btn";
+    btn.className = "btn btn-sm btn-light ms-2 py-0";
     btn.textContent = "Try again";
-    btn.style.marginLeft = "8px";
     btn.addEventListener("click", retry);
     status.append(btn);
   }
@@ -390,8 +374,12 @@ function getSource(node) {
 
 function syncSettingsForm() {
   const s = C.settings;
-  for (const b of $("set-spread").children) b.setAttribute("aria-pressed", String(b.dataset.value === s.spread));
-  for (const b of $("set-text").children) b.setAttribute("aria-pressed", String(b.dataset.value === s.text));
+  for (const [id, value] of [["set-spread", s.spread], ["set-text", s.text]]) {
+    for (const b of $(id).children) {
+      b.setAttribute("aria-pressed", String(b.dataset.value === value));
+      b.classList.toggle("active", b.dataset.value === value);
+    }
+  }
   $("set-first-single").checked = s.first_single;
   $("set-colors").value = s.colors;
 }
@@ -427,9 +415,12 @@ function cycleText() {
   osd(TEXT_LABELS[mode]);
 }
 
+// The settings panel (a Bootstrap offcanvas)
 function togglePanel(force) {
-  const panel = $("settings-panel");
-  panel.hidden = force === undefined ? !panel.hidden : !force;
+  const panel = bootstrap.Offcanvas.getOrCreateInstance($("settings-panel"));
+  if (force === undefined) panel.toggle();
+  else if (force) panel.show();
+  else panel.hide();
 }
 
 function toggleFullscreen() {
@@ -441,7 +432,6 @@ function wireSettings() {
   $("settings-btn").addEventListener("click", () => togglePanel());
   $("text-btn").addEventListener("click", cycleText);
   $("fullscreen-btn").addEventListener("click", toggleFullscreen);
-  for (const btn of document.querySelectorAll("[data-close]")) btn.addEventListener("click", () => togglePanel(false));
   for (const b of $("set-spread").children) {
     b.addEventListener("click", async () => { await saveSettings({ spread: b.dataset.value }); relayout(); });
   }
@@ -459,7 +449,7 @@ function wireSettings() {
 // ---------------------------------------------------------------- keyboard & wiring
 
 function isEditing(target) {
-  return target && target.closest && (target.closest("input, select, textarea, dialog") || target.isContentEditable);
+  return target && target.closest && (target.closest("input, select, textarea, .modal") || target.isContentEditable);
 }
 
 function onKey(e) {
@@ -498,7 +488,7 @@ function wire() {
     if (e.clientX < rect.left + rect.width / 2) turnLeft(); else turnRight();
   });
   document.addEventListener("mousedown", (e) => {
-    if (!e.target.closest(".cb, .mc-popup, dialog")) setTimeout(() => {
+    if (!e.target.closest(".cb, .mc-popup, .modal")) setTimeout(() => {
       if (!window.MiningCatMining || !MiningCatMining.isOpen()) markLookedUp(null);
     }, 0);
   });
@@ -526,7 +516,6 @@ function wire() {
 async function init() {
   try { C.theme = (await api("/reader/api/settings")).theme; } catch { /* the system's theme */ }
   applyTheme();
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
   wireSettings();
   wire();
   try {

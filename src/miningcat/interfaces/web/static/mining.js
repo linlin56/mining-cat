@@ -56,17 +56,12 @@
     return node;
   }
 
-  function toast(message, kind = "info") {
-    let box = document.getElementById("mc-toast");
-    if (!box) {
-      box = el("div", { id: "mc-toast", class: "mc-toast", role: "status", "aria-live": "polite" });
-      document.body.append(box);
-    }
-    box.textContent = message;
-    box.className = `mc-toast show ${kind}`;
-    clearTimeout(box._timer);
-    box._timer = setTimeout(() => { box.className = "mc-toast"; }, 3500);
-  }
+  // A Bootstrap icon, and an icon before a button's text.
+  const icon = (name) => el("i", { class: `bi bi-${name}`, "aria-hidden": "true" });
+  const withIcon = (name, text) => [icon(name), ` ${text}`];
+
+  // kind: "info", "success" or "error" (ui.js)
+  const toast = (message, kind = "info") => MiningCatUI.toast(message, kind);
 
   // ------------------------------------------------------------ text under the cursor
 
@@ -528,7 +523,7 @@
     else if (sense.sc !== undefined) content = renderSC(sense.sc, sense.dictId);
     else if (sense.items) content = renderGlossary(sense.items, sense.dictId);
     return el("li", {},
-      ...sense.tags.flatMap((t) => [el("span", { class: "mc-tag", text: t.name, title: t.title }), " "]),
+      ...sense.tags.flatMap((t) => [el("span", { class: TAG, text: t.name, title: t.title }), " "]),
       content,
       sense.examples && sense.examples.length ? examplesList(sense.examples) : null,
       sense.subs.length ? el("ol", { class: "mc-subsenses" }, ...sense.subs.map(senseNode)) : null);
@@ -664,7 +659,7 @@
 
   function ensurePopup() {
     if (popup) return popup;
-    popup = el("div", { class: "mc-popup", id: "mc-popup", role: "dialog", "aria-label": "Dictionary", hidden: true });
+    popup = el("div", { class: "mc-popup bg-body border rounded-3 shadow-lg p-3", id: "mc-popup", role: "dialog", "aria-label": "Dictionary", hidden: true });
     popup.addEventListener("click", (e) => {
       const query = e.target.closest("a[data-query]");
       if (query) {
@@ -704,14 +699,19 @@
     popup.style.top = `${Math.max(pad, top)}px`;
   }
 
+  const STATUS_COLOURS = { new: "secondary", learning: "warning", known: "success", ignored: "secondary" };
+
   function statusControl(entry, language) {
-    const group = el("div", { class: "mc-status", role: "radiogroup", "aria-label": "Word status" });
+    const group = el("div", { class: "btn-group btn-group-sm d-flex my-2", role: "radiogroup", "aria-label": "Word status" });
     const render = () => {
-      for (const b of group.children) b.setAttribute("aria-checked", String(b.dataset.value === entry.status.status));
+      for (const b of group.children) {
+        b.setAttribute("aria-checked", String(b.dataset.value === entry.status.status));
+        b.classList.toggle("active", b.dataset.value === entry.status.status);
+      }
     };
-    for (const [value, label] of STATUSES) {
+    for (const [value, text] of STATUSES) {
       group.append(el("button", {
-        type: "button", role: "radio", "data-value": value, class: `mc-status-${value}`, text: label,
+        type: "button", role: "radio", "data-value": value, class: `btn btn-outline-${STATUS_COLOURS[value]} mc-status-${value}`, text,
         onclick: async () => {
           try {
             await api("/api/words/status", { language, expression: entry.form, reading: entry.reading, status: value });
@@ -734,15 +734,15 @@
   }
 
   function headword(entry, language) {
-    const word = el("span", { class: "mc-word", lang: displayLang(language) });
+    const word = el("span", { class: "mc-word fs-3 fw-semibold lh-sm", lang: displayLang(language) });
     if (language === "ja" && entry.reading && entry.reading !== entry.expression) {
       word.append(el("ruby", {}, entry.expression, el("rt", { text: entry.reading })));
     } else {
       word.append(entry.expression);
     }
     const parts = [word];
-    if (language !== "ja" && entry.reading && entry.reading !== entry.expression) parts.push(el("span", { class: "mc-reading", text: entry.display_reading || entry.reading }));
-    return el("div", { class: "mc-head" }, ...parts);
+    if (language !== "ja" && entry.reading && entry.reading !== entry.expression) parts.push(el("span", { class: "fs-6 text-body-secondary", text: entry.display_reading || entry.reading }));
+    return el("div", { class: "d-flex flex-wrap align-items-baseline column-gap-2" }, ...parts);
   }
 
   // "#1,234" for a word's rank in the frequency list, highlighted when it's frequent enough to be recommended now.
@@ -759,37 +759,43 @@
     };
   }
 
+  const CHIP = "badge rounded-pill fw-normal";
+  const TAG = "badge bg-body-tertiary text-body-secondary border fw-normal";
+
   function frequencyChip(entry) {
     const f = frequencyText(entry);
-    return f ? el("span", { class: `mc-chip mc-freq${f.frequent ? " mc-freq-now" : ""}`, title: f.title, text: f.frequent ? `★ ${f.text}` : f.text }) : null;
+    if (!f) return null;
+    return f.frequent
+      ? el("span", { class: `${CHIP} bg-success-subtle text-success-emphasis fw-semibold`, title: f.title }, ...withIcon("star-fill", f.text))
+      : el("span", { class: `${CHIP} bg-body-secondary text-body`, title: f.title, text: f.text });
   }
 
   function renderEntries(data, language) {
     const box = ensurePopup();
     box.replaceChildren();
-    const close = el("button", { type: "button", class: "mc-close", "aria-label": "Close", text: "×", onclick: hidePopup });
+    const close = el("button", { type: "button", class: "btn-close float-end position-sticky top-0 ms-2", "aria-label": "Close", onclick: hidePopup });
     if (!data.dictionaries) {
-      box.append(close, el("p", { class: "mc-empty" },
+      box.append(close, el("p", { class: "text-body-secondary my-1" },
         "No dictionary for this language yet. ",
         el("a", { href: "/settings/#dictionaries", target: "_blank", text: "Import one in Settings" }), "."));
       return;
     }
     if (!data.entries.length) {
-      box.append(close, el("p", { class: "mc-empty", text: "No results." }));
+      box.append(close, el("p", { class: "text-body-secondary my-1", text: "No results." }));
       return;
     }
     box.append(close);
     const sentence = current && current.sentence && current.sentence.text;
     if (sentence && (options.sentenceAudio || options.playSentence) && options.hasAudio && options.hasAudio()) {
-      const play = el("button", { type: "button", class: "mc-play", title: "Play the sentence", text: "▶ Sentence" });
+      const play = el("button", { type: "button", class: "btn btn-sm btn-outline-primary mb-2 mc-play", title: "Play the sentence" }, ...withIcon("play-fill", "Sentence"));
       const node = current.node;
       play.addEventListener("click", () => playSentence(sentence, node, play));
       box.append(play);
     }
-    for (const entry of data.entries) {
-      const meta = el("div", { class: "mc-meta" });
+    for (const [i, entry] of data.entries.entries()) {
+      const meta = el("div", { class: "d-flex flex-wrap align-items-center gap-1 my-1 small" });
       if (entry.inflections.length) {
-        meta.append(el("span", { class: "mc-infl", title: entry.inflections.map((i) => `${i.name}: ${i.description || ""}`).join("\n") },
+        meta.append(el("span", { class: "text-body-secondary", title: entry.inflections.map((i) => `${i.name}: ${i.description || ""}`).join("\n") },
           `« ${entry.inflections.map((i) => i.name).join(" « ")}`));
       }
       // The rank in the language's frequency list first (see frequency.py), then the other frequency dictionaries.
@@ -797,32 +803,32 @@
       const chip = frequencyChip(entry);
       if (chip) meta.append(chip);
       const others = entry.frequencies.filter((f) => !data.frequency || f.dictionary !== data.frequency.dictionary.title);
-      for (const f of others.slice(0, 3)) meta.append(el("span", { class: "mc-chip", title: f.dictionary, text: `${f.dictionary.split(/[\s[(]/)[0]} ${f.display}` }));
+      for (const f of others.slice(0, 3)) meta.append(el("span", { class: `${CHIP} bg-body-secondary text-body`, title: f.dictionary, text: `${f.dictionary.split(/[\s[(]/)[0]} ${f.display}` }));
       if (others.length > 3) {
         const rest = others.slice(3);
-        meta.append(el("span", { class: "mc-chip", title: rest.map((f) => `${f.dictionary}: ${f.display}`).join("\n"), text: `+${rest.length}` }));
+        meta.append(el("span", { class: `${CHIP} bg-body-secondary text-body`, title: rest.map((f) => `${f.dictionary}: ${f.display}`).join("\n"), text: `+${rest.length}` }));
       }
       for (const p of entry.pronunciations || []) meta.append(pronunciation(p, entry, language));
 
       const notes = [];
-      if (entry.form !== entry.expression) notes.push(el("p", { class: "mc-note" }, "Saved as ", el("strong", { lang: displayLang(language), text: entry.form }), " (the script you learn)."));
+      if (entry.form !== entry.expression) notes.push(el("p", { class: "small text-body-secondary my-1" }, "Saved as ", el("strong", { lang: displayLang(language), text: entry.form }), " (the script you learn)."));
       if (entry.status.linked) {
         const s = entry.status.linked;
-        notes.push(el("p", { class: "mc-note mc-linked" },
+        notes.push(el("p", { class: "small bg-body-tertiary rounded px-2 py-1 my-1" },
           `You ${s.status === "known" ? "know" : "are learning"} this word in ${s.script === "traditional" ? "Traditional" : "Simplified"}: `,
           el("strong", { lang: displayLang(language), text: s.expression })));
       }
 
-      const defs = el("div", { class: "mc-defs" });
+      const defs = el("div", { class: "vstack gap-2 mt-1" });
       const blocks = definitionBlocks(entry, language);
-      for (const [key] of BLOCKS) if (blocks[key].length) defs.append(el("section", { class: `mc-def mc-def-${key}` }, blockNode(key, blocks[key])));
+      for (const [key] of BLOCKS) if (blocks[key].length) defs.append(el("section", { class: "border-start border-2 ps-2" }, blockNode(key, blocks[key])));
 
       const chars = characterSection(entry, language);
-      const add = el("button", { type: "button", class: "mc-add", text: "+ Card", onclick: () => openCreator(entry, language) });
-      const listen = el("button", { type: "button", class: "mc-listen", title: "Play the word (online recordings)", "aria-label": "Play the word", text: "🔊" });
+      const add = el("button", { type: "button", class: "btn btn-sm btn-primary flex-shrink-0 mc-add", onclick: () => openCreator(entry, language) }, ...withIcon("plus-lg", "Card"));
+      const listen = el("button", { type: "button", class: "btn btn-sm btn-link link-body-emphasis ms-auto mc-listen", title: "Play the word (online recordings)", "aria-label": "Play the word" }, icon("volume-up"));
       listen.addEventListener("click", () => playWord(entry, language, listen));
-      box.append(el("article", { class: "mc-entry" },
-        el("div", { class: "mc-entry-top" }, headword(entry, language), listen, add),
+      box.append(el("article", { class: `mc-entry${i ? " border-top pt-3 mt-3" : ""}` },
+        el("div", { class: "d-flex align-items-start gap-2" }, headword(entry, language), listen, add),
         meta.childNodes.length ? meta : null,
         ...notes,
         statusControl(entry, language),
@@ -835,19 +841,19 @@
   function characterSection(entry, language) {
     if (!entry.characters || !entry.characters.length) return null;
     const lang = displayLang(language);
-    const box = el("details", { class: "mc-chars" }, el("summary", { text: `Characters (${entry.characters.map((c) => c.character).join("")})` }));
+    const box = el("details", { class: "mt-2 small" }, el("summary", { class: "text-body-secondary", text: `Characters (${entry.characters.map((c) => c.character).join("")})` }));
     for (const { character, entries } of entry.characters) {
-      const body = el("div", { class: "mc-char-body" });
-      for (const k of entries) {
+      const body = el("div", { class: "flex-grow-1" });
+      for (const [i, k] of entries.entries()) {
         const readings = [k.onyomi.join("、"), k.kunyomi.join("、")].filter(Boolean).join(" · ");
         const stats = [k.stats.strokes && `${k.stats.strokes} strokes`, k.stats.grade && `grade ${k.stats.grade}`,
           k.stats.jlpt && `JLPT N${k.stats.jlpt}`, k.stats.freq && `#${k.stats.freq}`, ...k.frequencies].filter(Boolean);
-        body.append(el("div", { class: "mc-char-entry" },
-          readings ? el("div", { class: "mc-char-readings", lang, text: readings }) : null,
-          el("div", { class: "mc-char-meanings", text: k.meanings.join("; ") }),
-          stats.length ? el("div", { class: "mc-char-stats", text: stats.join(" · ") }) : null));
+        body.append(el("div", { class: i ? "border-top pt-1 mt-1" : null },
+          readings ? el("div", { class: "fw-semibold", lang, text: readings }) : null,
+          el("div", { text: k.meanings.join("; ") }),
+          stats.length ? el("div", { class: "opacity-75", text: stats.join(" · ") }) : null));
       }
-      box.append(el("div", { class: "mc-char" }, el("span", { class: "mc-char-glyph", lang, text: character }), body));
+      box.append(el("div", { class: "d-flex align-items-start gap-2 mt-2" }, el("span", { class: "fs-2 lh-1", lang, text: character }), body));
     }
     return box;
   }
@@ -864,23 +870,23 @@
 
   // Pitch accent with the downstep position (0: heiban, 1: atamadaka...): high morae are overlined, ꜜ marks the drop.
   function pitchGraph(reading, position) {
-    if (typeof position !== "number") return el("span", { class: "mc-pitch", text: `${reading} ${position}` });
-    const box = el("span", { class: "mc-pitch", title: `Pitch accent [${position}]`, lang: "ja" });
+    if (typeof position !== "number") return el("span", { class: "text-nowrap", text: `${reading} ${position}` });
+    const box = el("span", { class: "text-nowrap", title: `Pitch accent [${position}]`, lang: "ja" });
     morae(reading).forEach((mora, i) => {
       const n = i + 1;
       const high = position === 0 ? n > 1 : position === 1 ? n === 1 : n > 1 && n <= position;
       box.append(el("span", { class: high ? "mc-high" : "mc-low", text: mora }));
-      if (n === position) box.append(el("span", { class: "mc-drop", text: "ꜜ" }));
+      if (n === position) box.append(el("span", { class: "text-primary-emphasis", text: "ꜜ" }));
     });
-    box.append(el("span", { class: "mc-pitch-num", text: `[${position}]` }));
+    box.append(el("span", { class: "opacity-75 ms-1", text: `[${position}]` }));
     return box;
   }
 
   function pronunciation(p, entry, language) {
     const reading = p.reading || (entry.reading !== entry.expression ? entry.reading : entry.expression);
-    const wrap = el("span", { class: "mc-pron", title: p.dictionary });
+    const wrap = el("span", { class: "d-inline-flex align-items-baseline gap-2", title: p.dictionary });
     if (p.pitches) for (const position of p.pitches) wrap.append(pitchGraph(reading, position));
-    if (p.ipa) for (const ipa of p.ipa) wrap.append(el("span", { class: "mc-ipa", text: ipa }));
+    if (p.ipa) for (const ipa of p.ipa) wrap.append(el("span", { class: "opacity-75", text: ipa }));
     return wrap;
   }
 
@@ -951,18 +957,22 @@
     });
   }
 
+  // A field's label in the card creator, and a drop zone while files are dragged over it.
+  const LABEL = "small fw-semibold text-body-secondary";
+  const DRAG_OVER = ["border-primary", "bg-primary-subtle"];
+
   function mediaSlot(kind, label, accept) {
     const state = { value: null };
-    const preview = el("div", { class: "mc-media-preview" });
+    const preview = el("div", { class: "mc-media-preview d-flex flex-column gap-2 align-items-start" });
     const input = el("input", { type: "file", accept, hidden: true });
-    const url = el("input", { type: "url", placeholder: "or paste a link (https://…)", class: "mc-media-url" });
+    const url = el("input", { type: "url", placeholder: "or paste a link (https://…)", class: "form-control form-control-sm", "aria-label": `${label}: link` });
     const render = () => {
       preview.replaceChildren();
       if (!state.value) return;
       const src = state.value.data || state.value.url;
-      preview.append(state.value.wave ? el("span", { class: "mc-hint", text: "The span chosen on the waveform." })
-        : kind === "image" ? el("img", { src, alt: "" }) : el("audio", { src, controls: true }),
-        el("button", { type: "button", class: "mc-media-remove", text: "Remove", onclick: () => { state.value = null; url.value = ""; render(); } }));
+      preview.append(state.value.wave ? el("span", { class: "form-text m-0", text: "The span chosen on the waveform." })
+        : kind === "image" ? el("img", { src, alt: "", class: "img-fluid rounded" }) : el("audio", { src, controls: true, class: "w-100" }),
+        el("button", { type: "button", class: "btn btn-sm btn-link link-danger p-0", onclick: () => { state.value = null; url.value = ""; render(); } }, ...withIcon("x-lg", "Remove")));
     };
     const set = async (file) => {
       if (!file) return;
@@ -977,17 +987,17 @@
       state.value = /^https?:\/\//.test(value) ? { url: value } : null;
       render();
     });
-    const zone = el("div", { class: "mc-media", "data-kind": kind },
-      el("div", { class: "mc-media-row" },
-        el("span", { class: "mc-label", text: label }),
-        el("button", { type: "button", class: "mc-btn", text: "Choose a file…", onclick: () => input.click() }),
+    const zone = el("div", { class: "mc-media border border-2 rounded p-2 d-flex flex-column gap-2", "data-kind": kind },
+      el("div", { class: "d-flex align-items-center justify-content-between gap-2" },
+        el("span", { class: LABEL, text: label }),
+        el("button", { type: "button", class: "btn btn-sm btn-outline-secondary", onclick: () => input.click() }, ...withIcon("folder2-open", "Choose a file…")),
         input),
       url, preview);
-    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("dragover"); });
-    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add(...DRAG_OVER); });
+    zone.addEventListener("dragleave", () => zone.classList.remove(...DRAG_OVER));
     zone.addEventListener("drop", (e) => {
       e.preventDefault();
-      zone.classList.remove("dragover");
+      zone.classList.remove(...DRAG_OVER);
       const file = e.dataTransfer.files[0];
       if (file) set(file);
       else {
@@ -1001,9 +1011,9 @@
   // A voice reading the card's sentence (Edge-TTS), for sentences without audio (and words without a recording).
   // The voice set in the settings is picked first; ready resolves to it ("" when sentences aren't read automatically).
   function ttsRow(language, getText, slot) {
-    const select = el("select", { class: "mc-tts-voice", "aria-label": "Voice", disabled: true });
-    const button = el("button", { type: "button", class: "mc-btn", text: "Generate", disabled: true });
-    const row = el("div", { class: "mc-media-row mc-tts" }, el("span", { class: "mc-label", text: "Read by" }), select, button);
+    const select = el("select", { class: "form-select form-select-sm", "aria-label": "Voice", disabled: true });
+    const button = el("button", { type: "button", class: "btn btn-sm btn-outline-secondary text-nowrap", text: "Generate", disabled: true });
+    const row = el("div", { class: "d-flex align-items-center gap-2" }, el("span", { class: `${LABEL} text-nowrap`, text: "Read by" }), select, button);
     let available = false;
     const ready = api(`/api/tts/voices?language=${encodeURIComponent(language)}`).then(({ voices, default: fallback, chosen }) => {
       if (!voices.length) { row.hidden = true; return ""; }
@@ -1088,12 +1098,12 @@
     const endHandle = handle("End of the sentence's audio");
     const box = el("div", { class: "mc-wave-box loading", title: "Drag the edges, or drag a new span. A click plays from there." },
       canvas, startHandle, endHandle);
-    const message = el("p", { class: "mc-hint", text: "Loading the waveform…" });
-    const play = el("button", { type: "button", class: "mc-btn", text: "▶ Play", disabled: true });
-    const info = el("span", { class: "mc-wave-info" });
-    const reset = el("button", { type: "button", class: "mc-btn", text: "Reset", disabled: true, title: "The subtitles' span with the settings' margins" });
-    const wider = el("button", { type: "button", class: "mc-btn", text: "More context", disabled: true, title: `${WAVE_CONTEXT_S} s more on each side` });
-    const root = el("div", { class: "mc-wave" }, box, message, el("div", { class: "mc-media-row mc-wave-row" }, play, info, reset, wider));
+    const message = el("p", { class: "form-text m-0", text: "Loading the waveform…" });
+    const play = el("button", { type: "button", class: "btn btn-sm btn-outline-secondary", disabled: true }, ...withIcon("play-fill", "Play"));
+    const info = el("span", { class: "small text-body-secondary flex-grow-1 font-monospace" });
+    const reset = el("button", { type: "button", class: "btn btn-sm btn-outline-secondary", text: "Reset", disabled: true, title: "The subtitles' span with the settings' margins" });
+    const wider = el("button", { type: "button", class: "btn btn-sm btn-outline-secondary", text: "More context", disabled: true, title: `${WAVE_CONTEXT_S} s more on each side` });
+    const root = el("div", { class: "d-flex flex-column gap-2" }, box, message, el("div", { class: "d-flex flex-wrap align-items-center gap-2" }, play, info, reset, wider));
 
     const duration = () => (buffer ? buffer.duration : win.end - win.start);
     const share = (t) => (t - win.start) / duration();
@@ -1107,9 +1117,9 @@
       if (!buffer || !width) return;
       const css = getComputedStyle(box);
       colors = {
-        accent: css.getPropertyValue("--accent").trim() || "#ff6b6b",
-        dim: css.getPropertyValue("--dim").trim() || "#888",
-        fg: css.getPropertyValue("--fg").trim() || "#000",
+        accent: css.getPropertyValue("--bs-primary").trim() || "#ff8c42",
+        dim: css.getPropertyValue("--bs-secondary-color").trim() || "#888",
+        fg: css.getPropertyValue("--bs-body-color").trim() || "#000",
       };
       const data = buffer.getChannelData(0);
       const peaks = new Float32Array(width);
@@ -1206,7 +1216,7 @@
       cancelAnimationFrame(playing.frame);
       playing = null;
       media.pause();
-      play.textContent = "▶ Play";
+      play.replaceChildren(...withIcon("play-fill", "Play"));
       draw();
     }
 
@@ -1217,7 +1227,7 @@
       const zero = win.start;
       const run = { frame: 0 };
       playing = run;
-      play.textContent = "■ Stop";
+      play.replaceChildren(...withIcon("stop-fill", "Stop"));
       media.currentTime = from - zero;
       media.play().catch(() => { if (playing === run) stop(); });
       const tick = () => {
@@ -1375,7 +1385,7 @@
   // A click on a word the dictionaries read several ways picks its next reading. field() is the sentence with
   // the reading of every word in brackets (你[ni3]<b>好[hao3]</b>), "" while the sentence was edited and its readings aren't back yet.
   function sentenceReadings(language, sentenceBox, getReading) {
-    const box = el("div", { class: "mc-readings", lang: displayLang(language), "data-empty": "Reading the sentence…" });
+    const box = el("div", { class: "form-control mc-readings", lang: displayLang(language), "data-empty": "Reading the sentence…" });
     const picked = new Map();  // "start:text" -> reading picked by the user
     let data = null, timer = 0, request = 0, stale = true;
     const key = (t) => `${t.start}:${t.text}`;
@@ -1444,28 +1454,28 @@
   async function openCreator(entry, language) {
     const ctx = current;
     hidePopup();
-    if (creator) creator.dialog.remove();
+    if (creator) creator.modal.hide();
     const sentence = ctx ? ctx.sentence : { text: "", before: "", word: entry.source, after: "" };
     const blocks = definitionBlocks(entry, language);
     const present = BLOCKS.filter(([key]) => blocks[key].length);
     const selected = new Set(present.length ? [present[0][0]] : []);
 
-    const word = el("input", { type: "text", value: entry.form, lang: displayLang(language) });
-    const reading = el("input", { type: "text", value: entry.reading !== entry.expression ? entry.display_reading || entry.reading : "", lang: displayLang(language) });
-    const definition = el("div", { class: "mc-editable", contenteditable: "true", role: "textbox", "aria-multiline": "true" });
+    const word = el("input", { type: "text", class: "form-control", value: entry.form, lang: displayLang(language) });
+    const reading = el("input", { type: "text", class: "form-control", value: entry.reading !== entry.expression ? entry.display_reading || entry.reading : "", lang: displayLang(language) });
+    const definition = el("div", { class: "form-control mc-editable", contenteditable: "true", role: "textbox", "aria-multiline": "true" });
     definition.innerHTML = definitionHtml(blocks, selected);
-    const sentenceBox = el("div", { class: "mc-editable", contenteditable: "true", role: "textbox", lang: displayLang(language) });
+    const sentenceBox = el("div", { class: "form-control mc-editable", contenteditable: "true", role: "textbox", lang: displayLang(language) });
     sentenceBox.innerHTML = sentence.text
       ? `${escapeHtml(sentence.before)}<b>${escapeHtml(sentence.word)}</b>${escapeHtml(sentence.after)}` : "";
     const readings = language === "zh" ? sentenceReadings(language, sentenceBox, () => reading.value.trim() || entry.reading) : null;
     if (readings) reading.addEventListener("input", readings.schedule);
-    const translation = el("textarea", { rows: "2", placeholder: "Optional" });
-    const notes = el("textarea", { rows: "2", placeholder: "Optional" });
+    const translation = el("textarea", { class: "form-control", rows: "2", placeholder: "Optional" });
+    const notes = el("textarea", { class: "form-control", rows: "2", placeholder: "Optional" });
     const freq = frequencyText(entry);
-    const frequencyInput = el("input", { type: "text", value: entry.frequency_rank ? String(entry.frequency_rank) : "",
+    const frequencyInput = el("input", { type: "text", class: "form-control", value: entry.frequency_rank ? String(entry.frequency_rank) : "",
       placeholder: entry.frequency_list ? "Not in the list" : "No frequency list", title: freq ? freq.title : "" });
-    const source = el("input", { type: "text", value: options.getSource ? options.getSource(ctx && ctx.node) : "" });
-    const tags = el("input", { type: "text", placeholder: "space separated" });
+    const source = el("input", { type: "text", class: "form-control", value: options.getSource ? options.getSource(ctx && ctx.node) : "" });
+    const tags = el("input", { type: "text", class: "form-control", placeholder: "space separated" });
     const image = mediaSlot("image", "Image", "image/*");
     const audio = mediaSlot("audio", "Word audio", "audio/*");
     const wordTts = ttsRow(language, () => word.value, audio);
@@ -1481,17 +1491,18 @@
     const tts = ttsRow(language, () => sentenceBox.textContent, sentenceAudio);
     sentenceAudio.zone.insertBefore(tts.row, sentenceAudio.preview);
 
-    const dictChoice = el("div", { class: "mc-dict-choice" });
+    const dictChoice = el("div", { class: "small" });
     for (const [key, label] of present) {
-      const box = el("input", { type: "checkbox", checked: selected.has(key) });
+      const box = el("input", { type: "checkbox", class: "form-check-input", checked: selected.has(key) });
       box.addEventListener("change", () => {
         if (box.checked) selected.add(key); else selected.delete(key);
         definition.innerHTML = definitionHtml(blocks, selected);
       });
-      dictChoice.append(el("label", { class: "mc-check" }, box, key === "monolingual" ? MONOLINGUAL[language] || label : label));
+      dictChoice.append(el("label", { class: "form-check form-check-inline" }, box,
+        el("span", { class: "form-check-label", text: key === "monolingual" ? MONOLINGUAL[language] || label : label })));
     }
 
-    const target = el("p", { class: "mc-target" });
+    const target = el("p", { class: "small text-body-secondary m-0" });
     api("/api/anki/config").then(({ config }) => {
       const setup = config.notes[language];
       target.replaceChildren(setup && setup.deck && setup.model
@@ -1500,34 +1511,45 @@
           el("a", { href: "/settings/#anki", target: "_blank", text: "set it up" }), ". The card will wait until then."));
     }).catch(() => {});
 
-    const field = (label, control, hint) => el("label", { class: "mc-field" }, el("span", { class: "mc-label" }, label, hint ? el("small", { text: hint }) : null), control);
-    const status = el("p", { class: "mc-creator-status", role: "status" });
-    const send = el("button", { type: "button", class: "mc-btn mc-primary", text: "Add to Anki" });
-    const later = el("button", { type: "button", class: "mc-btn", text: "Save for later" });
-    const cancel = el("button", { type: "button", class: "mc-btn", text: "Cancel" });
+    const caption = (text, hint) => el("span", { class: `${LABEL} d-flex align-items-baseline gap-2 mb-1` }, text,
+      hint ? el("small", { class: "fw-normal", text: hint }) : null);
+    const field = (text, control, hint) => el("label", { class: "d-block" }, caption(text, hint), control);
+    const status = el("p", { class: "small text-body-secondary me-auto my-0", role: "status" });
+    const send = el("button", { type: "button", class: "btn btn-primary" }, ...withIcon("send", "Add to Anki"));
+    const later = el("button", { type: "button", class: "btn btn-outline-secondary", text: "Save for later" });
+    const cancel = el("button", { type: "button", class: "btn btn-outline-secondary", "data-bs-dismiss": "modal", text: "Cancel" });
 
-    const dialog = el("dialog", { class: "mc-creator", "aria-label": "Card creator" },
-      el("div", { class: "mc-creator-head" }, el("h2", { text: "New card" }), target),
-      el("div", { class: "mc-creator-body" },
-        el("div", { class: "mc-col" },
-          el("div", { class: "mc-row3" }, field("Word", word), field("Reading", reading),
-            field("Frequency", frequencyInput, freq && freq.frequent ? "★ frequent" : "rank")),
-          field("Definition", definition, "editable"),
-          dictChoice.childNodes.length > 1 ? dictChoice : null,
-          field("Sentence", sentenceBox, "editable"),
-          readings ? el("div", { class: "mc-field" }, el("span", { class: "mc-label" }, "Readings",
-            el("small", { text: "click a dotted word to change its reading" })), readings.box) : null,
-          field("Sentence translation", translation),
-          field("Notes", notes),
-          el("div", { class: "mc-row2" }, field("Source", source), field("Tags", tags))),
-        el("div", { class: "mc-col" },
-          image.zone,
-          el("p", { class: "mc-hint", text: "Tip: paste an image (Ctrl+V) or drop a file anywhere in this window." }),
-          audio.zone,
-          sentenceAudio.zone)),
-      el("div", { class: "mc-creator-foot" }, status, cancel, later, send));
+    const dialog = el("div", { class: "modal", tabindex: "-1", "aria-labelledby": "mc-creator-title" },
+      el("div", { class: "modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-lg-down" },
+        el("div", { class: "modal-content" },
+          el("div", { class: "modal-header" },
+            el("div", {}, el("h2", { class: "modal-title fs-5", id: "mc-creator-title", text: "New card" }), target),
+            el("button", { type: "button", class: "btn-close", "data-bs-dismiss": "modal", "aria-label": "Close" })),
+          el("div", { class: "modal-body" },
+            el("div", { class: "row g-4" },
+              el("div", { class: "col-lg-7 vstack gap-3" },
+                el("div", { class: "row g-2" },
+                  el("div", { class: "col-sm" }, field("Word", word)),
+                  el("div", { class: "col-sm" }, field("Reading", reading)),
+                  el("div", { class: "col-sm-3" }, field("Frequency", frequencyInput, freq && freq.frequent ? "★ frequent" : "rank"))),
+                el("div", {}, field("Definition", definition, "editable"), dictChoice.childNodes.length > 1 ? dictChoice : null),
+                field("Sentence", sentenceBox, "editable"),
+                readings ? el("div", {}, caption("Readings", "click a dotted word to change its reading"), readings.box) : null,
+                field("Sentence translation", translation),
+                field("Notes", notes),
+                el("div", { class: "row g-2" },
+                  el("div", { class: "col-sm" }, field("Source", source)),
+                  el("div", { class: "col-sm" }, field("Tags", tags)))),
+              el("div", { class: "col-lg-5 vstack gap-3" },
+                el("div", {}, image.zone,
+                  el("p", { class: "form-text mb-0", text: "Tip: paste an image (Ctrl+V) or drop a file anywhere in this window." })),
+                audio.zone,
+                sentenceAudio.zone))),
+          el("div", { class: "modal-footer" }, status, cancel, later, send))));
     document.body.append(dialog);
-    creator = { dialog };
+    // a click beside it doesn't lose the card
+    const modal = new bootstrap.Modal(dialog, { backdrop: "static" });
+    creator = { dialog, modal };
 
     dialog.addEventListener("paste", (e) => {
       const file = [...(e.clipboardData && e.clipboardData.files) || []].find((f) => f.type.startsWith("image/"));
@@ -1549,12 +1571,12 @@
       if (file.type.startsWith("image/")) image.set(file);
       else if (file.type.startsWith("audio/") || file.type.startsWith("video/")) (audio.state.value ? sentenceAudio : audio).set(file);
     });
-    dialog.addEventListener("close", () => {
+    dialog.addEventListener("hidden.bs.modal", () => {
       if (wave) wave.dispose();
+      modal.dispose();
       dialog.remove();
       if (creator && creator.dialog === dialog) creator = null;
     });
-    cancel.addEventListener("click", () => dialog.close());
 
     const submit = async (sendNow) => {
       send.disabled = later.disabled = true;
@@ -1583,7 +1605,7 @@
           },
           media,
         });
-        dialog.close();
+        modal.hide();
         updateColour(card.expression, "learning");
         if (options.onStatusChange) options.onStatusChange(card.expression, "learning");
         if (options.onCard) options.onCard(card);
@@ -1598,7 +1620,7 @@
     };
     send.addEventListener("click", () => submit(true));
     later.addEventListener("click", () => submit(false));
-    dialog.showModal();
+    modal.show();
     word.focus();
 
     if (options.getImage && ctx && ctx.node) {
@@ -1619,13 +1641,13 @@
       if (!sources.length) return readWord();
       if (!audio.state.value) audio.setValue({ url: sources[0].url });
       if (sources.length < 2) return;
-      const pick = el("select", { class: "mc-audio-source", "aria-label": "Recording" });
+      const pick = el("select", { class: "form-select form-select-sm", "aria-label": "Recording" });
       sources.forEach((source, i) => pick.append(el("option", { value: String(i), text: `${i + 1}. ${source.name}` })));
       pick.addEventListener("change", () => {
         audio.setValue({ url: sources[Number(pick.value)].url });
         audio.preview.querySelector("audio")?.play().catch(() => {});
       });
-      audio.zone.insertBefore(el("div", { class: "mc-media-row mc-tts" }, el("span", { class: "mc-label", text: "Recording" }), pick), audio.preview);
+      audio.zone.insertBefore(el("div", { class: "d-flex align-items-center gap-2" }, el("span", { class: LABEL, text: "Recording" }), pick), audio.preview);
     }).catch(() => {});
 
     // A translation of the sentence, made offline in the language of the settings.
@@ -1646,12 +1668,12 @@
       return null;
     }) : sentence.text && options.sentenceClip && options.hasAudio && options.hasAudio()
       ? (() => {
-        const wait = el("p", { class: "mc-hint", text: "Cutting the sentence's audio…" });
+        const wait = el("p", { class: "form-text m-0", text: "Cutting the sentence's audio…" });
         sentenceAudio.preview.append(wait);
         return options.sentenceClip(sentence.text, ctx && ctx.node).then((clipped) => {
           wait.remove();
           if (clipped && !sentenceAudio.state.value) sentenceAudio.setValue(clipped);
-          else if (!clipped) sentenceAudio.preview.append(el("p", { class: "mc-hint", text: "This sentence wasn't found in the audio." }));
+          else if (!clipped) sentenceAudio.preview.append(el("p", { class: "form-text m-0", text: "This sentence wasn't found in the audio." }));
           return clipped;
         }).catch((err) => { wait.textContent = err.message; return null; });
       })()
@@ -1721,7 +1743,7 @@
     });
     document.addEventListener("keydown", (e) => {
       if (!popup || popup.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.target.closest && e.target.closest("input, select, textarea, [contenteditable], dialog")) return;
+      if (e.target.closest && e.target.closest("input, select, textarea, [contenteditable], .modal")) return;
       const action = popupKeys[e.key];
       if (!action) return;
       e.stopImmediatePropagation();

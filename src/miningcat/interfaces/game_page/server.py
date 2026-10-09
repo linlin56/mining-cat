@@ -19,6 +19,8 @@ DEFAULT_INTERVAL_S = 0.5
 
 PAGE_FILE = Path(__file__).parent / "page.html"
 STYLE_FILE = Path(__file__).parent / "page.css"
+# Bootstrap, its icons and MiningCat's colours: the web GUI's own files
+WEB_STATIC_DIR = Path(__file__).parent.parent / "web" / "static"
 
 _HISTORY_MAX = 200
 _HISTORY_REPLAY = 20
@@ -219,6 +221,7 @@ def create_app(
     app[PORT_KEY] = port
     app.router.add_get("/", handle_index)
     app.router.add_get("/page.css", handle_style)
+    app.router.add_static("/static/", WEB_STATIC_DIR)
     app.router.add_get("/ws", handle_ws)
     app.router.add_post("/capture", handle_capture)
     app.router.add_post("/clear", handle_clear)

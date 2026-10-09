@@ -13,11 +13,7 @@ async function api(path, body) {
   return data;
 }
 
-function showError(err) {
-  $("dialog-title").textContent = err.title || "Error";
-  $("dialog-message").textContent = err.message || String(err);
-  $("dialog").showModal();
-}
+const showError = (err) => MiningCatUI.dialog(err.title || "Error", err.message || String(err));
 
 // The page that sent the user here to choose a language first (see application/study_language.py).
 function nextPage() {
@@ -32,8 +28,8 @@ function renderHub(current) {
   $("hub-native").lang = current.tag;
   $("hub-name").textContent = current.name;
   const converter = $("tile-converter");
-  converter.classList.toggle("unavailable", !current.converter);
-  converter.querySelector("span").textContent = current.converter
+  converter.classList.toggle("opacity-50", !current.converter);
+  converter.querySelector(".card-text").textContent = current.converter
     ? "Audiobooks, ebooks, videos and games: subtitles, audio, frequency lists."
     : `Not available for ${current.name} yet.`;
 }
@@ -46,13 +42,15 @@ function renderPicker(languages, current) {
       l.words ? `${l.words.toLocaleString()} words` : null].filter(Boolean).join(" · ");
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `language${current && current.id === l.id ? " current" : ""}`;
-    const native = Object.assign(document.createElement("span"), { className: "language-native", lang: l.tag, textContent: l.native });
+    button.className = `btn btn-outline-primary w-100 h-100 text-start d-flex flex-column p-3${current && current.id === l.id ? " active" : ""}`;
+    const native = Object.assign(document.createElement("span"), { className: "fs-4 lh-sm", lang: l.tag, textContent: l.native });
     const name = Object.assign(document.createElement("strong"), { textContent: l.name });
-    const meta = Object.assign(document.createElement("small"), { className: "dim", textContent: stats || " " });
+    const meta = Object.assign(document.createElement("small"), { className: "opacity-75", textContent: stats || " " });
     button.append(native, name, meta);
     button.addEventListener("click", () => choose(l.id));
-    return button;
+    const col = Object.assign(document.createElement("div"), { className: "col" });
+    col.append(button);
+    return col;
   }));
 }
 

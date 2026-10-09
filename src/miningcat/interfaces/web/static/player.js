@@ -43,22 +43,9 @@ async function api(path, body) {
   return data;
 }
 
-function showDialog(title, message, buttons = [{ label: "OK", value: true, primary: true }]) {
-  const dlg = $("dialog");
-  $("dialog-title").textContent = title;
-  $("dialog-message").textContent = message;
-  $("dialog-actions").replaceChildren(...buttons.map((b) => {
-    const btn = document.createElement("button");
-    btn.className = b.primary ? "btn btn-primary" : "btn";
-    btn.value = String(b.value);
-    btn.textContent = b.label;
-    return btn;
-  }));
-  return new Promise((resolve) => {
-    dlg.addEventListener("close", () => resolve(dlg.returnValue === "true"), { once: true });
-    dlg.returnValue = "false";
-    dlg.showModal();
-  });
+// Resolves to whether the button of value true was clicked (ui.js).
+function showDialog(title, message, buttons) {
+  return MiningCatUI.dialog(title, message, buttons).then((value) => value === "true");
 }
 const showError = (err) => showDialog(err.title || "Error", err.message || String(err));
 
@@ -75,63 +62,77 @@ function formatTime(seconds, withHours = false) {
   return h || withHours ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
 }
 
-function applyTheme() {
-  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
-  document.body.classList.toggle("theme-dark", dark);
-  document.body.classList.toggle("theme-light", !dark);
-}
-
 function fileUrl() {
   return `/player/api/videos/${P.video.id}/file?v=${P.fileVersion}`;
 }
 
 // ---------------------------------------------------------------- library
 
+function node(tag, className, text) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text !== undefined) element.textContent = text;
+  return element;
+}
+
+// A video's thumbnail (16:9), with what's written over it.
+function thumbnail(...overlays) {
+  const box = node("div", "ratio ratio-16x9 rounded overflow-hidden shadow-sm bg-body-tertiary mb-2");
+  const inner = node("div");
+  inner.append(...overlays);
+  box.append(inner);
+  return box;
+}
+
+// Over a thumbnail: the video being prepared or downloaded, or its error.
+function thumbnailState(text, error) {
+  return node("div", `position-absolute top-0 bottom-0 start-0 end-0 d-flex align-items-center justify-content-center p-2 text-center text-white fw-semibold small ${error ? "bg-danger bg-opacity-75" : "bg-black bg-opacity-50"}`, text);
+}
+
+function removeButton(label, onClick) {
+  const del = node("button", "btn btn-sm btn-dark rounded-circle position-absolute top-0 end-0 m-1 mc-delete");
+  del.type = "button";
+  del.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+  del.title = "Remove from the library";
+  del.setAttribute("aria-label", label);
+  del.addEventListener("click", onClick);
+  return del;
+}
+
+function inColumn(card) {
+  const col = node("div", "col");
+  col.append(card);
+  return col;
+}
+
 function videoCard(v) {
-  const card = document.createElement(v.status === "ready" || v.status === "error" ? "a" : "div");
-  card.className = "video-card";
+  const card = node(v.status === "ready" || v.status === "error" ? "a" : "div", "mc-cover d-block position-relative text-reset text-decoration-none");
   if (card.tagName === "A") card.href = `/player/${v.id}`;
-  const thumb = document.createElement("div");
-  thumb.className = "video-thumb";
+  const overlays = [];
   if (v.thumb) {
-    const img = document.createElement("img");
+    const img = node("img", "w-100 h-100 object-fit-cover");
     img.src = `/player/api/videos/${v.id}/thumb?v=${v.added}`;
     img.alt = "";
     img.loading = "lazy";
-    thumb.append(img);
+    overlays.push(img);
   }
-  if (v.duration) {
-    const badge = document.createElement("span");
-    badge.className = "video-duration";
-    badge.textContent = formatTime(v.duration);
-    thumb.append(badge);
-  }
+  if (v.duration) overlays.push(node("span", "badge text-bg-dark position-absolute bottom-0 end-0 m-1 font-monospace fw-normal", formatTime(v.duration)));
   if (v.status !== "ready") {
-    const state = document.createElement("div");
-    state.className = `video-state ${v.status}`;
-    state.textContent = v.status === "error" ? "Error"
-      : v.step === "encoding" ? `Converting… ${Math.round(v.progress || 0)}%` : "Preparing…";
+    const state = thumbnailState(v.status === "error" ? "Error"
+      : v.step === "encoding" ? `Converting… ${Math.round(v.progress || 0)}%` : "Preparing…", v.status === "error");
     if (v.error) state.title = v.error;
-    thumb.append(state);
+    overlays.push(state);
   }
-  const title = document.createElement("div");
-  title.className = "book-title";
-  title.textContent = v.title;
-  const meta = document.createElement("div");
-  meta.className = "book-meta";
-  meta.textContent = v.tracks ? `${v.tracks} subtitle track${v.tracks > 1 ? "s" : ""}` : "No subtitles";
-  const progress = document.createElement("div");
-  progress.className = "book-progress";
-  const fill = document.createElement("div");
+  const title = node("div", "fw-semibold small text-truncate", v.title);
+  title.title = v.title;
+  const meta = node("div", "small text-body-secondary", v.tracks ? `${v.tracks} subtitle track${v.tracks > 1 ? "s" : ""}` : "No subtitles");
+  const progress = node("div", "progress my-1");
+  progress.style.height = "3px";
+  progress.setAttribute("aria-hidden", "true");
+  const fill = node("div", "progress-bar");
   fill.style.width = `${v.percent || 0}%`;
   progress.append(fill);
-  const del = document.createElement("button");
-  del.type = "button";
-  del.className = "book-delete";
-  del.title = "Remove from the library";
-  del.setAttribute("aria-label", `Remove ${v.title}`);
-  del.textContent = "×";
-  del.addEventListener("click", async (e) => {
+  const del = removeButton(`Remove ${v.title}`, async (e) => {
     e.preventDefault();
     e.stopPropagation();
     const ok = await showDialog("Remove video", `Remove “${v.title}” from the library? Your original file isn't touched.`,
@@ -142,11 +143,10 @@ function videoCard(v) {
       showLibrary();
     } catch (err) { showError(err); }
   });
-  const comp = document.createElement("div");
-  comp.className = "book-comp";
+  const comp = node("div", "small text-body-secondary");
   comp.dataset.video = v.id;
-  card.append(thumb, title, meta, progress, comp, del);
-  return card;
+  card.append(thumbnail(...overlays), title, meta, progress, comp, del);
+  return inColumn(card);
 }
 
 // Each video's comprehension, one after the other (subtitles never analysed take a moment). Kept while the library
@@ -157,7 +157,7 @@ async function loadComprehension(list) {
   const token = ++comprehensionToken;
   for (const v of list) {
     if (token !== comprehensionToken) return;
-    const box = document.querySelector(`.book-comp[data-video="${v.id}"]`);
+    const box = document.querySelector(`[data-video="${v.id}"]`);
     if (!box || v.status !== "ready" || !v.tracks) continue;
     if (!comprehensionCache.has(v.id)) {
       box.textContent = "…";
@@ -174,34 +174,18 @@ async function loadComprehension(list) {
 }
 
 function downloadCard(job) {
-  const card = document.createElement("div");
-  card.className = "video-card";
-  const thumb = document.createElement("div");
-  thumb.className = "video-thumb";
-  const state = document.createElement("div");
-  state.className = `video-state ${job.status}`;
-  state.textContent = job.status === "error" ? "Download failed" : "Downloading…";
-  thumb.append(state);
-  const title = document.createElement("div");
-  title.className = "book-title";
-  title.textContent = job.url;
-  card.append(thumb, title);
+  const card = node("div", "mc-cover position-relative");
+  const failed = job.status === "error";
+  const title = node("div", "fw-semibold small text-break", job.url);
+  card.append(thumbnail(thumbnailState(failed ? "Download failed" : "Downloading…", failed)), title);
   if (job.error) {
-    const error = document.createElement("div");
-    error.className = "book-meta video-error";
-    error.textContent = job.error;
-    const dismiss = document.createElement("button");
-    dismiss.type = "button";
-    dismiss.className = "book-delete";
-    dismiss.textContent = "×";
-    dismiss.setAttribute("aria-label", "Dismiss");
-    dismiss.addEventListener("click", async () => {
+    const dismiss = removeButton("Dismiss", async () => {
       await api(`/player/api/downloads/${job.id}/dismiss`, {}).catch(() => {});
       showLibrary();
     });
-    card.append(error, dismiss);
+    card.append(node("div", "small text-danger text-break", job.error), dismiss);
   }
-  return card;
+  return inColumn(card);
 }
 
 async function showLibrary(refresh = false) {
@@ -299,11 +283,12 @@ function wireLibrary() {
   $("add-videos").addEventListener("click", () => $("video-input").click());
   $("video-input").addEventListener("change", (e) => { handleFiles(e.target.files); e.target.value = ""; });
   const drop = $("lib-drop");
-  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("dragover"); });
-  drop.addEventListener("dragleave", () => drop.classList.remove("dragover"));
+  const over = ["border-primary", "bg-primary-subtle"];
+  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add(...over); });
+  drop.addEventListener("dragleave", () => drop.classList.remove(...over));
   drop.addEventListener("drop", (e) => {
     e.preventDefault();
-    drop.classList.remove("dragover");
+    drop.classList.remove(...over);
     if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   });
   $("url-language").addEventListener("change", (e) => storageSet("miningcat-player-language", e.target.value));
@@ -506,22 +491,22 @@ function renderList() {
   const lang = effectiveLanguage();
   const items = P.cues.map((cue, i) => {
     const li = document.createElement("li");
-    li.className = "cue";
+    li.className = "cue d-flex align-items-baseline gap-2 py-2 ps-3 pe-2 border-bottom";
     li.dataset.i = String(i);
-    const select = document.createElement("button");
-    select.type = "button";
-    select.className = "cue-select";
+    const select = document.createElement("input");
+    select.type = "checkbox";
+    select.className = "form-check-input flex-shrink-0 align-self-center m-0 cue-select";
     select.dataset.mcIgnore = "";
     select.title = "Select this line for the card (with the lines next to it, for a sentence split across lines)";
     select.setAttribute("aria-label", "Select this line");
     const time = document.createElement("button");
     time.type = "button";
-    time.className = "cue-time";
+    time.className = "btn btn-sm btn-link link-secondary text-decoration-none font-monospace px-1 py-0 flex-shrink-0 cue-time";
     time.dataset.mcIgnore = "";
     time.textContent = formatTime(cue.start);
     time.title = "Go to this subtitle";
     const text = document.createElement("p");
-    text.className = "cue-text";
+    text.className = "cue-text fs-5 m-0 flex-grow-1 text-break";
     text.lang = lang;
     text.textContent = cue.text;
     li.append(select, time, text);
@@ -758,7 +743,7 @@ function renderSelection() {
   for (const li of $("cues").children) {
     const on = inSelection(Number(li.dataset.i));
     li.classList.toggle("selected", on);
-    li.firstChild.setAttribute("aria-pressed", String(on));
+    li.firstChild.checked = on;
   }
   $("cue-selection").hidden = !sel;
   if (sel) {
@@ -842,7 +827,10 @@ function syncSettingsForm() {
   document.documentElement.style.setProperty("--sub-size", `${s.sub_size}px`);
   $("set-sub-size").value = s.sub_size;
   $("out-sub-size").textContent = `${s.sub_size}px`;
-  for (const b of $("set-display").children) b.setAttribute("aria-pressed", String(b.dataset.value === s.sub_display));
+  for (const b of $("set-display").children) {
+    b.setAttribute("aria-pressed", String(b.dataset.value === s.sub_display));
+    b.classList.toggle("active", b.dataset.value === s.sub_display);
+  }
   $("subs").classList.toggle("blur", s.sub_display === "blur");
   $("subs").classList.toggle("hidden", s.sub_display === "hidden");
   $("set-auto-pause").checked = s.auto_pause;
@@ -926,9 +914,12 @@ function toggleList() {
   saveSettings({ list: !P.settings.list });
 }
 
+// The settings panel (a Bootstrap offcanvas)
 function togglePanel(force) {
-  const panel = $("settings-panel");
-  panel.hidden = force === undefined ? !panel.hidden : !force;
+  const panel = bootstrap.Offcanvas.getOrCreateInstance($("settings-panel"));
+  if (force === undefined) panel.toggle();
+  else if (force) panel.show();
+  else panel.hide();
 }
 
 // The whole page goes fullscreen (not the <video>), so that the subtitles and the popup stay visible.
@@ -949,7 +940,6 @@ function wireSettings() {
   $("i1-only").addEventListener("change", (e) => $("cues").classList.toggle("i1-only", e.target.checked));
   if (window.MiningCatMining) MiningCatMining.onAnalysis(showComprehension);
   $("fullscreen-btn").addEventListener("click", toggleFullscreen);
-  for (const btn of document.querySelectorAll("[data-close]")) btn.addEventListener("click", () => togglePanel(false));
   $("set-sub-size").addEventListener("input", (e) => {
     document.documentElement.style.setProperty("--sub-size", `${e.target.value}px`);
     $("out-sub-size").textContent = `${e.target.value}px`;
@@ -1022,7 +1012,7 @@ async function addSubtitles(files) {
 // ---------------------------------------------------------------- keyboard & wiring
 
 function isEditing(target) {
-  return target && target.closest && (target.closest("input, select, textarea, dialog") || target.isContentEditable);
+  return target && target.closest && (target.closest("input, select, textarea, .modal") || target.isContentEditable);
 }
 
 function onKey(e) {
@@ -1074,7 +1064,7 @@ function wireWatch() {
   document.addEventListener("fullscreenchange", () => {
     if (document.fullscreenElement === video) {
       document.exitFullscreen().catch(() => {});
-      osd("Press F (or ⛶) for fullscreen with the subtitles");
+      osd("Press F (or the fullscreen button) for fullscreen with the subtitles");
     }
     document.body.classList.toggle("fullscreen", document.fullscreenElement === document.documentElement);
   });
@@ -1118,8 +1108,6 @@ async function route() {
 }
 
 async function init() {
-  applyTheme();
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
   P.settings = await api("/player/api/settings");
   syncSettingsForm();
   wireLibrary();

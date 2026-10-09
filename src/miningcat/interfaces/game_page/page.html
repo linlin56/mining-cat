@@ -4,35 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MiningCat - Game OCR</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&family=Noto+Serif+SC:wght@400;600&family=Noto+Serif+JP:wght@400;600&family=Noto+Serif+KR:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&family=Noto+Serif+SC:wght@400;600&family=Noto+Serif+JP:wght@400;600&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/vendor/bootstrap/bootstrap.min.css">
+<link rel="stylesheet" href="/static/vendor/bootstrap-icons/bootstrap-icons.min.css">
+<link rel="stylesheet" href="/static/theme.css">
 <link rel="stylesheet" href="/page.css">
 </head>
-<body>
+<body data-bs-theme="dark">
 
-<header>
-  <b>MiningCat</b>
-  <span id="status">connecting…</span>
-  <span id="count">0</span>
-  <button id="capture" title="Capture now">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
-      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-      <circle cx="12" cy="13" r="4"/>
-    </svg>
-  </button>
-  <button id="clear" title="Clear history">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-      <path d="M10 11v6"/><path d="M14 11v6"/>
-    </svg>
-  </button>
+<header class="navbar sticky-top bg-body border-bottom">
+  <div class="container gap-2">
+    <span class="navbar-brand d-flex align-items-center gap-2 fw-bold me-0">
+      <img src="/static/favicon.svg" alt="" width="26" height="26"> MiningCat
+    </span>
+    <span class="badge rounded-pill text-bg-warning" id="status">connecting…</span>
+    <span class="small text-body-secondary font-monospace ms-auto" id="count" title="Captures">0</span>
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="capture" title="Capture now" aria-label="Capture now">
+      <i class="bi bi-camera" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="clear" title="Clear history" aria-label="Clear history">
+      <i class="bi bi-trash" aria-hidden="true"></i>
+    </button>
+  </div>
 </header>
 
-<main id="feed"></main>
+<main class="container">
+  <div class="col-lg-9 col-xl-8 mx-auto pb-5" id="feed"></div>
+</main>
 
 <script>
 const AUTO    = {{AUTO}};
@@ -51,7 +52,7 @@ function resetFeed() {
     : HOTKEY
       ? `Press <code>${HOTKEY}</code> to capture, even with the game focused.`
       : "Continuous capture is off.";
-  feed.innerHTML = `<p class="empty">
+  feed.innerHTML = `<p class="empty text-body-secondary small lh-lg py-5 m-0">
     Waiting for a capture.<br>
     ${how}<br>
     You can also capture with the camera button above, or <code>curl -X POST ${location.origin}/capture</code>.
@@ -67,35 +68,40 @@ capture.onclick = () => fetch("/capture", { method: "POST" });
 // resetFeed() runs when the server sends back its "clear" message, not here, to stay consistent across tabs.
 clear.onclick = () => fetch("/clear", { method: "POST" });
 
+const COPY = '<i class="bi bi-clipboard" aria-hidden="true"></i> Copy image';
+const COPIED = '<i class="bi bi-check-lg" aria-hidden="true"></i> Copied';
+
 function addCapture(data) {
   const empty = feed.querySelector(".empty");
   if (empty) empty.remove();
 
   const el = document.createElement("article");
-  el.className = "capture";
+  el.className = "capture border-bottom py-4";
 
   const meta = document.createElement("div");
-  meta.className = "meta";
+  meta.className = "d-flex align-items-center gap-3 small text-body-secondary font-monospace mb-3";
   meta.innerHTML = `<span>${data.ts}</span><span>${data.ms} ms</span>`;
 
   const copy = document.createElement("button");
-  copy.textContent = "copy image";
+  copy.type = "button";
+  copy.className = "btn btn-sm btn-outline-secondary ms-auto";
+  copy.innerHTML = COPY;
   copy.onclick = async () => {
     const blob = await (await fetch(data.image)).blob();
     const png = await toPng(blob);
     await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
-    copy.textContent = "copied";
-    setTimeout(() => (copy.textContent = "copy image"), 1400);
+    copy.innerHTML = COPIED;
+    setTimeout(() => (copy.innerHTML = COPY), 1400);
   };
   meta.appendChild(copy);
 
   const img = document.createElement("img");
-  img.className = "shot";
+  img.className = "shot img-fluid w-100 rounded border mb-3";
   img.src = data.image;
   img.alt = "";
 
   const line = document.createElement("p");
-  line.className = "line";
+  line.className = "line fs-3 lh-lg m-0";
   line.lang = LANG;
   line.textContent = data.text;
 
@@ -126,13 +132,15 @@ function toPng(blob) {
   });
 }
 
+function setStatus(text, live) {
+  status.textContent = text;
+  status.className = `badge rounded-pill ${live ? "text-bg-success" : "text-bg-warning"}`;
+}
+
 function connect() {
   const ws = new WebSocket(`ws://${location.host}/ws`);
 
-  ws.onopen = () => {
-    status.textContent = "listening";
-    status.classList.add("live");
-  };
+  ws.onopen = () => setStatus("listening", true);
 
   ws.onmessage = (e) => {
     const data = JSON.parse(e.data);
@@ -141,8 +149,7 @@ function connect() {
   };
 
   ws.onclose = () => {
-    status.textContent = "server stopped - retrying";
-    status.classList.remove("live");
+    setStatus("server stopped - retrying", false);
     setTimeout(connect, 2000);
   };
 }

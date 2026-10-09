@@ -31,19 +31,16 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-function dialog(title, message, buttons = [{ label: "OK", value: true, primary: true }]) {
-  const dlg = $("dialog");
-  $("dialog-title").textContent = title;
-  $("dialog-message").textContent = message;
-  $("dialog-actions").replaceChildren(...buttons.map((b) => el("button", { class: b.primary ? "btn btn-primary" : "btn", value: String(b.value), text: b.label })));
-  return new Promise((resolve) => {
-    dlg.addEventListener("close", () => resolve(dlg.returnValue === "true"), { once: true });
-    dlg.returnValue = "false";
-    dlg.showModal();
-  });
+// Resolves to whether the button of value true was clicked (ui.js).
+function dialog(title, message, buttons) {
+  return MiningCatUI.dialog(title, message, buttons).then((value) => value === "true");
 }
 const showError = (err) => dialog(err.title || "Error", err.message || String(err));
 const confirmBox = (title, message, label) => dialog(title, message, [{ label: "Cancel", value: false }, { label, value: true, primary: true }]);
+
+// A Bootstrap icon, for the buttons without a label.
+const icon = (name) => el("i", { class: `bi bi-${name}`, "aria-hidden": "true" });
+const EMPTY = "text-body-secondary small m-0";
 
 const langName = (id) => (S.languages.find((l) => l.id === id) || { name: id }).name;
 
@@ -56,7 +53,10 @@ function options(select, values, value) {
 
 function showTab() {
   const name = (location.hash || "#dictionaries").slice(1);
-  for (const a of document.querySelectorAll(".tabs a")) a.setAttribute("aria-selected", String(a.dataset.tab === name));
+  for (const a of document.querySelectorAll("[data-tab]")) {
+    a.setAttribute("aria-selected", String(a.dataset.tab === name));
+    a.classList.toggle("active", a.dataset.tab === name);
+  }
   for (const p of document.querySelectorAll(".tab-panel")) p.hidden = p.id !== `tab-${name}`;
   if (name === "cards") loadCards();
   if (name === "languages") loadWords();
@@ -69,14 +69,14 @@ async function loadDictionaries() {
   const { dictionaries } = await api("/api/dict");
   const box = $("dict-list");
   if (!dictionaries.some((d) => d.language === STUDY)) {
-    box.replaceChildren(el("p", { class: "empty", text: "No dictionary yet." }));
+    box.replaceChildren(el("p", { class: EMPTY, text: "No dictionary yet." }));
     return;
   }
   const byLang = {};
   for (const d of dictionaries) if (d.language === STUDY) (byLang[d.language] = byLang[d.language] || []).push(d);
-  box.replaceChildren(...Object.entries(byLang).map(([lang, list]) => el("div", { class: "dict-group" },
+  box.replaceChildren(...Object.entries(byLang).map(([lang, list]) => el("div", { class: "list-group" },
     ...list.map((d, i) => {
-      const enabled = el("input", { type: "checkbox", checked: Boolean(d.enabled), "aria-label": `Use ${d.title}` });
+      const enabled = el("input", { type: "checkbox", class: "form-check-input m-0", checked: Boolean(d.enabled), "aria-label": `Use ${d.title}` });
       enabled.addEventListener("change", async () => {
         try { await api(`/api/dict/${d.id}`, { enabled: enabled.checked }); loadDictionaries(); loadFrequency(); } catch (err) { showError(err); }
       });
@@ -90,18 +90,20 @@ async function loadDictionaries() {
       const counts = [d.term_count ? `${d.term_count.toLocaleString()} terms` : null,
         d.kanji_count ? `${d.kanji_count.toLocaleString()} characters` : null,
         d.meta_count ? `${d.meta_count.toLocaleString()} frequency/pitch entries` : null].filter(Boolean).join(" · ");
-      return el("div", { class: `dict-item${d.enabled ? "" : " disabled"}` },
-        el("label", { class: "check" }, enabled),
-        el("div", { class: "dict-name" }, d.title, el("small", { text: [d.revision, counts].filter(Boolean).join(" · ") })),
-        el("button", { class: "icon-btn", type: "button", title: "Move up", "aria-label": "Move up", text: "↑", disabled: i === 0, onclick: () => move(-1) }),
-        el("button", { class: "icon-btn", type: "button", title: "Move down", "aria-label": "Move down", text: "↓", disabled: i === list.length - 1, onclick: () => move(1) }),
+      return el("div", { class: "list-group-item d-flex flex-wrap align-items-center gap-2" },
+        enabled,
+        el("div", { class: `flex-grow-1 fw-semibold${d.enabled ? "" : " text-body-secondary text-decoration-line-through"}` },
+          d.title, el("small", { class: "d-block fw-normal text-body-secondary", text: [d.revision, counts].filter(Boolean).join(" · ") })),
+        el("div", { class: "btn-group btn-group-sm" },
+          el("button", { class: "btn btn-outline-secondary", type: "button", title: "Move up", "aria-label": "Move up", disabled: i === 0, onclick: () => move(-1) }, icon("arrow-up")),
+          el("button", { class: "btn btn-outline-secondary", type: "button", title: "Move down", "aria-label": "Move down", disabled: i === list.length - 1, onclick: () => move(1) }, icon("arrow-down"))),
         el("button", {
-          class: "icon-btn danger", type: "button", title: "Delete", "aria-label": `Delete ${d.title}`, text: "🗑",
+          class: "btn btn-sm btn-outline-danger", type: "button", title: "Delete", "aria-label": `Delete ${d.title}`,
           onclick: async () => {
             if (!(await confirmBox("Delete dictionary", `Delete “${d.title}”? You can import it again later.`, "Delete"))) return;
             try { await api(`/api/dict/${d.id}/delete`, {}); loadDictionaries(); loadFrequency(); } catch (err) { showError(err); }
           },
-        }));
+        }, icon("trash")));
     }))));
 }
 
@@ -163,11 +165,11 @@ async function loadLanguages() {
   S.languages = data.languages;
   const study = S.languages.find((l) => l.id === STUDY);
   const radios = (language, choices, current, path, key) => {
-    const row = el("div", { class: "script-row", role: "radiogroup", "aria-label": language.name }, el("span", { text: language.name }));
+    const row = el("div", { role: "radiogroup", "aria-label": language.name }, el("span", { class: "fw-semibold me-3", text: language.name }));
     for (const [value, label] of choices) {
-      const radio = el("input", { type: "radio", name: `${key}-${language.id}`, value, checked: current === value });
+      const radio = el("input", { type: "radio", class: "form-check-input", name: `${key}-${language.id}`, value, checked: current === value });
       radio.addEventListener("change", () => api(path, { language: language.id, [key]: value }).catch(showError));
-      row.append(el("label", { class: "check" }, radio, label));
+      row.append(el("label", { class: "form-check form-check-inline" }, radio, el("span", { class: "form-check-label", text: label })));
     }
     return row;
   };
@@ -184,10 +186,10 @@ async function loadLanguages() {
 
   const c = data.counts[STUDY];
   $("word-counts").replaceChildren(c
-    ? el("div", { class: "counts" }, el("div", { class: "count-card" },
-      el("strong", { text: study.name }),
-      `${c.known || 0} known · ${c.learning || 0} learning${c.ignored ? ` · ${c.ignored} ignored` : ""}`))
-    : el("p", { class: "empty", text: "No words yet: look words up in the reader, mark them or make cards." }));
+    ? el("div", { class: "d-inline-block border rounded bg-body-tertiary px-3 py-2 small" },
+      el("strong", { class: "d-block", text: study.name }),
+      `${c.known || 0} known · ${c.learning || 0} learning${c.ignored ? ` · ${c.ignored} ignored` : ""}`)
+    : el("p", { class: EMPTY, text: "No words yet: look words up in the reader, mark them or make cards." }));
 }
 
 async function loadWords() {
@@ -198,21 +200,21 @@ async function loadWords() {
   const { words } = await api(`/api/words?${params}`);
   const table = $("words-table");
   table.replaceChildren(
-    el("thead", {}, el("tr", {}, ...["Word", "Reading", "Status", "From", "Added", ""].map((t) => el("th", { text: t })))),
+    el("thead", { class: "sticky-top" }, el("tr", {}, ...["Word", "Reading", "Status", "From", "Added", ""].map((t) => el("th", { text: t })))),
     el("tbody", {}, ...words.map((w) => el("tr", {},
-      el("td", { class: "word", lang: w.language, text: w.expression }),
+      el("td", { class: "fs-5", lang: w.language, text: w.expression }),
       el("td", { text: w.reading }),
-      el("td", {}, el("span", { class: `pill ${w.status}`, text: w.status })),
+      el("td", {}, el("span", { class: `badge rounded-pill ${STATUS_BADGES[w.status] || STATUS_BADGES.new}`, text: w.status })),
       el("td", { text: { manual: "you", card: "card", anki: "Anki" }[w.source] || w.source }),
-      el("td", { class: "dim", title: new Date(w.added * 1000).toLocaleString(), text: new Date(w.added * 1000).toLocaleDateString() }),
-      el("td", {}, el("button", {
-        class: "icon-btn", type: "button", title: "Forget this word", "aria-label": `Forget ${w.expression}`, text: "×",
+      el("td", { class: "text-body-secondary", title: new Date(w.added * 1000).toLocaleString(), text: new Date(w.added * 1000).toLocaleDateString() }),
+      el("td", { class: "text-end" }, el("button", {
+        class: "btn btn-sm btn-link link-secondary", type: "button", title: "Forget this word", "aria-label": `Forget ${w.expression}`,
         onclick: async () => {
           try { await api("/api/words/status", { language: w.language, expression: w.expression, reading: w.reading, status: "new" }); loadWords(); loadLanguages(); }
           catch (err) { showError(err); }
         },
-      }))))));
-  if (!words.length) table.append(el("tbody", {}, el("tr", {}, el("td", { colspan: "6", class: "empty", text: "No words." }))));
+      }, icon("x-lg")))))));
+  if (!words.length) table.append(el("tbody", {}, el("tr", {}, el("td", { colspan: "6", class: "text-body-secondary", text: "No words." }))));
 }
 
 // ---------------------------------------------------------------- Anki
@@ -225,15 +227,15 @@ async function refreshAnki() {
   $("known-interval").value = config.known_interval;
   renderTranslation();
   $("anki-state").textContent = "Checking Anki…";
-  $("anki-state").className = "connection-state";
+  $("anki-state").className = "small text-body-secondary m-0";
   S.anki = await api("/api/anki/status");
   const state = $("anki-state");
   if (S.anki.connected) {
     state.textContent = `Connected to Anki (AnkiConnect ${S.anki.version}): ${S.anki.decks.length} decks, ${S.anki.models.length} note types.`;
-    state.className = "connection-state ok";
+    state.className = "small text-success m-0";
   } else {
     state.textContent = S.anki.error;
-    state.className = "connection-state bad";
+    state.className = "small text-danger m-0";
   }
   renderNoteSetup();
   renderSyncSources();
@@ -242,7 +244,7 @@ async function refreshAnki() {
 function selectWith(values, value, placeholder) {
   const list = [...values];
   if (value && !list.includes(value)) list.unshift(value);  // keep a saved value even when Anki is closed
-  const select = el("select");
+  const select = el("select", { class: "form-select" });
   options(select, [["", placeholder], ...list.map((v) => [v, v])], value || "");
   return select;
 }
@@ -290,30 +292,29 @@ let modelPoll = null;
 function renderModels({ available, installed, job }) {
   const list = $("model-list");
   if (!available) {
-    list.replaceChildren(el("p", { class: "empty", text: "Translation needs the argostranslate package (pip install argostranslate)." }));
+    list.replaceChildren(el("p", { class: EMPTY, text: "Translation needs the argostranslate package (pip install argostranslate)." }));
     $("model-download").disabled = true;
     return;
   }
   list.replaceChildren(installed.length
-    ? el("table", { class: "mapping" }, el("tbody", {}, ...installed.map((m) => el("tr", {},
-      el("td", { text: m.name }), el("td", { class: "dim", text: megabytes(m.size) }),
-      el("td", {}, el("button", { type: "button", class: "icon-btn danger", "aria-label": `Remove ${m.name}`, text: "×",
+    ? el("table", { class: "table table-sm align-middle mb-0" }, el("tbody", {}, ...installed.map((m) => el("tr", {},
+      el("td", { text: m.name }), el("td", { class: "text-body-secondary", text: megabytes(m.size) }),
+      el("td", { class: "text-end" }, el("button", { type: "button", class: "btn btn-sm btn-outline-danger", title: "Remove", "aria-label": `Remove ${m.name}`,
         onclick: async () => {
           try { renderModels(await api(`/api/translate/models/${m.from}/${m.to}/delete`, {})); } catch (err) { showError(err); }
-        } }))))))
-    : el("p", { class: "empty", text: "No model yet: they're downloaded the first time a language is translated." }));
+        } }, icon("trash")))))))
+    : el("p", { class: EMPTY, text: "No model yet: they're downloaded the first time a language is translated." }));
 
   const running = job.state === "running";
   $("model-progress").hidden = !running && job.state !== "error";
   const target = $("translation-language").value;
   $("model-download").disabled = running || !target || target === STUDY || !S.translatable;
   if (running) {
-    $("model-progress-bar").value = job.total ? job.done / job.total : 0;
-    $("model-progress-bar").max = 1;
+    $("model-progress-bar").style.width = `${job.total ? (100 * job.done) / job.total : 0}%`;
     $("model-progress-text").textContent = `${langName(job.language)}${job.step ? ` (model ${job.step})` : ""}: `
       + (job.total ? `${megabytes(job.done)} / ${megabytes(job.total)}` : "starting…");
   } else if (job.state === "error") {
-    $("model-progress-bar").value = 0;
+    $("model-progress-bar").style.width = "0%";
     $("model-progress-text").textContent = `Download failed: ${job.error}`;
   }
   clearTimeout(modelPoll);
@@ -348,14 +349,14 @@ async function renderMapping(model, saved) {
   const markers = [["", "(leave empty)"], ...Object.entries(S.cardFields).map(([k, v]) => [`{${k}}`, v])];
   const rows = fields.map((name) => {
     const value = saved && name in saved ? saved[name] : (guess[name] || "");
-    const select = el("select", { "data-field": name, "aria-label": `Content of ${name}` });
+    const select = el("select", { class: "form-select form-select-sm", "data-field": name, "aria-label": `Content of ${name}` });
     const known = markers.some(([m]) => m === value);
     options(select, known ? markers : [...markers, [value, value]], value);
-    return el("tr", {}, el("td", { text: name }), el("td", {}, select));
+    return el("tr", {}, el("th", { class: "w-50", scope: "row", text: name }), el("td", {}, select));
   });
   box.replaceChildren(rows.length
-    ? el("table", { class: "mapping" }, el("tbody", {}, ...rows))
-    : el("p", { class: "empty", text: "Open Anki to see the fields of this note type." }));
+    ? el("table", { class: "table table-sm table-borderless align-middle mb-0" }, el("tbody", {}, ...rows))
+    : el("p", { class: EMPTY, text: "Open Anki to see the fields of this note type." }));
 }
 
 async function saveNoteSetup() {
@@ -379,19 +380,18 @@ function renderSyncSources() {
   const rows = [];
   for (const s of (S.config.sync || {})[STUDY] || []) rows.push(s);
   box.replaceChildren(...rows.map(syncRow));
-  if (!rows.length) box.append(el("p", { class: "empty", text: "No deck yet: add the decks that hold the words you already study." }));
+  if (!rows.length) box.append(el("p", { class: `${EMPTY} sync-empty`, text: "No deck yet: add the decks that hold the words you already study." }));
 }
 
 function syncRow(source = {}) {
   const deck = selectWith(S.anki.decks, source.deck, "Deck");
   deck.dataset.role = "deck";
-  const field = el("input", { type: "text", value: source.field || "", placeholder: "e.g. Hanzi", "data-role": "field" });
-  const reading = el("input", { type: "text", value: source.reading_field || "", placeholder: "optional", "data-role": "reading" });
-  const row = el("div", { class: "sync-source" },
-    el("label", { class: "field" }, el("span", { class: "field-label", text: "Deck" }), deck),
-    el("label", { class: "field" }, el("span", { class: "field-label", text: "Word field" }), field),
-    el("label", { class: "field" }, el("span", { class: "field-label", text: "Reading field" }), reading),
-    el("button", { class: "icon-btn danger", type: "button", "aria-label": "Remove", text: "×", onclick: () => row.remove() }));
+  const field = el("input", { type: "text", class: "form-control", value: source.field || "", placeholder: "e.g. Hanzi", "data-role": "field" });
+  const reading = el("input", { type: "text", class: "form-control", value: source.reading_field || "", placeholder: "optional", "data-role": "reading" });
+  const labelled = (text, control) => el("label", {}, el("span", { class: "form-label d-block", text }), control);
+  const row = el("div", { class: "sync-source d-flex flex-wrap align-items-end gap-2 mb-2" },
+    labelled("Deck", deck), labelled("Word field", field), labelled("Reading field", reading),
+    el("button", { class: "btn btn-outline-danger", type: "button", title: "Remove", "aria-label": "Remove", onclick: () => row.remove() }, icon("trash")));
   return row;
 }
 
@@ -431,6 +431,11 @@ async function syncNow() {
 // ---------------------------------------------------------------- cards
 
 const CARD_STATUS = { pending: "waiting", failed: "refused", sent: "in Anki", exported: "exported" };
+// The colours of the word and card statuses
+const STATUS_BADGES = {
+  new: "text-bg-secondary", ignored: "text-bg-secondary", learning: "text-bg-warning", pending: "text-bg-warning",
+  known: "text-bg-success", sent: "text-bg-success", failed: "text-bg-danger", exported: "text-bg-info",
+};
 
 async function loadCards() {
   const status = $("cards-filter").value;
@@ -439,32 +444,32 @@ async function loadCards() {
   const { cards } = await api(`/api/cards?${params}`);
   const table = $("cards-table");
   table.replaceChildren(
-    el("thead", {}, el("tr", {}, ...["Word", "Sentence", "Status", ""].map((t) => el("th", { text: t })))),
+    el("thead", { class: "sticky-top" }, el("tr", {}, ...["Word", "Sentence", "Status", ""].map((t) => el("th", { text: t })))),
     el("tbody", {}, ...cards.map((c) => {
       const sentence = el("td");
       sentence.textContent = c.fields.sentence.replace(/<[^>]+>/g, "");
       return el("tr", {},
-        el("td", { class: "word", lang: c.language, text: c.expression }),
+        el("td", { class: "fs-5", lang: c.language, text: c.expression }),
         sentence,
-        el("td", {}, el("span", { class: `pill ${c.status}`, text: CARD_STATUS[c.status] || c.status }),
-          c.error && c.status !== "sent" ? el("div", { class: "error", text: c.error }) : null),
-        el("td", {},
+        el("td", {}, el("span", { class: `badge rounded-pill ${STATUS_BADGES[c.status] || STATUS_BADGES.new}`, text: CARD_STATUS[c.status] || c.status }),
+          c.error && c.status !== "sent" ? el("div", { class: "small text-danger", text: c.error }) : null),
+        el("td", { class: "text-end text-nowrap" },
           c.status !== "sent" ? el("button", {
-            class: "btn", type: "button", text: "Send",
+            class: "btn btn-sm btn-outline-secondary me-1", type: "button", text: "Send",
             onclick: async () => {
               try { const { card } = await api(`/api/cards/${c.id}/send`, {}); if (card.status !== "sent") showError({ title: "Not sent", message: card.error }); loadCards(); updateBadge(); }
               catch (err) { showError(err); }
             },
           }) : null,
           el("button", {
-            class: "icon-btn danger", type: "button", title: "Delete", "aria-label": `Delete the card for ${c.expression}`, text: "🗑",
+            class: "btn btn-sm btn-outline-danger", type: "button", title: "Delete", "aria-label": `Delete the card for ${c.expression}`,
             onclick: async () => {
               if (!(await confirmBox("Delete card", `Delete the card for “${c.expression}” from MiningCat? (A card already in Anki stays there.)`, "Delete"))) return;
               try { await api(`/api/cards/${c.id}/delete`, {}); loadCards(); updateBadge(); } catch (err) { showError(err); }
             },
-          })));
+          }, icon("trash"))));
     })));
-  if (!cards.length) table.append(el("tbody", {}, el("tr", {}, el("td", { colspan: "4", class: "empty", text: "No cards here." }))));
+  if (!cards.length) table.append(el("tbody", {}, el("tr", {}, el("td", { colspan: "4", class: "text-body-secondary", text: "No cards here." }))));
 }
 
 async function updateBadge() {
@@ -519,7 +524,7 @@ async function init() {
     $("translation-save").addEventListener("click", saveTranslation);
     $("model-download").addEventListener("click", downloadModels);
     $("sync-add").addEventListener("click", () => {
-      $("sync-sources").querySelector(".empty")?.remove();
+      $("sync-sources").querySelector(".sync-empty")?.remove();
       $("sync-sources").append(syncRow());
     });
     $("sync-save").addEventListener("click", async () => {

@@ -4,7 +4,7 @@ import webbrowser
 
 from flask import Flask
 
-from miningcat.application import study_language
+from miningcat.application import study_language, user_preferences
 from miningcat.interfaces.web import errors, security, uploads
 from miningcat.interfaces.web.blueprints import (
     book_audio,
@@ -17,6 +17,7 @@ from miningcat.interfaces.web.blueprints import (
     dictionaries,
     game,
     pages,
+    preferences,
     profile,
     sentence_tools,
     videos,
@@ -25,7 +26,7 @@ from miningcat.interfaces.web.blueprints import (
 from miningcat.interfaces.web.jobs import AppState
 
 BLUEPRINTS = [
-    pages.bp, profile.bp, converter.bp, converter_files.bp, converter_results.bp, words.bp, dictionaries.bp,
+    pages.bp, preferences.bp, profile.bp, converter.bp, converter_files.bp, converter_results.bp, words.bp, dictionaries.bp,
     cards.bp, sentence_tools.bp, books.bp, book_audio.bp, comics.bp, videos.bp, game.bp,
 ]
 
@@ -40,10 +41,11 @@ def create_app(state: AppState | None = None) -> Flask:
     app.before_request(security.guard)
     errors.register(app)
 
-    # The language studied, for every page's header.
+    # The language studied, for every page's header, and the user's colours (base.html), set before the page is drawn.
     @app.context_processor
     def _study_language():
-        return {"study": study_language.describe(study_language.current())}
+        return {"study": study_language.describe(study_language.current()),
+                "preferences": user_preferences.get_preferences()}
 
     return app
 

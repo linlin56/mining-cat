@@ -1,379 +1,417 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Converter · MiningCat</title>
-  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% extends "base.html" %}
+{% from "_macros.html" import navbar with context %}
+{% block title %}Converter · MiningCat{% endblock %}
+{% block scripts %}
   <script src="{{ url_for('static', filename='app.js') }}" defer></script>
   <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
   <script src="{{ url_for('static', filename='csv_cards.js') }}" defer></script>
-</head>
-<body data-study='{{ study|tojson }}'>
-  <div class="page">
-    <header class="topbar">
-      <h1 class="brand"><a class="brand-link" href="/"><span class="brand-mark" aria-hidden="true">🐱</span> Converter</a></h1>
-      <nav class="top-links">
-        {% include "_study.html" %}
-        <a class="nav-link" href="/reader/">Reader</a>
-        <a class="nav-link" href="/player/">Player</a>
-        <a class="nav-link" href="/settings/">Settings</a>
-        <a id="repo-link" class="quiet-link" href="#" target="_blank" rel="noopener">Project repository</a>
-      </nav>
-    </header>
+{% endblock %}
+{% block body_attrs %}data-study='{{ study|tojson }}'{% endblock %}
+{% block body %}
+  <div class="container pb-4">
+    {% call navbar("Converter") %}
+      <a id="repo-link" class="nav-link small" href="#" target="_blank" rel="noopener">
+        <i class="bi bi-github" aria-hidden="true"></i> Project repository
+      </a>
+    {% endcall %}
 
-    <section class="panel" id="no-converter" hidden>
-      <h2 class="panel-title">Not available yet</h2>
-      <p>The converter doesn't support {{ study.name if study else "this language" }} yet. The <a href="/reader/">reader</a>
+    <section class="alert alert-warning" id="no-converter" hidden>
+      <h2 class="alert-heading h5">Not available yet</h2>
+      <p class="mb-0">The converter doesn't support {{ study.name if study else "this language" }} yet. The <a href="/reader/">reader</a>
         and the <a href="/player/">player</a> work with it: import books, or videos with their subtitles.</p>
     </section>
 
-    <fieldset id="controls" class="controls">
+    <fieldset id="controls" class="vstack gap-3">
       <!-- Variant of the language studied / conversion / source -->
-      <section class="row settings">
-        <label class="field" id="language-field">
-          <span class="field-label">Variant</span>
-          <select id="language"></select>
-        </label>
-        <label class="field">
-          <span class="field-label">Convert to</span>
-          <select id="convert"></select>
-        </label>
-        <div class="field">
-          <span class="field-label" id="source-label">Source</span>
-          <div class="segmented" id="source" role="radiogroup" aria-labelledby="source-label"></div>
+      <section class="d-flex flex-wrap align-items-end gap-3">
+        <div id="language-field">
+          <label class="form-label" for="language">Variant</label>
+          <select class="form-select" id="language"></select>
+        </div>
+        <div id="convert-field">
+          <label class="form-label" for="convert">Convert to</label>
+          <select class="form-select" id="convert"></select>
+        </div>
+        <div>
+          <span class="form-label d-block" id="source-label">Source</span>
+          <div class="btn-group flex-wrap" id="source" role="radiogroup" aria-labelledby="source-label"></div>
         </div>
       </section>
 
       <!-- ===== Audiobook / Ebook screen ===== -->
-      <div id="screen-audiobook" class="screen">
-        <section class="row">
-          <label class="field">
-            <span class="field-label">Mode</span>
-            <select id="mode"></select>
-          </label>
-          <label class="field" id="precision-field">
-            <span class="field-label">Transcription precision level</span>
-            <select id="precision" class="precision-select"></select>
-          </label>
-        </section>
-        <p class="mode-help" id="mode-help"></p>
-
-        <section class="panel" id="audio-panel">
-          <h2 class="panel-title">Audio files <span class="dim" id="audio-exts"></span></h2>
-          <div class="dropzone" data-kind="audio">
-            <ul class="file-list" id="audio-list"></ul>
-            <p class="empty-hint" id="audio-empty">Drop audio files here, or use “Add files”.</p>
+      <div id="screen-audiobook" class="vstack gap-3">
+        <section class="d-flex flex-wrap align-items-end gap-3">
+          <div>
+            <label class="form-label" for="mode">Mode</label>
+            <select class="form-select" id="mode"></select>
           </div>
-          <div class="panel-actions">
-            <button type="button" class="btn" id="audio-add">+ Add files</button>
-            <span class="upload-status dim" id="audio-upload-status"></span>
+          <div id="precision-field">
+            <label class="form-label" for="precision">Transcription precision level</label>
+            <select class="form-select precision-select" id="precision"></select>
           </div>
-          <input type="file" id="audio-input" multiple hidden>
         </section>
+        <p class="form-text m-0" id="mode-help"></p>
 
-        <section class="panel" id="voice-panel" hidden>
-          <h2 class="panel-title">Voice</h2>
-          <select id="voice" class="wide"></select>
-        </section>
-
-        <section class="panel" id="ebook-panel">
-          <h2 class="panel-title">Book <span class="dim">— EPUB (recommended) or TXT</span></h2>
-          <div class="dropzone" data-kind="ebook">
-            <div class="ebook-row">
-              <span id="ebook-label" class="dim">No file selected</span>
-              <button type="button" class="btn" id="ebook-select">Select…</button>
+        <section class="card" id="audio-panel">
+          <h2 class="card-header h6">Audio files <span class="fw-normal text-body-secondary" id="audio-exts"></span></h2>
+          <div class="card-body vstack gap-2">
+            <div class="border border-2 rounded" data-dropzone="audio">
+              <div class="list-group list-group-flush overflow-auto rounded mc-list" id="audio-list" hidden></div>
+              <p class="text-center text-body-secondary small m-0 p-3" id="audio-empty">Drop audio files here, or use “Add files”.</p>
             </div>
-            <ul class="chapter-list" id="chapter-list"></ul>
-          </div>
-          <div class="panel-actions">
-            <button type="button" class="btn" id="chapters-all">Select all</button>
-            <button type="button" class="btn" id="chapters-none">Deselect all</button>
-            <span class="upload-status dim" id="ebook-upload-status"></span>
-            <span class="spacer"></span>
-            <span class="dim" id="chapter-count"></span>
-          </div>
-          <input type="file" id="ebook-input" multiple hidden>
-        </section>
-
-        <section class="panel" id="freq-panel">
-          <h2 class="panel-title">Frequency lists</h2>
-          <div class="panel-actions">
-            <button type="button" class="btn" id="word-freq">Compute word count and give word frequency as CSV</button>
-            <button type="button" class="btn" id="char-freq">Character list</button>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <button type="button" class="btn btn-outline-secondary" id="audio-add"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add files</button>
+              <span class="small text-body-secondary" id="audio-upload-status"></span>
+            </div>
+            <input type="file" id="audio-input" multiple hidden>
           </div>
         </section>
 
-        <section class="row start-row">
-          <button type="button" class="btn btn-start" id="start">Start</button>
-          <button type="button" class="btn" data-action="clear-output">Clear output</button>
+        <section class="card" id="voice-panel" hidden>
+          <h2 class="card-header h6"><label for="voice">Voice</label></h2>
+          <div class="card-body">
+            <select class="form-select w-auto mw-100" id="voice"></select>
+          </div>
+        </section>
+
+        <section class="card" id="ebook-panel">
+          <h2 class="card-header h6">Book <span class="fw-normal text-body-secondary">— EPUB (recommended) or TXT</span></h2>
+          <div class="card-body vstack gap-2">
+            <div class="border border-2 rounded" data-dropzone="ebook">
+              <div class="d-flex align-items-center justify-content-between gap-3 p-2">
+                <span id="ebook-label" class="text-truncate text-body-secondary">No file selected</span>
+                <button type="button" class="btn btn-outline-secondary flex-shrink-0" id="ebook-select">Select…</button>
+              </div>
+              <div class="list-group list-group-flush overflow-auto border-top mc-list" id="chapter-list" hidden></div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <button type="button" class="btn btn-outline-secondary" id="chapters-all">Select all</button>
+              <button type="button" class="btn btn-outline-secondary" id="chapters-none">Deselect all</button>
+              <span class="small text-body-secondary" id="ebook-upload-status"></span>
+              <span class="ms-auto text-body-secondary" id="chapter-count"></span>
+            </div>
+            <input type="file" id="ebook-input" multiple hidden>
+          </div>
+        </section>
+
+        <section class="card" id="freq-panel">
+          <h2 class="card-header h6">Frequency lists</h2>
+          <div class="card-body d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-secondary" id="word-freq">Compute word count and give word frequency as CSV</button>
+            <button type="button" class="btn btn-outline-secondary" id="char-freq">Character list</button>
+          </div>
+        </section>
+
+        <section class="d-flex flex-column flex-sm-row gap-2">
+          <button type="button" class="btn btn-primary btn-lg flex-grow-1" id="start"><i class="bi bi-play-fill" aria-hidden="true"></i> Start</button>
+          <button type="button" class="btn btn-outline-secondary" data-action="clear-output"><i class="bi bi-trash" aria-hidden="true"></i> Clear output</button>
         </section>
       </div>
 
       <!-- ===== Video screen ===== -->
-      <div id="screen-video" class="screen" hidden>
-        <section class="panel">
-          <h2 class="panel-title">Video source</h2>
-          <div class="row">
-            <label class="field">
-              <span class="field-label">Input source</span>
-              <select id="video-input-mode"></select>
-            </label>
-          </div>
-
-          <div id="video-web">
-            <div class="row">
-              <label class="field">
-                <span class="field-label">Target website</span>
-                <select id="video-website"></select>
-              </label>
+      <div id="screen-video" class="vstack gap-3" hidden>
+        <section class="card">
+          <h2 class="card-header h6">Video source</h2>
+          <div class="card-body vstack gap-3">
+            <div>
+              <label class="form-label" for="video-input-mode">Input source</label>
+              <select class="form-select w-auto mw-100" id="video-input-mode"></select>
             </div>
-            <label class="field field-grow">
-              <span class="field-label">URL</span>
-              <input type="url" id="video-url" autocomplete="off" spellcheck="false">
-            </label>
-          </div>
 
-          <div id="video-local" hidden>
-            <div class="dropzone" data-kind="video">
-              <div class="ebook-row">
-                <span id="video-file-label" class="dim">No file selected</span>
-                <button type="button" class="btn" id="video-select">Select…</button>
+            <div id="video-web" class="vstack gap-3">
+              <div>
+                <label class="form-label" for="video-website">Target website</label>
+                <select class="form-select w-auto mw-100" id="video-website"></select>
+              </div>
+              <div>
+                <label class="form-label" for="video-url">URL</label>
+                <input type="url" class="form-control" id="video-url" autocomplete="off" spellcheck="false">
               </div>
             </div>
-            <span class="upload-status dim" id="video-upload-status"></span>
-            <label class="field" id="audio-track-field" hidden>
-              <span class="field-label">Audio track</span>
-              <select id="audio-track"></select>
-            </label>
-            <input type="file" id="video-input" hidden>
-          </div>
 
-          <div class="ocr-block">
-            <div class="row">
-              <label class="check">
-                <input type="checkbox" id="use-ocr">
-                <span>Use OCR for hardsubs (will not rely on audio track)</span>
-              </label>
-              <button type="button" class="btn" id="ocr-region-btn" disabled>Select subtitle region…</button>
+            <div id="video-local" class="vstack gap-2" hidden>
+              <div class="border border-2 rounded" data-dropzone="video">
+                <div class="d-flex align-items-center justify-content-between gap-3 p-2">
+                  <span id="video-file-label" class="text-truncate text-body-secondary">No file selected</span>
+                  <button type="button" class="btn btn-outline-secondary flex-shrink-0" id="video-select">Select…</button>
+                </div>
+              </div>
+              <span class="small text-body-secondary" id="video-upload-status"></span>
+              <div id="audio-track-field" hidden>
+                <label class="form-label" for="audio-track">Audio track</label>
+                <select class="form-select w-auto mw-100" id="audio-track"></select>
+              </div>
+              <input type="file" id="video-input" hidden>
             </div>
-            <div id="ocr-fps-row" class="row" hidden>
-              <label class="field field-grow">
-                <span class="field-label">OCR frames per second : <strong id="ocr-fps-value"></strong></span>
-                <input type="range" id="ocr-fps" step="1">
-              </label>
+
+            <div class="vstack gap-2 border-top pt-3">
+              <div class="d-flex flex-wrap align-items-center gap-3">
+                <div class="form-check m-0">
+                  <input class="form-check-input" type="checkbox" id="use-ocr">
+                  <label class="form-check-label" for="use-ocr">Use OCR for hardsubs (will not rely on audio track)</label>
+                </div>
+                <button type="button" class="btn btn-outline-secondary" id="ocr-region-btn" disabled>
+                  <i class="bi bi-bounding-box" aria-hidden="true"></i> Select subtitle region…
+                </button>
+              </div>
+              <div id="ocr-fps-row" hidden>
+                <label class="form-label" for="ocr-fps">OCR frames per second: <strong id="ocr-fps-value"></strong></label>
+                <input type="range" class="form-range" id="ocr-fps" step="1">
+              </div>
+              <p class="text-warning-emphasis small m-0" id="ocr-hint" hidden>
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> No zone selected - will default to bottom third selection
+              </p>
+              <p class="text-body-secondary small m-0" id="ocr-region-summary" hidden></p>
             </div>
-            <p class="hint-warn" id="ocr-hint" hidden>No zone selected - will default to bottom third selection</p>
-            <p class="dim" id="ocr-region-summary" hidden></p>
           </div>
         </section>
 
-        <section class="row" id="video-precision-row">
-          <label class="field">
-            <span class="field-label">Transcription precision level</span>
-            <select id="video-precision" class="precision-select"></select>
-          </label>
+        <section id="video-precision-row">
+          <label class="form-label" for="video-precision">Transcription precision level</label>
+          <select class="form-select w-auto mw-100 precision-select" id="video-precision"></select>
         </section>
 
-        <section class="panel">
-          <h2 class="panel-title">Frequency lists</h2>
-          <div class="panel-actions">
-            <button type="button" class="btn" id="video-word-freq" disabled>Compute word count and give word frequency as CSV</button>
-            <button type="button" class="btn" id="video-char-freq" disabled>Character list</button>
+        <section class="card">
+          <h2 class="card-header h6">Frequency lists</h2>
+          <div class="card-body d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-secondary" id="video-word-freq" disabled>Compute word count and give word frequency as CSV</button>
+            <button type="button" class="btn btn-outline-secondary" id="video-char-freq" disabled>Character list</button>
           </div>
         </section>
 
-        <section class="row start-row">
-          <button type="button" class="btn btn-start" id="video-start">Generate from source</button>
-          <button type="button" class="btn" data-action="clear-output">Clear output</button>
+        <section class="d-flex flex-column flex-sm-row gap-2">
+          <button type="button" class="btn btn-primary btn-lg flex-grow-1" id="video-start"><i class="bi bi-play-fill" aria-hidden="true"></i> Generate from source</button>
+          <button type="button" class="btn btn-outline-secondary" data-action="clear-output"><i class="bi bi-trash" aria-hidden="true"></i> Clear output</button>
         </section>
       </div>
+
       <!-- ===== Video game / Screen share screen ===== -->
-      <div id="screen-game" class="screen" hidden>
-        <section class="panel">
-          <h2 class="panel-title">Video game / Screen share</h2>
-          <p class="game-backend">Capture: <span id="game-backend" class="dim"></span></p>
-          <div class="game-steps">
-            <button type="button" class="btn" id="game-window-btn">Select window…</button>
-            <span id="game-window-label" class="dim">No window selected</span>
-            <button type="button" class="btn" id="game-screenshot-btn">Select window's full size (for screenshot)…</button>
-            <span id="game-screenshot-label" class="dim">Not selected</span>
-            <button type="button" class="btn" id="game-text-btn">Select text area (for OCR)…</button>
-            <span id="game-text-label" class="dim">Not selected</span>
-          </div>
-          <div class="ocr-block">
-            <div class="row">
-              <label class="field">
-                <span class="field-label">Capture key</span>
-                <select id="game-hotkey"></select>
-              </label>
-              <span class="dim game-hint" id="game-hotkey-hint">works even with the game focused</span>
+      <div id="screen-game" class="vstack gap-3" hidden>
+        <section class="card">
+          <h2 class="card-header h6">Video game / Screen share</h2>
+          <div class="card-body vstack gap-3">
+            <p class="m-0">Capture: <span id="game-backend" class="text-body-secondary"></span></p>
+            <div class="row g-2 align-items-center">
+              <div class="col-sm-5 col-lg-4">
+                <button type="button" class="btn btn-outline-secondary w-100 text-start" id="game-window-btn">
+                  <i class="bi bi-window" aria-hidden="true"></i> Select window…
+                </button>
+              </div>
+              <div class="col-sm-7 col-lg-8 text-truncate text-body-secondary" id="game-window-label">No window selected</div>
+              <div class="col-sm-5 col-lg-4">
+                <button type="button" class="btn btn-outline-secondary w-100 text-start" id="game-screenshot-btn">
+                  <i class="bi bi-image" aria-hidden="true"></i> Select window's full size (for screenshot)…
+                </button>
+              </div>
+              <div class="col-sm-7 col-lg-8 text-truncate text-body-secondary" id="game-screenshot-label">Not selected</div>
+              <div class="col-sm-5 col-lg-4">
+                <button type="button" class="btn btn-outline-secondary w-100 text-start" id="game-text-btn">
+                  <i class="bi bi-fonts" aria-hidden="true"></i> Select text area (for OCR)…
+                </button>
+              </div>
+              <div class="col-sm-7 col-lg-8 text-truncate text-body-secondary" id="game-text-label">Not selected</div>
             </div>
-            <label class="check">
-              <input type="checkbox" id="game-continuous">
-              <span>Continuous capture (whenever the text changes, instead of the capture key)</span>
-            </label>
+            <div class="vstack gap-2 border-top pt-3">
+              <div class="d-flex flex-wrap align-items-end gap-3">
+                <div>
+                  <label class="form-label" for="game-hotkey">Capture key</label>
+                  <select class="form-select" id="game-hotkey"></select>
+                </div>
+                <span class="form-text mb-2" id="game-hotkey-hint">works even with the game focused</span>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="game-continuous">
+                <label class="form-check-label" for="game-continuous">Continuous capture (whenever the text changes, instead of the capture key)</label>
+              </div>
+            </div>
           </div>
         </section>
       </div>
 
       <!-- ===== CSV to cards screen (csv_cards.js) ===== -->
-      <div id="screen-csv" class="screen" hidden>
-        <section class="panel">
-          <h2 class="panel-title">CSV file <span class="dim">— one card per row, the first row naming the columns</span></h2>
-          <div class="dropzone" data-kind="csv">
-            <div class="ebook-row">
-              <span id="csv-label" class="dim">No file selected</span>
-              <button type="button" class="btn" id="csv-select">Select…</button>
+      <div id="screen-csv" class="vstack gap-3" hidden>
+        <section class="card">
+          <h2 class="card-header h6">CSV file <span class="fw-normal text-body-secondary">— one card per row, the first row naming the columns</span></h2>
+          <div class="card-body">
+            <div class="border border-2 rounded" data-dropzone="csv">
+              <div class="d-flex align-items-center justify-content-between gap-3 p-2">
+                <span id="csv-label" class="text-truncate text-body-secondary">No file selected</span>
+                <button type="button" class="btn btn-outline-secondary flex-shrink-0" id="csv-select">Select…</button>
+              </div>
             </div>
+            <input type="file" id="csv-input" accept=".csv,.tsv,.txt,text/csv" hidden>
           </div>
-          <input type="file" id="csv-input" accept=".csv,.tsv,.txt,text/csv" hidden>
         </section>
 
-        <section class="panel" id="csv-columns-panel" hidden>
-          <h2 class="panel-title">Columns</h2>
-          <div class="row">
-            <label class="field"><span class="field-label">Word *</span><select id="csv-col-word"></select></label>
-            <label class="field"><span class="field-label">Sentence *</span><select id="csv-col-sentence"></select></label>
-            <label class="field"><span class="field-label">Word pronunciation</span><select id="csv-col-reading"></select></label>
-            <label class="field"><span class="field-label">Sentence translation</span><select id="csv-col-translation"></select></label>
-            <label class="field"><span class="field-label">Notes</span><select id="csv-col-notes"></select></label>
+        <section class="card" id="csv-columns-panel" hidden>
+          <h2 class="card-header h6">Columns</h2>
+          <div class="card-body">
+            <div class="d-flex flex-wrap gap-3">
+              <div><label class="form-label" for="csv-col-word">Word *</label><select class="form-select" id="csv-col-word"></select></div>
+              <div><label class="form-label" for="csv-col-sentence">Sentence *</label><select class="form-select" id="csv-col-sentence"></select></div>
+              <div><label class="form-label" for="csv-col-reading">Word pronunciation</label><select class="form-select" id="csv-col-reading"></select></div>
+              <div><label class="form-label" for="csv-col-translation">Sentence translation</label><select class="form-select" id="csv-col-translation"></select></div>
+              <div><label class="form-label" for="csv-col-notes">Notes</label><select class="form-select" id="csv-col-notes"></select></div>
+            </div>
+            <div class="table-responsive mt-3"><table class="table table-sm small mb-0" id="csv-preview"></table></div>
           </div>
-          <div class="csv-preview-wrap"><table class="csv-preview" id="csv-preview"></table></div>
         </section>
 
-        <section class="panel" id="csv-content-panel" hidden>
-          <h2 class="panel-title">Card content <span class="dim">— as the card creator fills it</span></h2>
-          <div class="field">
-            <span class="field-label">Definitions (from your dictionaries)</span>
-            <div class="row" id="csv-definitions"></div>
+        <section class="card" id="csv-content-panel" hidden>
+          <h2 class="card-header h6">Card content <span class="fw-normal text-body-secondary">— as the card creator fills it</span></h2>
+          <div class="card-body vstack gap-3">
+            <div>
+              <span class="form-label d-block">Definitions (from your dictionaries)</span>
+              <div id="csv-definitions"></div>
+            </div>
+            <div class="d-flex flex-wrap gap-3">
+              <div>
+                <label class="form-label" for="csv-word-audio">Word audio</label>
+                <select class="form-select" id="csv-word-audio">
+                  <option value="online">Online recording, else the voice</option>
+                  <option value="voice">The voice</option>
+                  <option value="">None</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label" for="csv-sentence-audio">Sentence audio</label>
+                <select class="form-select" id="csv-sentence-audio">
+                  <option value="voice">The voice</option>
+                  <option value="">None</option>
+                </select>
+              </div>
+              <div id="csv-voice-field">
+                <label class="form-label" for="csv-voice">Voice</label>
+                <select class="form-select" id="csv-voice"></select>
+              </div>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="csv-translate" checked>
+              <label class="form-check-label" for="csv-translate">Translate the sentences (offline, in the language chosen in Settings), unless the CSV has a translation</label>
+            </div>
+            <p class="form-text m-0" id="csv-readings-help" hidden>The zhuyin of the word and the reading of every word of the
+              sentence are added as for the card creator: they go to the fields of your note type that use
+              {zhuyin} and {sentence_readings}.</p>
           </div>
-          <div class="row">
-            <label class="field">
-              <span class="field-label">Word audio</span>
-              <select id="csv-word-audio">
-                <option value="online">Online recording, else the voice</option>
-                <option value="voice">The voice</option>
-                <option value="">None</option>
-              </select>
-            </label>
-            <label class="field">
-              <span class="field-label">Sentence audio</span>
-              <select id="csv-sentence-audio">
-                <option value="voice">The voice</option>
-                <option value="">None</option>
-              </select>
-            </label>
-            <label class="field">
-              <span class="field-label">Voice</span>
-              <select id="csv-voice"></select>
-            </label>
-          </div>
-          <label class="check">
-            <input type="checkbox" id="csv-translate" checked>
-            <span>Translate the sentences (offline, in the language chosen in Settings), unless the CSV has a translation</span>
-          </label>
-          <p class="mode-help" id="csv-readings-help" hidden>The zhuyin of the word and the reading of every word of the
-            sentence are added as for the card creator: they go to the fields of your note type that use
-            {zhuyin} and {sentence_readings}.</p>
         </section>
 
-        <section class="panel" id="csv-tags-panel" hidden>
-          <h2 class="panel-title">Source and tags</h2>
-          <div class="row">
-            <label class="field field-grow"><span class="field-label">Source</span><input type="text" id="csv-source"></label>
-            <label class="field field-grow"><span class="field-label">Tags <span class="dim">(space separated, besides the tags set in Settings)</span></span>
-              <input type="text" id="csv-tags" value="csv-import"></label>
-            <label class="field"><span class="field-label">Tag from a column</span><select id="csv-col-tag"></select></label>
+        <section class="card" id="csv-tags-panel" hidden>
+          <h2 class="card-header h6">Source and tags</h2>
+          <div class="card-body vstack gap-3">
+            <div class="row g-3 align-items-end">
+              <div class="col-md">
+                <label class="form-label" for="csv-source">Source</label>
+                <input type="text" class="form-control" id="csv-source">
+              </div>
+              <div class="col-md">
+                <label class="form-label" for="csv-tags">Tags <span class="text-body-secondary">(space separated, besides the tags set in Settings)</span></label>
+                <input type="text" class="form-control" id="csv-tags" value="csv-import">
+              </div>
+              <div class="col-md-auto">
+                <label class="form-label" for="csv-col-tag">Tag from a column</label>
+                <select class="form-select" id="csv-col-tag"></select>
+              </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-end gap-3">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="csv-skip" checked>
+                <label class="form-check-label" for="csv-skip">Skip the words you already learn or know, and the rows repeating a word</label>
+              </div>
+              <div>
+                <label class="form-label" for="csv-limit">Rows to import <span class="text-body-secondary">(empty: all)</span></label>
+                <input type="text" class="form-control w-auto" id="csv-limit" inputmode="numeric" placeholder="all" size="6">
+              </div>
+            </div>
+            <p class="text-body-secondary m-0" id="csv-target"></p>
           </div>
-          <div class="row">
-            <label class="check">
-              <input type="checkbox" id="csv-skip" checked>
-              <span>Skip the words you already learn or know, and the rows repeating a word</span>
-            </label>
-            <label class="field">
-              <span class="field-label">Rows to import <span class="dim">(empty: all)</span></span>
-              <input type="text" id="csv-limit" inputmode="numeric" placeholder="all" size="6">
-            </label>
-          </div>
-          <p class="dim" id="csv-target"></p>
         </section>
-      </div>
-    </fieldset>
+      </fieldset>
 
     <!-- Outside the fieldset: Stop must stay usable while the import runs. -->
-    <section class="row start-row" id="csv-actions" hidden>
-      <button type="button" class="btn btn-start" id="csv-start" disabled>Make the cards and send them to Anki</button>
-      <button type="button" class="btn" id="csv-later" disabled>Make the cards, send them later</button>
-      <button type="button" class="btn" id="csv-stop" hidden>Stop</button>
+    <section class="d-flex flex-column flex-sm-row gap-2 mt-3" id="csv-actions" hidden>
+      <button type="button" class="btn btn-primary btn-lg flex-grow-1" id="csv-start" disabled><i class="bi bi-send" aria-hidden="true"></i> Make the cards and send them to Anki</button>
+      <button type="button" class="btn btn-outline-secondary" id="csv-later" disabled>Make the cards, send them later</button>
+      <button type="button" class="btn btn-outline-danger" id="csv-stop" hidden><i class="bi bi-stop-fill" aria-hidden="true"></i> Stop</button>
     </section>
 
     <!-- Outside the fieldset: Stop must stay usable while the capture runs. -->
-    <section class="row start-row" id="game-actions" hidden>
-      <button type="button" class="btn btn-start" id="game-start" disabled>Start</button>
-      <button type="button" class="btn" id="game-page" disabled>Open page</button>
+    <section class="d-flex flex-column flex-sm-row gap-2 mt-3" id="game-actions" hidden>
+      <button type="button" class="btn btn-primary btn-lg flex-grow-1" id="game-start" disabled>Start</button>
+      <button type="button" class="btn btn-outline-secondary" id="game-page" disabled><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Open page</button>
     </section>
 
     <!-- Progress -->
-    <section class="progress-block" aria-live="polite">
-      <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
-      <p class="status dim" id="status"></p>
+    <section class="mt-3" id="progress-block" aria-live="polite">
+      <div class="progress" role="progressbar" aria-label="Progress" style="height: .5rem">
+        <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+      </div>
+      <p class="small text-body-secondary mt-1 mb-0" id="status"></p>
     </section>
 
     <!-- Log -->
-    <section class="panel log-panel">
-      <div class="log-head">
-        <h2 class="panel-title">Log</h2>
-        <span class="connection dim" id="connection"></span>
+    <section class="card mt-3" id="log-panel">
+      <div class="card-header d-flex justify-content-between align-items-baseline">
+        <h2 class="h6 m-0">Log</h2>
+        <span class="small text-body-secondary" id="connection"></span>
       </div>
-      <pre class="log" id="log"></pre>
+      <div class="card-body p-2">
+        <pre class="bg-body-tertiary rounded p-2 m-0 small mc-log" id="log"></pre>
+      </div>
     </section>
   </div>
 
-  <!-- Generic dialog -->
-  <dialog id="dialog" class="dialog">
-    <form method="dialog">
-      <h3 id="dialog-title"></h3>
-      <p id="dialog-message"></p>
-      <div class="dialog-actions" id="dialog-actions"></div>
-    </form>
-  </dialog>
+  <!-- Region picker: the subtitle region, and the video game areas -->
+  <div class="modal" id="ocr-dialog" tabindex="-1" aria-labelledby="ocr-title">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-md-down">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="ocr-title">Select subtitle region</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-body-secondary" id="ocr-help">Drag a rectangle around the subtitles. Browse frames to find one with dialogue on screen.</p>
+          <p class="d-flex align-items-center gap-2" id="ocr-loading">
+            <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+            <span id="ocr-loading-text">Loading preview frames…</span>
+          </p>
+          <div class="mc-region-stage mx-auto mb-3" id="ocr-stage" hidden>
+            <img class="rounded" id="ocr-frame" alt="Frame preview" draggable="false">
+            <div class="mc-region-rect" id="ocr-rect"></div>
+          </div>
+          <div class="d-flex justify-content-center align-items-center gap-2" id="ocr-nav" hidden>
+            <button type="button" class="btn btn-outline-secondary" id="ocr-prev"><i class="bi bi-chevron-left" aria-hidden="true"></i> Previous</button>
+            <span id="ocr-nav-label"></span>
+            <button type="button" class="btn btn-outline-secondary" id="ocr-next">Next <i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" id="ocr-bottom">Reset to bottom third</button>
+          <button type="button" class="btn btn-outline-secondary me-auto" id="ocr-full">Full frame</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="ocr-ok">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <!-- Region picker (replaces ocr_region_dialog.py): subtitle region, and the video game areas -->
-  <dialog id="ocr-dialog" class="dialog dialog-wide">
-    <h3 id="ocr-title">Select subtitle region</h3>
-    <p class="dim" id="ocr-help">Drag a rectangle around the subtitles. Browse frames to find one with dialogue on screen.</p>
-    <p id="ocr-loading">Loading preview frames…</p>
-    <div class="ocr-stage" id="ocr-stage" hidden>
-      <img id="ocr-frame" alt="Frame preview" draggable="false">
-      <div class="ocr-rect" id="ocr-rect"></div>
+  <!-- Game window picker, for OSes without a system picker -->
+  <div class="modal" id="window-dialog" tabindex="-1" aria-labelledby="window-title">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="window-title">Select the game window</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label text-body-secondary" for="window-list">Pick the window to capture (it must be open, and not minimized):</label>
+          <select class="form-select" id="window-list" size="12"></select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary me-auto" id="window-refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="window-ok">OK</button>
+        </div>
+      </div>
     </div>
-    <div class="ocr-nav" id="ocr-nav" hidden>
-      <button type="button" class="btn" id="ocr-prev">◀ Previous</button>
-      <span id="ocr-nav-label"></span>
-      <button type="button" class="btn" id="ocr-next">Next ▶</button>
-    </div>
-    <div class="dialog-actions">
-      <button type="button" class="btn" id="ocr-bottom">Reset to bottom third</button>
-      <button type="button" class="btn" id="ocr-full">Full frame</button>
-      <span class="spacer"></span>
-      <button type="button" class="btn" id="ocr-cancel">Cancel</button>
-      <button type="button" class="btn btn-primary" id="ocr-ok">OK</button>
-    </div>
-  </dialog>
-
-  <!-- Game window picker (replaces game_dialogs.WindowPickerDialog), for OSes without a system picker -->
-  <dialog id="window-dialog" class="dialog">
-    <h3>Select the game window</h3>
-    <p class="dim">Pick the window to capture (it must be open, and not minimized):</p>
-    <select id="window-list" class="window-list" size="12"></select>
-    <div class="dialog-actions">
-      <button type="button" class="btn" id="window-refresh">Refresh</button>
-      <span class="spacer"></span>
-      <button type="button" class="btn" id="window-cancel">Cancel</button>
-      <button type="button" class="btn btn-primary" id="window-ok">OK</button>
-    </div>
-  </dialog>
-</body>
-</html>
+  </div>
+{% endblock %}

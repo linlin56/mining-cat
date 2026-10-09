@@ -10,7 +10,8 @@ class ProjectPaths:
     """Every folder and file MiningCat reads or writes, all under one root.
 
     `sources/` holds the user's inputs, `output/` what the converter makes (safe to clear), `library/` what the
-    reader, the player and the dictionaries keep. Tests point `root` to a temporary folder.
+    reader, the player and the dictionaries keep, `user/` the user's own settings. Tests point `root` to a temporary
+    folder.
     """
 
     root: Path
@@ -124,6 +125,17 @@ class ProjectPaths:
     @property
     def player_settings(self) -> Path:
         return self.library / "player_settings.json"
+
+    # User: the user's own settings
+
+    @property
+    def user(self) -> Path:
+        return self.root / "user"
+
+    @property
+    def user_config(self) -> Path:
+        """The preferences of every page (Settings › User preferences): theme, highlight colours."""
+        return self.user / "user-config.json"
 
     # References to files under the root
 

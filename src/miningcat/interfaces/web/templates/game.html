@@ -1,26 +1,28 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MiningCat · Video game</title>
-  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='game.css') }}">
+{% extends "base.html" %}
+{% block title %}MiningCat · Video game{% endblock %}
+{% block styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='mining.css') }}">
+{% endblock %}
+{% block scripts %}
   <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
   <script src="{{ url_for('static', filename='game.js') }}" defer></script>
-</head>
-<body>
-  <header class="game-bar">
-    <a class="brand" href="/converter/">🐱 MiningCat</a>
-    <span class="game-status" id="status">connecting…</span>
-    <span class="game-count dim" id="count"></span>
-    <span class="spacer"></span>
-    <button type="button" class="btn" id="capture" title="Capture now">Capture</button>
-    <button type="button" class="btn" id="clear" title="Clear the history, in every open tab">Clear</button>
+{% endblock %}
+{% block body %}
+  <header class="navbar sticky-top bg-body-tertiary border-bottom px-3 gap-2">
+    <a class="navbar-brand d-flex align-items-center gap-2 fw-bold me-0" href="/converter/">
+      <img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="26" height="26"> MiningCat
+    </a>
+    <span class="small text-body-secondary" id="status">connecting…</span>
+    <span class="small text-body-secondary" id="count"></span>
+    <div class="d-flex gap-2 ms-auto">
+      <button type="button" class="btn btn-link link-body-emphasis btn-sm" data-mc-theme-toggle title="Night mode" aria-label="Night mode">
+      <i class="bi bi-moon-stars" aria-hidden="true"></i>
+    </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="capture" title="Capture now"><i class="bi bi-camera" aria-hidden="true"></i> Capture</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="clear" title="Clear the history, in every open tab"><i class="bi bi-trash" aria-hidden="true"></i> Clear</button>
+    </div>
   </header>
-  <main class="game-feed" id="feed">
-    <p class="game-empty" id="empty"></p>
+  <main class="container pt-3 vstack gap-4 mc-feed" id="feed">
+    <p class="text-center text-body-secondary lh-lg mt-5" id="empty"></p>
   </main>
-</body>
-</html>
+{% endblock %}

@@ -78,7 +78,19 @@ def test_page_links_its_stylesheet_which_is_served():
         response = await client.get("/page.css")
         assert response.status == 200
         assert response.content_type == "text/css"
-        assert "--ground" in await response.text()
+        assert ".line" in await response.text()
+    _run(FakeSession(), check)
+
+
+def test_page_gets_bootstrap_from_the_web_gui():
+    async def check(client, _app):
+        html = await (await client.get("/")).text()
+        for path in ("/static/vendor/bootstrap/bootstrap.min.css", "/static/vendor/bootstrap-icons/bootstrap-icons.min.css",
+                     "/static/theme.css"):
+            assert f'href="{path}"' in html
+            response = await client.get(path)
+            assert response.status == 200
+            assert response.content_type == "text/css"
     _run(FakeSession(), check)
 
 

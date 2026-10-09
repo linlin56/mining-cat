@@ -44,32 +44,17 @@ async function api(path, body) {
   return data;
 }
 
-function showDialog(title, message, buttons = [{ label: "OK", value: true, primary: true }]) {
-  const dlg = $("dialog");
-  $("dialog-title").textContent = title;
-  $("dialog-message").textContent = message;
-  const actions = $("dialog-actions");
-  actions.replaceChildren(...buttons.map((b) => {
-    const btn = document.createElement("button");
-    btn.className = b.primary ? "btn btn-primary" : "btn";
-    btn.value = String(b.value);
-    btn.textContent = b.label;
-    return btn;
-  }));
-  return new Promise((resolve) => {
-    dlg.addEventListener("close", () => resolve(dlg.returnValue === "true"), { once: true });
-    dlg.returnValue = "false";
-    dlg.showModal();
-  });
+// Resolves to whether the button of value true was clicked (ui.js).
+function showDialog(title, message, buttons) {
+  return MiningCatUI.dialog(title, message, buttons).then((value) => value === "true");
 }
 const showError = (err) => showDialog(err.title || "Error", err.message || String(err));
 
 // ---------------------------------------------------------------- settings & theme
 
+// The reader's own theme while a book is read; the library follows the site's day / night (theme.js).
 function applyTheme() {
-  let theme = R.settings.theme;
-  if (theme === "auto") theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  document.body.className = `theme-${theme}`;
+  MiningCatTheme.set(R.book ? R.settings.theme : "auto");
 }
 
 let settingsTimer = null;
@@ -88,6 +73,7 @@ function placeholderColor(text) {
 
 async function showLibrary() {
   R.book = null;
+  applyTheme();
   if (window.MiningCatMining) MiningCatMining.clearColours();
   document.title = "MiningCat Reader";
   $("reading").hidden = true;
@@ -107,113 +93,93 @@ async function showLibrary() {
   loadComprehension(books);
 }
 
+function node(tag, className, text) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text !== undefined) element.textContent = text;
+  return element;
+}
+
+// A book or a comic in the library (a column of the grid): its cover, title, reading progress and remove button.
+// cover: the image's URL, else the title is written on a colour. book: the book's id, for its comprehension.
+function libraryCard({ href, cover, title, language, about, percent, book, remove }) {
+  const a = node("a", "mc-cover d-block position-relative text-reset text-decoration-none");
+  a.href = href;
+  const box = node("div", "ratio rounded overflow-hidden shadow-sm bg-body-tertiary mb-2");
+  box.style.setProperty("--bs-aspect-ratio", "150%");
+  if (cover) {
+    const img = node("img", "object-fit-cover");
+    img.src = cover;
+    img.alt = "";
+    img.loading = "lazy";
+    box.append(img);
+  } else {
+    const ph = node("div", "d-flex align-items-center justify-content-center p-3 text-center text-white fw-bold text-break", title);
+    ph.lang = language;
+    ph.style.background = placeholderColor(title);
+    box.append(ph);
+  }
+  const name = node("div", "fw-semibold small text-truncate", title);
+  name.lang = language;
+  name.title = title;
+  const meta = node("div", "d-flex justify-content-between gap-2 small text-body-secondary");
+  meta.append(node("span", "text-truncate", about), node("span", "", percent ? `${Math.floor(percent)}%` : "New"));
+  const bar = node("div", "progress my-1");
+  bar.style.height = "3px";
+  bar.setAttribute("aria-hidden", "true");
+  const fill = node("div", "progress-bar");
+  fill.style.width = `${percent || 0}%`;
+  bar.append(fill);
+  const del = node("button", "btn btn-sm btn-dark rounded-circle position-absolute top-0 end-0 m-1 mc-delete");
+  del.type = "button";
+  del.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+  del.title = "Remove from library";
+  del.setAttribute("aria-label", `Remove ${title} from the library`);
+  del.addEventListener("click", (e) => { e.preventDefault(); remove(); });
+  a.append(box, name, meta, bar, del);
+  if (book) {
+    const comp = node("div", "small text-body-secondary");
+    comp.dataset.book = book;
+    a.append(comp);
+  }
+  const col = node("div", "col");
+  col.append(a);
+  return col;
+}
+
 function bookCard(b) {
-  const a = document.createElement("a");
-  a.className = "book";
-  a.href = `/reader/${b.id}`;
+  const col = libraryCard({
+    href: `/reader/${b.id}`, cover: b.cover, title: b.title, language: b.language, percent: b.percent, book: b.id,
+    about: [b.author, b.format.toUpperCase()].filter(Boolean).join(" · "),
+    remove: async () => {
+      const ok = await showDialog("Remove book", `Remove “${b.title}” and its reading progress from the library?`,
+        [{ label: "Cancel", value: false }, { label: "Remove", value: true, primary: true }]);
+      if (!ok) return;
+      try { await api(`/reader/api/books/${b.id}/delete`, {}); showLibrary(); } catch (err) { showError(err); }
+    },
+  });
+  const a = col.firstChild;
   a.addEventListener("click", (e) => {
-    if (e.target.closest(".book-delete")) return;
+    if (e.target.closest(".mc-delete")) return;
     e.preventDefault();
     history.pushState({}, "", a.href);
     route();
   });
-  const cover = document.createElement("div");
-  cover.className = "book-cover";
-  if (b.cover) {
-    const img = document.createElement("img");
-    img.src = b.cover;
-    img.alt = "";
-    img.loading = "lazy";
-    cover.append(img);
-  } else {
-    const ph = document.createElement("div");
-    ph.className = "placeholder";
-    ph.lang = b.language;
-    ph.style.background = placeholderColor(b.title);
-    ph.textContent = b.title;
-    cover.append(ph);
-  }
-  const title = document.createElement("div");
-  title.className = "book-title";
-  title.lang = b.language;
-  title.textContent = b.title;
-  title.title = b.title;
-  const meta = document.createElement("div");
-  meta.className = "book-meta";
-  const left = document.createElement("span");
-  left.textContent = [b.author, b.format.toUpperCase()].filter(Boolean).join(" · ");
-  const right = document.createElement("span");
-  right.textContent = b.percent ? `${Math.floor(b.percent)}%` : "New";
-  meta.append(left, right);
-  const comp = document.createElement("div");
-  comp.className = "book-comp";
-  comp.dataset.book = b.id;
-  const bar = document.createElement("div");
-  bar.className = "book-progress";
-  const fill = document.createElement("div");
-  fill.style.width = `${b.percent || 0}%`;
-  bar.append(fill);
-  const del = document.createElement("button");
-  del.type = "button";
-  del.className = "book-delete";
-  del.textContent = "×";
-  del.title = "Remove from library";
-  del.setAttribute("aria-label", `Remove ${b.title} from the library`);
-  del.addEventListener("click", async (e) => {
-    e.preventDefault();
-    const ok = await showDialog("Remove book", `Remove “${b.title}” and its reading progress from the library?`,
-      [{ label: "Cancel", value: false }, { label: "Remove", value: true, primary: true }]);
-    if (!ok) return;
-    try { await api(`/reader/api/books/${b.id}/delete`, {}); showLibrary(); } catch (err) { showError(err); }
-  });
-  a.append(cover, title, meta, bar, comp, del);
-  return a;
+  return col;
 }
 
 // A comic or manga: opened in its own page (static/comic.js).
 function comicCard(c) {
-  const a = document.createElement("a");
-  a.className = "book";
-  a.href = `/reader/comic/${c.id}`;
-  const cover = document.createElement("div");
-  cover.className = "book-cover";
-  const img = document.createElement("img");
-  img.src = `/reader/api/comics/${c.id}/thumb?v=${c.added}`;
-  img.alt = "";
-  img.loading = "lazy";
-  cover.append(img);
-  const title = document.createElement("div");
-  title.className = "book-title";
-  title.lang = c.language;
-  title.textContent = c.title;
-  title.title = c.title;
-  const meta = document.createElement("div");
-  meta.className = "book-meta";
-  const left = document.createElement("span");
-  left.textContent = `${c.pages} pages · Comic`;
-  const right = document.createElement("span");
-  right.textContent = c.percent ? `${Math.floor(c.percent)}%` : "New";
-  meta.append(left, right);
-  const bar = document.createElement("div");
-  bar.className = "book-progress";
-  const fill = document.createElement("div");
-  fill.style.width = `${c.percent || 0}%`;
-  bar.append(fill);
-  const del = document.createElement("button");
-  del.type = "button";
-  del.className = "book-delete";
-  del.textContent = "×";
-  del.title = "Remove from library";
-  del.setAttribute("aria-label", `Remove ${c.title} from the library`);
-  del.addEventListener("click", async (e) => {
-    e.preventDefault();
-    const ok = await showDialog("Remove comic", `Remove “${c.title}”, the text read on its pages and its reading progress from the library?`,
-      [{ label: "Cancel", value: false }, { label: "Remove", value: true, primary: true }]);
-    if (!ok) return;
-    try { await api(`/reader/api/comics/${c.id}/delete`, {}); showLibrary(); } catch (err) { showError(err); }
+  return libraryCard({
+    href: `/reader/comic/${c.id}`, cover: `/reader/api/comics/${c.id}/thumb?v=${c.added}`, title: c.title,
+    language: c.language, percent: c.percent, about: `${c.pages} pages · Comic`,
+    remove: async () => {
+      const ok = await showDialog("Remove comic", `Remove “${c.title}”, the text read on its pages and its reading progress from the library?`,
+        [{ label: "Cancel", value: false }, { label: "Remove", value: true, primary: true }]);
+      if (!ok) return;
+      try { await api(`/reader/api/comics/${c.id}/delete`, {}); showLibrary(); } catch (err) { showError(err); }
+    },
   });
-  a.append(cover, title, meta, bar, del);
-  return a;
 }
 
 // Each book's comprehension, one book after the other (a book never analysed takes a moment).
@@ -222,7 +188,7 @@ async function loadComprehension(books) {
   const token = ++comprehensionToken;
   for (const b of books) {
     if (token !== comprehensionToken) return;
-    const box = document.querySelector(`.book-comp[data-book="${b.id}"]`);
+    const box = document.querySelector(`[data-book="${b.id}"]`);
     if (!box) continue;
     box.textContent = "…";
     try {
@@ -284,6 +250,7 @@ async function openBook(bookId) {
   const data = await api(`/reader/api/books/${bookId}`);
   if (token !== R.token) return;
   R.book = data.book;
+  applyTheme();
   R.audio = null;
   renderAudio();
   api(`/reader/api/books/${bookId}/audio`).then((d) => { if (R.book && R.book.id === bookId) { R.audio = d.audio; renderAudio(); } }).catch(() => {});
@@ -413,9 +380,9 @@ function showComprehension(key) {
         + `${rarer ? `: ${rarer} other sentence${rarer === 1 ? " teaches a rarer word" : "s teach rarer words"}` : ""}.`
         : " Import a frequency list in Settings to only get the frequent words.");
   $("i1-list").replaceChildren(...recommended.map((u) => {
-    const li = document.createElement("li");
     const button = document.createElement("button");
     button.type = "button";
+    button.className = "list-group-item list-group-item-action px-2";
     button.lang = effectiveLanguage();
     const before = document.createRange();
     before.setStart(u.range.startContainer, u.range.startOffset);
@@ -424,6 +391,7 @@ function showComprehension(key) {
     after.setStart(u.targetRange.endContainer, u.targetRange.endOffset);
     after.setEnd(u.range.endContainer, u.range.endOffset);
     const word = document.createElement("strong");
+    word.className = "text-primary-emphasis";
     word.textContent = u.targetRange.toString();
     button.append(before.toString().trimStart(), word, after.toString().trimEnd());
     button.addEventListener("click", () => {
@@ -431,8 +399,7 @@ function showComprehension(key) {
       showPage(pageOfRect(u.range.getBoundingClientRect()));
       flashRange(u.range);
     });
-    li.append(button);
-    return li;
+    return button;
   }));
 }
 
@@ -566,7 +533,11 @@ function updateStatus() {
   const pct = percent();
   $("percent-info").textContent = `${pct.toFixed(1)}%`;
   $("progress-fill").style.width = `${pct}%`;
-  for (const a of document.querySelectorAll("#toc a")) a.classList.toggle("current", Number(a.dataset.chapter) === R.chapter);
+  for (const a of document.querySelectorAll("#toc a")) {
+    const current = Number(a.dataset.chapter) === R.chapter;
+    a.classList.toggle("active", current);
+    if (current) a.setAttribute("aria-current", "true"); else a.removeAttribute("aria-current");
+  }
 }
 
 function progressBody() {
@@ -660,29 +631,33 @@ function buildToc() {
     ? R.book.toc
     : R.book.chapters.map((c, i) => ({ title: c.title, chapter: i, anchor: "", depth: 0 }));
   list.replaceChildren(...entries.map((t) => {
-    const li = document.createElement("li");
     const a = document.createElement("a");
+    a.className = "nav-link py-1";
     a.href = "#";
     a.textContent = t.title;
     a.lang = R.book.language;
     a.dataset.chapter = t.chapter;
-    a.style.paddingInlineStart = `${8 + 16 * (t.depth || 0)}px`;
+    a.style.paddingInlineStart = `${16 + 16 * (t.depth || 0)}px`;
     a.addEventListener("click", (e) => {
       e.preventDefault();
       togglePanel("toc-panel", false);
       goTo(t.chapter, t.anchor ? { anchor: t.anchor } : { page: 0 });
     });
-    li.append(a);
-    return li;
+    return a;
   }));
 }
 
+// The side panels (Bootstrap offcanvases): one at a time.
 function togglePanel(id, force) {
-  const panel = $(id);
-  const open = force !== undefined ? force : panel.hidden;
-  for (const p of document.querySelectorAll(".panel")) p.hidden = true;
-  panel.hidden = !open;
+  const open = force !== undefined ? force : !$(id).classList.contains("show");
+  for (const panel of document.querySelectorAll(".offcanvas.show")) {
+    if (panel.id !== id) bootstrap.Offcanvas.getOrCreateInstance(panel).hide();
+  }
+  const panel = bootstrap.Offcanvas.getOrCreateInstance($(id));
+  if (open) panel.show(); else panel.hide();
 }
+
+const panelOpen = () => Boolean(document.querySelector(".offcanvas.show"));
 
 function syncSettingsForm() {
   const s = R.settings;
@@ -696,8 +671,12 @@ function syncSettingsForm() {
   $("set-lookup").value = s.lookup || "click";
   $("set-colors").value = s.colors || "status";
   $("set-i1").checked = s.i1 !== false;
-  for (const b of $("set-font").children) b.setAttribute("aria-pressed", String(b.dataset.value === s.font));
-  for (const b of $("set-theme").children) b.setAttribute("aria-pressed", String(b.dataset.value === s.theme));
+  for (const [id, value] of [["set-font", s.font], ["set-theme", s.theme]]) {
+    for (const b of $(id).children) {
+      b.setAttribute("aria-pressed", String(b.dataset.value === value));
+      b.classList.toggle("active", b.dataset.value === value);
+    }
+  }
   if (R.book) {
     $("set-writing").value = R.prefs.writing || "auto";
     // Only the forms of the language studied (Mandarin: traditional or simplified characters).
@@ -761,7 +740,7 @@ function renderAudio() {
   $("audio-status").textContent = has
     ? `${R.audio.tracks} audio file${R.audio.tracks > 1 ? "s" : ""} linked: click a word, then ▶ Sentence to hear it.`
     : "No audio. If you converted this book with MiningCat, link the conversion's audio.";
-  $("audio-link").textContent = has ? "Link the last conversion again" : "Link the last conversion's audio";
+  $("audio-link").querySelector("span").textContent = has ? "Link the last conversion again" : "Link the last conversion's audio";
   $("audio-remove").hidden = !has;
 }
 
@@ -802,7 +781,6 @@ function wireReading() {
   $("i1-btn").addEventListener("click", () => togglePanel("i1-panel"));
   if (window.MiningCatMining) MiningCatMining.onAnalysis(showComprehension);
   $("settings-btn").addEventListener("click", () => togglePanel("settings-panel"));
-  for (const btn of document.querySelectorAll("[data-close]")) btn.addEventListener("click", () => togglePanel(btn.closest(".panel").id, false));
   $("back").addEventListener("click", (e) => {
     e.preventDefault();
     saveNow();
@@ -819,15 +797,14 @@ function wireReading() {
   });
 
   document.addEventListener("keydown", (e) => {
-    if ($("reading").hidden || isEditing(e.target) || e.ctrlKey || e.metaKey || e.altKey || $("dialog").open) return;
-    if (document.querySelector(".mc-creator[open]")) return;
+    if ($("reading").hidden || isEditing(e.target) || e.ctrlKey || e.metaKey || e.altKey || MiningCatUI.isModalOpen()) return;
     const keys = {
       ArrowLeft: leftAction, ArrowRight: rightAction,
       ArrowDown: next, ArrowUp: prev, PageDown: next, PageUp: prev, " ": e.shiftKey ? prev : next,
       Home: () => goTo(R.chapter, { page: 0 }), End: () => goTo(R.chapter, { end: true }),
       t: () => togglePanel("toc-panel"), s: () => togglePanel("settings-panel"), r: () => togglePanel("i1-panel"),
       Escape: () => {
-        if ([...document.querySelectorAll(".panel")].some((p) => !p.hidden)) togglePanel("toc-panel", false);
+        if (panelOpen()) togglePanel("toc-panel", false);
         else $("back").click();
       },
     };
@@ -840,7 +817,7 @@ function wireReading() {
   // One page per wheel gesture.
   let wheelLock = 0;
   $("stage").addEventListener("wheel", (e) => {
-    if (e.target.closest(".panel")) return;
+    if (e.target.closest(".offcanvas")) return;
     e.preventDefault();
     const now = Date.now();
     const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
@@ -872,7 +849,6 @@ function wireReading() {
 
   window.addEventListener("pagehide", saveNow);
   document.addEventListener("visibilitychange", () => { if (document.hidden) saveNow(); });
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { applyTheme(); });
 }
 
 function wireLibrary() {
@@ -884,15 +860,16 @@ function wireLibrary() {
     addBooks(files);
   });
   const drop = $("lib-drop");
+  const over = ["border-primary", "bg-primary-subtle"];
   drop.addEventListener("dragover", (e) => {
     if (!e.dataTransfer.types.includes("Files")) return;
     e.preventDefault();
-    drop.classList.add("dragover");
+    drop.classList.add(...over);
   });
-  drop.addEventListener("dragleave", () => drop.classList.remove("dragover"));
+  drop.addEventListener("dragleave", () => drop.classList.remove(...over));
   drop.addEventListener("drop", (e) => {
     e.preventDefault();
-    drop.classList.remove("dragover");
+    drop.classList.remove(...over);
     addBooks([...e.dataTransfer.files]);
   });
   window.addEventListener("dragover", (e) => e.preventDefault());

@@ -1,5 +1,7 @@
 # MiningCat 🐱
 
+<img src="docs/assets/logo/miningcat.png" alt="MiningCat logo: an orange cat with a miner's helmet and a pickaxe" width="160">
+
 📖 **Documentation: <https://linlin56.github.io/mining-cat/>**
 
 MiningCat is a free and open source, all-in-one tool for learning languages through immersion and sentence mining. Read, watch and play in the language you study, look up words in your own dictionaries, and turn the sentences you like into Anki flashcards.
@@ -67,5 +69,7 @@ Bug reports, language proofreading, new languages, new video platforms, capture 
 ## License
 
 MiningCat is free software, released under the [GNU Affero General Public License v3.0 or later](LICENSE) (AGPL-3.0-or-later). If you distribute a modified version, or make it available to users over a network, you must publish its source code under the same license.
+
+The MiningCat logo ([docs/assets/logo/](docs/assets/logo/)) is © linlin56, under the [CC BY-SA 4.0](docs/assets/logo/LICENSE.md) license. The name and the logo stay the identity of this project: a fork must use its own.
 
 MiningCat doesn't provide any book or video. Only use it with content you are allowed to use.

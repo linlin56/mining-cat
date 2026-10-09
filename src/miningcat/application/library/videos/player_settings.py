@@ -10,6 +10,8 @@ DEFAULT_SETTINGS = {
     "list": True,              # subtitle list next to the video
     "audio_before": 200,       # ms of audio kept before and after a line, on cards
     "audio_after": 200,
+    "secondary_translation": True,  # the second subtitles' lines are the card's sentence translation
+    "fullwidth_punctuation": True,  # ASCII punctuation in Chinese or Japanese subtitles replaced: , → ，
 }
 
 AUDIO_MARGIN_MAX_MS = 3000

@@ -2,10 +2,12 @@
 
 Everything the GUI does is also available from the terminal. 
 I really recommend using the GUI because it's way simpler and battle-tested.
-Commands are run from the project root:
+Commands are run from the `src/` folder (or from the project root with `PYTHONPATH=src`):
 
 ```bash
-python src/main.py <command> [options]
+cd src
+python -m miningcat <command> [options]
+python -m miningcat --help             # every command, and `<command> --help` for its options
 ```
 
 ## Audiobook pipeline
@@ -18,13 +20,13 @@ Unlike the GUI, the CLI reads its inputs from fixed folders. Put your files ther
 Then run the steps in order:
 
 ```bash
-python src/main.py audio             # 1. prepare audio chapters
-python src/main.py epub --range 4-9  # 2. extract the book text, one file per chapter
-python src/main.py align --language french --model tiny   # 3. align text on audio
-python src/main.py export --all --language french         # 4. render the MP4 files
+python -m miningcat audio             # 1. prepare audio chapters
+python -m miningcat epub --range 4-9  # 2. extract the book text, one file per chapter
+python -m miningcat align --language french --model tiny   # 3. align text on audio
+python -m miningcat export --all --language french         # 4. render the MP4 files
 ```
 
-Or all at once (with default options): `python src/main.py run --range 4-9`.
+Or all at once (with default options): `python -m miningcat run --range 4-9`.
 
 ### `audio`
 
@@ -106,8 +108,8 @@ Runs `audio`, `epub`, `align` and `export --all` in sequence with default option
 Downloads an online video, or uses a local file, and generates its subtitles. See [Videos](video.md) for the details.
 
 ```bash
-python src/main.py video --url <URL> [options]
-python src/main.py video --file <PATH> [options]
+python -m miningcat video --url <URL> [options]
+python -m miningcat video --file <PATH> [options]
 ```
 
 | Option              | Default       | Description                                                                                  |
@@ -127,15 +129,15 @@ python src/main.py video --file <PATH> [options]
 Video game / screen share OCR: captures a window, reads its text area with OCR, and pushes the screenshot + text to a local web page. See [Video games & screen share](video-game.md) for the details.
 
 ```bash
-python src/main.py game setup [options]   # 1. pick the window, then draw the screenshot and text areas
-python src/main.py game serve [options]   # 2. capture until Ctrl+C
+python -m miningcat game setup [options]   # 1. pick the window, then draw the screenshot and text areas
+python -m miningcat game serve [options]   # 2. capture until Ctrl+C
 ```
 
 The selection is saved in `sources/game_ocr.json`, so `setup` is only needed once per game.
 
 ### `game setup`
 
-Asks for the window (GNOME's sharing dialog on Linux, a numbered list on macOS), then opens two windows to draw the screenshot area and the text area.
+Asks for the window (GNOME's sharing dialog on Linux, a numbered list on macOS), then opens two pages in your browser, one after the other, to draw the screenshot area and the text area.
 
 | Option         | Description                                                                                     |
 | -------------- | ----------------------------------------------------------------------------------------------- |
@@ -185,7 +187,7 @@ The Makefile wraps the most common commands. Variables can be overridden on the 
 | -------------------------------- | ------------------------------------------------ |
 | `make gui [PORT=5050]`           | Launch the GUI in your browser                   |
 | `make reader [PORT=5050]`        | Open the ebook reader in your browser            |
-| `make gui-tk`                    | Launch the previous Tkinter GUI                  |
+| `make player [PORT=5050]`        | Open the video player in your browser            |
 | `make audio`                     | `audio`                                          |
 | `make epub [RANGE=4-9]`          | `epub [--range 4-9]`                             |
 | `make align [CHAPTER=1\|all]`    | `align --only 1` (or all chapters)               |
@@ -208,4 +210,4 @@ make video URL="https://www.instagram.com/reel/xxxxx/" LANGUAGE=korean
 ```
 
 !!! warning
-    `make export` doesn't pass `LANGUAGE`, so the subtitle language metadata defaults to Mandarin. Use `python src/main.py export --all --language <id>` if the metadata matters to your player.
+    `make export` doesn't pass `LANGUAGE`, so the subtitle language metadata defaults to Mandarin. Use `python -m miningcat export --all --language <id>` if the metadata matters to your player.

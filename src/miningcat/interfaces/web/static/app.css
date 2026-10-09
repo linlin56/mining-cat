@@ -1,0 +1,71 @@
+/* The few rules Bootstrap has no class for, shared by the pages (loaded after theme.css). Classes start with mc-. */
+
+/* The scripts show and hide elements with the hidden attribute: it must win over Bootstrap's display utilities
+   (d-flex...), which are !important too. */
+[hidden] { display: none !important; }
+
+.mc-pre-line { white-space: pre-line; }
+
+/* The Japanese, Chinese and Korean text read in the clipboard and the video game pages */
+.mc-text {
+  font-family: "Noto Serif TC", "Noto Serif SC", "Noto Serif JP", "Noto Serif KR", "Songti TC", "Hiragino Mincho ProN", serif;
+  overflow-wrap: anywhere;
+}
+
+/* Room under the last line of a text, so that it can be read in the middle of the screen */
+.mc-feed { padding-bottom: 40vh; }
+
+/* A library (books, videos): files can be dropped anywhere on it */
+.mc-drop { min-height: 16rem; border: 2px dashed transparent; }
+
+/* ---------- converter ---------- */
+
+.mc-list { max-height: 11rem; }
+.mc-log { height: 16rem; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+
+/* The region drawn on a frame (subtitles, video game areas) */
+.mc-region-stage {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  line-height: 0;
+  cursor: crosshair;
+  user-select: none;
+  touch-action: none;
+}
+.mc-region-stage img { display: block; max-width: 100%; max-height: 60vh; }
+.mc-region-rect {
+  position: absolute;
+  border: 2px solid var(--bs-danger);
+  background: rgba(var(--bs-danger-rgb), 0.12);
+  pointer-events: none;
+}
+
+/* ---------- settings ---------- */
+
+.mc-scroll { max-height: 26rem; overflow-y: auto; }
+
+/* The samples of the highlight colours (theme.css), in Settings › User preferences */
+.mc-sample-new { background-color: var(--mc-hl-new); }
+.mc-sample-new-alt { background-color: var(--mc-hl-new-alt); }
+.mc-sample-learning { background-color: var(--mc-hl-learning); }
+.mc-sample-learning-alt { background-color: var(--mc-hl-learning-alt); }
+.mc-sample-i1 { text-decoration: underline 2px var(--mc-hl-i1); text-underline-offset: .28em; }
+.mc-sample-lookup { background-color: var(--mc-hl-lookup); }
+
+/* ---------- clipboard ---------- */
+
+textarea.mc-clip-editor { min-height: calc(100vh - 8rem); }
+/* Long texts: the browser only lays out the chunks near the screen */
+.mc-clip-chunk { content-visibility: auto; contain-intrinsic-size: auto 1200px; }
+.mc-clip-chunk p { white-space: pre-wrap; }
+
+/* ---------- video game captures ---------- */
+
+/* The capture's time is drawn by CSS: not text, so that it's neither coloured nor looked up */
+.mc-capture-meta::before { content: attr(data-meta); }
+.mc-capture-shot { opacity: 0.55; transition: opacity 0.2s; }
+.mc-capture-shot:hover { opacity: 1; }
+/* Recommended captures (i+1): every word known but one new word */
+.mc-capture.i1 { box-shadow: inset 3px 0 var(--bs-success); padding-left: 0.75rem; }
+.mc-capture.i1 .mc-capture-meta::after { content: " · i+1"; color: var(--bs-success-text-emphasis); font-weight: 600; }

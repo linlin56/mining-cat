@@ -1,0 +1,136 @@
+/* MiningCat Reader: the paginated book (CSS columns, see reader.js), and what the reader, the player and the comics
+   share. Everything else is Bootstrap. */
+
+:root {
+  /* set from reader.js */
+  --font-size: 20px;
+  --line-height: 1.8;
+  --margin: 48px;
+  --page-w: 600px;
+  --page-h: 800px;
+}
+
+/* ---------- shared by the reading screens (reader, player, comics) ---------- */
+
+/* Their top and bottom bars */
+.mc-bar { flex: none; min-height: 44px; user-select: none; }
+.mc-bar-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* A book's or a video's remove button, on its cover: shown on hover (always on touch screens) */
+.mc-delete { opacity: 0; transition: opacity .12s; }
+.mc-cover:hover .mc-delete, .mc-delete:focus-visible { opacity: 1; }
+@media (hover: none) { .mc-delete { opacity: .8; } }
+
+/* ---------- the page ---------- */
+
+.stage { position: relative; flex: 1; min-height: 0; display: flex; }
+
+/* The side margins turn the pages */
+.zone { flex: none; width: var(--margin); cursor: pointer; }
+.zone:hover { background: linear-gradient(to right, transparent, rgba(128, 128, 128, .05), transparent); }
+
+.viewport {
+  position: relative;
+  flex: 1; min-width: 0;
+  overflow: hidden;
+  margin: calc(var(--margin) * .5) 0;
+}
+
+@media (max-width: 600px) {
+  .zone { width: max(16px, calc(var(--margin) * .5)); }
+}
+
+/* ---------- book content: a chapter laid out in columns of one page ---------- */
+
+.content {
+  position: absolute; top: 0; left: 0;
+  box-sizing: border-box;
+  column-fill: auto;
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  color: var(--bs-body-color);
+  overflow-wrap: break-word;
+  text-align: justify;
+  text-justify: inter-character;
+  will-change: transform;
+}
+.content.horizontal {
+  writing-mode: horizontal-tb;
+  width: var(--page-w);
+  height: var(--page-h);
+  column-width: var(--page-w);
+  column-gap: var(--gap);
+  hyphens: auto;
+}
+.content.vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  width: var(--page-w);
+  height: var(--page-h);
+  column-width: var(--page-h);
+  column-gap: var(--gap);
+}
+
+.content.serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Noto Serif", "Times New Roman", serif; }
+.content.sans { font-family: var(--bs-body-font-family); }
+.content.serif:lang(ja) { font-family: "Noto Serif JP", "Noto Serif CJK JP", "Source Han Serif JP", "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "MS Mincho", serif; }
+.content.sans:lang(ja) { font-family: "Noto Sans JP", "Noto Sans CJK JP", "Source Han Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; }
+.content.serif:lang(zh-Hant), .content.serif:lang(zh-TW), .content.serif:lang(zh-HK), .content.serif:lang(yue) {
+  font-family: "Noto Serif TC", "Noto Serif CJK TC", "Source Han Serif TC", "Songti TC", "PMingLiU", "MingLiU", serif; }
+.content.sans:lang(zh-Hant), .content.sans:lang(zh-TW), .content.sans:lang(zh-HK), .content.sans:lang(yue) {
+  font-family: "Noto Sans TC", "Noto Sans CJK TC", "Source Han Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+.content.serif:lang(zh-Hans), .content.serif:lang(zh-CN), .content.serif:lang(zh) {
+  font-family: "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", SimSun, serif; }
+.content.sans:lang(zh-Hans), .content.sans:lang(zh-CN), .content.sans:lang(zh) {
+  font-family: "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; }
+.content.serif:lang(ko) { font-family: "Noto Serif KR", "Noto Serif CJK KR", "Source Han Serif K", "Nanum Myeongjo", AppleMyungjo, Batang, serif; }
+.content.sans:lang(ko) { font-family: "Noto Sans KR", "Noto Sans CJK KR", "Source Han Sans K", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+
+.content p { margin: 0 0 .75em; }
+.content p.indent { text-indent: 1em; }
+.content:lang(ja) p, .content:lang(zh) p, .content:lang(yue) p { margin: 0; }
+.content.vertical p { margin: 0; }
+
+.content h1, .content h2, .content h3 {
+  line-height: 1.4; margin: 0 0 1em; font-weight: 700;
+  break-after: avoid;
+}
+.content h1 { font-size: 1.45em; }
+.content h2 { font-size: 1.3em; }
+.content h3 { font-size: 1.15em; }
+.content.vertical h1, .content.vertical h2, .content.vertical h3 { margin: 0 0 0 1.5em; }
+.content.horizontal h1, .content.horizontal h2 { margin-top: .4em; }
+
+.content img, .content svg {
+  display: block;
+  max-width: 100%;
+  max-height: calc(var(--page-h) * .96);
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+  break-inside: avoid;
+}
+.content.vertical img, .content.vertical svg {
+  max-width: calc(var(--page-w) * .96);
+  max-height: calc(var(--page-h) * .96);
+  margin: auto 0;
+}
+.content figure { margin: 1em 0; break-inside: avoid; }
+.content figcaption { font-size: .85em; color: var(--bs-secondary-color); text-align: center; }
+
+.content ruby rt { font-size: .5em; }
+.content.vertical .tcy { text-combine-upright: all; }
+.content.no-rt rt, .content.no-rt rp { display: none; }
+
+.content a { color: var(--bs-link-color); text-decoration: underline dotted; text-underline-offset: 3px; }
+.content aside, .content [data-epub-type~="footnote"], .content [data-epub-type~="endnote"] { font-size: .85em; color: var(--bs-secondary-color); }
+.content blockquote { margin: 0 0 0 1.5em; }
+.content.vertical blockquote { margin: 1.5em 0 0 0; }
+.content table { break-inside: avoid; }
+.content td, .content th { border: 1px solid var(--bs-border-color); padding: .2em .4em; }
+.content hr { border: 0; border-top: 1px solid var(--bs-border-color); margin: 1em 0; opacity: 1; }
+.content.vertical hr { border-top: 0; border-left: 1px solid var(--bs-border-color); margin: 0 1em; }
+.content pre { white-space: pre-wrap; font-size: .85em; }
+
+.content .flash { animation: flash 1.6s ease; border-radius: 3px; }
+@keyframes flash { 0%, 40% { background: var(--mc-hl-lookup); } 100% { background: transparent; } }

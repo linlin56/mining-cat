@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% from "_macros.html" import navbar with context %}
+{% block title %}Settings · MiningCat{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='settings.js') }}" defer></script>
+{% endblock %}
+{% block body_attrs %}data-study="{{ study.id if study else "" }}"{% endblock %}
+{% block body %}
+  <div class="container pb-4">
+    {{ navbar("Settings") }}
+
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item"><a class="nav-link" href="#dictionaries" role="tab" data-tab="dictionaries"><i class="bi bi-journal-text" aria-hidden="true"></i> Dictionaries</a></li>
+      <li class="nav-item"><a class="nav-link" href="#languages" role="tab" data-tab="languages"><i class="bi bi-alphabet" aria-hidden="true"></i> Words</a></li>
+      <li class="nav-item"><a class="nav-link" href="#anki" role="tab" data-tab="anki"><i class="bi bi-stack" aria-hidden="true"></i> Anki</a></li>
+      <li class="nav-item"><a class="nav-link" href="#cards" role="tab" data-tab="cards"><i class="bi bi-card-text" aria-hidden="true"></i> Cards
+        <span class="badge rounded-pill text-bg-primary" id="pending-badge" hidden></span></a></li>
+      <li class="nav-item"><a class="nav-link" href="#preferences" role="tab" data-tab="preferences"><i class="bi bi-person-gear" aria-hidden="true"></i> User preferences</a></li>
+    </ul>
+
+    <!-- ================= Dictionaries ================= -->
+    <section id="tab-dictionaries" class="tab-panel vstack gap-3" hidden>
+      <div class="card">
+        <h2 class="card-header h6">Import a {{ study.name }} dictionary</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">MiningCat reads dictionaries in Yomitan's format (.zip). For example CC-CEDICT (Mandarin),
+            words.hk (Cantonese), JMdict (Japanese), and frequency lists.
+            They're stored in the project's <code>library/</code> folder.</p>
+          <div>
+            <button type="button" class="btn btn-primary" id="dict-pick"><i class="bi bi-upload" aria-hidden="true"></i> Choose a .zip…</button>
+            <input type="file" id="dict-file" accept=".zip" hidden>
+          </div>
+          <div id="dict-progress" hidden>
+            <div class="progress" role="progressbar" aria-label="Import" style="height: .5rem">
+              <div class="progress-bar" id="dict-progress-bar" style="width: 0%"></div>
+            </div>
+            <p class="small text-body-secondary mt-1 mb-0" id="dict-progress-text"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-header h6">{{ study.name }} frequency list</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">Recommended sentences (i+1) only teach frequent words: their new word must be high enough in your
+            frequency list. The more of its words you know, the further down the list they go. The list's rank is also
+            shown in the dictionary popup and the card creator.<br>
+            Import a Yomitan frequency dictionary (.zip), or a JSON frequency list (.json, the words from the most
+            frequent; a text file with a word per line works too).</p>
+          <div class="d-flex flex-wrap align-items-end gap-3">
+            <div>
+              <label class="form-label" for="freq-list">Used for recommendations</label>
+              <select class="form-select" id="freq-list"></select>
+            </div>
+            <button type="button" class="btn btn-outline-secondary" id="freq-pick"><i class="bi bi-upload" aria-hidden="true"></i> Import a frequency list…</button>
+            <input type="file" id="freq-file" accept=".zip,.json,.txt,.csv,.tsv" hidden>
+          </div>
+          <p class="text-body-secondary m-0" id="freq-frontier"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-header h6">Your {{ study.name }} dictionaries</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">Results are shown in this order. Disable a dictionary to hide it without deleting it.</p>
+          <div id="dict-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Languages ================= -->
+    <section id="tab-languages" class="tab-panel vstack gap-3" hidden>
+      {% if study.chinese %}
+      <div class="card">
+        <h2 class="card-header h6">Chinese characters</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">Choose the characters you learn. Words are saved in that script; a word whose characters are the
+            same in both scripts counts for both. When you know a word in the other script, the dictionary tells you.</p>
+          <div id="script-settings"></div>
+          {% if study.id == "zh" %}
+          <p class="small text-body-secondary m-0">Readings: how Mandarin pronunciation is shown in the popup and written in the cards' reading
+            field. Your words keep the same status whichever you choose.</p>
+          <div id="reading-settings"></div>
+          {% elif study.id == "nan" %}
+          <p class="small text-body-secondary m-0">Readings: the romanization the popup shows and the cards' reading field gets (a dictionary
+            in either one works). Your words keep the same status whichever you choose. The {tailo} and {poj} card
+            fields always give both.</p>
+          <div id="reading-settings"></div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+      <div class="card">
+        <h2 class="card-header h6">Your {{ study.name }} words</h2>
+        <div class="card-body vstack gap-3">
+          <div id="word-counts"></div>
+          <div class="d-flex flex-wrap gap-3">
+            <div>
+              <label class="form-label" for="words-filter">Show</label>
+              <select class="form-select" id="words-filter">
+                <option value="">All statuses</option>
+                <option value="learning">Learning</option>
+                <option value="known">Known</option>
+                <option value="ignored">Ignored</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="words-order">Sort by</label>
+              <select class="form-select" id="words-order">
+                <option value="added">Newest added first</option>
+                <option value="added_asc">Oldest added first</option>
+                <option value="updated">Last change</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive mc-scroll border rounded"><table class="table table-sm table-hover align-middle mb-0" id="words-table"></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Anki ================= -->
+    <section id="tab-anki" class="tab-panel vstack gap-3" hidden>
+      <div class="card">
+        <h2 class="card-header h6">Connection</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">MiningCat talks to Anki through the <strong class="text-body">AnkiConnect</strong> add-on: in Anki, open
+            Tools › Add-ons › Get Add-ons… and enter the code <code>2055492159</code>, then restart Anki.
+            When Anki is closed, your cards wait here and are sent at the next sync.</p>
+          <div class="row g-2 align-items-end">
+            <div class="col-md">
+              <label class="form-label" for="anki-url">AnkiConnect address</label>
+              <input type="url" class="form-control" id="anki-url">
+            </div>
+            <div class="col-md-auto">
+              <button type="button" class="btn btn-outline-secondary" id="anki-test"><i class="bi bi-plug" aria-hidden="true"></i> Test the connection</button>
+            </div>
+          </div>
+          <p class="small m-0" id="anki-state"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-header h6">New cards</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">Choose where your {{ study.name }} cards go and what each field of your note type receives.</p>
+          <div class="d-flex flex-wrap gap-3">
+            <div>
+              <label class="form-label" for="note-deck">Deck</label>
+              <select class="form-select" id="note-deck"></select>
+            </div>
+            <div>
+              <label class="form-label" for="note-model">Note type</label>
+              <select class="form-select" id="note-model"></select>
+            </div>
+          </div>
+          <div id="field-mapping"></div>
+          <div class="row g-2 align-items-end">
+            <div class="col-md">
+              <label class="form-label" for="note-tags">Tags added to every card</label>
+              <input type="text" class="form-control" id="note-tags" placeholder="mining-cat">
+            </div>
+            <div class="col-md">
+              <label class="form-label" for="note-voice">Voice reading sentences without audio</label>
+              <select class="form-select" id="note-voice"></select>
+            </div>
+            <div class="col-md-auto">
+              <button type="button" class="btn btn-primary" id="note-save">Save</button>
+            </div>
+          </div>
+          <p class="small text-success m-0" id="note-saved"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-header h6">Sentence translation</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">New cards get a translation of their sentence, made offline with Argos Translate. The
+            first time a language is translated, its model (about 100 MB) is downloaded.</p>
+          <div class="d-flex flex-wrap align-items-end gap-2">
+            <div>
+              <label class="form-label" for="translation-language">Translate sentences to</label>
+              <select class="form-select" id="translation-language"></select>
+            </div>
+            <button type="button" class="btn btn-primary" id="translation-save">Save</button>
+          </div>
+          <p class="small text-success m-0" id="translation-saved"></p>
+          <h3 class="h6 m-0">Models</h3>
+          <p class="small text-body-secondary m-0">Download the {{ study.name }} models ahead of time, so that the first card doesn't wait for them.
+            {% if study.id == "zh" %}The models of the characters you learn (traditional, simplified or both) are downloaded.{% endif %}</p>
+          <div>
+            <button type="button" class="btn btn-outline-secondary" id="model-download"><i class="bi bi-download" aria-hidden="true"></i> Download the {{ study.name }} models</button>
+          </div>
+          <div id="model-progress" hidden>
+            <div class="progress" role="progressbar" aria-label="Download" style="height: .5rem">
+              <div class="progress-bar" id="model-progress-bar" style="width: 0%"></div>
+            </div>
+            <p class="small text-body-secondary mt-1 mb-0" id="model-progress-text"></p>
+          </div>
+          <div id="model-list"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-header h6">Word statuses from Anki</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">At each sync, MiningCat reads the cards of these {{ study.name }} decks: a word is <em>learning</em> while its
+            card is young, and <em>known</em> once its interval reaches the number of days below. Words you marked
+            known or ignored yourself are never changed. Cards made in MiningCat are always followed.</p>
+          <div id="sync-sources"></div>
+          <div class="d-flex flex-wrap align-items-end gap-2">
+            <button type="button" class="btn btn-outline-secondary" id="sync-add"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add a deck</button>
+            <div>
+              <label class="form-label" for="known-interval">Known after (days)</label>
+              <input type="number" class="form-control" id="known-interval" min="1" max="3650">
+            </div>
+            <button type="button" class="btn btn-primary" id="sync-save">Save</button>
+            <button type="button" class="btn btn-outline-secondary" id="sync-now"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Sync now</button>
+          </div>
+          <p class="small text-body-secondary m-0" id="sync-report"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Cards ================= -->
+    <section id="tab-cards" class="tab-panel vstack gap-3" hidden>
+      <div class="card">
+        <h2 class="card-header h6">{{ study.name }} cards</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">Cards waiting for Anki are sent at the next sync. If you can't use AnkiConnect (on another
+            computer, or with AnkiDroid / AnkiMobile), export them to an .apkg file and open it with Anki: they use
+            a “MiningCat” note type.</p>
+          <div class="d-flex flex-wrap align-items-end gap-2">
+            <div>
+              <label class="form-label" for="cards-filter">Show</label>
+              <select class="form-select" id="cards-filter">
+                <option value="">All</option>
+                <option value="pending" selected>Waiting for Anki</option>
+                <option value="failed">Refused by Anki</option>
+                <option value="sent">In Anki</option>
+                <option value="exported">Exported</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-outline-secondary" id="cards-send"><i class="bi bi-send" aria-hidden="true"></i> Send waiting cards</button>
+            <button type="button" class="btn btn-outline-secondary" id="cards-export"><i class="bi bi-box-arrow-down" aria-hidden="true"></i> Export waiting cards (.apkg)</button>
+          </div>
+          <div class="table-responsive mc-scroll border rounded"><table class="table table-sm table-hover align-middle mb-0" id="cards-table"></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= User preferences ================= -->
+    <section id="tab-preferences" class="tab-panel vstack gap-3" hidden>
+      <div class="card">
+        <h2 class="card-header h6">Theme</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">The colours of every page, kept in <code>user/user-config.json</code>. The reader's own theme
+            (sepia…) is set in its settings, while a book is read.</p>
+          <div class="btn-group align-self-start" role="group" aria-label="Theme">
+            <button type="button" class="btn btn-outline-primary" data-mc-theme-choice="light"><i class="bi bi-sun" aria-hidden="true"></i> Light mode</button>
+            <button type="button" class="btn btn-outline-primary" data-mc-theme-choice="dark"><i class="bi bi-moon-stars" aria-hidden="true"></i> Dark mode</button>
+            <button type="button" class="btn btn-outline-primary" data-mc-theme-choice="system"><i class="bi bi-circle-half" aria-hidden="true"></i> System</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="card-header h6">Highlight colors</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">The colours of the words by status (new, learning), of the recommended
+            sentences (i+1) and of the word looked up, in the reader, the player, the comics, the clipboard and the
+            video game captures. Kept in <code>user/user-config.json</code>.</p>
+          <div class="list-group">
+            <label class="list-group-item d-flex flex-wrap align-items-center gap-3">
+              <input class="form-check-input flex-shrink-0 m-0" type="radio" name="highlights" data-mc-highlights-choice="default">
+              <span class="flex-grow-1">Default colors</span>
+              <span class="small" data-mc-highlights="default" aria-hidden="true">
+                <span class="mc-sample-new">new</span><span class="mc-sample-new-alt">word</span>
+                <span class="mc-sample-learning">learning</span><span class="mc-sample-learning-alt">word</span>
+                <span class="mc-sample-i1">recommended</span> <span class="mc-sample-lookup">looked up</span>
+              </span>
+            </label>
+            <label class="list-group-item d-flex flex-wrap align-items-center gap-3">
+              <input class="form-check-input flex-shrink-0 m-0" type="radio" name="highlights" data-mc-highlights-choice="deutan">
+              <span class="flex-grow-1">Deuteranopia and protanopia <span class="d-block small text-body-secondary">Red and green look alike: blue and yellow-orange instead.</span></span>
+              <span class="small" data-mc-highlights="deutan" aria-hidden="true">
+                <span class="mc-sample-new">new</span><span class="mc-sample-new-alt">word</span>
+                <span class="mc-sample-learning">learning</span><span class="mc-sample-learning-alt">word</span>
+                <span class="mc-sample-i1">recommended</span> <span class="mc-sample-lookup">looked up</span>
+              </span>
+            </label>
+            <label class="list-group-item d-flex flex-wrap align-items-center gap-3">
+              <input class="form-check-input flex-shrink-0 m-0" type="radio" name="highlights" data-mc-highlights-choice="tritan">
+              <span class="flex-grow-1">Tritanopia <span class="d-block small text-body-secondary">Blue and green, yellow and pink look alike: cyan and red instead.</span></span>
+              <span class="small" data-mc-highlights="tritan" aria-hidden="true">
+                <span class="mc-sample-new">new</span><span class="mc-sample-new-alt">word</span>
+                <span class="mc-sample-learning">learning</span><span class="mc-sample-learning-alt">word</span>
+                <span class="mc-sample-i1">recommended</span> <span class="mc-sample-lookup">looked up</span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}

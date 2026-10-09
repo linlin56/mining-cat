@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% from "_macros.html" import navbar with context %}
+{% block viewport %}, viewport-fit=cover{% endblock %}
+{% block title %}MiningCat Player{% endblock %}
+{% block styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='reader.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mining.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='player.css') }}">
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='player.js') }}" defer></script>
+{% endblock %}
+{% block body_attrs %}data-study='{{ study|tojson }}'{% endblock %}
+{% block body %}
+  <!-- ===================== Library ===================== -->
+  <main id="library" class="container pb-4" hidden>
+    {% call navbar("Player") %}
+      <button type="button" class="btn btn-primary" id="add-videos"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add videos</button>
+    {% endcall %}
+    <p class="small text-body-secondary" id="lib-formats"></p>
+    <form class="input-group mb-3" id="url-form">
+      <input type="url" class="form-control" id="url-input" placeholder="https://www.youtube.com/watch?v=…" aria-label="Video URL" required>
+      <select class="form-select flex-grow-0 w-auto" id="url-language" aria-label="Language of the video (for YouTube captions)"></select>
+      <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-download" aria-hidden="true"></i> Download</button>
+    </form>
+    <div class="rounded-3 p-2 mc-drop" id="lib-drop">
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-3" id="video-grid"></div>
+      <div class="text-center py-5" id="lib-empty" hidden>
+        <i class="bi bi-film display-4 text-body-secondary" aria-hidden="true"></i>
+        <p class="fs-5 fw-semibold mt-2 mb-1">No videos yet</p>
+        <p class="text-body-secondary">Drop a video here with its subtitles (.srt, .vtt, .ass), or paste a YouTube link above.</p>
+      </div>
+    </div>
+    <p class="small text-body-secondary mc-pre-line mt-2" id="lib-status" role="status"></p>
+    <input type="file" id="video-input" multiple hidden>
+  </main>
+
+  <!-- ===================== Watching ===================== -->
+  <div id="watch" class="position-fixed top-0 bottom-0 start-0 end-0 d-flex flex-column bg-body" hidden>
+    <header class="d-flex align-items-center gap-1 px-2 border-bottom small mc-bar mc-watch-bar">
+      <a href="/player/" class="btn btn-link link-body-emphasis" id="back" title="Library" aria-label="Back to library"><i class="bi bi-arrow-left" aria-hidden="true"></i></a>
+      <div class="flex-grow-1 overflow-hidden"><span class="d-block fw-semibold text-truncate" id="video-title"></span></div>
+      <button type="button" class="btn btn-link link-body-emphasis" id="list-btn" title="Subtitle list (L)" aria-label="Subtitle list"><i class="bi bi-list-ul" aria-hidden="true"></i></button>
+      <button type="button" class="btn btn-link link-body-emphasis" id="fullscreen-btn" title="Fullscreen (F)" aria-label="Fullscreen"><i class="bi bi-fullscreen" aria-hidden="true"></i></button>
+      <button type="button" class="btn btn-link link-body-emphasis" id="settings-btn" title="Settings" aria-label="Settings"><i class="bi bi-sliders" aria-hidden="true"></i></button>
+    </header>
+
+    <div class="watch-body" id="watch-body">
+      <div class="screen" id="screen">
+        <video id="video" controls playsinline preload="auto" controlslist="nofullscreen"></video>
+        <div class="subs" id="subs">
+          <div class="sub-primary" id="sub-primary"></div>
+          <div class="sub-secondary" id="sub-secondary" data-mc-ignore></div>
+        </div>
+        <div class="position-absolute top-0 bottom-0 start-0 end-0 d-flex flex-column align-items-center justify-content-center gap-3 p-4 text-center text-white bg-black bg-opacity-75" id="screen-msg" hidden>
+          <p class="mc-pre-line m-0" id="screen-text"></p>
+          <button type="button" class="btn btn-primary" id="screen-action" hidden></button>
+        </div>
+        <div class="position-absolute top-0 end-0 m-3 badge text-bg-dark fs-6 fw-normal pe-none fade" id="osd" aria-live="polite"></div>
+      </div>
+      <aside class="cue-panel" id="cue-panel" aria-label="Subtitles">
+        <div class="d-flex align-items-center justify-content-between gap-2 px-3 py-2 border-bottom small text-body-secondary" id="cue-summary" hidden>
+          <span id="comp-summary" title="Words of these subtitles you know (from your cards and word statuses)"></span>
+          <div class="form-check form-switch m-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="i1-only">
+            <label class="form-check-label" for="i1-only">Only i+1</label>
+          </div>
+        </div>
+        <div class="sticky-top d-flex align-items-center gap-2 px-3 py-2 bg-body-tertiary border-bottom small" id="cue-selection" hidden>
+          <span class="flex-grow-1" id="cue-selection-text"></span>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="cue-selection-clear" title="Clear the selection (Esc)">Clear</button>
+        </div>
+        <ol class="cues list-unstyled m-0" id="cues"></ol>
+        <div class="p-3" id="cues-empty" hidden>
+          <p>This video has no subtitles yet.</p>
+          <p class="text-body-secondary">Drop a subtitle file (.srt, .vtt, .ass) on the page, or add one in the settings (<i class="bi bi-sliders" aria-label="Settings"></i>).
+            To make some, generate them in the <a href="/converter/">converter</a> (Video, Whisper or OCR), then open the result here.</p>
+        </div>
+      </aside>
+    </div>
+
+    <aside class="offcanvas offcanvas-end" tabindex="-1" id="settings-panel" aria-labelledby="settings-title"
+      data-bs-backdrop="false" data-bs-scroll="true" data-bs-keyboard="false">
+      <div class="offcanvas-header">
+        <h2 class="offcanvas-title h5" id="settings-title">Settings</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body pt-0">
+        <h3 class="h6 text-uppercase small fw-bold text-primary-emphasis mb-3">This video</h3>
+        <div class="mb-3" id="language-setting">
+          <label class="form-label small" for="set-language">Characters of the subtitles</label>
+          <select class="form-select" id="set-language"></select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small" for="set-primary">Subtitles</label>
+          <select class="form-select" id="set-primary"></select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small" for="set-secondary">Second subtitles <span class="text-body-secondary">(e.g. a translation, not looked up)</span></label>
+          <select class="form-select" id="set-secondary"></select>
+        </div>
+        <div class="mb-3">
+          <span class="form-label small d-flex justify-content-between" id="offset-label">Subtitle timing <output id="out-offset"></output></span>
+          <div class="btn-group btn-group-sm" role="group" aria-labelledby="offset-label">
+            <button type="button" class="btn btn-outline-secondary" data-offset="-0.1" title="Subtitles earlier ([)">−0.1 s</button>
+            <button type="button" class="btn btn-outline-secondary" data-offset="0.1" title="Subtitles later (])">+0.1 s</button>
+            <button type="button" class="btn btn-outline-secondary" data-offset="0" title="Reset">Reset</button>
+          </div>
+        </div>
+        <div class="mb-3" id="audio-setting" hidden>
+          <label class="form-label small" for="set-audio">Audio track</label>
+          <select class="form-select" id="set-audio"></select>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="add-subs"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add subtitles…</button>
+          <button type="button" class="btn btn-sm btn-outline-danger" id="remove-subs"><i class="bi bi-trash" aria-hidden="true"></i> Remove these subtitles</button>
+        </div>
+        <input type="file" id="subs-input" accept=".srt,.vtt,.ass,.ssa" multiple hidden>
+
+        <h3 class="h6 text-uppercase small fw-bold text-primary-emphasis mt-4 mb-3">Subtitles</h3>
+        <div class="mb-3">
+          <label class="form-label small d-flex justify-content-between mb-0" for="set-sub-size">Size <output id="out-sub-size"></output></label>
+          <input type="range" class="form-range" id="set-sub-size" min="14" max="80" step="1">
+        </div>
+        <div class="mb-3">
+          <span class="form-label small d-block" id="set-display-label">Show (S)</span>
+          <div class="btn-group btn-group-sm w-100" id="set-display" role="group" aria-labelledby="set-display-label">
+            <button type="button" class="btn btn-outline-secondary" data-value="shown"><i class="bi bi-eye" aria-hidden="true"></i> Shown</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="blur"><i class="bi bi-droplet-half" aria-hidden="true"></i> Blurred</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="hidden"><i class="bi bi-eye-slash" aria-hidden="true"></i> Hidden</button>
+          </div>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="set-auto-pause">
+          <label class="form-check-label" for="set-auto-pause">Pause at the end of each subtitle (P)</label>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small" for="set-colors">Colour words</label>
+          <select class="form-select" id="set-colors">
+            <option value="status">By status (new, learning)</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+
+        <h3 class="h6 text-uppercase small fw-bold text-primary-emphasis mt-4 mb-3">Cards</h3>
+        <div class="mb-3">
+          <span class="form-label small d-block">Audio margin around the line (ms)</span>
+          <div class="row g-2">
+            <div class="col">
+              <div class="input-group input-group-sm">
+                <label class="input-group-text" for="set-audio-before">before</label>
+                <input type="number" class="form-control" id="set-audio-before" min="0" max="3000" step="50">
+              </div>
+            </div>
+            <div class="col">
+              <div class="input-group input-group-sm">
+                <label class="input-group-text" for="set-audio-after">after</label>
+                <input type="number" class="form-control" id="set-audio-after" min="0" max="3000" step="50">
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="small text-body-secondary">Dictionaries, Anki and the script you learn are set in <a href="/settings/" target="_blank">Settings</a>.</p>
+
+        <p class="small text-body-secondary mt-4 mb-0">
+          Space: play / pause · ← →: previous / next subtitle · ↓: replay the subtitle ·
+          Shift + ← →: 5 s back / forward · [ ]: subtitle timing · − +: speed ·
+          S: show / blur / hide subtitles · P: auto-pause · L: subtitle list · F: fullscreen ·
+          N: next recommended line (i+1: every word known but one new word).<br>
+          Click a word to look it up: the video pauses, and + Card takes the screenshot and the line's audio.
+          A sentence split across lines? Select its lines in the list (tick them), then click a word in one of them: the card takes them all.
+        </p>
+      </div>
+    </aside>
+  </div>
+{% endblock %}

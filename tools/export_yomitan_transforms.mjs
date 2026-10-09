@@ -1,4 +1,4 @@
-// Exports Yomitan's deinflection rules to JSON files read by src/mining/deinflect.py.
+// Exports Yomitan's deinflection rules to JSON files read by src/miningcat/domain/dictionary/deinflection.py.
 //
 // Yomitan (https://github.com/yomidevs/yomitan, GPL-3.0-or-later) describes, for each language, how an
 // inflected word goes back to its dictionary form (食べなかった -> 食べる). MiningCat reuses these rules
@@ -7,7 +7,7 @@
 //
 // Usage:
 //   git clone --depth 1 https://github.com/yomidevs/yomitan /tmp/yomitan
-//   node tools/export_yomitan_transforms.mjs /tmp/yomitan src/mining/transforms
+//   node tools/export_yomitan_transforms.mjs /tmp/yomitan src/miningcat/domain/dictionary/transforms
 
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {join, resolve} from 'node:path';
@@ -20,7 +20,7 @@ if (!yomitanDir || !outDir) {
 }
 
 // language code -> [module path, exported name]
-// Korean rules work on Hangul split into jamo (먹었다 -> ㅁㅓㄱㅇㅓㅆㄷㅏ): src/mining/hangul.py does the same split.
+// Korean rules work on Hangul split into jamo (먹었다 -> ㅁㅓㄱㅇㅓㅆㄷㅏ): src/miningcat/domain/text/hangul.py does the same split.
 const LANGUAGES = {
     ja: ['ja/japanese-transforms.js', 'japaneseTransforms'],
     en: ['en/english-transforms.js', 'englishTransforms'],

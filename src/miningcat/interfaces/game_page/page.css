@@ -1,0 +1,22 @@
+/* The capture server's page (page.html), on top of Bootstrap and MiningCat's theme.css. */
+
+/* the sentence is what we mine: it carries the page */
+.line {
+  font-family: "Noto Serif TC", "Noto Serif SC", "Noto Serif JP", "Noto Serif KR", serif;
+  letter-spacing: 0.02em;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* the screenshot is context: dimmed, it wakes up on hover */
+.shot { filter: saturate(0.55) brightness(0.7); transition: filter 180ms ease; }
+.capture:hover .shot { filter: none; }
+
+.capture { animation: rise 240ms ease-out; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .capture { animation: none; }
+}

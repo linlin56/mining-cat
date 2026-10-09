@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}MiningCat · Clipboard{% endblock %}
+{% block styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='mining.css') }}">
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='clipboard.js') }}" defer></script>
+{% endblock %}
+{% block body_attrs %}data-study='{{ study|tojson }}'{% endblock %}
+{% block body %}
+  <header class="navbar sticky-top bg-body-tertiary border-bottom px-3 gap-2">
+    <a class="navbar-brand d-flex align-items-center gap-2 fw-bold me-0" href="/">
+      <img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="26" height="26"> Clipboard
+    </a>
+    <span class="small text-body-secondary" id="count"></span>
+    <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+      <select class="form-select form-select-sm w-auto" id="language" title="Characters" aria-label="Characters" hidden></select>
+      <select class="form-select form-select-sm w-auto" id="taigi-convert" title="Write the text in another writing system" aria-label="Write in" hidden>
+        <option value="">Write in…</option>
+        <option value="hanji">Hanji (漢字)</option>
+        <option value="tailo">Tâi-lô</option>
+        <option value="poj">Pe̍h-ōe-jī (POJ)</option>
+      </select>
+      <button type="button" class="btn btn-link link-body-emphasis btn-sm" data-mc-theme-toggle title="Night mode" aria-label="Night mode">
+      <i class="bi bi-moon-stars" aria-hidden="true"></i>
+    </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="clear" title="Empty the clipboard"><i class="bi bi-trash" aria-hidden="true"></i> Clear</button>
+      <button type="button" class="btn btn-sm btn-primary" id="toggle" title="Ctrl/⌘ + Enter"><i class="bi bi-book" aria-hidden="true"></i> <span>Read</span></button>
+    </div>
+  </header>
+  <main class="container pt-3 mc-feed">
+    <textarea class="form-control mc-text mc-clip-editor fs-4 lh-lg bg-body-tertiary" id="editor" spellcheck="false"
+      placeholder="Type or paste a text here, then click Read to look its words up." aria-label="Text"></textarea>
+    <article class="mc-text fs-4 lh-lg" id="text" hidden></article>
+  </main>
+{% endblock %}

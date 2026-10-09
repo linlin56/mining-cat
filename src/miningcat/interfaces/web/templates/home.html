@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='home.js') }}" defer></script>
+{% endblock %}
+{% block body %}
+  <div class="container py-4">
+  <div class="col-lg-10 col-xl-9 mx-auto">
+    <header class="d-flex align-items-center justify-content-between mb-4">
+      <h1 class="h3 fw-bold d-flex align-items-center gap-2 m-0">
+        <img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="36" height="36"> MiningCat
+      </h1>
+      <button type="button" class="btn btn-link link-body-emphasis" data-mc-theme-toggle title="Night mode" aria-label="Night mode">
+        <i class="bi bi-moon-stars" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <!-- Once a language is chosen: its screens -->
+    <section id="hub" hidden>
+      <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+        <div>
+          <p class="text-body-secondary small m-0">You're studying</p>
+          <h2 class="display-6 fw-semibold m-0"><span id="hub-native" class="text-primary-emphasis"></span> <span id="hub-name"></span></h2>
+        </div>
+        <button type="button" class="btn btn-outline-secondary" id="change-language">
+          <i class="bi bi-translate" aria-hidden="true"></i> Change language
+        </button>
+      </div>
+      <nav class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+        <div class="col">
+          <a class="card h-100 text-reset text-decoration-none focus-ring" href="/converter/" id="tile-converter">
+            <div class="card-body">
+              <h3 class="card-title h5"><i class="bi bi-arrow-repeat text-primary-emphasis me-1" aria-hidden="true"></i> Converter</h3>
+              <p class="card-text small text-body-secondary">Audiobooks, ebooks, videos and games: subtitles, audio, frequency lists.</p>
+            </div>
+          </a>
+        </div>
+        <div class="col">
+          <a class="card h-100 text-reset text-decoration-none focus-ring" href="/reader/">
+            <div class="card-body">
+              <h3 class="card-title h5"><i class="bi bi-book text-primary-emphasis me-1" aria-hidden="true"></i> Reader</h3>
+              <p class="card-text small text-body-secondary">Read your books, look words up and make cards.</p>
+            </div>
+          </a>
+        </div>
+        <div class="col">
+          <a class="card h-100 text-reset text-decoration-none focus-ring" href="/clipboard/">
+            <div class="card-body">
+              <h3 class="card-title h5"><i class="bi bi-clipboard text-primary-emphasis me-1" aria-hidden="true"></i> Clipboard</h3>
+              <p class="card-text small text-body-secondary">Paste any text, then read it with the dictionary.</p>
+            </div>
+          </a>
+        </div>
+        <div class="col">
+          <a class="card h-100 text-reset text-decoration-none focus-ring" href="/player/">
+            <div class="card-body">
+              <h3 class="card-title h5"><i class="bi bi-play-btn text-primary-emphasis me-1" aria-hidden="true"></i> Player</h3>
+              <p class="card-text small text-body-secondary">Watch videos with subtitles you can look up.</p>
+            </div>
+          </a>
+        </div>
+        <div class="col">
+          <a class="card h-100 text-reset text-decoration-none focus-ring" href="/settings/">
+            <div class="card-body">
+              <h3 class="card-title h5"><i class="bi bi-gear text-primary-emphasis me-1" aria-hidden="true"></i> Settings</h3>
+              <p class="card-text small text-body-secondary">Dictionaries, your words, Anki and cards.</p>
+            </div>
+          </a>
+        </div>
+      </nav>
+    </section>
+
+    <!-- Language choice -->
+    <section id="picker" hidden>
+      <h2 class="h4">Which language do you study?</h2>
+      <p class="text-body-secondary">Every screen then shows only what belongs to it. You can change it at any time from the header.</p>
+      <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-2" id="languages"></div>
+    </section>
+  </div>
+  </div>
+{% endblock %}

@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import sqlite3
 import types
 import urllib.error
 import zipfile
@@ -9,6 +10,7 @@ import pytest
 
 from miningcat.application import anki
 from miningcat.application.mining import dictionaries, lookup, preferences, words
+from miningcat.domain.cards import note_type
 from miningcat.domain.cards.field_text import plain_field_text
 from miningcat.domain.dictionary.deinflection import transformer_for
 from miningcat.domain.dictionary.language_guess import guess_dictionary_language
@@ -349,6 +351,60 @@ def test_guess_field_templates_with_a_sentence_translation_field():
         "Is Vocabulary Card": ""}
 
 
+def test_guess_field_templates_of_miningcat_note_type():
+    fields = note_type.FIELDS + ["My field"]
+    zh = anki.guess_field_templates(fields, "zh")
+    assert zh["Word"] == "{word}" and zh["Word with reading"] == "{word_readings}"
+    assert zh["Sentence"] == "{sentence_readings}" and zh["Language"] == "{language}"
+    assert zh["My field"] == ""
+    fr = anki.guess_field_templates(fields, "fr")
+    assert fr["Sentence"] == "{sentence}" and fr["Word with reading"] == ""
+    assert anki.guess_field_templates(["Expression", "Lang"])["Lang"] == "{language}"
+
+
+def test_note_type_templates():
+    templates = note_type.templates({"zh": "zhuyin"})
+    assert '"zh": "zhuyin"' in templates["front"] and "__OPTIONS__" not in templates["back"]
+    for name in note_type.FIELDS:
+        assert "{{" + name + "}}" in templates["front"] + templates["back"]
+
+
+def test_deck_is_created(fake_anki):
+    assert anki.create_deck("ja") == {"deck": "Japanese - MiningCat"}
+    preferences.set_chinese_script_preference("zh", "traditional")
+    assert anki.create_deck("zh") == {"deck": "Mandarin (traditional) - MiningCat"}
+    assert anki.create_deck("zh") == {"deck": "Mandarin (traditional) - MiningCat"}  # already there: kept
+    preferences.set_chinese_script_preference("zh", "both")
+    assert anki.create_deck("zh")["deck"] == "Mandarin - MiningCat"
+    assert {"Japanese - MiningCat", "Mandarin (traditional) - MiningCat"} <= set(anki.status()["decks"])
+
+
+def test_note_type_is_created_then_updated(fake_anki):
+    result = anki.install_note_type("zh")
+    assert result["model"] == "MiningCat" and fake_anki.models["MiningCat"] == note_type.FIELDS
+    assert result["templates"]["Sentence"] == "{sentence_readings}"
+    assert "mc-readings" in fake_anki.templates["MiningCat"]["templates"]["Recognition"]["Back"]
+    # an older one (the .apkg's first note type) gets the fields it lacks, the user's own are kept
+    fake_anki.models["MiningCat"] = ["Word", "Reading", "Definition", "Sentence", "My field"]
+    fake_anki.templates["MiningCat"]["css"] = "old"
+    result = anki.install_note_type("fr")
+    assert fake_anki.models["MiningCat"][:5] == ["Word", "Reading", "Definition", "Sentence", "My field"]
+    assert set(note_type.FIELDS) <= set(fake_anki.models["MiningCat"])
+    assert result["templates"]["My field"] == "" and result["templates"]["Sentence"] == "{sentence}"
+    assert fake_anki.templates["MiningCat"]["css"] != "old"
+
+
+def test_card_is_sent_to_miningcat_note_type(fake_anki):
+    preferences.set_chinese_script_preference("zh", "traditional")
+    setup = anki.install_note_type("zh")
+    anki.save_config({"notes": {"zh": {"deck": "Mining::Chinese", "model": setup["model"], "fields": setup["templates"]}}})
+    card = anki.create_card("zh", {"word": "公園", "reading": "gōngyuán", "definition": "park", "sentence": "去<b>公園</b>"}, {})
+    fields = fake_anki.notes[card["anki_note_id"]]["fields"]
+    assert fields["Word"] == "公園" and fields["Word with reading"] == "公園[gong1 yuan2]"
+    assert fields["Sentence"].startswith("去") and "<b>公園[gong1 yuan2]</b>" in fields["Sentence"]
+    assert fields["Language"] == "zh-Hant"
+
+
 def test_status_reports_decks(fake_anki):
     status = anki.status()
     assert status["connected"] and "Mining::Chinese" in status["decks"]
@@ -502,6 +558,13 @@ def test_apkg_export(tmp_path):
         assert "collection.anki2" in names
         media = json.loads(z.read("media"))
         assert card["media"]["audio"]["filename"] in media.values()
+        collection = tmp_path / "collection.anki2"
+        collection.write_bytes(z.read("collection.anki2"))
+    with sqlite3.connect(collection) as db:
+        note = db.execute("select flds from notes").fetchone()[0].split("\x1f")
+    fields = dict(zip(note_type.FIELDS, note))
+    assert fields["Word"] == "公園" and fields["Word with reading"] == "公園[gong1 yuan2]"
+    assert fields["Word audio"] == f"[sound:{card['media']['audio']['filename']}]" and fields["Language"].startswith("zh")
     assert anki.get_card(card["id"])["status"] == "exported"
     with pytest.raises(anki.AnkiError, match="no cards"):
         anki.export_apkg()
@@ -538,6 +601,10 @@ def test_http_lookup_status_and_cards(client, zh_dict, fake_anki):
     assert card["status"] == "sent"
     assert client.get("/api/cards?status=sent").get_json()["cards"][0]["expression"] == "我們"
     assert client.get("/api/anki/status").get_json()["connected"] is True
+    assert client.post("/api/anki/deck", json={"language": "zh"}, headers=HEADERS).get_json()["deck"].endswith(" - MiningCat")
+    installed = client.post("/api/anki/note-type", json={"language": "zh"}, headers=HEADERS).get_json()
+    assert installed["model"] == "MiningCat"
+    assert client.get("/api/anki/fields?model=MiningCat&language=zh").get_json()["guess"]["Sentence"] == "{sentence_readings}"
     fields = client.get("/api/anki/fields?model=Basic").get_json()
     assert fields["guess"] == {"Front": "{word}", "Back": "{definition}"}
     assert client.get("/settings/").status_code == 302  # no language studied yet: the home page asks for it

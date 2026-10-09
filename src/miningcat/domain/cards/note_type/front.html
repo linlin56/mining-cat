@@ -1,0 +1,5 @@
+<!-- MiningCat note type. Readings stay hidden on the front: hover (or tap) a word to see its own. -->
+<div class="mc-card mc-front" lang="{{Language}}">
+  {{#Sentence}}<div class="mc-sentence mc-readings">{{Sentence}}</div>{{/Sentence}}
+  {{^Sentence}}<div class="mc-headword mc-readings">{{#Word with reading}}{{Word with reading}}{{/Word with reading}}{{^Word with reading}}{{Word}}{{/Word with reading}}</div>{{/Sentence}}
+</div>

@@ -1,6 +1,8 @@
 import html
 import re
 
+from miningcat.domain.cards import note_type
+
 # MiningCat card fields and the marker that inserts each one in a note field.
 CARD_FIELDS = {
     "word": "Word",
@@ -16,6 +18,7 @@ CARD_FIELDS = {
     "notes": "Notes",
     "source": "Source",
     "frequency": "Frequency (rank in your frequency list)",
+    "language": "Language (its tag: zh-Hant, ja, fr…)",
     "image": "Image",
     "audio": "Word audio",
     "sentence_audio": "Sentence audio",
@@ -43,14 +46,19 @@ _GUESSES = [
     (re.compile(r"(source|book|reference)", re.I), "{source}"),
     (re.compile(r"(frequency|freq|rank)", re.I), "{frequency}"),
     (re.compile(r"(note|comment|remark)", re.I), "{notes}"),
+    (re.compile(r"^lang(uage)?$", re.I), "{language}"),
 ]
 
 # Flags of some note types ("Is Vocabulary Card", "Is Audio Card"): never filled with content.
 _FLAG_FIELD = re.compile(r"^is\b", re.I)
 
 
-def guess_field_templates(field_names: list[str]) -> dict[str, str]:
-    """Proposes a marker for each field of a note type, from the field names."""
+def guess_field_templates(field_names: list[str], language: str = "") -> dict[str, str]:
+    """Proposes a marker for each field of a note type, from the field names (MiningCat's own note type gets its
+    markers for the cards of `language`)."""
+    if note_type.is_note_type(field_names):
+        known = note_type.field_templates(language)
+        return {name: known.get(name, "") for name in field_names}
     templates = {name: "" for name in field_names}
     used = set()
     for pattern, template in _GUESSES:

@@ -146,12 +146,21 @@
           <div class="d-flex flex-wrap gap-3">
             <div>
               <label class="form-label" for="note-deck">Deck</label>
-              <select class="form-select" id="note-deck"></select>
+              <div class="input-group">
+                <select class="form-select" id="note-deck"></select>
+                <button type="button" class="btn btn-outline-secondary" id="deck-create" title="Create a deck for your {{ study.name }} cards in Anki"><i class="bi bi-plus-lg" aria-hidden="true"></i> Create a deck</button>
+              </div>
             </div>
             <div>
               <label class="form-label" for="note-model">Note type</label>
               <select class="form-select" id="note-model"></select>
             </div>
+          </div>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="note-type-install"><i class="bi bi-magic" aria-hidden="true"></i> <span id="note-type-install-label">Create MiningCat's note type in Anki</span></button>
+            <p class="small text-body-secondary m-0 flex-grow-1" id="note-type-help">No note type of your own? MiningCat's works for every language: the
+              sentence on the front, the word, its definition and audio on the back, and the readings written in brackets
+              (字[zi4], 日本[にほん]) shown above their words.</p>
           </div>
           <div id="field-mapping"></div>
           <div class="row g-2 align-items-end">

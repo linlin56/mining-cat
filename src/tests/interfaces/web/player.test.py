@@ -341,6 +341,10 @@ def test_settings(client):
     assert saved["colors"] == "status"
     saved = client.post("/player/api/settings", json={"audio_before": -5, "audio_after": "350"}, headers=HEADERS).get_json()
     assert saved["audio_before"] == 0 and saved["audio_after"] == 350
+    assert saved["secondary_translation"] is True
+    saved = client.post("/player/api/settings", json={"secondary_translation": 0}, headers=HEADERS).get_json()
+    assert saved["secondary_translation"] is False
+    assert client.get("/player/api/settings").get_json()["fullwidth_punctuation"] is True
 
 
 def test_delete(client, library):

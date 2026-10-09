@@ -12,6 +12,7 @@ class FakeAnki:
             "Basic": ["Front", "Back"],
             "Chinese (MiningCat test)": ["Hanzi", "Zhuyin", "Meaning", "Sentence", "Picture", "Sentence Audio"],
         }
+        self.templates: dict[str, dict] = {}  # model -> {"css", "templates": {name: {"Front", "Back"}}}
         self.notes: dict[int, dict] = {}
         self.cards: dict[int, dict] = {}
         self.media: dict[str, dict] = {}
@@ -41,6 +42,29 @@ class FakeAnki:
                 if params["modelName"] not in self.models:
                     raise ValueError(f"model was not found: {params['modelName']}")
                 return self.models[params["modelName"]]
+            if action == "createDeck":
+                return self.decks.setdefault(params["deck"], self._id())
+            if action == "createModel":
+                if params["modelName"] in self.models:
+                    raise ValueError("Model name already exists")
+                self.models[params["modelName"]] = list(params["inOrderFields"])
+                self.templates[params["modelName"]] = {"css": params.get("css", ""), "templates": {
+                    t["Name"]: {"Front": t["Front"], "Back": t["Back"]} for t in params["cardTemplates"]}}
+                return {"name": params["modelName"]}
+            if action == "modelFieldAdd":
+                self.models[params["modelName"]].insert(params.get("index", len(self.models[params["modelName"]])), params["fieldName"])
+                return None
+            if action == "updateModelTemplates":
+                model = params["model"]
+                existing = self.templates.setdefault(model["name"], {"css": "", "templates": {}})["templates"]
+                for name, template in model["templates"].items():
+                    if name not in existing:
+                        raise ValueError(f"template not found: {name}")
+                    existing[name].update(template)
+                return None
+            if action == "updateModelStyling":
+                self.templates.setdefault(params["model"]["name"], {"css": "", "templates": {}})["css"] = params["model"]["css"]
+                return None
             if action == "storeMediaFile":
                 self.media[params["filename"]] = {k: v for k, v in params.items() if k != "filename"}
                 return params["filename"]

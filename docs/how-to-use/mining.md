@@ -124,9 +124,21 @@ Settings › **Anki**
 
 1. In Anki, install the AnkiConnect add-on: *Tools › Add-ons › Get Add-ons…*, code `2055492159`, then restart Anki.
 2. Click *Test the connection*.
-3. Under **New cards**, choose the deck and the note type of the language you study. MiningCat proposes what goes in each field of your note type from the field names (Hanzi → Word, Pinyin → Reading, Meaning → Definition…); change anything that doesn't fit, then *Save*.
+3. Under **New cards**, choose the deck and the note type of the language you study. No deck for it yet? **Create a deck** adds one to Anki, named after the language: *Mandarin (traditional) - MiningCat*, *Japanese - MiningCat*… (for Mandarin, the characters chosen in Settings › **Words**). MiningCat proposes what goes in each field of your note type from the field names (Hanzi → Word, Pinyin → Reading, Meaning → Definition…); change anything that doesn't fit, then *Save*.
 
 ![Settings › Anki: connection, deck, note type and fields](../assets/screenshots/settings-anki.png)
+
+### No note type yet?
+
+Click **Create MiningCat's note type in Anki**: MiningCat adds a note type called “MiningCat” to Anki, selects it and fills in its fields. Choose a deck, then *Save*. It works for every language:
+
+- **front**: the sentence, the card's word in bold (or the word alone when the card has no sentence). The readings are hidden: hover a word, or tap it on a phone, to see its own;
+- **back**: the image, the sentence with its readings, its audio and translation, then the word with its reading, its audio and its definition, your notes and the source;
+- **readings in brackets**: a reading written in brackets after its word is shown above it — `字[zi4]`, `日本[にほん]` (with Anki's space before the word: `今日は 日本[にほん]`), `台語[Tâi-gí]`, `peut-être[pø.tɛtʁ]`. A word in Chinese characters is the run of characters before the bracket; another word goes back to the last space or punctuation mark. Brackets with only a number (`[1]`) are left alone;
+- **Mandarin**: readings with tone numbers are shown in pinyin with tone marks or in zhuyin, as chosen in Settings › **Words**, and colored by tone. MiningCat fills the sentence and the word with their readings (see below). Cantonese readings in jyutping are colored by tone too;
+- **fonts**: the *Language* field (filled by MiningCat) picks the fonts of the language, so that the same character is drawn the Japanese, the traditional Chinese or the simplified Chinese way;
+
+Once it is in Anki, the same button **updates** it: after a new MiningCat version, or after switching between pinyin and zhuyin. Changes you made to its templates in Anki are then replaced; your notes and the fields you added are kept.
 
 !!! tip "Zhuyin"
     CC-CEDICT only gives pinyin. A *Zhuyin* or *Bopomofo* field gets **Zhuyin (Mandarin, from the reading)**: MiningCat converts the pinyin (說話 shuōhuà → ㄕㄨㄛ ㄏㄨㄚˋ). The pronunciation is the dictionary's: for the few words read differently in Taiwan (垃圾...), check the card.
@@ -136,7 +148,7 @@ Settings › **Anki**
 
 ### When Anki is closed
 
-Cards wait in MiningCat (Settings › **Cards**, with a counter) and are sent at the next sync. You can also export them as an `.apkg` file and open it in Anki, AnkiDroid or AnkiMobile. Exported cards use a note type called “MiningCat”.
+Cards wait in MiningCat (Settings › **Cards**, with a counter) and are sent at the next sync. You can also export them as an `.apkg` file and open it in Anki, AnkiDroid or AnkiMobile. Exported cards use the “MiningCat” note type described above.
 
 ![Settings › Cards: a card waiting for Anki](../assets/screenshots/settings-cards.png)
 

@@ -15,6 +15,7 @@ from miningcat.application.library.videos.store import (
 from miningcat.domain.library.errors import VideoError
 from miningcat.domain.subtitles.srt import parse_srt
 from miningcat.domain.text.decoding import decode_text
+from miningcat.domain.text.fullwidth_punctuation import fullwidth_punctuation
 from miningcat.infrastructure.media.subtitle_files import (
     convert_to_srt,
     extract_subtitle_streams,
@@ -61,12 +62,16 @@ def add_subtitles(video_id: str, filename: str, data: bytes, origin: str = "file
     return track
 
 
-def cues(video_id: str, track_id: str) -> list[dict]:
+def cues(video_id: str, track_id: str, punctuation: str = "") -> list[dict]:
+    """The lines of a track; with `punctuation` (a language tag), in that language's punctuation (zh-Hant: ，。)."""
     meta = read_meta(video_id)
     if not any(t["id"] == track_id for t in meta.get("tracks", [])) or not track_id.isdigit():
         raise VideoError("No such subtitle track.")
     path = video_folder(video_id) / "subs" / f"{int(track_id):03d}.srt"
-    return parse_subtitles(path.read_text(encoding="utf-8", errors="replace"))
+    found = parse_subtitles(path.read_text(encoding="utf-8", errors="replace"))
+    if punctuation:
+        found = [{**c, "text": fullwidth_punctuation(c["text"], punctuation)} for c in found]
+    return found
 
 
 def remove_subtitles(video_id: str, track_id: str) -> list[dict]:

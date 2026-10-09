@@ -261,7 +261,49 @@ async function renderNoteSetup() {
   $("note-tags").value = setup.tags || "mining-cat";
   renderVoices(language);
   model.addEventListener("change", () => renderMapping(model.value, {}));
+  $("deck-create").disabled = !S.anki.connected;
+  renderNoteTypeOffer();
   await renderMapping(setup.model, setup.fields);
+}
+
+// MiningCat's deck of the language studied ("Mandarin (traditional) - MiningCat"), created in Anki.
+async function createDeck() {
+  $("deck-create").disabled = true;
+  try {
+    const { deck } = await api("/api/anki/deck", { language: STUDY });
+    if (!S.anki.decks.includes(deck)) S.anki.decks = [...S.anki.decks, deck].sort();
+    const select = $("note-deck");
+    if (![...select.options].some((o) => o.value === deck)) select.add(new Option(deck, deck));
+    select.value = deck;
+    $("note-saved").textContent = $("note-model").value ? `${deck} is ready in Anki: Save to use it.` : `${deck} is ready in Anki: choose a note type, then Save.`;
+  } catch (err) { showError(err); }
+  $("deck-create").disabled = !S.anki.connected;
+}
+
+// MiningCat's own note type: created in Anki, or updated once there.
+const NOTE_TYPE = "MiningCat";
+
+function renderNoteTypeOffer() {
+  const installed = S.anki.models.includes(NOTE_TYPE);
+  $("note-type-install").disabled = !S.anki.connected;
+  $("note-type-install-label").textContent = installed ? `Update the ${NOTE_TYPE} note type` : `Create ${NOTE_TYPE}'s note type in Anki`;
+  $("note-type-help").textContent = installed
+    ? "Updating it brings its templates up to date (Mandarin readings: in the pinyin or zhuyin chosen under Words). Changes you made to its templates in Anki are replaced, your fields and notes are kept."
+    : "No note type of your own? MiningCat's works for every language: the sentence on the front, the word, its definition and audio on the back, and the readings written in brackets (字[zi4], 日本[にほん]) shown above their words.";
+}
+
+async function installNoteType() {
+  $("note-type-install").disabled = true;
+  try {
+    const { model, templates } = await api("/api/anki/note-type", { language: STUDY });
+    if (!S.anki.models.includes(model)) S.anki.models = [...S.anki.models, model].sort();
+    const select = $("note-model");
+    if (![...select.options].some((o) => o.value === model)) select.add(new Option(model, model));
+    select.value = model;
+    await renderMapping(model, templates);
+    $("note-saved").textContent = $("note-deck").value ? `${model} is ready in Anki: Save to use it.` : `${model} is ready in Anki: choose a deck, then Save.`;
+  } catch (err) { showError(err); }
+  renderNoteTypeOffer();
 }
 
 async function renderVoices(language) {
@@ -341,7 +383,7 @@ async function renderMapping(model, saved) {
   let guess = {};
   if (S.anki.connected) {
     try {
-      const data = await api(`/api/anki/fields?model=${encodeURIComponent(model)}`);
+      const data = await api(`/api/anki/fields?model=${encodeURIComponent(model)}&language=${encodeURIComponent(STUDY)}`);
       fields = data.fields;
       guess = data.guess;
     } catch (err) { showError(err); }
@@ -540,6 +582,8 @@ async function init() {
       refreshAnki();
     });
     $("note-save").addEventListener("click", saveNoteSetup);
+    $("note-type-install").addEventListener("click", installNoteType);
+    $("deck-create").addEventListener("click", createDeck);
     $("translation-save").addEventListener("click", saveTranslation);
     $("model-download").addEventListener("click", downloadModels);
     $("sync-add").addEventListener("click", () => {

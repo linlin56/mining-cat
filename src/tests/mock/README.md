@@ -152,6 +152,17 @@ Tôi là một tệp thử nghiệm.
 Tôi được dùng để kiểm tra hoạt động đúng đắn của phần mềm.
 "Đây là một câu rất thú vị có chứa dấu câu."
 
+## book_ru.epub / book_ru.txt / srt_ru.srt
+
+EPUB, plain-text, and SRT mocks for Russian.
+
+### Content
+
+Здравствуйте.
+Я тестовый файл.
+Меня используют, чтобы проверить правильную работу программы.
+«Это очень интересное предложение, в котором есть знаки препинания.»
+
 ## book_yue-HK.epub / book_yue-HK.txt / srt_yue-HK.srt
 
 EPUB, plain-text, and SRT mocks for Cantonese (Hong Kong, Traditional).

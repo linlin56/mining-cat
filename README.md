@@ -18,7 +18,7 @@ MiningCat is a free and open source, all-in-one tool for learning languages thro
 - 🈶 **Chinese tools**: simplified ⇄ traditional conversion, zhuyin / pinyin, context-aware readings.
 - 🇹🇼 **Taigi tools**: Hanji ⇄ Tâi-lô ⇄ Pe̍h-ōe-jī conversion, and local speech engines for Taigi (`make install-taigi`, which MiningCat also offers when you choose Taigi).
 
-**Languages:** Mandarin (Taiwan, traditional / China, simplified), Cantonese (Hong Kong), Taiwanese Hokkien (Taigi: Hanji, Tâi-lô and Pe̍h-ōe-jī), Japanese, Korean, Vietnamese, English (US / UK), French, German, Italian, Spanish, Portuguese (Brazil / Portugal), Polish.
+**Languages:** Mandarin (Taiwan, traditional / China, simplified), Cantonese (Hong Kong), Taiwanese Hokkien (Taigi: Hanji, Tâi-lô and Pe̍h-ōe-jī), Japanese, Korean, Vietnamese, Russian, English (US / UK), French, German, Italian, Spanish, Portuguese (Brazil / Portugal), Polish.
 
 ## Under the hood
 

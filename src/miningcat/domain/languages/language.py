@@ -195,6 +195,17 @@ class Language(Enum):
         )
         .build()
     )
+    RUSSIAN = (
+        LanguageProfileBuilder("Russian")
+        .codes(key="ru", whisper="ru", iso639_2="rus")
+        .punctuation(closing="!?»…“", opening="«„")
+        .ocr(apple="ru-RU", easyocr="ru", script=scripts.CYRILLIC)
+        .voices(
+            ("Svetlana - Russian, female", "ru-RU-SvetlanaNeural"),
+            ("Dmitry - Russian, male", "ru-RU-DmitryNeural"),
+        )
+        .build()
+    )
     CANTONESE_HK = (
         LanguageProfileBuilder("Cantonese - Hong Kong (Traditional)")
         .codes(key="yue", whisper="yue", iso639_2="yue", tag="yue-Hant")

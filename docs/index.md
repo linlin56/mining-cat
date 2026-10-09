@@ -29,6 +29,7 @@ On top of that, MiningCat converts between simplified and traditional Chinese ch
 | Japanese   |                                                     |
 | Korean     |                                                     |
 | Vietnamese |                                                     |
+| Russian    |                                                     |
 | English    | United States, United Kingdom                       |
 | French     |                                                     |
 | German     |                                                     |

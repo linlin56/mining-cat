@@ -6,7 +6,7 @@ import pytest
 from miningcat.application.converter import jobs
 from miningcat.application.converter.audiobook_request import AudiobookRequest, AudiobookRequestBuilder
 from miningcat.application.converter.errors import ConverterError
-from miningcat.application.converter.jobs import AudiobookJob, VideoJob, find_video_srt, run_job
+from miningcat.application.converter.jobs import AudiobookJob, InstallJob, VideoJob, find_video_srt, run_job
 from miningcat.application.converter.modes import ConversionMode
 from miningcat.application.converter.video_request import VideoRequestBuilder
 from miningcat.config.paths import paths
@@ -28,6 +28,16 @@ class Listener:
 def test_find_video_srt_prefers_whisper_over_ocr_and_source(tmp_path):
     for name in ("abc_source.srt", "abc_ocr.srt", "abc_whisper.srt"):
         (tmp_path / name).write_text("1\n", encoding="utf-8")
+    assert find_video_srt(tmp_path) == tmp_path / "abc_whisper.srt"
+
+
+def test_find_video_srt_takes_the_latest_transcription(tmp_path):
+    import os
+    for i, name in enumerate(("abc_ocr.srt", "abc_whisper.srt", "abc_qwen.srt")):
+        (tmp_path / name).write_text("1\n", encoding="utf-8")
+        os.utime(tmp_path / name, (i, i))
+    assert find_video_srt(tmp_path) == tmp_path / "abc_qwen.srt"
+    os.utime(tmp_path / "abc_whisper.srt", (9, 9))
     assert find_video_srt(tmp_path) == tmp_path / "abc_whisper.srt"
 
 
@@ -116,6 +126,14 @@ def test_failed_step_is_reported(monkeypatch):
     assert run_job(VideoJob(request), listener) == (False, None)
     assert "[ERROR] Command 'video' failed (code 2)" in "".join(listener.logs)
     assert listener.statuses[-1] == ("Error - check the log.", 0)
+
+
+def test_install_job_runs_the_install_command(monkeypatch):
+    commands = []
+    monkeypatch.setattr(jobs.processes, "run", lambda args, on_line: commands.append(args[3:]) or 0)
+    listener = Listener()
+    assert run_job(InstallJob("taigi"), listener)[0]
+    assert commands == [["install-taigi"]] and listener.statuses[-1] == ("Done", 100)
 
 
 # the audiobook job

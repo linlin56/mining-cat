@@ -38,6 +38,7 @@ def test_the_local_engines_of_taigi(monkeypatch):
     monkeypatch.setattr(mms_aligner, "MmsAligner", lambda: "mms")
     assert speech_engines.load_transcriber("tiny", Language.TAIGI) == ("qwen", "tiny")
     assert speech_engines.load_aligner("tiny", Language.TAIGI) == "mms"
+    assert speech_engines.load_aligner("qwen3-0.6b", Language.TAIGI) == "mms"
 
 
 def test_chapters_of_taigi(tmp_path):

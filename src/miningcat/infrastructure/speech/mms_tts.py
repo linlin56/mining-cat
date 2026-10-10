@@ -31,7 +31,7 @@ def is_local(voice: str) -> bool:
 def _model(voice: str):
     with _loading:
         if voice not in _models:
-            transformers = require("transformers", "The MMS voices")
+            transformers = require("transformers", "The MMS voices", "make install-taigi")
             repo = VOICES[voice][0]
             print(f"Loading the MMS voice ({repo})...")
             path = local_model(repo)
@@ -63,7 +63,7 @@ def synthesize(text: str, voice: str) -> tuple[np.ndarray, int]:
     """(mono float32 samples, sample rate) of the text read by the voice."""
     if not is_local(voice):
         raise SpeechError(f"Unknown local voice: {voice!r}")
-    torch = require("torch", "The MMS voices")
+    torch = require("torch", "The MMS voices", "make install-taigi")
     model, tokenizer = _model(voice)
     rate = model.config.sampling_rate
     inputs = tokenizer(_text_for(voice, text), return_tensors="pt")

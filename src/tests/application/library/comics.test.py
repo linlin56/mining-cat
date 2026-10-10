@@ -149,8 +149,9 @@ def test_ocr_language_follows_the_script():
     assert comics.ocr_language("zh-Hant") is Language.MANDARIN_TW
     assert comics.ocr_language("zh-Hans") is Language.MANDARIN_CN
     assert comics.ocr_language("yue-Hant") is Language.CANTONESE_HK
+    assert comics.ocr_language("ru") is Language.RUSSIAN
     with pytest.raises(comics.ComicError):
-        comics.ocr_language("ru")
+        comics.ocr_language("ar")
 
 
 # ---------------------------------------------------------------- web API

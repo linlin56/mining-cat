@@ -1,5 +1,13 @@
+import pytest
+
 from miningcat.application.converter import options
 from miningcat.domain.languages import Language
+from miningcat.infrastructure.speech import engine_install, qwen3_asr
+
+
+@pytest.fixture(autouse=True)
+def qwen_not_installed(monkeypatch):
+    monkeypatch.setattr(qwen3_asr, "installed", lambda: False)
 
 
 def test_convert_labels_follow_the_script():
@@ -11,6 +19,24 @@ def test_convert_labels_follow_the_script():
 def test_cantonese_only_offers_large_models():
     assert options.precision_values_for(Language.CANTONESE_HK) == ["Large", "Turbo (fast, large-v3)"]
     assert options.precision_values_for(Language.FRENCH) == options.PRECISION_VALUES
+
+
+def test_qwen3_asr_is_offered_when_installed(monkeypatch):
+    monkeypatch.setattr(qwen3_asr, "installed", lambda: True)
+    assert options.precision_values_for(Language.FRENCH) == options.PRECISION_VALUES + options.OPTIONAL_QWEN3_VALUES
+    assert options.precision_values_for(Language.CANTONESE_HK)[-2:] == options.OPTIONAL_QWEN3_VALUES
+    # it only transcribes: a book is aligned with Whisper
+    assert options.precision_values_for(Language.FRENCH, aligning=True) == options.PRECISION_VALUES
+    assert options.model_for("Qwen3-ASR 1.7B (more accurate, slower)", Language.JAPANESE) == "qwen3-1.7b"
+    assert options.model_for("Qwen3-ASR 1.7B (more accurate, slower)", Language.JAPANESE, aligning=True) == "base"
+    assert options.language_options(Language.FRENCH)["align_precision"] == options.PRECISION_VALUES
+
+
+def test_taigi_needs_its_engines_installed(monkeypatch):
+    assert options.language_options(Language.TAIGI)["needs_install"] == "taigi"  # Qwen3-ASR and MMS
+    assert options.language_options(Language.FRENCH)["needs_install"] is None  # Whisper and Edge do its speech
+    monkeypatch.setattr(engine_install, "installed", lambda engines: True)
+    assert options.language_options(Language.TAIGI)["needs_install"] is None
 
 
 def test_model_from_precision():

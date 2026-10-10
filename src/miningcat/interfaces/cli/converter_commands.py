@@ -14,6 +14,8 @@ from miningcat.application.converter.video_request import VideoRequestBuilder
 from miningcat.domain.languages import Language
 from miningcat.domain.ocr.regions import valid_region
 from miningcat.domain.ocr.sampling import OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
+from miningcat.application.converter.errors import ConverterError
+from miningcat.infrastructure.speech import engine_install
 from miningcat.interfaces.cli.command import CONVERT_TARGETS, Command
 
 
@@ -75,7 +77,7 @@ class AlignCommand(Command):
 class TranscribeCommand(Command):
     """Subtitles from the audio alone, without the book: less accurate, but needs no ebook."""
 
-    name, help = "transcribe", "Whisper transcription (no epub alignment)"
+    name, help = "transcribe", "Whisper or Qwen3-ASR transcription (no epub alignment)"
 
     def configure(self, parser):
         self.add_model(parser)
@@ -186,7 +188,20 @@ class VideoCommand(Command):
         video_subtitles.run(self.request(args))
 
 
+class InstallCommand(Command):
+    """Installs local speech engines (optional, large): Qwen3-ASR, or Taigi's (Qwen3-ASR and Meta's MMS)."""
+
+    def __init__(self, engines: str, help: str):
+        self.engines, self.name, self.help = engines, f"install-{engines}", help
+
+    def run(self, args):
+        if engine_install.install(self.engines) != 0:
+            raise ConverterError("The install failed: see pip's output above.")
+
+
 CONVERTER_COMMANDS: list[Command] = [
     AudioCommand(), EpubCommand(), AlignCommand(), TranscribeCommand(), TtsCommand(), ExportCommand(),
     ConvertCommand(), RunCommand(), VideoCommand(),
+    InstallCommand(engine_install.QWEN, "Install Qwen3-ASR (optional instead of Whisper)"),
+    InstallCommand(engine_install.TAIGI, "Install Taigi's local speech engines (Qwen3-ASR and Meta's MMS)"),
 ]

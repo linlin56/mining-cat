@@ -18,9 +18,9 @@ MiningCat is a free and open source, all-in-one tool for learning languages thro
 - 🃏 **Make cards** (word, reading, definitions, sentence, audio, image, translation) sent to Anki through AnkiConnect, or exported as `.apkg`. Your Anki decks keep your word statuses up to date.
 - 🎞️ **Create mineable videos** (`.mp4` + `.srt`) from an audiobook and its ebook, an audiobook alone, an ebook alone (text-to-speech), or a video without subtitles (transcription, or OCR of burned-in subtitles).
 - 🈶 **Chinese tools**: simplified ⇄ traditional conversion, zhuyin / pinyin, context-aware readings.
-- 🇹🇼 **Taigi tools**: Hanji ⇄ Tâi-lô ⇄ Pe̍h-ōe-jī conversion, and local speech engines for Taigi (`make install-taigi`).
+- 🇹🇼 **Taigi tools**: Hanji ⇄ Tâi-lô ⇄ Pe̍h-ōe-jī conversion, and local speech engines for Taigi (`make install-taigi`, which MiningCat also offers when you choose Taigi).
 
-**Languages:** Mandarin (Taiwan, traditional / China, simplified), Cantonese (Hong Kong), Taiwanese Hokkien (Taigi: Hanji, Tâi-lô and Pe̍h-ōe-jī), Japanese, Korean, Vietnamese, English (US / UK), French, German, Italian, Spanish, Portuguese (Brazil / Portugal), Polish.
+**Languages:** Mandarin (Taiwan, traditional / China, simplified), Cantonese (Hong Kong), Taiwanese Hokkien (Taigi: Hanji, Tâi-lô and Pe̍h-ōe-jī), Japanese, Korean, Vietnamese, Russian, English (US / UK), French, German, Italian, Spanish, Portuguese (Brazil / Portugal), Polish.
 
 ## Under the hood
 
@@ -28,7 +28,7 @@ MiningCat chains several speech and NLP components into one local, multilingual 
 
 | Task | Components |
 | --- | --- |
-| Speech recognition | [faster-whisper](https://github.com/SYSTRAN/faster-whisper), with selectable model sizes (tiny to large / turbo); [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) for Taigi |
+| Speech recognition | [faster-whisper](https://github.com/SYSTRAN/faster-whisper), with selectable model sizes (tiny to large / turbo); [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) for Taigi, and optionally instead of Whisper for the other languages (`make install-qwen`) |
 | Forced alignment of a book's text on its audiobook | [stable-ts](https://github.com/jianfch/stable-ts) (Whisper-based); Meta's MMS aligner on the romanized text for Taigi |
 | Speech synthesis | [edge-tts](https://github.com/rany2/edge-tts); Meta's [MMS-TTS](https://huggingface.co/facebook/mms-tts-nan) (local) for Taigi |
 | OCR (hardsubs, games, manga) | Apple Vision / Live Text on macOS, [EasyOCR](https://github.com/JaidedAI/EasyOCR) and [owocr](https://github.com/AuroraWright/owocr) elsewhere |

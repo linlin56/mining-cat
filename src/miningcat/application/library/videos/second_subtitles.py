@@ -9,7 +9,7 @@ from miningcat.domain.languages import LANGUAGES
 
 class SubtitleTranslations:
     """The translation of each video's subtitles: {"state" (idle, running, done, error), "done", "total", "target",
-    "error", "track" (the new track)}."""
+    "model" (its name), "error", "track" (the new track)}."""
 
     def __init__(self):
         self._jobs: dict[str, dict] = {}
@@ -25,7 +25,7 @@ class SubtitleTranslations:
             if self.state(video_id)["state"] == "running":
                 raise VideoError("These subtitles are already being translated.")
             self._jobs[video_id] = {"state": "running", "done": 0, "total": 0, "target": LANGUAGES[target],
-                                    "error": None, "track": None}
+                                    "model": translation.model_label(), "error": None, "track": None}
         store.spawn(self._run, video_id, path, language, target)
         return self.state(video_id)
 

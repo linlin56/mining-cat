@@ -126,9 +126,10 @@ def all_options(languages: list[Language]) -> dict:
 
 
 def translation_target() -> dict | None:
-    """{"id", "name"} of the language second subtitles are translated to (the settings'), None when there's none."""
+    """{"id", "name", "model"} of the language second subtitles are translated to and of the model translating them
+    (the settings'), None when there's none."""
     target = translation.target_language()
-    return {"id": target, "name": translation.LANGUAGES[target]} if target else None
+    return {"id": target, "name": translation.LANGUAGES[target], "model": translation.model_label()} if target else None
 
 
 def validate_video_url(url: str, website: str) -> str | None:

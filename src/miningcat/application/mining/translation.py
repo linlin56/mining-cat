@@ -28,6 +28,11 @@ def model() -> str:
     return chosen if chosen in MODELS else DEFAULT_MODEL
 
 
+def model_label() -> str:
+    """The name of the translation model of the settings, shown where it translates ("Qwen3 4B")."""
+    return MODELS[model()].label
+
+
 def _engine(name: str):
     return nllb if name in nllb.MODELS else qwen
 

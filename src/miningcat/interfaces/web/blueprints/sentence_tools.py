@@ -61,7 +61,7 @@ def api_tts():
 
 @bp.get("/api/translate/languages")
 def api_translate_languages():
-    return jsonify(languages=translation.targets(), chosen=translation.target_language())
+    return jsonify(languages=translation.targets(), chosen=translation.target_language(), model=translation.model_label())
 
 
 @bp.post("/api/translate")

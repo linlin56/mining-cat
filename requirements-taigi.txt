@@ -1,9 +1,5 @@
-# Local speech engines for Taigi (Whisper and edge-tts don't have it): `make install-taigi`.
-# Qwen3-ASR (transcription) and Meta's MMS voice run with transformers; the MMS aligner comes with torchaudio.
-# qwen-asr itself is installed separately with --no-deps (see Makefile): it pins packages that don't build on
-# recent Pythons (nagisa) and others only its demos use (gradio, vllm).
+# Taigi's local speech engines (Whisper and edge-tts don't have it): `make install-taigi`, which first installs
+# Qwen3-ASR (requirements-qwen.txt), Taigi's transcriber. Meta's MMS voice runs with transformers, its aligner with
+# torchaudio (installed with stable-ts).
 taibun>=1.1.8  # also in requirements.txt: here for an install made before Taigi was supported
 transformers==4.57.6
-accelerate>=1.12.0
-librosa>=0.10
-soundfile>=0.12

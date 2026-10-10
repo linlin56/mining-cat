@@ -78,6 +78,23 @@ class AudiobookJob(Job):
         listener.log("\nPipeline complete.\n")
 
 
+class InstallJob(Job):
+    """The install of local speech engines (python -m miningcat install-qwen|install-taigi), offered when a language
+    needs them."""
+
+    kind = "install"
+
+    def __init__(self, engines: str):
+        self.engines = engines
+
+    def run(self, listener: ProgressListener) -> None:
+        listener.status("Installing the speech engines (large, it takes a few minutes)…", 10)
+        command = f"install-{self.engines}"
+        self._run_command(CliCommand(command).build(), command, listener)
+        listener.status("Done", 100)
+        listener.log("\nInstalled.\n")
+
+
 def _latest_file(directory: Path, pattern: str) -> Path | None:
     if not directory.exists():
         return None
@@ -86,9 +103,10 @@ def _latest_file(directory: Path, pattern: str) -> Path | None:
 
 
 def find_video_srt(directory: Path) -> Path | None:
-    """The subtitles of the last video, for its frequency lists: the Whisper or OCR ones (always made, most
-    complete) rather than the ones the platform gave."""
-    return (_latest_file(directory, "*_whisper.srt")
+    """The subtitles of the last video, for its frequency lists: the transcribed (Whisper or Qwen3-ASR) or OCR ones
+    (always made, most complete) rather than the ones the platform gave."""
+    transcribed = [f for f in (_latest_file(directory, "*_whisper.srt"), _latest_file(directory, "*_qwen.srt")) if f]
+    return (max(transcribed, key=lambda f: f.stat().st_mtime, default=None)
             or _latest_file(directory, "*_ocr.srt")
             or _latest_file(directory, "*.srt"))
 

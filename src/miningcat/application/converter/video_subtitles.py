@@ -11,11 +11,14 @@ from miningcat.application.converter.steps.script_conversion import convert_srt_
 from miningcat.application.converter.video_download import download_video
 from miningcat.application.converter.video_request import VideoRequest
 from miningcat.config.paths import paths
+from miningcat.domain.languages import SpeechEngine
 from miningcat.infrastructure.files.srt_files import save_srt
 from miningcat.infrastructure.media.video_file import extract_audio, mux_subtitles, source_subtitles
 
 # (SRT file, title of the track in players)
 Track = tuple[Path, str]
+# The suffix of the SRT file of a transcription, after its engine: <video>_whisper.srt, <video>_qwen.srt.
+SRT_SUFFIXES = {SpeechEngine.WHISPER: "whisper", SpeechEngine.QWEN3_ASR: "qwen"}
 
 
 class SubtitleMaker(ABC):
@@ -55,7 +58,8 @@ class SpeechSubtitles(SubtitleMaker):
         print(f"Audio: {audio_file}")
 
         print(f"\n=== Transcribing (model={request.model_name}, language={request.language.id}) ===")
-        srt_file = paths.srt / f"{video_file.stem}_whisper.srt"
+        engine = speech_engines.transcriber_engine(request.model_name, request.language)
+        srt_file = paths.srt / f"{video_file.stem}_{SRT_SUFFIXES[engine]}.srt"
         if srt_file.exists():
             print(f"A previous transcription exists and will be overwritten: {srt_file}")
         transcriber = speech_engines.load_transcriber(request.model_name, request.language)

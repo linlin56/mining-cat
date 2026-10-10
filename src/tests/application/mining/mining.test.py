@@ -1012,7 +1012,8 @@ def test_tts_voices_by_language():
     zh = sentence_tts.voices("zh")
     assert zh["default"] == "zh-TW-HsiaoChenNeural" and "zh-CN-XiaoxiaoNeural" in [v["id"] for v in zh["voices"]]
     assert [v["id"] for v in sentence_tts.voices("yue")["voices"]][0].startswith("zh-HK-")
-    assert sentence_tts.voices("ru") == {"voices": [], "default": ""}
+    assert sentence_tts.voices("ru")["default"] == "ru-RU-SvetlanaNeural"
+    assert sentence_tts.voices("ar") == {"voices": [], "default": ""}
 
 
 def test_http_sentence_tts(client, monkeypatch):

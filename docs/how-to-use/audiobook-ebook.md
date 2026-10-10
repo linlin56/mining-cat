@@ -71,6 +71,16 @@ In the CLI, use `--range 4-9` or `--chapters 3,4,5` (see the [CLI reference](cli
 
 The first time you use a model, Whisper downloads it, so the first run takes longer.
 
+### Qwen3-ASR (optional)
+
+[Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) (Alibaba, Apache 2.0) can replace Whisper to transcribe all the languages of MiningCat. It's often more accurate, especially for Chinese and Cantonese, but its install is large (PyTorch models of 1.8 GB for 0.6B, 4.7 GB for 1.7B), so it isn't part of the regular install. [Taigi](taigi.md), which Whisper doesn't know, needs it: `make install-taigi` installs it with Taigi's other engines.
+
+```bash
+make install-qwen
+```
+
+Once installed, **Qwen3-ASR 0.6B** and **Qwen3-ASR 1.7B** (more accurate, slower) are offered after Whisper's models in _Generate subtitles_ mode and for [videos](video.md). Qwen3-ASR only transcribes: in standard mode, the book is still aligned with Whisper. On the command line, use `--model qwen3-0.6b` or `--model qwen3-1.7b`. An NVIDIA GPU or an Apple Silicon Mac makes it much faster, but a CPU works.
+
 ## Character conversion
 
 For Mandarin and Cantonese, **Convert to** converts the subtitles between simplified and traditional scripts with [OpenCC](https://github.com/BYVoid/OpenCC), including punctuation (e.g. `“”` or `「」`). Useful if you're learning traditional characters but only found a mainland edition, or the other way around.

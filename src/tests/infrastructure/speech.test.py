@@ -12,7 +12,7 @@ torch = pytest.importorskip("torch")
 
 def test_require_explains_how_to_install():
     assert local_models.require("json", "Reading JSON").dumps([]) == "[]"
-    with pytest.raises(local_models.SpeechError, match="make install-taigi"):
+    with pytest.raises(local_models.SpeechError, match="make install-qwen"):
         local_models.require("no_such_package_here", "Something")
 
 
@@ -70,6 +70,15 @@ def test_times_are_shared_between_sentences():
     assert timed[0][1] == pytest.approx(1.0 + 2.0 * 5 / 8)
     long = qwen3_asr._split_times("一二三四五六七八九十，一二三四五六七八九十。", 0, 1, max_chars=12)
     assert [t[2] for t in long] == ["一二三四五六七八九十，", "一二三四五六七八九十。"]
+    latin = qwen3_asr._split_times("Il fait 3.5 degrés. Tu viens ? Oui, j'arrive, attends-moi.", 0, 1, max_chars=20)
+    assert [t[2] for t in latin] == ["Il fait 3.5 degrés.", "Tu viens ?", "Oui, j'arrive,", "attends-moi."]
+
+
+def test_languages_of_qwen3_asr(monkeypatch):
+    assert all(qwen3_asr.supports(lang) for lang in Language)
+    assert qwen3_asr.is_model("Qwen3-1.7B") and not qwen3_asr.is_model("large") and not qwen3_asr.is_model(None)
+    monkeypatch.setattr(qwen3_asr.importlib.util, "find_spec", lambda name: None)
+    assert not qwen3_asr.installed()
 
 
 class FakeQwen:
@@ -128,7 +137,7 @@ def test_load_model(monkeypatch):
 
 def test_missing_qwen_asr(monkeypatch):
     monkeypatch.setitem(sys.modules, "qwen_asr", None)
-    with pytest.raises(local_models.SpeechError, match="make install-taigi"):
+    with pytest.raises(local_models.SpeechError, match="make install-qwen"):
         qwen3_asr.load_model()
 
 
@@ -292,7 +301,42 @@ def test_aligner_gives_the_subtitles_of_the_text(monkeypatch):
 def test_qwen3_asr_transcribes_in_the_language(monkeypatch):
     monkeypatch.setattr(qwen3_asr, "load_model", lambda name: ("model", name))
     asked = []
-    monkeypatch.setattr(qwen3_asr, "transcribe", lambda model, audio, language: asked.append((model, language)) or [])
+    monkeypatch.setattr(qwen3_asr, "transcribe",
+                        lambda model, audio, language, max_chars: asked.append((model, language, max_chars)) or [])
     transcriber = qwen3_asr.Qwen3Asr.load("large")
     assert transcriber.name == "Qwen3-ASR" and transcriber.transcribe("a.mp3", Language.TAIGI) == []
-    assert asked == [(("model", "large"), "nan")]
+    transcriber.transcribe("a.mp3", Language.FRENCH)
+    assert asked == [(("model", "large"), "nan", 30), (("model", "large"), "fr", 80)]
+
+
+
+def test_engine_install_commands(monkeypatch):
+    from miningcat.infrastructure.speech import engine_install
+    ran = []
+    monkeypatch.setattr(engine_install.subprocess, "run",
+                        lambda command, check: ran.append(command[4:]) or types.SimpleNamespace(returncode=0))
+    assert engine_install.install(engine_install.QWEN) == 0
+    qwen = [["-r", str(engine_install.PROJECT_ROOT / "requirements-qwen.txt")],
+            ["--no-deps", engine_install.QWEN_ASR_REQUIREMENT]]
+    assert ran == qwen
+    ran.clear()
+    assert engine_install.install(engine_install.TAIGI) == 0  # Qwen3-ASR transcribes Taigi, then MMS
+    assert ran == qwen + [["-r", str(engine_install.PROJECT_ROOT / "requirements-taigi.txt")]]
+
+
+def test_engine_install_stops_at_the_first_failure(monkeypatch):
+    from miningcat.infrastructure.speech import engine_install
+    ran = []
+    monkeypatch.setattr(engine_install.subprocess, "run",
+                        lambda command, check: ran.append(command) or types.SimpleNamespace(returncode=1))
+    assert engine_install.install(engine_install.TAIGI) == 1 and len(ran) == 1
+
+
+def test_engines_installed(monkeypatch):
+    from miningcat.infrastructure.speech import engine_install
+    monkeypatch.setattr(qwen3_asr, "installed", lambda: False)
+    assert not engine_install.installed(engine_install.QWEN) and not engine_install.installed(engine_install.TAIGI)
+    monkeypatch.setattr(qwen3_asr, "installed", lambda: True)
+    monkeypatch.setitem(sys.modules, "transformers", None)
+    monkeypatch.setattr(engine_install.importlib.util, "find_spec", lambda name: None)
+    assert engine_install.installed(engine_install.QWEN) and not engine_install.installed(engine_install.TAIGI)

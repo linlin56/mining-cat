@@ -26,6 +26,10 @@ class VideoRequest:
     use_ocr: bool = False
     ocr_region: Region | None = None
     ocr_fps: int = OCR_FPS_DEFAULT
+    # Second subtitles: a track translated to the language of the settings, from the subtitles the video came with
+    # (`second_from`: the index of one of its tracks) or, when None, from the ones made by Whisper or the OCR.
+    second_subtitles: bool = False
+    second_from: int | None = None
 
 
 class VideoRequestBuilder:
@@ -64,6 +68,21 @@ class VideoRequestBuilder:
         except (TypeError, ValueError):
             fps = OCR_FPS_DEFAULT
         self._values.update(use_ocr=True, ocr_region=region, ocr_fps=max(OCR_FPS_MIN, min(OCR_FPS_MAX, fps)))
+        return self
+
+    def second_subtitles(self, source: int | str | None = None) -> Self:
+        """Second subtitles translated from a track the video came with (its index), or from the generated ones
+        (None, "main")."""
+        if source in (None, "", "main"):
+            source = None
+        else:
+            try:
+                source = int(source)
+            except (TypeError, ValueError):
+                raise ConverterError("The subtitles to translate are invalid.", "Invalid track")
+            if source < 0:
+                raise ConverterError("The subtitles to translate are invalid.", "Invalid track")
+        self._values.update(second_subtitles=True, second_from=source)
         return self
 
     def convert_to(self, script: str | None) -> Self:

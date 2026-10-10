@@ -1,9 +1,11 @@
 import re
 import threading
+from typing import Callable
 
 from miningcat.application.anki.config import get_config
 from miningcat.application.mining.preferences import chinese_script_preference
 from miningcat.domain.languages import LANGUAGES
+from miningcat.domain.subtitles.srt import replace_srt_lines, srt_lines
 from miningcat.domain.text.chinese_script import chinese_script
 from miningcat.infrastructure.translation.argos import LANGUAGES as ARGOS_LANGUAGES
 from miningcat.infrastructure.translation.argos import ArgosTranslate, TranslateError
@@ -137,3 +139,51 @@ def translate(language: str, text: str, download: bool = True) -> str | None:
             raise TranslateError(f"The translation model couldn't be downloaded: {exc}")
         except Exception as exc:
             raise TranslateError(f"The sentence couldn't be translated: {exc}")
+
+
+def check(language: str) -> str:
+    """The language of the settings, when a text in `language` can be translated to it; raises TranslateError."""
+    target = target_language()
+    if not target:
+        raise TranslateError("Choose the language sentences are translated to in the settings first.")
+    if target == language:
+        raise TranslateError(f"These subtitles are already in {LANGUAGES[target]}.")
+    if language not in ARGOS_LANGUAGES:
+        raise TranslateError(f"There's no offline translation for {LANGUAGES.get(language, language)}.")
+    return target
+
+
+def translate_lines(language: str, lines: list[str],
+                    progress: Callable[[int, int], None] | None = None) -> list[str]:
+    """Lines (of subtitles) translated to the language of the settings, one by one, the models downloaded first if
+    needed. `progress(done, total)` after each line."""
+    target = check(language)
+    argos.require()
+    # The script of the whole text tells traditional from simplified Chinese better than a short line's.
+    source, target = _argos_code(language, "".join(lines)), _argos_code(target)
+    try:
+        with _lock:
+            for pair in _missing(source, target):
+                argos.install(*pair)
+    except TranslateError:
+        raise
+    except Exception as exc:
+        raise TranslateError(f"The translation model couldn't be downloaded: {exc}")
+    translated = []
+    for line in lines:
+        with _lock:
+            try:
+                translated.append(re.sub(r"\s+", " ", argos.translate(line, source, target)).strip())
+            except Exception as exc:
+                raise TranslateError(f"The subtitles couldn't be translated: {exc}")
+        if progress:
+            progress(len(translated), len(lines))
+    return translated
+
+
+def translate_srt(language: str, srt: str, progress: Callable[[int, int], None] | None = None) -> str:
+    """SRT subtitles translated to the language of the settings: the same numbers, timestamps and formatting."""
+    lines = srt_lines(srt)
+    if not lines:
+        raise TranslateError("These subtitles have no text to translate.")
+    return replace_srt_lines(srt, dict(zip(lines, translate_lines(language, lines, progress))))

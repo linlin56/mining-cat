@@ -24,6 +24,8 @@ const S = {
     mode: "From web", website: "Instagram", url: "",
     file: null, tracks: [], track: null,
     ocr: false, region: null, fps: 4,
+    subtitles: [],            // [{index, label}]: the subtitle tracks of the local file
+    second: false, secondFrom: "main",
   },
   running: false,
   jobKind: null,              // kind of the running job ("audiobook", "video" or "game")
@@ -152,6 +154,7 @@ function onLanguageChange() {
   fillSelect(convert, S.lang.convert, "No conversion");
   convert.disabled = S.lang.convert.length <= 1;
   fillSelect($("voice"), S.lang.voices, S.lang.default_voice);
+  renderSecondSubtitles();
   if (!S.lang.precision.includes(S.precision)) S.precision = S.lang.precision[0];
   for (const sel of document.querySelectorAll(".precision-select")) fillSelect(sel, S.lang.precision, S.precision);
   updateFreqButtons();
@@ -344,6 +347,34 @@ function renderVideo() {
   }
   // Whisper never runs when OCR is on
   $("video-precision-row").hidden = v.ocr;
+  renderSecondSubtitles();
+}
+
+// Second subtitles: a track translated to the language of the settings, from one the video came with or from the
+// generated ones.
+function renderSecondSubtitles() {
+  const v = S.video;
+  const target = S.opts.translation_target;
+  const box = $("second-subs");
+  box.disabled = !target || !S.lang.translatable;
+  if (box.disabled) v.second = false;
+  box.checked = v.second;
+  const hint = $("second-subs-hint");
+  hint.hidden = !v.second && !box.disabled;
+  if (!target) hint.replaceChildren("Choose the language sentences are translated to in ", Object.assign(document.createElement("a"), { href: "/settings/", textContent: "Settings" }), " to generate second subtitles.");
+  else if (!S.lang.translatable) hint.textContent = `${S.lang.label} subtitles can't be translated to ${target.name}.`;
+  else hint.textContent = `Second subtitles will be generated in ${target.name}`;
+
+  const tracks = v.mode === "Local file" ? v.subtitles : [];
+  const values = [...tracks.map((t) => String(t.index)), "main"];
+  if (!values.includes(v.secondFrom)) v.secondFrom = values[0];
+  const sel = $("second-subs-from");
+  sel.replaceChildren(
+    ...tracks.map((t) => new Option(`Track ${t.index + 1} - ${t.label}`, String(t.index))),
+    new Option("Use generated main subtitles", "main"),
+  );
+  sel.value = v.secondFrom;
+  $("second-subs-from-field").hidden = !v.second;
 }
 
 function resetOcrRegion() {
@@ -361,11 +392,13 @@ async function selectVideo(fileList) {
     S.video.file = files[0];
     S.video.tracks = [];
     S.video.track = null;
+    S.video.subtitles = [];
     if (old && old.path !== files[0].path) api("/api/discard", { path: old.path }).catch(() => {});
     // A region drawn for a previous video's frame shouldn't silently apply to a different one.
     resetOcrRegion();
-    const { tracks } = await api("/api/video/tracks", { path: files[0].path });
+    const { tracks, subtitles } = await api("/api/video/tracks", { path: files[0].path });
     S.video.tracks = tracks;
+    S.video.subtitles = subtitles || [];
     if (tracks.length > 1) {
       const sel = $("audio-track");
       sel.replaceChildren(...tracks.map((t) => new Option(t.label, String(t.index))));
@@ -723,6 +756,8 @@ async function startVideo() {
     ocr: v.ocr,
     ocr_region: v.region,
     ocr_fps: v.fps,
+    second_subtitles: v.second,
+    second_from: v.secondFrom,
   };
   try {
     setRunning(true, "video");
@@ -907,6 +942,8 @@ function wire() {
   filePicker("video-select", "video-input", o.video_extensions.map((e) => `.${e}`).join(","), selectVideo);
   $("audio-track").addEventListener("change", (e) => { S.video.track = Number(e.target.value); });
   $("use-ocr").addEventListener("change", (e) => { S.video.ocr = e.target.checked; renderVideo(); });
+  $("second-subs").addEventListener("change", (e) => { S.video.second = e.target.checked; renderVideo(); });
+  $("second-subs-from").addEventListener("change", (e) => { S.video.secondFrom = e.target.value; });
   const fps = $("ocr-fps");
   fps.min = o.ocr.fps_min;
   fps.max = o.ocr.fps_max;

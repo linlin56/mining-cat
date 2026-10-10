@@ -6,6 +6,7 @@ import ffmpeg
 
 from miningcat.infrastructure.media.audio_files import AUDIO_BITRATE
 from miningcat.infrastructure.media.ffmpeg_command import FfmpegCommand, link_or_copy
+from miningcat.infrastructure.media.subtitle_files import TEXT_SUBTITLE_CODECS
 
 
 # Skips re-extraction if the mp3 is already sitting in output_dir from a previous run on the
@@ -90,6 +91,21 @@ def extract_embedded_subtitles(video_file: Path, output_dir: Path) -> list[tuple
     return results
 
 
+def source_subtitle_labels(video_file: Path) -> list[str]:
+    """The tags of the subtitle tracks source_subtitles() finds, in the same order, without extracting them (image
+    subtitles can't be extracted)."""
+    sidecars = find_platform_subtitles(video_file.parent, video_file.stem)
+    if sidecars:
+        return [sidecar_tag(p, video_file.stem) for p in sidecars]
+    try:
+        probe = ffmpeg.probe(str(video_file))
+    except ffmpeg.Error:
+        return []
+    streams = [s for s in probe.get("streams", []) if s.get("codec_type") == "subtitle"]
+    return [(s.get("tags") or {}).get("title") or (s.get("tags") or {}).get("language") or f"Track {i}"
+            for i, s in enumerate(streams) if s.get("codec_name") in TEXT_SUBTITLE_CODECS]
+
+
 def source_subtitles(video_file: Path, scratch_dir: Path) -> list[tuple[Path, str]]:
     """Every subtitle track the video already comes with: its sidecar files, else the tracks of its container."""
     sidecars = find_platform_subtitles(video_file.parent, video_file.stem)
@@ -100,10 +116,11 @@ def source_subtitles(video_file: Path, scratch_dir: Path) -> list[tuple[Path, st
 
 # Mux one or more subtitle tracks into the original video, keeping video/audio streams
 # untouched. Each track is (srt_file, title) - the title distinguishes tracks in players
-# (e.g. "Source" vs "Whisper") when more than one is embedded.
+# (e.g. "Source" vs "Whisper") when more than one is embedded - or (srt_file, title, language)
+# for a track in another language than `subtitle_lang` (a translation).
 def mux_subtitles(
     video_file: Path,
-    subtitle_tracks: list[tuple[Path, str]],
+    subtitle_tracks: list[tuple[Path, str] | tuple[Path, str, str]],
     output_file: Path,
     scratch_dir: Path,
     subtitle_lang: str = "zho",
@@ -113,15 +130,16 @@ def mux_subtitles(
     if not subtitle_tracks:
         return False
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    links = [link_or_copy(srt_file, scratch_dir / f"video_subs_{i}.srt") for i, (srt_file, _) in enumerate(subtitle_tracks)]
+    links = [link_or_copy(track[0], scratch_dir / f"video_subs_{i}.srt") for i, track in enumerate(subtitle_tracks)]
 
     command = FfmpegCommand().input(video_file)
     for link in links:
         command.input(link.absolute())
     command.map("0:v", "0:a", *(f"{i + 1}:0" for i in range(len(links))))
     command.codec("v", "copy").codec("a", "copy").codec("s", "mov_text")
-    for i, (_srt_file, title) in enumerate(subtitle_tracks):
-        command.metadata(f"s:s:{i}", "language", subtitle_lang).metadata(f"s:s:{i}", "title", title)
+    for i, (_srt_file, title, *language) in enumerate(subtitle_tracks):
+        command.metadata(f"s:s:{i}", "language", language[0] if language else subtitle_lang)
+        command.metadata(f"s:s:{i}", "title", title)
     result = subprocess.run(command.overwrite().build(output_file), check=False)
 
     for link in links:

@@ -23,7 +23,7 @@ from miningcat.infrastructure import http
 from miningcat.infrastructure.persistence.database import Database
 from miningcat.infrastructure.persistence.settings_store import settings
 
-from shared import FakeOpenCc
+from shared import FakeArgos, FakeOpenCc
 
 pytest.importorskip("flask")
 
@@ -1048,42 +1048,6 @@ def test_sentence_voice_from_settings(client):
     assert client.get("/api/tts/voices?language=ja").get_json()["chosen"] == ""
 
 
-class FakeArgos:
-    """Argos Translate with a few models to download, translating "text" to "[source>target] text"."""
-
-    def __init__(self, installed: set):
-        self.models = {("zh", "en"), ("zt", "en"), ("en", "fr"), ("ja", "en")}
-        self.installed_pairs = set(installed)
-        self.downloads = []
-
-    def available(self) -> bool:
-        return True
-
-    def require(self) -> None:
-        pass
-
-    def has_model(self, source, target) -> bool:
-        return (source, target) in self.models
-
-    def installed(self) -> set:
-        return set(self.installed_pairs)
-
-    def installed_models(self) -> list:
-        return []
-
-    def install(self, source, target, progress=None) -> None:
-        self.downloads.append((source, target))
-        self.installed_pairs.add((source, target))
-
-    def uninstall(self, source, target) -> None:
-        if (source, target) not in self.installed_pairs:
-            raise translation.TranslateError("This model isn't installed.")
-        self.installed_pairs.remove((source, target))
-
-    def translate(self, text, source, target) -> str:
-        return f"[{source}>{target}] {text}"
-
-
 def test_local_voice_preloaded_with_the_voices(client, monkeypatch):
     from miningcat.infrastructure.speech import mms_tts
     preloaded = []
@@ -1113,6 +1077,24 @@ def test_sentence_translation(fake_argos):
     with pytest.raises(translation.TranslateError):
         anki.save_config({"translation_language": "en"})
         translation.translate("yue", "公園")
+
+
+def test_subtitles_translation(fake_argos):
+    srt = "1\n00:00:01,000 --> 00:00:02,000\n我們去\n\n2\n00:00:03,000 --> 00:00:04,000\n<i>公園</i>\n\n3\n00:00:05,000 --> 00:00:06,000\n我們去\n"
+    steps = []
+    translated = translation.translate_srt("zh", srt, lambda done, total: steps.append((done, total)))
+    assert translated == ("1\n00:00:01,000 --> 00:00:02,000\n[zt>en] 我們去\n\n"
+                          "2\n00:00:03,000 --> 00:00:04,000\n<i>[zt>en] 公園</i>\n\n"
+                          "3\n00:00:05,000 --> 00:00:06,000\n[zt>en] 我們去\n")
+    assert steps == [(1, 2), (2, 2)]  # each line once
+    assert fake_argos == [("zt", "en")]  # the model, downloaded once
+    with pytest.raises(translation.TranslateError, match="already in English"):
+        translation.translate_srt("en", "1\n00:00:01,000 --> 00:00:02,000\nHi\n")
+    with pytest.raises(translation.TranslateError, match="no text"):
+        translation.translate_srt("zh", "")
+    anki.save_config({"translation_language": ""})
+    with pytest.raises(translation.TranslateError, match="settings"):
+        translation.translate_srt("zh", srt)
 
 
 def test_http_translate(client, fake_argos):

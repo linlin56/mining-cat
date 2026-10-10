@@ -122,6 +122,7 @@ python -m miningcat video --file <PATH> [options]
 | `--ocr`             |               | Read burned-in subtitles with OCR instead of transcribing the audio                          |
 | `--ocr-region`      | bottom third  | Subtitle area as `X,Y,W,H` fractions between 0 and 1, e.g. `0,0.75,1,0.25`                   |
 | `--ocr-fps`         | `4`           | Frames sampled per second for OCR (2 to 12)                                                  |
+| `--second-subs`     |               | Add second subtitles translated to the settings' translation language, from `main` (the generated subtitles) or the 0-based index of a subtitle track of the video |
 | `--app-id`          | `web`         | Instagram only: `X-IG-App-ID` header (`web`, `ios` or a numeric id), if downloads start failing |
 
 ## `game`

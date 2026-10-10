@@ -1,5 +1,5 @@
-"""The video pipeline: a video (downloaded or local) gets its subtitles, then all its subtitle tracks are added to it
-in output/final."""
+"""The video pipeline: a video (downloaded or local) gets its subtitles (and, if asked, second subtitles translated from
+one of its tracks), then all its subtitle tracks are added to it in output/final."""
 import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -10,12 +10,14 @@ from miningcat.application.converter.ocr_subtitles import generate_segments
 from miningcat.application.converter.steps.script_conversion import convert_srt_dir, normalize_whisper_script
 from miningcat.application.converter.video_download import download_video
 from miningcat.application.converter.video_request import VideoRequest
+from miningcat.application.mining import translation
 from miningcat.config.paths import paths
+from miningcat.domain.languages import LANGUAGES, Language
 from miningcat.infrastructure.files.srt_files import save_srt
 from miningcat.infrastructure.media.video_file import extract_audio, mux_subtitles, source_subtitles
 
-# (SRT file, title of the track in players)
-Track = tuple[Path, str]
+# (SRT file, title of the track in players), and its ISO 639-2 language when it isn't the video's (a translation)
+Track = tuple[Path, str] | tuple[Path, str, str]
 
 
 class SubtitleMaker(ABC):
@@ -71,7 +73,7 @@ class SpeechSubtitles(SubtitleMaker):
 
 class VideoSubtitles:
     """Gets the video, keeps the subtitles it came with, adds subtitles of its own (OCR or Whisper), converts the
-    Chinese script if asked, then adds every track to the video."""
+    Chinese script if asked, translates one of the tracks if asked, then adds every track to the video."""
 
     def __init__(self, request: VideoRequest):
         self.request = request
@@ -80,11 +82,14 @@ class VideoSubtitles:
     def run(self) -> Path:
         video_file = self._video()
         paths.srt.mkdir(parents=True, exist_ok=True)
-        tracks = self._source_tracks(video_file)
+        source_tracks = self._source_tracks(video_file)
         made = self.maker.make(video_file)
-        if made is not None:
-            tracks.append(made)
+        tracks = source_tracks + ([made] if made is not None else [])
         self._convert_script()
+        if self.request.second_subtitles:
+            second = self._second_subtitles(video_file, source_tracks, made)
+            if second is not None:
+                tracks.append(second)
         return self._mux(video_file, tracks)
 
     def _video(self) -> Path:
@@ -115,6 +120,39 @@ class VideoSubtitles:
         if target is not None and source_script is not None:
             print(f"\n=== Character conversion ({source_script} -> {target}) ===")
             convert_srt_dir(source_script, target)
+
+    def _second_subtitles(self, video_file: Path, source_tracks: list[Track], made: Track | None) -> Track | None:
+        """The reference track translated to the language of the settings. When it fails, the video still gets its
+        other tracks."""
+        index = self.request.second_from
+        if index is None:
+            reference = made
+        else:
+            reference = source_tracks[index] if index < len(source_tracks) else None
+        target = translation.target_language()
+        print(f"\n=== Second subtitles ({LANGUAGES.get(target, target or '?')}) ===")
+        if reference is None:
+            print("  [WARN] The subtitles to translate weren't found: no second subtitles.")
+            return None
+        print(f"Translating: {reference[0].name} ({reference[1]})")
+        step = {"next": 0}
+
+        def progress(done: int, total: int) -> None:
+            if done * 10 >= step["next"] * total or done == total:
+                print(f"  {done}/{total} lines", flush=True)
+                step["next"] = done * 10 // total + 1
+
+        try:
+            srt = reference[0].read_text(encoding="utf-8", errors="replace")
+            translated = translation.translate_srt(self.request.language.profile.key, srt, progress)
+        except (translation.TranslateError, OSError) as exc:
+            print(f"  [WARN] No second subtitles: {exc}")
+            return None
+        srt_file = paths.srt / f"{video_file.stem}_translated_{target}.srt"
+        srt_file.write_text(translated, encoding="utf-8")
+        print(f"Second subtitles: {srt_file}")
+        variants = Language.variants_of(target)
+        return srt_file, f"{LANGUAGES[target]} (translated)", variants[0].profile.iso639_2 if variants else "und"
 
     def _mux(self, video_file: Path, tracks: list[Track]) -> Path:
         print("\n=== Muxing subtitles into video ===")

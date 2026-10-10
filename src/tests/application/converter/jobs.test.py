@@ -72,6 +72,19 @@ def test_video_command_adds_ocr_flags():
     assert args[args.index("--ocr-fps") + 1] == "8"
 
 
+def test_video_command_asks_for_second_subtitles():
+    builder = VideoRequestBuilder(Language.FRENCH).local_file(Path("/tmp/movie.mp4")).whisper("tiny")
+    assert "--second-subs" not in VideoJob(builder.build()).command()
+    assert VideoJob(builder.second_subtitles(None).build()).command()[-2:] == ["--second-subs", "main"]
+    assert VideoJob(builder.second_subtitles(1).build()).command()[-2:] == ["--second-subs", "1"]
+
+
+def test_find_video_srt_never_the_translated_subtitles(tmp_path):
+    (tmp_path / "abc_source.srt").write_text("1\n", encoding="utf-8")
+    (tmp_path / "abc_translated_en.srt").write_text("1\n", encoding="utf-8")
+    assert find_video_srt(tmp_path) == tmp_path / "abc_source.srt"
+
+
 def test_video_request_keeps_ocr_fps_in_range():
     request = VideoRequestBuilder(Language.FRENCH).url("https://youtu.be/x").ocr(fps=99).build()
     assert request.ocr_fps == 12

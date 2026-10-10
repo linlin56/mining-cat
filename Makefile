@@ -1,4 +1,4 @@
-.PHONY: help gui reader player install install-taigi test coverage audio epub align export chapter1 chapter run clean video game-setup game
+.PHONY: help gui reader player install install-nllb install-taigi test coverage audio epub align export chapter1 chapter run clean video game-setup game
 
 # Defaults
 CHAPTER  ?= 1
@@ -10,6 +10,7 @@ RANGE    ?=
 URL      ?=
 FILE     ?=
 APP_ID   ?= web
+NLLB     ?= nllb-600m
 HOTKEY   ?= F9
 ifeq ($(OS),Windows_NT)
   _VENV_PYTHON := .venv/Scripts/python.exe
@@ -44,6 +45,7 @@ help:
 	@echo ""
 	@echo "Usage:"
 	@echo "  make install                    Install dependencies"
+	@echo "  make install-nllb [NLLB=nllb-1.3b] Install NLLB-200, optional instead of Argos Translate (nllb-600m by default)"
 	@echo "  make install-taigi              Install the local speech engines for Taigi (Qwen3-ASR, MMS)"
 	@echo "  make gui [PORT=5050]            Open the GUI in your browser"
 	@echo "  make reader                     Open the ebook reader in your browser"
@@ -73,6 +75,11 @@ install:
 	$(PYTHON) -m pip install -r requirements.txt
 # Install separately with --no-deps to avoid the PyGObject build error on Linux.
 	$(PYTHON) -m pip install --no-deps "owocr>=1.26.8"
+
+# NLLB-200, optional instead of Argos Translate: its packages (requirements-nllb.txt), then its model. Same as the
+# settings' install (infrastructure/translation/nllb_install.py).
+install-nllb:
+	$(MAIN) install-nllb --model $(NLLB)
 
 # Taigi's local speech engines, not in regular install because very large and not needed for all.
 install-taigi:

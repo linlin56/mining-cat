@@ -61,7 +61,12 @@ def api_tts():
 
 @bp.get("/api/translate/languages")
 def api_translate_languages():
-    return jsonify(languages=translation.targets(), chosen=translation.target_language())
+    """The languages sentences can be translated to, by the engine of the settings or the one asked for (?engine=)."""
+    engine = request.args.get("engine") or translation.engine()
+    if engine not in translation.ENGINES:
+        raise UserError("Translation", f"Unknown translation engine: {engine!r}")
+    return jsonify(languages=translation.targets(engine), chosen=translation.target_language(),
+                   engines=translation.engines(), engine=translation.engine())
 
 
 @bp.post("/api/translate")
@@ -93,6 +98,25 @@ def api_download_translate_models():
 def api_delete_translate_model(source: str, target: str):
     try:
         translation.delete_model(source, target)
+    except translation.TranslateError as exc:
+        raise UserError("Translation", str(exc))
+    return jsonify(translation.models())
+
+
+# NLLB-200's models (optional): installed in the background, like the downloads of Argos' models.
+@bp.post("/api/translate/engines/<name>/install")
+def api_install_translate_engine(name: str):
+    try:
+        translation.start_install(name)
+    except translation.TranslateError as exc:
+        raise UserError("Translation", str(exc))
+    return jsonify(translation.models())
+
+
+@bp.post("/api/translate/engines/<name>/delete")
+def api_delete_translate_engine(name: str):
+    try:
+        translation.delete_engine(name)
     except translation.TranslateError as exc:
         raise UserError("Translation", str(exc))
     return jsonify(translation.models())

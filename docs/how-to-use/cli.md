@@ -125,6 +125,20 @@ python -m miningcat video --file <PATH> [options]
 | `--second-subs`     |               | Add second subtitles translated to the settings' translation language, from `main` (the generated subtitles) or the 0-based index of a subtitle track of the video |
 | `--app-id`          | `web`         | Instagram only: `X-IG-App-ID` header (`web`, `ios` or a numeric id), if downloads start failing |
 
+## `install-nllb`
+
+Installs [NLLB-200](mining.md#translation-engines), optional instead of Argos Translate to translate sentences and subtitles: its packages (`requirements-nllb.txt`), then its model.
+
+```bash
+python -m miningcat install-nllb [--model nllb-600m|nllb-1.3b]
+```
+
+| Option    | Default     | Description                                                       |
+| --------- | ----------- | ----------------------------------------------------------------- |
+| `--model` | `nllb-600m` | `nllb-600m` (630 MB) or `nllb-1.3b` (1.4 GB, more accurate, slower) |
+
+Then choose it in Settings › **Translation**.
+
 ## `game`
 
 Video game / screen share OCR: captures a window, reads its text area with OCR, and pushes the screenshot + text to a local web page. See [Video games & screen share](video-game.md) for the details.
@@ -198,6 +212,7 @@ The Makefile wraps the most common commands. Variables can be overridden on the 
 | `make run [RANGE=4-9]`           | `run [--range 4-9]`                              |
 | `make video URL=...`             | `video --url ...`                                |
 | `make video FILE=...`            | `video --file ...`                               |
+| `make install-nllb [NLLB=nllb-1.3b]` | `install-nllb [--model nllb-1.3b]`           |
 | `make game-setup`                | `game setup`                                     |
 | `make game [HOTKEY=F9]`          | `game serve --language ... --hotkey F9`          |
 | `make clean`                     | Delete generated files in `output/` and `temp/`  |

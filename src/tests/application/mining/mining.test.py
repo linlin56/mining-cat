@@ -23,7 +23,7 @@ from miningcat.infrastructure import http
 from miningcat.infrastructure.persistence.database import Database
 from miningcat.infrastructure.persistence.settings_store import settings
 
-from shared import FakeArgos, FakeOpenCc
+from shared import FakeArgos, FakeNllb, FakeOpenCc
 
 pytest.importorskip("flask")
 
@@ -1102,6 +1102,83 @@ def test_http_translate(client, fake_argos):
     res = client.post("/api/translate", json={"language": "zh", "text": "公园"}, headers=HEADERS).get_json()
     assert res == {"translation": "[zh>en] 公园", "target": "en"}
     assert client.post("/api/translate", json={"language": "yue", "text": "公園"}, headers=HEADERS).status_code == 400
+
+
+@pytest.fixture
+def fake_nllb(monkeypatch):
+    nllb = FakeNllb(installed={"nllb-600m"})
+    monkeypatch.setattr(translation, "nllb", nllb)
+    return nllb
+
+
+def test_translation_with_nllb(fake_argos, fake_nllb):
+    anki.save_config({"translation_engine": "nllb-600m"})
+    assert translation.engine() == "nllb-600m"
+    assert translation.translate("zh", "我們去公園") == "{zt>en} 我們去公園"
+    assert translation.translate("yue", "佢哋去飲茶") == "{yue>en} 佢哋去飲茶"  # Argos has no Cantonese
+    assert translation.translate("ja", "公園", download=False) == "{ja>en} 公園"
+    assert fake_argos == []  # Argos isn't used
+    with pytest.raises(translation.TranslateError, match="no offline translation"):
+        translation.translate("nan", "公園")
+    anki.save_config({"translation_engine": "nllb-1.3b"})  # chosen, not installed
+    with pytest.raises(translation.TranslateError):
+        translation.translate("zh", "公園")
+    fake_nllb.packages = False
+    with pytest.raises(translation.TranslateError, match="make install-nllb"):
+        translation.translate("zh", "公園")
+    with pytest.raises(anki.AnkiError, match="Unknown translation engine"):
+        anki.save_config({"translation_engine": "deepl"})
+
+
+def test_subtitles_translation_with_nllb(fake_argos, fake_nllb, monkeypatch):
+    monkeypatch.setattr(translation, "NLLB_LINES_PER_STEP", 2)
+    anki.save_config({"translation_engine": "nllb-600m", "translation_language": "fr"})
+    srt = "".join(f"{i}\n00:00:0{i},000 --> 00:00:0{i},500\n第{i}行\n\n" for i in range(1, 6))
+    steps = []
+    translated = translation.translate_srt("zh", srt, lambda done, total: steps.append((done, total)))
+    assert "{zh>fr} 第1行" in translated and "{zh>fr} 第5行" in translated
+    assert fake_nllb.batches == [2, 2, 1] and steps == [(2, 5), (4, 5), (5, 5)]
+
+
+def test_translation_engines(client, fake_argos, fake_nllb, monkeypatch):
+    monkeypatch.setattr(translation, "_download", translation.ModelDownload())
+    monkeypatch.setattr(translation.threading, "Thread",
+                        lambda target, args=(), **kw: types.SimpleNamespace(start=lambda: target(*args)))
+    res = client.get("/api/translate/languages").get_json()
+    assert res["engine"] == "argos" and "yue" not in [l["id"] for l in res["languages"]]
+    assert [(e["id"], e["installed"]) for e in res["engines"]] == [("argos", True), ("nllb-600m", True), ("nllb-1.3b", False)]
+    assert "yue" in [l["id"] for l in client.get("/api/translate/languages?engine=nllb-600m").get_json()["languages"]]
+    assert client.get("/api/translate/languages?engine=deepl").status_code == 400
+
+    # NLLB's install: its packages when they're missing, then its model
+    pip = []
+    def install_packages():
+        pip.append(1)
+        fake_nllb.packages = True
+        return 0
+
+    monkeypatch.setattr(translation.nllb_install, "install_packages", install_packages)
+    fake_nllb.packages = False
+    res = client.post("/api/translate/engines/nllb-1.3b/install", json={}, headers=HEADERS).get_json()
+    assert res["job"]["state"] == "done" and res["job"]["engine"] == "nllb-1.3b", res
+    assert pip == [1] and fake_nllb.installed("nllb-1.3b")
+    assert client.post("/api/translate/engines/nllb-1.3b/install", json={}, headers=HEADERS).status_code == 400  # there
+    assert client.post("/api/translate/engines/argos/install", json={}, headers=HEADERS).status_code == 400
+
+    # with NLLB chosen, "download the models" installs its model
+    anki.save_config({"translation_engine": "nllb-600m"})
+    client.post("/api/translate/engines/nllb-600m/delete", json={}, headers=HEADERS)
+    assert client.post("/api/translate/models", json={"language": "zh"}, headers=HEADERS).get_json()["job"]["state"] == "done"
+    assert fake_nllb.installed("nllb-600m") and fake_argos == [] and pip == [1]
+    res = client.post("/api/translate/engines/nllb-600m/delete", json={}, headers=HEADERS).get_json()
+    assert [m["name"] for m in res["nllb"]] == ["nllb-1.3b"]
+    assert client.post("/api/translate/engines/nllb-600m/delete", json={}, headers=HEADERS).status_code == 400
+
+    # a failed install is reported
+    monkeypatch.setattr(translation.nllb_install, "install_packages", lambda: 1)
+    fake_nllb.packages = False
+    res = client.post("/api/translate/engines/nllb-600m/install", json={}, headers=HEADERS).get_json()
+    assert res["job"]["state"] == "error" and "pip" in res["job"]["error"]
 
 
 def test_zhuyin_readings(client, zh_dict, fake_anki):

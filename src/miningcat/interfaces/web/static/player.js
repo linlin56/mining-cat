@@ -898,7 +898,7 @@ function syncSecondGenerate(job = null) {
   } else if (job && job.state === "error") {
     status.textContent = `The subtitles couldn't be translated:\n${job.error}`;
   } else if (!target) {
-    status.replaceChildren("Choose the language sentences are translated to in ", Object.assign(document.createElement("a"), { href: "/settings/", target: "_blank", textContent: "Settings" }), " first.");
+    status.replaceChildren("Choose the language sentences are translated to in ", Object.assign(document.createElement("a"), { href: "/settings/#translation", target: "_blank", textContent: "Settings › Translation" }), " first.");
   } else if (!hasTracks) {
     status.textContent = "Add subtitles to translate first.";
   } else {

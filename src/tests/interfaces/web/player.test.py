@@ -8,7 +8,7 @@ import pytest
 from miningcat.infrastructure.files.json_files import write_json
 from miningcat.infrastructure.media import browser_video, subtitle_files
 
-from shared import FakeArgos, redirect_path
+from shared import FakeNllb, redirect_path
 
 pytest.importorskip("flask")
 
@@ -335,7 +335,7 @@ def test_progress_and_prefs(client, library):
 
 def test_second_subtitles(client, library, monkeypatch):
     from miningcat.application.mining import translation
-    monkeypatch.setattr(translation, "argos", FakeArgos(installed=set()))
+    monkeypatch.setattr(translation, "nllb", FakeNllb(installed={"nllb-600m"}))
     video_id = make_entry(library, language="ja")
     (library / "videos" / video_id / "subs").mkdir()
     (library / "videos" / video_id / "subs" / "001.srt").write_text(JA_SRT, encoding="utf-8")

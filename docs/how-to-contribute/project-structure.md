@@ -59,7 +59,7 @@ src/miningcat/
 │   ├── ocr/                  # OcrEngine (owocr), and the OCR worker process of comics
 │   ├── anki/                 # AnkiConnect client, .apkg writer
 │   ├── word_audio/           # one AudioSource per website (JapanesePod101, Wiktionary, Lingua Libre)
-│   ├── translation/          # Argos Translate, NLLB-200 (optional) and its install
+│   ├── translation/          # NLLB-200 and its install
 │   ├── dictionaries/ ebooks/ files/ system/ http.py
 ├── application/
 │   ├── converter/            # steps/ (audio, ebook, subtitles, tts, export), speech engines, video pipeline, jobs...

@@ -1,6 +1,6 @@
-"""The install of NLLB-200, optional instead of Argos Translate: its packages (CTranslate2 and SentencePiece, which
-Argos Translate and faster-whisper usually bring already), then its model. With `make install-nllb`
-(python -m miningcat install-nllb), or from the settings when it's chosen."""
+"""The install of NLLB-200, which translates the sentences and subtitles (optional, large): its packages (CTranslate2,
+which faster-whisper brings already, and SentencePiece), then its model. With `make install-nllb`
+(python -m miningcat install-nllb), or from the settings."""
 import subprocess
 from typing import Callable
 

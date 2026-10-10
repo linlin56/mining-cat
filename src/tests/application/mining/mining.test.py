@@ -23,7 +23,7 @@ from miningcat.infrastructure import http
 from miningcat.infrastructure.persistence.database import Database
 from miningcat.infrastructure.persistence.settings_store import settings
 
-from shared import FakeArgos, FakeNllb, FakeOpenCc
+from shared import FakeNllb, FakeOpenCc
 
 pytest.importorskip("flask")
 
@@ -1058,36 +1058,61 @@ def test_local_voice_preloaded_with_the_voices(client, monkeypatch):
 
 
 @pytest.fixture
-def fake_argos(monkeypatch):
-    argos = FakeArgos(installed={("zh", "en")})
-    monkeypatch.setattr(translation, "argos", argos)
-    return argos.downloads
+def fake_nllb(monkeypatch):
+    nllb = FakeNllb(installed={"nllb-600m"})
+    monkeypatch.setattr(translation, "nllb", nllb)
+    return nllb
 
 
-def test_sentence_translation(fake_argos):
+def test_sentence_translation(fake_nllb):
+    assert translation.model() == "nllb-600m"
     assert translation.translate("zh", " 我们去\n公园 ") == "[zh>en] 我们去 公园"
     assert translation.translate("zh", "我們去公園") == "[zt>en] 我們去公園"  # traditional characters
-    assert fake_argos == [("zt", "en")]
+    assert translation.translate("yue", "佢哋去飲茶") == "[yue>en] 佢哋去飲茶"
     anki.save_config({"translation_language": "fr"})
-    assert translation.translate("ja", "公園") == "[ja>fr] 公園"
-    assert fake_argos[1:] == [("ja", "en"), ("en", "fr")]  # through English
+    assert translation.translate("ja", "公園") == "[ja>fr] 公園"  # directly, not through English
     assert translation.translate("fr", "le parc") is None  # already in French
+    with pytest.raises(translation.TranslateError, match="no offline translation"):
+        translation.translate("nan", "公園")  # Taigi
     anki.save_config({"translation_language": ""})
     assert translation.translate("zh", "公园") is None
-    with pytest.raises(translation.TranslateError):
-        anki.save_config({"translation_language": "en"})
-        translation.translate("yue", "公園")
 
 
-def test_subtitles_translation(fake_argos):
+def test_translation_model_must_be_downloaded(fake_nllb):
+    anki.save_config({"translation_model": "nllb-1.3b"})
+    with pytest.raises(translation.TranslateError, match="Settings › Translation"):
+        translation.translate("zh", "公園")
+    fake_nllb.packages = False
+    anki.save_config({"translation_model": "nllb-600m"})
+    with pytest.raises(translation.TranslateError, match="make install-nllb"):
+        translation.translate("zh", "公園")
+    assert fake_nllb.batches == []
+    with pytest.raises(anki.AnkiError, match="Unknown translation model"):
+        anki.save_config({"translation_model": "argos"})
+
+
+def test_settings_of_argos_are_forgotten(fake_nllb):
+    from miningcat.infrastructure.persistence.settings_store import settings
+    settings.set("anki", {"translation_engine": "argos", "translation_language": "fr"})
+    config = anki.get_config()
+    assert "translation_engine" not in config and config["translation_model"] == "nllb-600m"
+    assert translation.translate("ja", "公園") == "[ja>fr] 公園"
+
+
+def test_subtitles_translation(fake_nllb, monkeypatch):
     srt = "1\n00:00:01,000 --> 00:00:02,000\n我們去\n\n2\n00:00:03,000 --> 00:00:04,000\n<i>公園</i>\n\n3\n00:00:05,000 --> 00:00:06,000\n我們去\n"
     steps = []
     translated = translation.translate_srt("zh", srt, lambda done, total: steps.append((done, total)))
     assert translated == ("1\n00:00:01,000 --> 00:00:02,000\n[zt>en] 我們去\n\n"
                           "2\n00:00:03,000 --> 00:00:04,000\n<i>[zt>en] 公園</i>\n\n"
                           "3\n00:00:05,000 --> 00:00:06,000\n[zt>en] 我們去\n")
-    assert steps == [(1, 2), (2, 2)]  # each line once
-    assert fake_argos == [("zt", "en")]  # the model, downloaded once
+    assert fake_nllb.batches == [2] and steps == [(2, 2)]  # each line once
+    # a few lines at a time
+    monkeypatch.setattr(translation, "LINES_PER_STEP", 2)
+    srt = "".join(f"{i}\n00:00:0{i},000 --> 00:00:0{i},500\n第{i}行\n\n" for i in range(1, 6))
+    steps.clear()
+    translation.translate_srt("zh", srt, lambda done, total: steps.append((done, total)))
+    assert fake_nllb.batches[1:] == [2, 2, 1] and steps == [(2, 5), (4, 5), (5, 5)]
     with pytest.raises(translation.TranslateError, match="already in English"):
         translation.translate_srt("en", "1\n00:00:01,000 --> 00:00:02,000\nHi\n")
     with pytest.raises(translation.TranslateError, match="no text"):
@@ -1097,61 +1122,25 @@ def test_subtitles_translation(fake_argos):
         translation.translate_srt("zh", srt)
 
 
-def test_http_translate(client, fake_argos):
-    assert client.get("/api/translate/languages").get_json()["chosen"] == "en"
+def test_http_translate(client, fake_nllb):
+    res = client.get("/api/translate/languages").get_json()
+    assert res["chosen"] == "en" and "yue" in [l["id"] for l in res["languages"]] and "nan" not in [l["id"] for l in res["languages"]]
     res = client.post("/api/translate", json={"language": "zh", "text": "公园"}, headers=HEADERS).get_json()
     assert res == {"translation": "[zh>en] 公园", "target": "en"}
-    assert client.post("/api/translate", json={"language": "yue", "text": "公園"}, headers=HEADERS).status_code == 400
+    assert client.post("/api/translate", json={"language": "nan", "text": "公園"}, headers=HEADERS).status_code == 400
 
 
-@pytest.fixture
-def fake_nllb(monkeypatch):
-    nllb = FakeNllb(installed={"nllb-600m"})
-    monkeypatch.setattr(translation, "nllb", nllb)
-    return nllb
-
-
-def test_translation_with_nllb(fake_argos, fake_nllb):
-    anki.save_config({"translation_engine": "nllb-600m"})
-    assert translation.engine() == "nllb-600m"
-    assert translation.translate("zh", "我們去公園") == "{zt>en} 我們去公園"
-    assert translation.translate("yue", "佢哋去飲茶") == "{yue>en} 佢哋去飲茶"  # Argos has no Cantonese
-    assert translation.translate("ja", "公園", download=False) == "{ja>en} 公園"
-    assert fake_argos == []  # Argos isn't used
-    with pytest.raises(translation.TranslateError, match="no offline translation"):
-        translation.translate("nan", "公園")
-    anki.save_config({"translation_engine": "nllb-1.3b"})  # chosen, not installed
-    with pytest.raises(translation.TranslateError):
-        translation.translate("zh", "公園")
-    fake_nllb.packages = False
-    with pytest.raises(translation.TranslateError, match="make install-nllb"):
-        translation.translate("zh", "公園")
-    with pytest.raises(anki.AnkiError, match="Unknown translation engine"):
-        anki.save_config({"translation_engine": "deepl"})
-
-
-def test_subtitles_translation_with_nllb(fake_argos, fake_nllb, monkeypatch):
-    monkeypatch.setattr(translation, "NLLB_LINES_PER_STEP", 2)
-    anki.save_config({"translation_engine": "nllb-600m", "translation_language": "fr"})
-    srt = "".join(f"{i}\n00:00:0{i},000 --> 00:00:0{i},500\n第{i}行\n\n" for i in range(1, 6))
-    steps = []
-    translated = translation.translate_srt("zh", srt, lambda done, total: steps.append((done, total)))
-    assert "{zh>fr} 第1行" in translated and "{zh>fr} 第5行" in translated
-    assert fake_nllb.batches == [2, 2, 1] and steps == [(2, 5), (4, 5), (5, 5)]
-
-
-def test_translation_engines(client, fake_argos, fake_nllb, monkeypatch):
-    monkeypatch.setattr(translation, "_download", translation.ModelDownload())
+def test_translation_models(client, fake_nllb, monkeypatch):
+    monkeypatch.setattr(translation, "_install", translation.ModelInstall())
     monkeypatch.setattr(translation.threading, "Thread",
                         lambda target, args=(), **kw: types.SimpleNamespace(start=lambda: target(*args)))
-    res = client.get("/api/translate/languages").get_json()
-    assert res["engine"] == "argos" and "yue" not in [l["id"] for l in res["languages"]]
-    assert [(e["id"], e["installed"]) for e in res["engines"]] == [("argos", True), ("nllb-600m", True), ("nllb-1.3b", False)]
-    assert "yue" in [l["id"] for l in client.get("/api/translate/languages?engine=nllb-600m").get_json()["languages"]]
-    assert client.get("/api/translate/languages?engine=deepl").status_code == 400
+    res = client.get("/api/translate/models").get_json()
+    assert res["model"] == "nllb-600m" and res["job"]["state"] == "idle"
+    assert [(m["id"], m["installed"]) for m in res["models"]] == [("nllb-600m", True), ("nllb-1.3b", False)]
 
-    # NLLB's install: its packages when they're missing, then its model
+    # the packages first when they're missing, then the model
     pip = []
+
     def install_packages():
         pip.append(1)
         fake_nllb.packages = True
@@ -1159,25 +1148,20 @@ def test_translation_engines(client, fake_argos, fake_nllb, monkeypatch):
 
     monkeypatch.setattr(translation.nllb_install, "install_packages", install_packages)
     fake_nllb.packages = False
-    res = client.post("/api/translate/engines/nllb-1.3b/install", json={}, headers=HEADERS).get_json()
-    assert res["job"]["state"] == "done" and res["job"]["engine"] == "nllb-1.3b", res
+    res = client.post("/api/translate/models/nllb-1.3b/install", json={}, headers=HEADERS).get_json()
+    assert res["job"]["state"] == "done" and res["job"]["model"] == "nllb-1.3b", res
     assert pip == [1] and fake_nllb.installed("nllb-1.3b")
-    assert client.post("/api/translate/engines/nllb-1.3b/install", json={}, headers=HEADERS).status_code == 400  # there
-    assert client.post("/api/translate/engines/argos/install", json={}, headers=HEADERS).status_code == 400
+    assert client.post("/api/translate/models/nllb-1.3b/install", json={}, headers=HEADERS).status_code == 400  # there
+    assert client.post("/api/translate/models/argos/install", json={}, headers=HEADERS).status_code == 400
 
-    # with NLLB chosen, "download the models" installs its model
-    anki.save_config({"translation_engine": "nllb-600m"})
-    client.post("/api/translate/engines/nllb-600m/delete", json={}, headers=HEADERS)
-    assert client.post("/api/translate/models", json={"language": "zh"}, headers=HEADERS).get_json()["job"]["state"] == "done"
-    assert fake_nllb.installed("nllb-600m") and fake_argos == [] and pip == [1]
-    res = client.post("/api/translate/engines/nllb-600m/delete", json={}, headers=HEADERS).get_json()
-    assert [m["name"] for m in res["nllb"]] == ["nllb-1.3b"]
-    assert client.post("/api/translate/engines/nllb-600m/delete", json={}, headers=HEADERS).status_code == 400
+    res = client.post("/api/translate/models/nllb-600m/delete", json={}, headers=HEADERS).get_json()
+    assert [(m["id"], m["installed"]) for m in res["models"]] == [("nllb-600m", False), ("nllb-1.3b", True)]
+    assert client.post("/api/translate/models/nllb-600m/delete", json={}, headers=HEADERS).status_code == 400
 
     # a failed install is reported
     monkeypatch.setattr(translation.nllb_install, "install_packages", lambda: 1)
     fake_nllb.packages = False
-    res = client.post("/api/translate/engines/nllb-600m/install", json={}, headers=HEADERS).get_json()
+    res = client.post("/api/translate/models/nllb-600m/install", json={}, headers=HEADERS).get_json()
     assert res["job"]["state"] == "error" and "pip" in res["job"]["error"]
 
 
@@ -1203,19 +1187,3 @@ def test_zhuyin_readings(client, zh_dict, fake_anki):
 def test_script_settings_only_for_studied_languages(client, zh_dict):
     languages = {l["id"]: l for l in client.get("/api/mining/languages").get_json()["languages"]}
     assert languages["zh"]["studied"] and not languages["yue"]["studied"] and not languages["nan"]["studied"]
-
-
-def test_translation_models(client, fake_argos, monkeypatch):
-    monkeypatch.setattr(translation, "_download", translation.ModelDownload())
-    monkeypatch.setattr(translation.threading, "Thread",
-                        lambda target, args=(), **kw: types.SimpleNamespace(start=lambda: target(*args)))
-    preferences.set_chinese_script_preference("zh", "traditional")
-    res = client.post("/api/translate/models", json={"language": "zh"}, headers=HEADERS).get_json()
-    assert res["job"]["state"] == "done", res
-    assert fake_argos == [("zt", "en")]  # only the script the user reads
-    preferences.set_chinese_script_preference("zh", "both")
-    translation.start_download("ja")
-    assert fake_argos[1:] == [("ja", "en")]
-    assert client.post("/api/translate/models", json={"language": "en"}, headers=HEADERS).status_code == 400
-    assert client.post("/api/translate/models/ko/en/delete", json={}, headers=HEADERS).status_code == 400  # not installed
-    assert client.post("/api/translate/models/zt/en/delete", json={}, headers=HEADERS).status_code == 200

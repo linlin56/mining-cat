@@ -1,4 +1,4 @@
-# NLLB-200, optional instead of Argos Translate for the translation of sentences and subtitles: `make install-nllb`.
-# Argos Translate and faster-whisper usually bring them already; its model is downloaded by the install.
+# NLLB-200, which translates the sentences and subtitles (optional): `make install-nllb`. faster-whisper brings
+# CTranslate2 already; the model is downloaded by the install.
 ctranslate2>=4.0
 sentencepiece>=0.2

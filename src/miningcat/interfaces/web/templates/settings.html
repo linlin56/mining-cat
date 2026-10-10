@@ -213,14 +213,13 @@
       <div class="card">
         <h2 class="card-header h6">Sentence translation</h2>
         <div class="card-body vstack gap-3">
-          <p class="small text-body-secondary m-0">New cards get a translation of their sentence, and videos can get second subtitles in your language, made offline. <strong>Argos Translate</strong>
-            is light: the first time a language is translated, its model (about 100 MB) is downloaded.
-            <strong>NLLB-200</strong> translates much better : one model for every language (630 MB for 600M, 1.4 GB for 1.3B, more accurate and slower), installed when you choose it. Its
-            license only allows non-commercial use.</p>
+          <p class="small text-body-secondary m-0">New cards get a translation of their sentence, and videos can get second subtitles in your language,
+            made offline by Meta's <strong>NLLB-200</strong>: one model for every language, downloaded once (630 MB for 600M, 1.4 GB for 1.3B,
+            more accurate and slower). Its license only allows non-commercial use.</p>
           <div class="d-flex flex-wrap align-items-end gap-2">
             <div>
-              <label class="form-label" for="translation-engine">Translate with</label>
-              <select class="form-select" id="translation-engine"></select>
+              <label class="form-label" for="translation-model">Model</label>
+              <select class="form-select" id="translation-model"></select>
             </div>
             <div>
               <label class="form-label" for="translation-language">Translate sentences to</label>
@@ -235,18 +234,13 @@
       <div class="card">
         <h2 class="card-header h6">Models</h2>
         <div class="card-body vstack gap-3">
-          <p class="small text-body-secondary m-0" id="model-help">Download the {{ study.name }} models ahead of time, so that the first card doesn't wait for them.
-            {% if study.id == "zh" %}The models of the characters you learn (traditional, simplified or both) are downloaded.{% endif %}</p>
-          <div>
-            <button type="button" class="btn btn-outline-secondary" id="model-download"><i class="bi bi-download" aria-hidden="true"></i> <span id="model-download-label">Download the {{ study.name }} models</span></button>
-          </div>
+          <div id="model-list"></div>
           <div id="model-progress" hidden>
             <div class="progress" role="progressbar" aria-label="Download" style="height: .5rem">
               <div class="progress-bar" id="model-progress-bar" style="width: 0%"></div>
             </div>
             <p class="small text-body-secondary mt-1 mb-0" id="model-progress-text"></p>
           </div>
-          <div id="model-list"></div>
         </div>
       </div>
     </section>

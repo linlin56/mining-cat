@@ -127,7 +127,7 @@ python -m miningcat video --file <PATH> [options]
 
 ## `install-nllb`
 
-Installs [NLLB-200](mining.md#translation-engines), optional instead of Argos Translate to translate sentences and subtitles: its packages (`requirements-nllb.txt`), then its model.
+Installs [NLLB-200](mining.md#translation), which translates the sentences and subtitles: its packages (`requirements-nllb.txt`), then its model.
 
 ```bash
 python -m miningcat install-nllb [--model nllb-600m|nllb-1.3b]

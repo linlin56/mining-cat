@@ -58,7 +58,7 @@ Learners often want the subtitles in their own language too. Check **Generate se
 
 - **From track:** the subtitles translated: one of the subtitle tracks of the local file, or **Use generated main subtitles** (the Whisper or OCR ones, always offered, and the only choice for a URL).
 - The translation keeps the numbers, timestamps, line breaks and formatting of the original, line by line. It's saved as `_translated_<language>.srt` and added to the video as a track labelled e.g. **English (translated)**, with its own language.
-- The translation engine is the one of the settings: Argos Translate downloads its model on first use, NLLB-200 must be installed first (see [Translation engines](mining.md#translation-engines)). If the translation fails, the video still gets its other subtitles.
+- The translation model must be downloaded first (see [Translation](mining.md#translation)). If the translation fails, the video still gets its other subtitles.
 
 ## From the terminal
 

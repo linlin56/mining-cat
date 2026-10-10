@@ -244,44 +244,8 @@ def redirect_path(monkeypatch, name: str, path) -> None:
     monkeypatch.setattr(ProjectPaths, name, property(lambda self: path))
 
 
-class FakeArgos:
-    """Argos Translate with a few models to download, translating "text" to "[source>target] text"."""
-
-    def __init__(self, installed: set):
-        self.models = {("zh", "en"), ("zt", "en"), ("en", "fr"), ("ja", "en")}
-        self.installed_pairs = set(installed)
-        self.downloads = []
-
-    def available(self) -> bool:
-        return True
-
-    def require(self) -> None:
-        pass
-
-    def has_model(self, source, target) -> bool:
-        return (source, target) in self.models
-
-    def installed(self) -> set:
-        return set(self.installed_pairs)
-
-    def installed_models(self) -> list:
-        return []
-
-    def install(self, source, target, progress=None) -> None:
-        self.downloads.append((source, target))
-        self.installed_pairs.add((source, target))
-
-    def uninstall(self, source, target) -> None:
-        if (source, target) not in self.installed_pairs:
-            raise TranslateError("This model isn't installed.")
-        self.installed_pairs.remove((source, target))
-
-    def translate(self, text, source, target) -> str:
-        return f"[{source}>{target}] {text}"
-
-
 class FakeNllb:
-    """NLLB-200 with its packages, translating each line to "{source>target} line"."""
+    """NLLB-200, its packages there, translating each line to "[source>target] line"."""
 
     def __init__(self, installed: set):
         self.installed_names = set(installed)
@@ -308,7 +272,5 @@ class FakeNllb:
         self.installed_names.remove(name)
 
     def translate(self, name, lines, source, target) -> list:
-        if name not in self.installed_names:
-            raise TranslateError("not installed")
         self.batches.append(len(lines))
-        return [f"{{{source}>{target}}} {line}" for line in lines]
+        return [f"[{source}>{target}]  {line} " for line in lines]

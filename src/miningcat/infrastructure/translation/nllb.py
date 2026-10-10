@@ -1,8 +1,8 @@
-"""Meta's NLLB-200 (No Language Left Behind), optional instead of Argos Translate: one model for every pair of
-languages (no detour through English), much better on Chinese, Japanese and Korean, and it knows Cantonese. It runs with
-CTranslate2 (also used by faster-whisper and Argos), in its distilled versions quantized to int8. Its packages are
-installed with `make install-nllb` (or from the settings), its models downloaded to library/translation_models/ from
-Hugging Face, at a fixed revision. The weights are under CC-BY-NC 4.0: non-commercial use only."""
+"""Meta's NLLB-200 (No Language Left Behind), which translates the sentences and subtitles: one model for every pair
+of languages, and it knows Cantonese. It runs with CTranslate2 (also used by faster-whisper), in its distilled versions
+quantized to int8. Its packages are installed with `make install-nllb` (or from the settings), its models downloaded to
+library/translation_models/ from Hugging Face, at a fixed revision. The weights are under CC-BY-NC 4.0: non-commercial
+use only."""
 
 import importlib
 import importlib.util
@@ -40,7 +40,7 @@ DEFAULT_MODEL = "nllb-600m"
 # What CTranslate2 and the tokenizer need, the model last: a folder with it is complete.
 FILES = ["config.json", "shared_vocabulary.txt", "sentencepiece.bpe.model", "model.bin"]
 
-# NLLB's codes (FLORES-200) of our languages. "zt" is traditional Chinese, as for Argos. Taigi has none.
+# NLLB's codes (FLORES-200) of our languages. "zt" is traditional Chinese. Taigi has none.
 CODES = {
     "zh": "zho_Hans", "zt": "zho_Hant", "yue": "yue_Hant", "ja": "jpn_Jpan", "ko": "kor_Hang", "vi": "vie_Latn",
     "en": "eng_Latn", "fr": "fra_Latn", "de": "deu_Latn", "es": "spa_Latn", "it": "ita_Latn", "pt": "por_Latn",

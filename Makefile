@@ -45,7 +45,7 @@ help:
 	@echo ""
 	@echo "Usage:"
 	@echo "  make install                    Install dependencies"
-	@echo "  make install-nllb [NLLB=nllb-1.3b] Install NLLB-200, optional instead of Argos Translate (nllb-600m by default)"
+	@echo "  make install-nllb [NLLB=nllb-1.3b] Install NLLB-200, which translates sentences and subtitles (nllb-600m by default)"
 	@echo "  make install-taigi              Install the local speech engines for Taigi (Qwen3-ASR, MMS)"
 	@echo "  make gui [PORT=5050]            Open the GUI in your browser"
 	@echo "  make reader                     Open the ebook reader in your browser"
@@ -76,7 +76,7 @@ install:
 # Install separately with --no-deps to avoid the PyGObject build error on Linux.
 	$(PYTHON) -m pip install --no-deps "owocr>=1.26.8"
 
-# NLLB-200, optional instead of Argos Translate: its packages (requirements-nllb.txt), then its model. Same as the
+# NLLB-200, which translates sentences and subtitles (optional, large): its packages (requirements-nllb.txt), then its model. Same as the
 # settings' install (infrastructure/translation/nllb_install.py).
 install-nllb:
 	$(MAIN) install-nllb --model $(NLLB)

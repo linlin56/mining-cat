@@ -8,9 +8,9 @@ from miningcat.interfaces.cli.command import Command
 
 
 class NllbInstallCommand(Command):
-    """Installs NLLB-200 (optional instead of Argos Translate): its packages, then the model asked for."""
+    """Installs NLLB-200, which translates sentences and subtitles: its packages, then the model asked for."""
 
-    name, help = "install-nllb", "Install NLLB-200 for translations (optional instead of Argos Translate)"
+    name, help = "install-nllb", "Install NLLB-200, which translates sentences and subtitles"
 
     def configure(self, parser):
         parser.add_argument("--model", default=DEFAULT_MODEL, choices=list(MODELS))

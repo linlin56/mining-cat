@@ -113,7 +113,7 @@ class ProjectPaths:
 
     @property
     def translation_models(self) -> Path:
-        """The optional translation models (NLLB-200), one folder each. Argos Translate keeps its own."""
+        """The translation models (NLLB-200), one folder each."""
         return self.library / "translation_models"
 
     def dictionary_media(self, dict_id: int) -> Path:

@@ -110,7 +110,7 @@ The rank is also shown:
 - add an image: *Choose a file*, drop one on the window, paste one with Ctrl+V, or paste a link;
 - add the word's audio or the sentence's audio the same way. The word's audio is filled in when an online recording exists (when there are several, pick another one under *Recording*); when there's none, the word is read by the voice of the settings, as below (pick another voice under *Word audio* and click **Generate**), and for a book [converted with its audio](reader.md#audio-of-a-converted-book), so is the sentence's;
 - when the sentence has no audio, it is read by the voice chosen for its language in **Settings › Anki** (*Voice reading sentences without audio*), with the same Edge-TTS voices as for generating a book's audio (an Internet connection is needed; Taigi's voice is local). Pick another voice under *Sentence audio* and click **Generate** to try it; choose *None* in the settings to only generate by hand;
-- the sentence's translation is filled in, offline, in the language chosen in **Settings › Translation** (English by default, *None* to turn it off), by the engine chosen there (see [Translation engines](#translation-engines));
+- the sentence's translation is filled in, offline, in the language chosen in **Settings › Translation** (English by default, *None* to turn it off), see [Translation](#translation);
 - edit the translation, add notes and tags.
 - Mandarin: under the sentence, *Readings* shows the reading of every word of the sentence, chosen from your dictionaries by the context (跑得快 *de*, 我得走 *děi*, 長得高 *zhǎng*, 很長 *cháng*). A dotted word has other readings in your dictionaries: click it for the next one.
 
@@ -118,19 +118,21 @@ The rank is also shown:
 
 The word becomes *learning* as soon as the card is made.
 
-### Translation engines
+### Translation
 
-Sentences, and [second subtitles](video.md#second-subtitles-translation), are translated on your computer. Choose the engine in **Settings › Translation** (*Translate with*):
+Sentences, and [second subtitles](video.md#second-subtitles-translation), are translated on your computer by Meta's [NLLB-200](https://ai.meta.com/research/no-language-left-behind/) (No Language Left Behind): one model translates every language, directly from one to the other, Cantonese included (not Taiwanese Hokkien). Choose it in **Settings › Translation** (*Model*):
 
-- **Argos Translate** (default): light. The first time a language is translated, its model (about 100 MB) is downloaded; to download it ahead of time, or to remove models, use *Models* in the same panel. The translations are rough, especially from Asian languages, which go through English. Cantonese and Taiwanese Hokkien have no model.
-- **NLLB-200** (optional): Meta's [No Language Left Behind](https://ai.meta.com/research/no-language-left-behind/) translates much better, directly from one language to the other, and knows Cantonese (not Taiwanese Hokkien). One model translates every language: **NLLB-200 600M** (630 MB) or **NLLB-200 1.3B** (1.4 GB, more accurate, slower). When you choose it, MiningCat offers to install it (its packages if they're missing, then its model); or run:
+- **NLLB-200 600M** (630 MB, default);
+- **NLLB-200 1.3B** (1.4 GB): more accurate, slower.
 
-    ```bash
-    make install-nllb                  # NLLB-200 600M
-    make install-nllb NLLB=nllb-1.3b   # NLLB-200 1.3B
-    ```
+The model is downloaded once, not with the regular install: when you save the settings, MiningCat offers to download it (with its packages if they're missing), or use *Models* in the same tab, where you can also remove it. From the terminal:
 
-    It runs with [CTranslate2](https://github.com/OpenNMT/CTranslate2), on the CPU (or an NVIDIA GPU). Its models are kept in `library/translation_models/`, and listed under *Models*, where you can remove them. Its license (CC-BY-NC 4.0) only allows non-commercial use.
+```bash
+make install-nllb                  # NLLB-200 600M
+make install-nllb NLLB=nllb-1.3b   # NLLB-200 1.3B
+```
+
+It runs with [CTranslate2](https://github.com/OpenNMT/CTranslate2), on the CPU (or an NVIDIA GPU). Its models are kept in `library/translation_models/`. Its license (CC-BY-NC 4.0) only allows non-commercial use.
 
 ## 4. Connect Anki
 

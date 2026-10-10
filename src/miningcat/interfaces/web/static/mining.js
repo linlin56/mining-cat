@@ -611,14 +611,13 @@
     return wordAudioCache.get(key);
   }
 
-  // A sentence's translation, made once. `prefetch`: ahead of time, at the lookup (never downloads a model); the card
-  // creator asks again when that failed.
+  // A sentence's translation, made once: ahead of time, at the lookup; the card creator asks again when that failed.
   const translationCache = new Map();
-  function translateSentence(language, text, prefetch = false) {
+  function translateSentence(language, text) {
     const key = `${language}|${text}`;
     if (!translationCache.has(key)) {
       if (translationCache.size >= 20) translationCache.delete(translationCache.keys().next().value);
-      const result = api("/api/translate", { language, text, prefetch }).then((d) => d.translation);
+      const result = api("/api/translate", { language, text }).then((d) => d.translation);
       result.catch(() => translationCache.delete(key));
       translationCache.set(key, result);
     }
@@ -638,7 +637,7 @@
   function prefetchCard(language, entries, sentence, node) {
     if (entries.length) wordAudio(entries[0], language).catch(() => {});
     const text = `${sentence.before}${sentence.word}${sentence.after}`;
-    if (sentence.text && text.trim() && !givenTranslation(node)) translateSentence(language, text, true).catch(() => {});
+    if (sentence.text && text.trim() && !givenTranslation(node)) translateSentence(language, text).catch(() => {});
     prefetchWave(sentence, node);
   }
 
@@ -1668,7 +1667,7 @@
     else if (sentence.text) {
       translation.placeholder = "Translating…";
       const text = boxText(sentenceBox);
-      translateSentence(language, text, true).catch(() => translateSentence(language, text)).then((text) => {
+      translateSentence(language, text).then((text) => {
         if (text && !translation.value) translation.value = text;
         translation.placeholder = "Optional";
       }).catch((err) => { translation.placeholder = `Optional (no translation: ${err.message})`; });

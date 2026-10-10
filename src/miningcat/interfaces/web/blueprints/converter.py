@@ -120,6 +120,8 @@ def api_run_video():
     builder.whisper(options.model_for(body.get("precision"), lang)).convert_to(options.convert_target(body.get("convert"), lang))
     if body.get("ocr"):
         builder.ocr(body.get("ocr_region"), body.get("ocr_fps"))
+    if body.get("second_subtitles"):
+        builder.second_subtitles(body.get("second_from"))
     state = current_state()
 
     def on_done(srt_path) -> None:

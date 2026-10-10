@@ -13,6 +13,7 @@
       <li class="nav-item"><a class="nav-link" href="#dictionaries" role="tab" data-tab="dictionaries"><i class="bi bi-journal-text" aria-hidden="true"></i> Dictionaries</a></li>
       <li class="nav-item"><a class="nav-link" href="#languages" role="tab" data-tab="languages"><i class="bi bi-alphabet" aria-hidden="true"></i> Words</a></li>
       <li class="nav-item"><a class="nav-link" href="#anki" role="tab" data-tab="anki"><i class="bi bi-stack" aria-hidden="true"></i> Anki</a></li>
+      <li class="nav-item"><a class="nav-link" href="#translation" role="tab" data-tab="translation"><i class="bi bi-translate" aria-hidden="true"></i> Translation</a></li>
       <li class="nav-item"><a class="nav-link" href="#cards" role="tab" data-tab="cards"><i class="bi bi-card-text" aria-hidden="true"></i> Cards
         <span class="badge rounded-pill text-bg-primary" id="pending-badge" hidden></span></a></li>
       <li class="nav-item"><a class="nav-link" href="#preferences" role="tab" data-tab="preferences"><i class="bi bi-person-gear" aria-hidden="true"></i> User preferences</a></li>
@@ -187,35 +188,6 @@
       </div>
 
       <div class="card">
-        <h2 class="card-header h6">Sentence translation</h2>
-        <div class="card-body vstack gap-3">
-          <p class="small text-body-secondary m-0">New cards get a translation of their sentence, made offline with Argos Translate. The
-            first time a language is translated, its model (about 100 MB) is downloaded.</p>
-          <div class="d-flex flex-wrap align-items-end gap-2">
-            <div>
-              <label class="form-label" for="translation-language">Translate sentences to</label>
-              <select class="form-select" id="translation-language"></select>
-            </div>
-            <button type="button" class="btn btn-primary" id="translation-save">Save</button>
-          </div>
-          <p class="small text-success m-0" id="translation-saved"></p>
-          <h3 class="h6 m-0">Models</h3>
-          <p class="small text-body-secondary m-0">Download the {{ study.name }} models ahead of time, so that the first card doesn't wait for them.
-            {% if study.id == "zh" %}The models of the characters you learn (traditional, simplified or both) are downloaded.{% endif %}</p>
-          <div>
-            <button type="button" class="btn btn-outline-secondary" id="model-download"><i class="bi bi-download" aria-hidden="true"></i> Download the {{ study.name }} models</button>
-          </div>
-          <div id="model-progress" hidden>
-            <div class="progress" role="progressbar" aria-label="Download" style="height: .5rem">
-              <div class="progress-bar" id="model-progress-bar" style="width: 0%"></div>
-            </div>
-            <p class="small text-body-secondary mt-1 mb-0" id="model-progress-text"></p>
-          </div>
-          <div id="model-list"></div>
-        </div>
-      </div>
-
-      <div class="card">
         <h2 class="card-header h6">Word statuses from Anki</h2>
         <div class="card-body vstack gap-3">
           <p class="small text-body-secondary m-0">At each sync, MiningCat reads the cards of these {{ study.name }} decks: a word is <em>learning</em> while its
@@ -237,6 +209,54 @@
     </section>
 
     <!-- ================= Cards ================= -->
+    <section id="tab-translation" class="tab-panel vstack gap-3" hidden>
+      <div class="card">
+        <h2 class="card-header h6">Sentence translation</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">New cards get a translation of their sentence, and videos can get second subtitles in your language,
+            made offline. Each model is downloaded once and translates every language.
+            <strong>NLLB-200</strong> (Meta) translates a line at a time, fast: 630 MB for 600M, 1.4 GB for 1.3B (more accurate, slower).
+            Its license only allows non-commercial use.
+            <strong>Qwen3 4B</strong> (Alibaba) translates subtitles with the lines before them as context: much better on spoken language,
+            but 8 GB, slower, and it needs an NVIDIA GPU or an Apple Silicon Mac with 16 GB of memory.</p>
+          <div class="d-flex flex-wrap align-items-end gap-2">
+            <div>
+              <label class="form-label" for="translation-model">Model</label>
+              <select class="form-select" id="translation-model"></select>
+            </div>
+            <div>
+              <label class="form-label" for="translation-language">Translate sentences to</label>
+              <select class="form-select" id="translation-language"></select>
+            </div>
+            <button type="button" class="btn btn-primary" id="translation-save">Save</button>
+          </div>
+          <div id="cards-context-field" hidden>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="cards-context">
+              <label class="form-check-label" for="cards-context">Also translate the cards' sentences with Qwen3</label>
+            </div>
+            <p class="small text-body-secondary m-0">Without it, Qwen3 translates the subtitles, and NLLB-200 the cards' sentences (the 1.3B model when
+              it's downloaded, else the 600M one: download it under <em>Models</em>). With it, the first card waits for Qwen3 to load (about 15 seconds),
+              each sentence then takes a second or two, and MiningCat keeps 8 GB of memory while it runs.</p>
+          </div>
+          <p class="small text-success m-0" id="translation-saved"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-header h6">Models</h2>
+        <div class="card-body vstack gap-3">
+          <div id="model-list"></div>
+          <div id="model-progress" hidden>
+            <div class="progress" role="progressbar" aria-label="Download" style="height: .5rem">
+              <div class="progress-bar" id="model-progress-bar" style="width: 0%"></div>
+            </div>
+            <p class="small text-body-secondary mt-1 mb-0" id="model-progress-text"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="tab-cards" class="tab-panel vstack gap-3" hidden>
       <div class="card">
         <h2 class="card-header h6">{{ study.name }} cards</h2>

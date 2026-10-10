@@ -453,3 +453,69 @@ def test_run_fails_when_muxing_fails(tmp_path, monkeypatch):
          patch("miningcat.infrastructure.media.video_file.extract_embedded_subtitles", m["extract_embedded_subtitles"]), \
          _patched_modules(m), pytest.raises(ConverterError, match="Could not add"):
         run_video("https://www.instagram.com/reel/xxx/", language=Language.MANDARIN_TW)
+
+
+# second subtitles: a track translated to the language of the settings
+def _run_with_second_subtitles(tmp_path, monkeypatch, second_from, translate):
+    for name in ("videos", "temp", "srt", "final"):
+        redirect_path(monkeypatch, name, tmp_path / name)
+    m = _make_pipeline_mocks(tmp_path, [])
+    (tmp_path / "videos").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "videos" / "abc.zh-Hant.srt").write_text("1\n00:00:00,000 --> 00:00:01,000\n字幕\n", encoding="utf-8")
+    request = (VideoRequestBuilder(Language.MANDARIN_TW).url("https://www.youtube.com/watch?v=xxx").whisper("tiny")
+               .second_subtitles(second_from).build())
+    with patch.object(video, "download_video", m["download"]), \
+         patch.object(video, "extract_audio", m["extract_audio"]), \
+         patch.object(video, "mux_subtitles", m["mux"]), \
+         patch.object(video.translation, "target_language", lambda: "fr"), \
+         patch.object(video.translation, "translate_srt", translate), \
+         _patched_modules(m):
+        video.run(request)
+    return m["mux"].call_args[0][1]
+
+
+def test_second_subtitles_from_a_source_track(tmp_path, monkeypatch):
+    translated = []
+
+    def translate(language, srt, progress):
+        translated.append((language, srt))
+        progress(1, 1)
+        return srt.replace("字幕", "Sous-titres")
+
+    tracks = _run_with_second_subtitles(tmp_path, monkeypatch, 0, translate)
+    assert [t[1] for t in tracks] == ["Source", "Whisper", "French (translated)"]
+    assert translated == [("zh", "1\n00:00:00,000 --> 00:00:01,000\n字幕\n")]
+    srt_file, _, language = tracks[2]
+    assert srt_file == tmp_path / "srt" / "abc_translated_fr.srt" and language == "fra"
+    assert srt_file.read_text(encoding="utf-8") == "1\n00:00:00,000 --> 00:00:01,000\nSous-titres\n"
+
+
+def test_second_subtitles_from_the_generated_ones(tmp_path, monkeypatch):
+    sources = []
+    tracks = _run_with_second_subtitles(tmp_path, monkeypatch, "main",
+                                        lambda language, srt, progress: sources.append(srt) or "1\n")
+    assert [t[1] for t in tracks] == ["Source", "Whisper", "French (translated)"]
+    assert sources == [""]  # the Whisper track (empty in this test)
+
+
+def test_failed_second_subtitles_keep_the_other_tracks(tmp_path, monkeypatch, capsys):
+    def translate(language, srt, progress):
+        raise video.translation.TranslateError("no model")
+
+    tracks = _run_with_second_subtitles(tmp_path, monkeypatch, 0, translate)
+    assert [t[1] for t in tracks] == ["Source", "Whisper"]
+    assert "No second subtitles: no model" in capsys.readouterr().out
+    # a track that isn't there
+    tracks = _run_with_second_subtitles(tmp_path, monkeypatch, 5, translate)
+    assert [t[1] for t in tracks] == ["Source", "Whisper"]
+
+
+def test_second_subtitles_track_must_be_valid():
+    builder = VideoRequestBuilder(Language.FRENCH).url("https://youtu.be/x")
+    with pytest.raises(ConverterError):
+        builder.second_subtitles("abc")
+    with pytest.raises(ConverterError):
+        builder.second_subtitles(-1)
+    assert builder.second_subtitles("2").build().second_from == 2
+    request = builder.second_subtitles("main").build()
+    assert request.second_subtitles and request.second_from is None

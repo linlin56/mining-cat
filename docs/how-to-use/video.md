@@ -52,6 +52,14 @@ MiningCat extracts frames from the region, reads their text, merges identical co
 !!! info "OCR engine"
     On macOS, OCR uses Apple Vision (built into the system). On other platforms, it uses EasyOCR, which is slower and downloads its models on first use.
 
+## Second subtitles (translation)
+
+Learners often want the subtitles in their own language too. Check **Generate second subtitles**: a subtitle track is translated, offline, to the language chosen in **Settings › Translation**: "Second subtitles will be generated in …".
+
+- **From track:** the subtitles translated: one of the subtitle tracks of the local file, or **Use generated main subtitles** (the Whisper or OCR ones, always offered, and the only choice for a URL).
+- The translation keeps the numbers, timestamps, line breaks and formatting of the original, line by line. It's saved as `_translated_<language>.srt` and added to the video as a track labelled e.g. **English (translated)**, with its own language.
+- The translation model must be downloaded first (see [Translation](mining.md#translation)). If the translation fails, the video still gets its other subtitles.
+
 ## From the terminal
 
 ```bash

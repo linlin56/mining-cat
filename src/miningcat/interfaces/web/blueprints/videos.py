@@ -132,6 +132,22 @@ def api_add_subtitles(video_id: str):
     return jsonify(added=added, errors=errors, tracks=videos.get_meta(video_id).get("tracks", []))
 
 
+# Second subtitles: the track translated to the language of the settings, in the background (the video's language
+# chosen in the player, else the one detected).
+@bp.post("/api/videos/<video_id>/subtitles/<track_id>/translate")
+def api_translate_subtitles(video_id: str, track_id: str):
+    meta = videos.get_meta(video_id)
+    language = language_key(videos.get_prefs(video_id).get("language") or meta.get("language")
+                            or studied.default_tag(studied.current()))
+    return jsonify(translation=videos.start_translation(video_id, track_id, language))
+
+
+@bp.get("/api/videos/<video_id>/translation")
+def api_translation(video_id: str):
+    return jsonify(translation=videos.translation_state(video_id), tracks=videos.get_meta(video_id).get("tracks", []),
+                   prefs=videos.get_prefs(video_id))
+
+
 @bp.post("/api/videos/<video_id>/subtitles/<track_id>/delete")
 def api_remove_subtitles(video_id: str, track_id: str):
     return jsonify(tracks=videos.remove_subtitles(video_id, track_id), prefs=videos.get_prefs(video_id))

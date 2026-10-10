@@ -1,5 +1,6 @@
 """What the converter offers for a language: the dropdowns of the GUIs, and the checks of their values."""
 from miningcat.application.converter.modes import ConversionMode
+from miningcat.application.mining import translation
 from miningcat.config.app_info import GITHUB_URL
 from miningcat.domain.languages import Language, SpeechEngine
 from miningcat.domain.ocr.sampling import DEFAULT_REGION, OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
@@ -94,6 +95,8 @@ def language_options(lang: Language) -> dict:
         "align_precision": precision_values_for(lang, aligning=True),
         "char_list": supports_character_list(lang),
         "needs_install": engines_to_install(lang),
+        # its subtitles can be translated to the language of the settings (second subtitles)
+        "translatable": translation.translatable(lang.profile.key) and lang.profile.key != translation.target_language(),
     }
 
 
@@ -118,7 +121,14 @@ def all_options(languages: list[Language]) -> dict:
             "default_region": list(DEFAULT_REGION),
         },
         "github_url": GITHUB_URL,
+        "translation_target": translation_target(),
     }
+
+
+def translation_target() -> dict | None:
+    """{"id", "name"} of the language second subtitles are translated to (the settings'), None when there's none."""
+    target = translation.target_language()
+    return {"id": target, "name": translation.LANGUAGES[target]} if target else None
 
 
 def validate_video_url(url: str, website: str) -> str | None:

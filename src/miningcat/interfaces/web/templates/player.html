@@ -100,6 +100,16 @@
           <label class="form-label small" for="set-secondary">Second subtitles <span class="text-body-secondary">(e.g. a translation, not looked up)</span></label>
           <select class="form-select" id="set-secondary"></select>
         </div>
+        <div class="mb-3 vstack gap-2 border rounded p-2" id="second-generate">
+          <div>
+            <label class="form-label small" for="second-from">From track:</label>
+            <select class="form-select form-select-sm" id="second-from"></select>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary align-self-start" id="second-generate-btn">
+            <i class="bi bi-translate" aria-hidden="true"></i> Generate second subtitles
+          </button>
+          <p class="small text-body-secondary mc-pre-line m-0" id="second-generate-status" role="status"></p>
+        </div>
         <div class="mb-3">
           <span class="form-label small d-flex justify-content-between" id="offset-label">Subtitle timing <output id="out-offset"></output></span>
           <div class="btn-group btn-group-sm" role="group" aria-labelledby="offset-label">

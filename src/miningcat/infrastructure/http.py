@@ -78,3 +78,17 @@ def download(url: str, timeout: float = 300, progress: Callable[[int, int], None
             if progress:
                 progress(len(data), total)
         return bytes(data)
+
+
+def download_to(url: str, path, timeout: float = 300, progress: Callable[[int, int], None] | None = None) -> None:
+    """Writes the content of a URL to a file, chunk by chunk (for large files, e.g. models): `progress(bytes read,
+    total bytes or 0)` is called after each."""
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(request, timeout=timeout, context=ssl_context()) as response, open(path, "wb") as file:
+        total = int(response.headers.get("Content-Length") or 0)
+        done = 0
+        while chunk := response.read(1024 * 1024):
+            file.write(chunk)
+            done += len(chunk)
+            if progress:
+                progress(done, total)

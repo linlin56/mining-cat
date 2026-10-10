@@ -4,14 +4,11 @@ from pathlib import Path
 from typing import Callable
 
 from miningcat.infrastructure import http
+from miningcat.infrastructure.translation.errors import TranslateError
 
 INDEX_URL = "https://raw.githubusercontent.com/argosopentech/argospm-index/main/index.json"
 # Languages Argos can translate (Cantonese and Taigi have no model). "zt" is its traditional Chinese.
 LANGUAGES = {"zh", "ja", "ko", "en", "fr", "de", "es", "it", "pt", "pl", "ru", "vi"}
-
-
-class TranslateError(Exception):
-    pass
 
 
 class ArgosTranslate:

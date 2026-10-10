@@ -61,6 +61,7 @@ function showTab() {
   if (name === "cards") loadCards();
   if (name === "languages") loadWords();
   if (name === "anki") refreshAnki();
+  if (name === "translation") renderTranslation();
 }
 
 // ---------------------------------------------------------------- dictionaries
@@ -251,7 +252,6 @@ async function refreshAnki() {
   S.cardFields = card_fields;
   $("anki-url").value = config.url;
   $("known-interval").value = config.known_interval;
-  renderTranslation();
   $("anki-state").textContent = "Checking Anki…";
   $("anki-state").className = "small text-body-secondary m-0";
   S.anki = await api("/api/anki/status");
@@ -342,61 +342,113 @@ async function renderVoices(language) {
   } catch (err) { showError(err); }
 }
 
+// The engine of the settings (Argos Translate, or an NLLB-200 model) and the languages it translates to.
 async function renderTranslation() {
   try {
-    const { languages, chosen } = await api("/api/translate/languages");
-    // Translating to the language studied is pointless: it's only listed if it was chosen before.
-    const targets = languages.filter((l) => l.id !== STUDY || l.id === chosen);
-    options($("translation-language"), [["", "None: no translation"], ...targets.map((l) => [l.id, l.name])], chosen);
-    S.translatable = languages.some((l) => l.id === STUDY);
-    $("model-download").disabled = !chosen || chosen === STUDY || !S.translatable;
+    const { engines, engine } = await api("/api/translate/languages");
+    S.engines = engines;
+    options($("translation-engine"), engines.map((e) => [e.id, engineLabel(e)]), engine);
+    await renderTargets();
     renderModels(await api("/api/translate/models"));
   } catch (err) { showError(err); }
 }
 
+const engineLabel = (e) => (e.id === "argos" ? e.label : `${e.label} (${megabytes(e.size)}${e.installed ? "" : ", not installed"})`);
+const chosenEngine = () => S.engines.find((e) => e.id === $("translation-engine").value) || S.engines[0];
+
+// The languages of the engine chosen in the list (saved or not).
+async function renderTargets() {
+  const { languages, chosen } = await api(`/api/translate/languages?engine=${encodeURIComponent(chosenEngine().id)}`);
+  const current = $("translation-language").value || chosen;
+  // Translating to the language studied is pointless: it's only listed if it was chosen before.
+  const targets = languages.filter((l) => l.id !== STUDY || l.id === chosen);
+  options($("translation-language"), [["", "None: no translation"], ...targets.map((l) => [l.id, l.name])],
+    targets.some((l) => l.id === current) || current === "" ? current : chosen);
+  S.translatable = languages.some((l) => l.id === STUDY);
+  renderDownloadButton(false);
+}
+
 const megabytes = (bytes) => `${Math.round(bytes / 1e6)} MB`;
 
+// Argos downloads the models of the language studied; NLLB has one model for every language, installed once.
+function renderDownloadButton(running) {
+  const engine = chosenEngine();
+  const nllb = engine.id !== "argos";
+  const target = $("translation-language").value;
+  S.argosLabel ??= $("model-download-label").textContent;  // the template's
+  $("model-help").hidden = nllb;
+  $("model-download-label").textContent = nllb ? `Install ${engine.label}` : S.argosLabel;
+  $("model-download").disabled = running || (nllb ? engine.installed
+    : !target || target === STUDY || !S.translatable || S.argosAvailable === false);
+}
+
 let modelPoll = null;
-function renderModels({ available, installed, job }) {
+function renderModels({ available, installed, nllb, engines, job }) {
   const list = $("model-list");
-  if (!available) {
-    list.replaceChildren(el("p", { class: EMPTY, text: "Translation needs the argostranslate package (pip install argostranslate)." }));
-    $("model-download").disabled = true;
-    return;
+  const wasRunning = S.translationJob === "running";
+  S.translationJob = job.state;
+  S.argosAvailable = available;
+  if (engines) {
+    const chosen = $("translation-engine").value;
+    S.engines = engines;
+    options($("translation-engine"), engines.map((e) => [e.id, engineLabel(e)]), chosen);
   }
-  list.replaceChildren(installed.length
-    ? el("table", { class: "table table-sm align-middle mb-0" }, el("tbody", {}, ...installed.map((m) => el("tr", {},
-      el("td", { text: m.name }), el("td", { class: "text-body-secondary", text: megabytes(m.size) }),
-      el("td", { class: "text-end" }, el("button", { type: "button", class: "btn btn-sm btn-outline-danger", title: "Remove", "aria-label": `Remove ${m.name}`,
-        onclick: async () => {
-          try { renderModels(await api(`/api/translate/models/${m.from}/${m.to}/delete`, {})); } catch (err) { showError(err); }
-        } }, icon("trash")))))))
+  const remove = (label, path) => el("button", { type: "button", class: "btn btn-sm btn-outline-danger", title: "Remove", "aria-label": `Remove ${label}`,
+    onclick: async () => {
+      try { renderModels(await api(path, {})); } catch (err) { showError(err); }
+    } }, icon("trash"));
+  const rows = [
+    ...nllb.map((m) => el("tr", {}, el("td", { text: m.label }), el("td", { class: "text-body-secondary", text: megabytes(m.size) }),
+      el("td", { class: "text-end" }, remove(m.label, `/api/translate/engines/${m.name}/delete`)))),
+    ...installed.map((m) => el("tr", {}, el("td", { text: m.name }), el("td", { class: "text-body-secondary", text: megabytes(m.size) }),
+      el("td", { class: "text-end" }, remove(m.name, `/api/translate/models/${m.from}/${m.to}/delete`)))),
+  ];
+  list.replaceChildren(rows.length
+    ? el("table", { class: "table table-sm align-middle mb-0" }, el("tbody", {}, ...rows))
     : el("p", { class: EMPTY, text: "No model yet: they're downloaded the first time a language is translated." }));
+  if (!available) list.append(el("p", { class: EMPTY, text: "Argos Translate needs the argostranslate package (pip install argostranslate)." }));
 
   const running = job.state === "running";
   $("model-progress").hidden = !running && job.state !== "error";
-  const target = $("translation-language").value;
-  $("model-download").disabled = running || !target || target === STUDY || !S.translatable;
+  renderDownloadButton(running);
   if (running) {
     $("model-progress-bar").style.width = `${job.total ? (100 * job.done) / job.total : 0}%`;
-    $("model-progress-text").textContent = `${langName(job.language)}${job.step ? ` (model ${job.step})` : ""}: `
-      + (job.total ? `${megabytes(job.done)} / ${megabytes(job.total)}` : "starting…");
+    const size = job.total ? `${megabytes(job.done)} / ${megabytes(job.total)}` : "starting…";
+    $("model-progress-text").textContent = job.engine
+      ? `${(S.engines.find((e) => e.id === job.engine) || { label: job.engine }).label}: ${job.step === "packages" ? "installing its packages (see the terminal)…" : size}`
+      : `${langName(job.language)}${job.step ? ` (model ${job.step})` : ""}: ${size}`;
   } else if (job.state === "error") {
     $("model-progress-bar").style.width = "0%";
-    $("model-progress-text").textContent = `Download failed: ${job.error}`;
+    $("model-progress-text").textContent = `${job.engine ? "Install" : "Download"} failed: ${job.error}`;
   }
   clearTimeout(modelPoll);
   if (running) modelPoll = setTimeout(async () => { try { renderModels(await api("/api/translate/models")); } catch (err) { showError(err); } }, 700);
+  else if (wasRunning && job.state === "done" && job.engine) dialog("Installed", `${chosenEngine().label} is installed: sentences are now translated with it.`);
 }
 
 async function downloadModels() {
+  const engine = chosenEngine();
+  if (engine.id !== "argos") { await installEngine(engine); return; }
   try { renderModels(await api("/api/translate/models", { language: STUDY })); } catch (err) { showError(err); }
 }
 
+// NLLB isn't there yet: its install (its model, and its packages when missing) runs in the background.
+async function installEngine(engine) {
+  const install = await confirmBox(`Install ${engine.label}?`,
+    `${engine.label} is downloaded once (${megabytes(engine.size)}) and translates every language, on your computer. ` +
+    "Its license (CC-BY-NC 4.0) only allows non-commercial use.\n\nYou can also run `make install-nllb`.", "Install");
+  if (!install) return false;
+  try { renderModels(await api(`/api/translate/engines/${engine.id}/install`, {})); } catch (err) { showError(err); return false; }
+  return true;
+}
+
 async function saveTranslation() {
+  const engine = chosenEngine();
+  if (engine.id !== "argos" && !engine.installed && S.translationJob !== "running" && !(await installEngine(engine))) return;
   try {
-    S.config = (await api("/api/anki/config", { translation_language: $("translation-language").value })).config;
-    renderTranslation();
+    S.config = (await api("/api/anki/config", {
+      translation_engine: engine.id, translation_language: $("translation-language").value,
+    })).config;
     $("translation-saved").textContent = "Saved.";
     setTimeout(() => { $("translation-saved").textContent = ""; }, 3000);
   } catch (err) { showError(err); }
@@ -609,6 +661,8 @@ async function init() {
     $("deck-create").addEventListener("click", createDeck);
     $("translation-save").addEventListener("click", saveTranslation);
     $("model-download").addEventListener("click", downloadModels);
+    $("translation-engine").addEventListener("change", async () => { try { await renderTargets(); } catch (err) { showError(err); } });
+    $("translation-language").addEventListener("change", () => renderDownloadButton(S.translationJob === "running"));
     $("sync-add").addEventListener("click", () => {
       $("sync-sources").querySelector(".sync-empty")?.remove();
       $("sync-sources").append(syncRow());

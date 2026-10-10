@@ -74,7 +74,7 @@ def language_options(lang: Language) -> dict:
         "precision": precision_values_for(lang),
         "char_list": supports_character_list(lang),
         # its subtitles can be translated to the language of the settings (second subtitles)
-        "translatable": lang.profile.key in translation.ARGOS_LANGUAGES and lang.profile.key != translation.target_language(),
+        "translatable": translation.translatable(lang.profile.key) and lang.profile.key != translation.target_language(),
     }
 
 

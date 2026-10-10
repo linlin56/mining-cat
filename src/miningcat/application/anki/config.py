@@ -5,11 +5,14 @@ from miningcat.domain.languages import LANGUAGES
 from miningcat.domain.words.status import DEFAULT_KNOWN_INTERVAL
 from miningcat.infrastructure.anki.ankiconnect import AnkiConnect
 from miningcat.infrastructure.persistence.settings_store import settings
+from miningcat.infrastructure.translation.nllb import MODELS as NLLB_MODELS
 
 DEFAULT_URL = "http://127.0.0.1:8765"
 DEFAULT_TAG = "mining-cat"
 OLD_DEFAULT_TAG = "miningcat"
 _SETTING = "anki"
+# What translates the sentences: Argos Translate, or one of NLLB-200's models (optional, `make install-nllb`).
+TRANSLATION_ENGINES = ("argos", *NLLB_MODELS)
 
 
 def get_config() -> dict:
@@ -21,6 +24,7 @@ def get_config() -> dict:
     config.setdefault("sync", {})    # language -> [{deck, field, reading_field}]
     config.setdefault("tts_voices", {})  # language -> Edge-TTS voice reading the sentences, "" = none
     config.setdefault("translation_language", "en")  # sentences are translated to it, "" = not translated
+    config.setdefault("translation_engine", "argos")  # one of TRANSLATION_ENGINES
     for setup in config["notes"].values():
         if setup.get("tags") == OLD_DEFAULT_TAG:  # the default tag was "miningcat" before
             setup["tags"] = DEFAULT_TAG
@@ -56,6 +60,11 @@ def save_config(values: dict) -> dict:
         if target and target not in LANGUAGES:
             raise AnkiError(f"Unknown language: {target!r}")
         config["translation_language"] = target
+    if "translation_engine" in values:
+        engine = str(values["translation_engine"] or "argos")
+        if engine not in TRANSLATION_ENGINES:
+            raise AnkiError(f"Unknown translation engine: {engine!r}")
+        config["translation_engine"] = engine
     for language, voice in (values.get("tts_voices") or {}).items():
         if language in LANGUAGES:
             config["tts_voices"][language] = str(voice or "")

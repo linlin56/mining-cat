@@ -8,7 +8,7 @@ from miningcat.domain.dictionary.errors import DictionaryError
 from miningcat.domain.library.errors import AudioError, BookError, ComicError, VideoError
 from miningcat.domain.words.status import WordError
 from miningcat.infrastructure.capture import CaptureError
-from miningcat.infrastructure.translation.argos import TranslateError
+from miningcat.infrastructure.translation.errors import TranslateError
 
 
 class UserError(Exception):

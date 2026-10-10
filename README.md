@@ -32,7 +32,7 @@ MiningCat chains several speech and NLP components into one local, multilingual 
 | Forced alignment of a book's text on its audiobook | [stable-ts](https://github.com/jianfch/stable-ts) (Whisper-based); Meta's MMS aligner on the romanized text for Taigi |
 | Speech synthesis | [edge-tts](https://github.com/rany2/edge-tts); Meta's [MMS-TTS](https://huggingface.co/facebook/mms-tts-nan) (local) for Taigi |
 | OCR (hardsubs, games, manga) | Apple Vision / Live Text on macOS, [EasyOCR](https://github.com/JaidedAI/EasyOCR) and [owocr](https://github.com/AuroraWright/owocr) elsewhere |
-| Offline machine translation of sentences | [Argos Translate](https://github.com/argosopentech/argos-translate) |
+| Offline machine translation of sentences | [Argos Translate](https://github.com/argosopentech/argos-translate); optionally Meta's [NLLB-200](https://github.com/facebookresearch/fairseq/tree/nllb) with [CTranslate2](https://github.com/OpenNMT/CTranslate2) (`make install-nllb`) |
 | Word segmentation | Longest dictionary match, [jieba](https://github.com/fxsjy/jieba) and [Janome](https://github.com/mocobeta/janome) for frequency lists |
 | Morphology | Deconjugation (Japanese, Korean, French, Spanish...), Mandarin readings chosen from the context |
 | Learner modelling | Word statuses synced from Anki (card maturity), comprehension rate, i+1 recommendation bounded by a frequency list |

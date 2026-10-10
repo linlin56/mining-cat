@@ -361,7 +361,7 @@ function renderSecondSubtitles() {
   box.checked = v.second;
   const hint = $("second-subs-hint");
   hint.hidden = !v.second && !box.disabled;
-  if (!target) hint.replaceChildren("Choose the language sentences are translated to in ", Object.assign(document.createElement("a"), { href: "/settings/", textContent: "Settings" }), " to generate second subtitles.");
+  if (!target) hint.replaceChildren("Choose the language sentences are translated to in ", Object.assign(document.createElement("a"), { href: "/settings/#translation", textContent: "Settings › Translation" }), " to generate second subtitles.");
   else if (!S.lang.translatable) hint.textContent = `${S.lang.label} subtitles can't be translated to ${target.name}.`;
   else hint.textContent = `Second subtitles will be generated in ${target.name}`;
 

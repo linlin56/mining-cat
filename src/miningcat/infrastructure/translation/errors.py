@@ -1,0 +1,2 @@
+class TranslateError(Exception):
+    pass

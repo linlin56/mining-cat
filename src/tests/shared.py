@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from miningcat.infrastructure.translation.argos import TranslateError
+from miningcat.infrastructure.translation.errors import TranslateError
 
 MOCK_DIR = Path(__file__).parent / "mock"
 MOCK_EPUB_TW = MOCK_DIR / "book_zh-TW.epub"
@@ -278,3 +278,37 @@ class FakeArgos:
 
     def translate(self, text, source, target) -> str:
         return f"[{source}>{target}] {text}"
+
+
+class FakeNllb:
+    """NLLB-200 with its packages, translating each line to "{source>target} line"."""
+
+    def __init__(self, installed: set):
+        self.installed_names = set(installed)
+        self.packages = True
+        self.batches = []
+
+    def available(self) -> bool:
+        return self.packages
+
+    def installed(self, name) -> bool:
+        return name in self.installed_names
+
+    def installed_models(self) -> list:
+        return [{"name": name, "label": name, "size": 1} for name in sorted(self.installed_names)]
+
+    def install(self, name, progress=None) -> None:
+        if progress:
+            progress(1, 1)
+        self.installed_names.add(name)
+
+    def uninstall(self, name) -> None:
+        if name not in self.installed_names:
+            raise TranslateError("This model isn't installed.")
+        self.installed_names.remove(name)
+
+    def translate(self, name, lines, source, target) -> list:
+        if name not in self.installed_names:
+            raise TranslateError("not installed")
+        self.batches.append(len(lines))
+        return [f"{{{source}>{target}}} {line}" for line in lines]

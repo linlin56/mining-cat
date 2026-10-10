@@ -1,4 +1,4 @@
-# NLLB-200, which translates the sentences and subtitles (optional): `make install-nllb`. faster-whisper brings
+# NLLB-200, which translates the sentences and subtitles (optional): `make install-translation`. faster-whisper brings
 # CTranslate2 already; the model is downloaded by the install.
 ctranslate2>=4.0
 sentencepiece>=0.2

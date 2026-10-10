@@ -23,7 +23,7 @@ from miningcat.infrastructure import http
 from miningcat.infrastructure.persistence.database import Database
 from miningcat.infrastructure.persistence.settings_store import settings
 
-from shared import FakeNllb, FakeOpenCc
+from shared import FakeNllb, FakeOpenCc, FakeQwen
 
 pytest.importorskip("flask")
 
@@ -1062,7 +1062,15 @@ def test_local_voice_preloaded_with_the_voices(client, monkeypatch):
 def fake_nllb(monkeypatch):
     nllb = FakeNllb(installed={"nllb-600m"})
     monkeypatch.setattr(translation, "nllb", nllb)
+    monkeypatch.setattr(translation, "qwen", FakeQwen(installed=set()))
     return nllb
+
+
+@pytest.fixture
+def fake_qwen(fake_nllb, monkeypatch):
+    qwen = FakeQwen(installed={"qwen3-4b"})
+    monkeypatch.setattr(translation, "qwen", qwen)
+    return qwen
 
 
 def test_sentence_translation(fake_nllb):
@@ -1085,7 +1093,7 @@ def test_translation_model_must_be_downloaded(fake_nllb):
         translation.translate("zh", "公園")
     fake_nllb.packages = False
     anki.save_config({"translation_model": "nllb-600m"})
-    with pytest.raises(translation.TranslateError, match="make install-nllb"):
+    with pytest.raises(translation.TranslateError, match="make install-translation"):
         translation.translate("zh", "公園")
     assert fake_nllb.batches == []
     with pytest.raises(anki.AnkiError, match="Unknown translation model"):
@@ -1107,13 +1115,7 @@ def test_subtitles_translation(fake_nllb, monkeypatch):
     assert translated == ("1\n00:00:01,000 --> 00:00:02,000\n[zt>en] 我們去\n\n"
                           "2\n00:00:03,000 --> 00:00:04,000\n<i>[zt>en] 公園</i>\n\n"
                           "3\n00:00:05,000 --> 00:00:06,000\n[zt>en] 我們去\n")
-    assert fake_nllb.batches == [2] and steps == [(2, 2)]  # each line once
-    # a few lines at a time
-    monkeypatch.setattr(translation, "LINES_PER_STEP", 2)
-    srt = "".join(f"{i}\n00:00:0{i},000 --> 00:00:0{i},500\n第{i}行\n\n" for i in range(1, 6))
-    steps.clear()
-    translation.translate_srt("zh", srt, lambda done, total: steps.append((done, total)))
-    assert fake_nllb.batches[1:] == [2, 2, 1] and steps == [(2, 5), (4, 5), (5, 5)]
+    assert fake_nllb.batches == [2] and steps == [(2, 2)]  # each line once, all to the engine (in order)
     with pytest.raises(translation.TranslateError, match="already in English"):
         translation.translate_srt("en", "1\n00:00:01,000 --> 00:00:02,000\nHi\n")
     with pytest.raises(translation.TranslateError, match="no text"):
@@ -1121,6 +1123,44 @@ def test_subtitles_translation(fake_nllb, monkeypatch):
     anki.save_config({"translation_language": ""})
     with pytest.raises(translation.TranslateError, match="settings"):
         translation.translate_srt("zh", srt)
+
+
+def test_translation_with_qwen(fake_qwen, fake_nllb):
+    anki.save_config({"translation_model": "qwen3-4b"})
+    srt = "".join(f"{i}\n00:00:0{i},000 --> 00:00:0{i},500\n第{i}行\n\n" for i in range(1, 6))
+    translation.translate_srt("zh", srt)
+    assert fake_qwen.batches == [5] and fake_nllb.batches == []  # all the lines, in order, for their context
+    assert translation.translatable("nan")  # Taigi's subtitles
+    translation.translate_srt("nan", "1\n00:00:01,000 --> 00:00:02,000\n食飽未\n")
+
+    # the cards' sentences: NLLB, fast, unless asked
+    assert translation.card_model() == "nllb-600m"
+    assert translation.translate("ja", "公園") == "[ja>en] 公園" and fake_nllb.batches == [1]
+    assert fake_qwen.loaded  # still used, for the subtitles
+    with pytest.raises(translation.TranslateError, match="no offline translation"):
+        translation.translate("nan", "食飽未")  # NLLB has no Taigi
+    fake_nllb.installed_names.add("nllb-1.3b")
+    assert translation.card_model() == "nllb-1.3b"  # the larger one downloaded
+    anki.save_config({"translation_cards_with_context": True})
+    assert translation.card_model() == "qwen3-4b" and translation.models()["cards_with_context"]
+    assert translation.translate("nan", "食飽未") == "[nan>en] 食飽未" and fake_qwen.batches[-1] == 1
+
+    # back to NLLB: Qwen's memory freed
+    anki.save_config({"translation_model": "nllb-600m"})
+    assert translation.card_model() == "nllb-600m"  # the model of the settings, whatever the box
+    translation.translate("ja", "公園")
+    assert not fake_qwen.loaded and not translation.translatable("nan")
+
+
+def test_engine_unloaded_only_when_idle():
+    from miningcat.infrastructure.translation.qwen3 import Qwen3
+    qwen = Qwen3()
+    qwen._loaded = ("qwen3-4b", "model", "tokenizer", "mps")
+    with qwen._lock:  # translating
+        qwen.unload()
+        assert qwen._loaded is not None
+    qwen.unload()
+    assert qwen._loaded is None
 
 
 def test_http_translate(client, fake_nllb):
@@ -1137,30 +1177,34 @@ def test_translation_models(client, fake_nllb, monkeypatch):
                         lambda target, args=(), **kw: types.SimpleNamespace(start=lambda: target(*args)))
     res = client.get("/api/translate/models").get_json()
     assert res["model"] == "nllb-600m" and res["job"]["state"] == "idle"
-    assert [(m["id"], m["installed"]) for m in res["models"]] == [("nllb-600m", True), ("nllb-1.3b", False)]
+    assert [(m["id"], m["installed"], m["context"]) for m in res["models"]] == [
+        ("nllb-600m", True, False), ("nllb-1.3b", False, False), ("qwen3-4b", False, True)]
 
     # the packages first when they're missing, then the model
     pip = []
 
-    def install_packages():
-        pip.append(1)
-        fake_nllb.packages = True
+    def install_packages(name):
+        pip.append(name)
+        translation._engine(name).packages = True
         return 0
 
-    monkeypatch.setattr(translation.nllb_install, "install_packages", install_packages)
+    monkeypatch.setattr(translation.model_install, "install_packages", install_packages)
     fake_nllb.packages = False
     res = client.post("/api/translate/models/nllb-1.3b/install", json={}, headers=HEADERS).get_json()
     assert res["job"]["state"] == "done" and res["job"]["model"] == "nllb-1.3b", res
-    assert pip == [1] and fake_nllb.installed("nllb-1.3b")
+    assert pip == ["nllb-1.3b"] and fake_nllb.installed("nllb-1.3b")
+    translation.qwen.packages = False
+    client.post("/api/translate/models/qwen3-4b/install", json={}, headers=HEADERS)
+    assert pip[-1] == "qwen3-4b" and translation.qwen.installed("qwen3-4b")  # Qwen's packages
     assert client.post("/api/translate/models/nllb-1.3b/install", json={}, headers=HEADERS).status_code == 400  # there
     assert client.post("/api/translate/models/argos/install", json={}, headers=HEADERS).status_code == 400
 
     res = client.post("/api/translate/models/nllb-600m/delete", json={}, headers=HEADERS).get_json()
-    assert [(m["id"], m["installed"]) for m in res["models"]] == [("nllb-600m", False), ("nllb-1.3b", True)]
+    assert [(m["id"], m["installed"]) for m in res["models"]] == [("nllb-600m", False), ("nllb-1.3b", True), ("qwen3-4b", True)]
     assert client.post("/api/translate/models/nllb-600m/delete", json={}, headers=HEADERS).status_code == 400
 
     # a failed install is reported
-    monkeypatch.setattr(translation.nllb_install, "install_packages", lambda: 1)
+    monkeypatch.setattr(translation.model_install, "install_packages", lambda name: 1)
     fake_nllb.packages = False
     res = client.post("/api/translate/models/nllb-600m/install", json={}, headers=HEADERS).get_json()
     assert res["job"]["state"] == "error" and "pip" in res["job"]["error"]

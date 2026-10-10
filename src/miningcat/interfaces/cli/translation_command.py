@@ -1,30 +1,30 @@
 from tqdm import tqdm
 
 from miningcat.application.converter.errors import ConverterError
-from miningcat.infrastructure.translation import nllb_install
+from miningcat.infrastructure.translation import install
 from miningcat.infrastructure.translation.errors import TranslateError
-from miningcat.infrastructure.translation.nllb import DEFAULT_MODEL, MODELS
 from miningcat.interfaces.cli.command import Command
 
 
-class NllbInstallCommand(Command):
-    """Installs NLLB-200, which translates sentences and subtitles: its packages, then the model asked for."""
+class TranslationInstallCommand(Command):
+    """Installs a translation model (NLLB-200 or Qwen3): the packages of its engine, then the model."""
 
-    name, help = "install-nllb", "Install NLLB-200, which translates sentences and subtitles"
+    name, help = "install-translation", "Install a model translating sentences and subtitles (NLLB-200 or Qwen3)"
 
     def configure(self, parser):
-        parser.add_argument("--model", default=DEFAULT_MODEL, choices=list(MODELS))
+        parser.add_argument("--model", default=install.DEFAULT_MODEL, choices=list(install.MODELS))
 
     def run(self, args):
-        with tqdm(unit="B", unit_scale=True, desc=MODELS[args.model].label) as bar:
+        label = install.MODELS[args.model].label
+        with tqdm(unit="B", unit_scale=True, desc=label) as bar:
             def progress(done, total):
                 bar.total = total
                 bar.update(done - bar.n)
 
             try:
-                returncode = nllb_install.install(args.model, progress)
+                returncode = install.install(args.model, progress)
             except TranslateError as exc:
                 raise ConverterError(str(exc))
         if returncode != 0:
             raise ConverterError("The install failed: see pip's output above.")
-        print(f"{MODELS[args.model].label} is installed: choose it in Settings › Translation.")
+        print(f"{label} is installed: choose it in Settings › Translation.")

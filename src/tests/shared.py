@@ -259,22 +259,21 @@ def redirect_path(monkeypatch, name: str, path) -> None:
     monkeypatch.setattr(ProjectPaths, name, property(lambda self: path))
 
 
-class FakeNllb:
-    """NLLB-200, its packages there, translating each line to "[source>target] line"."""
+class FakeEngine:
+    """A translation engine (NLLB-200 or Qwen3), its packages there, translating each line to "[source>target] line"."""
 
-    def __init__(self, installed: set):
+    def __init__(self, engine: type, installed: set):
+        self.MODELS, self.LANGUAGES = engine.MODELS, engine.LANGUAGES
         self.installed_names = set(installed)
         self.packages = True
         self.batches = []
+        self.loaded = False
 
     def available(self) -> bool:
         return self.packages
 
     def installed(self, name) -> bool:
         return name in self.installed_names
-
-    def installed_models(self) -> list:
-        return [{"name": name, "label": name, "size": 1} for name in sorted(self.installed_names)]
 
     def install(self, name, progress=None) -> None:
         if progress:
@@ -286,6 +285,22 @@ class FakeNllb:
             raise TranslateError("This model isn't installed.")
         self.installed_names.remove(name)
 
-    def translate(self, name, lines, source, target) -> list:
+    def unload(self) -> None:
+        self.loaded = False
+
+    def translate_lines(self, name, lines, source, target, progress=None) -> list:
+        self.loaded = True
         self.batches.append(len(lines))
+        if progress:
+            progress(len(lines), len(lines))
         return [f"[{source}>{target}]  {line} " for line in lines]
+
+
+def FakeNllb(installed: set) -> FakeEngine:
+    from miningcat.infrastructure.translation.nllb import Nllb
+    return FakeEngine(Nllb, installed)
+
+
+def FakeQwen(installed: set) -> FakeEngine:
+    from miningcat.infrastructure.translation.qwen3 import Qwen3
+    return FakeEngine(Qwen3, installed)

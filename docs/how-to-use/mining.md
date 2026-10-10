@@ -120,19 +120,20 @@ The word becomes *learning* as soon as the card is made.
 
 ### Translation
 
-Sentences, and [second subtitles](video.md#second-subtitles-translation), are translated on your computer by Meta's [NLLB-200](https://ai.meta.com/research/no-language-left-behind/) (No Language Left Behind): one model translates every language, directly from one to the other, Cantonese included (not Taiwanese Hokkien). Choose it in **Settings › Translation** (*Model*):
+Sentences, and [second subtitles](video.md#second-subtitles-translation), are translated on your computer. Choose the model in **Settings › Translation** (*Model*); each translates every language, directly from one to the other:
 
-- **NLLB-200 600M** (630 MB, default);
-- **NLLB-200 1.3B** (1.4 GB): more accurate, slower.
+- **NLLB-200 600M** (630 MB, default) and **NLLB-200 1.3B** (1.4 GB, more accurate, slower): Meta's [No Language Left Behind](https://ai.meta.com/research/no-language-left-behind/), fast, a line at a time. Cantonese included, not Taiwanese Hokkien. It runs with [CTranslate2](https://github.com/OpenNMT/CTranslate2), on the CPU (or an NVIDIA GPU). Its license (CC-BY-NC 4.0) only allows non-commercial use.
+- **Qwen3 4B** (8 GB): [Qwen3-4B-Instruct](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507) (Alibaba, Apache 2.0), a language model. It translates subtitles 16 lines at a time, with the 8 lines before them and their translations as context: it understands who speaks and what is meant (omitted subjects, pronouns, a sentence cut over two lines, slang) much better than NLLB. It also translates Taiwanese Hokkien written in Hanji, roughly (words that mean something else in Mandarin, like 俗 *cheap* or 歹勢 *sorry*, are often mistaken), not in Tâi-lô or Pe̍h-ōe-jī. But it's slower (about a second per line on an Apple M2: some minutes for an episode, in the background), and it needs an NVIDIA GPU or an Apple Silicon Mac with 16 GB of memory. It runs with [transformers](https://github.com/huggingface/transformers), like [Qwen3-ASR](audiobook-ebook.md#qwen3-asr-optional).
 
-The model is downloaded once, not with the regular install: when you save the settings, MiningCat offers to download it (with its packages if they're missing), or use *Models* in the same tab, where you can also remove it. From the terminal:
+    With Qwen3, the cards' sentences are still translated by NLLB-200, fast (the 1.3B model when it's downloaded, else the 600M one): tick *Also translate the cards' sentences with Qwen3* to use it there too (the first card then waits for it to load, about 15 seconds, and each sentence takes a second or two).
+
+The models aren't part of the regular install: when you save the settings, MiningCat offers to download the one chosen (with the packages of its engine if they're missing), or use *Models* in the same tab, where you can also remove them. They're kept in `library/translation_models/`. From the terminal:
 
 ```bash
-make install-nllb                  # NLLB-200 600M
-make install-nllb NLLB=nllb-1.3b   # NLLB-200 1.3B
+make install-translation                         # NLLB-200 600M
+make install-translation TRANSLATION=nllb-1.3b   # NLLB-200 1.3B
+make install-translation TRANSLATION=qwen3-4b    # Qwen3 4B
 ```
-
-It runs with [CTranslate2](https://github.com/OpenNMT/CTranslate2), on the CPU (or an NVIDIA GPU). Its models are kept in `library/translation_models/`. Its license (CC-BY-NC 4.0) only allows non-commercial use.
 
 ## 4. Connect Anki
 

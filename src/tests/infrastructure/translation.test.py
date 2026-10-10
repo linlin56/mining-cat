@@ -3,7 +3,7 @@ import types
 
 import pytest
 
-from miningcat.infrastructure.translation import nllb, nllb_install
+from miningcat.infrastructure.translation import install, model_files, nllb, qwen3
 from miningcat.infrastructure.translation.errors import TranslateError
 
 
@@ -58,39 +58,36 @@ def fake_hub(monkeypatch):
         if progress:
             progress(len(data), len(data))
 
-    monkeypatch.setattr(nllb.http, "download_to", download_to)
+    monkeypatch.setattr(model_files.http, "download_to", download_to)
     return asked
 
 
 def test_install_downloads_the_model_at_its_revision(fake_hub):
     model = nllb.Nllb()
-    assert not model.installed("nllb-600m") and model.installed_models() == []
+    assert not model.installed("nllb-600m")
     steps = []
     model.install("nllb-600m", lambda done, total: steps.append(done))
     info = nllb.MODELS["nllb-600m"]
-    assert fake_hub == [f"https://huggingface.co/{info.repo}/resolve/{info.revision}/{f}" for f in nllb.FILES]
+    assert fake_hub == [f"https://huggingface.co/{info.repo}/resolve/{info.revision}/{f}" for f in info.files]
     assert model.installed("nllb-600m") and not model.installed("nllb-1.3b")
-    assert steps == sorted(steps) and steps[-1] == sum(len(f) for f in nllb.FILES)  # over all the files
-    assert model.installed_models() == [{"name": "nllb-600m", "label": "NLLB-200 600M", "size": steps[-1]}]
+    assert steps == sorted(steps) and steps[-1] == sum(len(f) for f in info.files)  # over all the files
+    assert model_files.size_on_disk(info) == steps[-1]
     model.uninstall("nllb-600m")
     assert not model.installed("nllb-600m")
     with pytest.raises(TranslateError, match="isn't installed"):
         model.uninstall("nllb-600m")
 
 
-def test_failed_download_leaves_no_model(fake_hub, monkeypatch):
-    monkeypatch.setattr(nllb, "FILES", ["config.json", "broken"])
-    model = nllb.Nllb()
+def test_failed_download_leaves_no_model(fake_hub):
+    broken = model_files.PinnedModel("broken", "Broken", "org/broken", "abc", 10, ("config.json", "broken"))
     with pytest.raises(TranslateError, match="connection reset"):
-        model.install("nllb-600m")
-    assert not model.installed("nllb-600m")
-    assert [f.name for f in model.folder("nllb-600m").iterdir()] == ["config.json"]  # no half file
+        model_files.download(broken)
+    assert not model_files.downloaded(broken)
+    assert [f.name for f in model_files.folder(broken).iterdir()] == ["config.json"]  # no half file
 
 
-def test_translate_with_the_languages_codes(fake_hub, fake_packages):
+def test_translate_with_the_languages_codes(fake_hub, fake_packages, monkeypatch):
     model = nllb.Nllb()
-    with pytest.raises(TranslateError, match="isn't installed"):
-        model.translate("nllb-600m", ["a"], "zh", "en")
     model.install("nllb-600m")
     assert model.translate("nllb-600m", ["我們 去", "公園"], "zt", "fr") == ["我們 去", "公園"]
     assert model.translate("nllb-600m", ["neih hou"], "yue", "en") == ["NEIH HOU"]
@@ -100,42 +97,102 @@ def test_translate_with_the_languages_codes(fake_hub, fake_packages):
     assert prefix == [["fra_Latn"], ["fra_Latn"]]
     with pytest.raises(TranslateError, match="can't translate"):
         model.translate("nllb-600m", ["a"], "nan", "en")  # Taigi
-    model.uninstall("nllb-600m")  # unloaded too
-    with pytest.raises(TranslateError, match="isn't installed"):
-        model.translate("nllb-600m", ["a"], "zh", "en")
+    # subtitles, a few lines at a time
+    monkeypatch.setattr(nllb, "LINES_PER_STEP", 2)
+    steps = []
+    assert model.translate_lines("nllb-600m", ["a", "b", "c"], "en", "fr", lambda *s: steps.append(s)) == ["A", "B", "C"]
+    assert steps == [(2, 3), (3, 3)]
+    model.unload()
+    model.translate("nllb-600m", ["a"], "en", "fr")
+    assert len(fake_packages) == 2  # loaded again
 
 
 def test_missing_packages_tell_how_to_install(fake_hub, monkeypatch):
     monkeypatch.setitem(sys.modules, "ctranslate2", None)
     model = nllb.Nllb()
     model.install("nllb-600m")
-    with pytest.raises(TranslateError, match="make install-nllb"):
+    with pytest.raises(TranslateError, match="Settings › Translation"):
         model.translate("nllb-600m", ["a"], "zh", "en")
     monkeypatch.setattr(nllb.importlib.util, "find_spec", lambda name: None)
-    assert not model.available()
+    assert not model.available() and not qwen3.Qwen3().available()
 
 
-def test_install_runs_pip_then_downloads(fake_hub, monkeypatch):
+def test_install_runs_the_engines_pip_then_downloads(fake_hub, monkeypatch):
     ran = []
     returncode = [0]
-    monkeypatch.setattr(nllb_install.subprocess, "run",
+    monkeypatch.setattr(install.subprocess, "run",
                         lambda command, check: ran.append(command[3:]) or types.SimpleNamespace(returncode=returncode[0]))
-    assert nllb_install.install("nllb-1.3b") == 0
-    assert ran == [["install", "-r", str(nllb_install.PROJECT_ROOT / "requirements-nllb.txt")]]
-    assert nllb.Nllb().installed("nllb-1.3b") and len(fake_hub) == len(nllb.FILES)
-    assert nllb_install.install("nllb-1.3b") == 0 and len(fake_hub) == len(nllb.FILES)  # already downloaded
+    assert install.install("nllb-1.3b") == 0
+    assert ran == [["install", "-r", str(install.PROJECT_ROOT / "requirements-nllb.txt")]]
+    files = nllb.MODELS["nllb-1.3b"].files
+    assert nllb.Nllb().installed("nllb-1.3b") and len(fake_hub) == len(files)
+    assert install.install("nllb-1.3b") == 0 and len(fake_hub) == len(files)  # already downloaded
+    assert install.install("qwen3-4b") == 0 and qwen3.Qwen3().installed("qwen3-4b")
+    assert ran[-1] == ["install", "-r", str(install.PROJECT_ROOT / "requirements-qwen.txt")]
     returncode[0] = 2
-    assert nllb_install.install("nllb-600m") == 2 and not nllb.Nllb().installed("nllb-600m")
+    assert install.install("nllb-600m") == 2 and not nllb.Nllb().installed("nllb-600m")
+    assert set(install.MODELS) == {"nllb-600m", "nllb-1.3b", "qwen3-4b"} and install.DEFAULT_MODEL in install.MODELS
 
 
 def test_cli_install_command(fake_hub, monkeypatch, capsys):
     from miningcat.application.converter.errors import ConverterError
     from miningcat.interfaces.cli.main import build_parser
-    from miningcat.interfaces.cli.translation_command import NllbInstallCommand
-    monkeypatch.setattr(nllb_install, "install_packages", lambda: 0)
-    args = build_parser().parse_args(["install-nllb"])
-    NllbInstallCommand().run(args)
+    from miningcat.interfaces.cli.translation_command import TranslationInstallCommand
+    monkeypatch.setattr(install, "install_packages", lambda name: 0)
+    TranslationInstallCommand().run(build_parser().parse_args(["install-translation"]))
     assert nllb.Nllb().installed("nllb-600m") and "is installed" in capsys.readouterr().out
-    monkeypatch.setattr(nllb_install, "install_packages", lambda: 1)
+    monkeypatch.setattr(install, "install_packages", lambda name: 1)
     with pytest.raises(ConverterError, match="pip"):
-        NllbInstallCommand().run(build_parser().parse_args(["install-nllb", "--model", "nllb-1.3b"]))
+        TranslationInstallCommand().run(build_parser().parse_args(["install-translation", "--model", "qwen3-4b"]))
+
+
+# Qwen3: subtitles in numbered chunks, after the lines before them
+def test_qwen_prompt_and_answer():
+    chat = qwen3.messages(["やあ", "旅人さ"], [("おい", "Hey")], "ja", "en")
+    assert "from Japanese to English" in chat[0]["content"]
+    assert chat[1]["content"] == "Context (already translated):\nおい => Hey\n\nTranslate:\n1. やあ\n2. 旅人さ"
+    assert "Context" not in qwen3.messages(["a"], [], "zt", "fr")[1]["content"]
+    assert "traditional" in qwen3.messages(["a"], [], "zt", "fr")[0]["content"]
+    assert qwen3.parse("1. Hi\n2) I'm a traveler.\n", 2) == ["Hi", "I'm a traveler."]
+    assert qwen3.parse("Sure!\n1. Hi\n2. Bye", 2) == ["Hi", "Bye"]  # a line before
+    assert qwen3.parse("1. Hi", 2) is None and qwen3.parse("1. Hi\n2. Bye\n3. ?", 2) is None
+    assert "nan" in qwen3.LANGUAGES and "zt" not in qwen3.LANGUAGES
+
+
+class FakeQwen(qwen3.Qwen3):
+    """Answers each chat with its lines numbered and upper-cased; `broken` chunk sizes get one line too few."""
+
+    def __init__(self, broken=()):
+        super().__init__()
+        self.chats, self.broken = [], set(broken)
+
+    def _generate(self, name, chat, max_tokens):
+        self.chats.append(chat[1]["content"])
+        lines = chat[1]["content"].split("Translate:\n")[1].splitlines()
+        answer = [f"{i + 1}. {line.split('. ', 1)[1].upper()}" for i, line in enumerate(lines)]
+        return "\n".join(answer[:-1] if len(lines) in self.broken else answer)
+
+
+def test_qwen_translates_in_chunks_with_context(monkeypatch):
+    monkeypatch.setattr(qwen3, "CHUNK", 3)
+    monkeypatch.setattr(qwen3, "CONTEXT", 2)
+    model = FakeQwen()
+    steps = []
+    lines = ["a", "b", "c", "d", "e"]
+    assert model.translate_lines("qwen3-4b", lines, "en", "fr", lambda *s: steps.append(s)) == ["A", "B", "C", "D", "E"]
+    assert steps == [(3, 5), (5, 5)]
+    assert model.chats == ["Translate:\n1. a\n2. b\n3. c",
+                           "Context (already translated):\nb => B\nc => C\n\nTranslate:\n1. d\n2. e"]
+    with pytest.raises(TranslateError, match="can't translate"):
+        model.translate_lines("qwen3-4b", ["a"], "xx", "en")
+
+
+def test_qwen_splits_a_chunk_it_answers_wrong(monkeypatch):
+    monkeypatch.setattr(qwen3, "CHUNK", 4)
+    model = FakeQwen(broken={4})
+    assert model.translate_lines("qwen3-4b", ["a", "b", "c", "d"], "en", "fr") == ["A", "B", "C", "D"]
+    # the halves, the second after the first
+    assert model.chats[1:] == ["Translate:\n1. a\n2. b",
+                               "Context (already translated):\na => A\nb => B\n\nTranslate:\n1. c\n2. d"]
+    model = FakeQwen(broken={1})
+    assert model.translate_lines("qwen3-4b", ["a"], "en", "fr") == [""]  # nothing to cut: no translation

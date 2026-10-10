@@ -1,4 +1,5 @@
-# Qwen3-ASR, optional instead of Whisper for the languages it knows: `make install-qwen`.
+# Qwen3-ASR, optional instead of Whisper for the languages it knows: `make install-qwen`. Also the packages of the
+# Qwen3 translation model (see infrastructure/translation/qwen3.py).
 # qwen-asr itself is installed separately with --no-deps (see Makefile): it pins packages that don't build on
 # recent Pythons (nagisa) and others only its demos use (gradio, vllm).
 transformers==4.57.6

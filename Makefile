@@ -1,4 +1,4 @@
-.PHONY: help gui reader player install install-translation install-qwen install-taigi test coverage screenshots audio epub align export chapter1 chapter run clean video game-setup game
+.PHONY: help venv gui reader player install install-translation install-qwen install-taigi test coverage screenshots audio epub align export chapter1 chapter run clean video game-setup game
 
 # Defaults
 CHAPTER  ?= 1
@@ -27,6 +27,14 @@ MAIN     := PYTHONPATH=src $(PYTHON) -m miningcat
 WEB      := PYTHONPATH=src $(PYTHON) -m miningcat.interfaces.web
 
 PORT     ?= 5050
+
+# Creates .venv with Python 3.14, even when other versions are installed (`py -3.14` is the Windows launcher).
+venv:
+ifeq ($(OS),Windows_NT)
+	py -3.14 -m venv .venv
+else
+	python3.14 -m venv .venv
+endif
 
 # Web GUI (opens in your browser)
 gui:
@@ -74,6 +82,11 @@ help:
 	@echo "  make video URL=https://www.instagram.com/reel/xxxxx/"
 
 install:
+# On Linux without an NVIDIA GPU, PyTorch's default CUDA build drags several GB of useless nvidia-* packages: use the CPU one.
+	@if [ "$$(uname -s)" = "Linux" ] && ! command -v nvidia-smi >/dev/null 2>&1; then \
+		echo "No NVIDIA GPU detected: installing the CPU build of PyTorch"; \
+		$(PYTHON) -m pip install torch --index-url https://download.pytorch.org/whl/cpu; \
+	fi
 	$(PYTHON) -m pip install -r requirements.txt
 # Install separately with --no-deps to avoid the PyGObject build error on Linux.
 	$(PYTHON) -m pip install --no-deps "owocr>=1.26.8"

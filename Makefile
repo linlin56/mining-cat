@@ -29,11 +29,12 @@ WEB      := PYTHONPATH=src $(PYTHON) -m miningcat.interfaces.web
 PORT     ?= 5050
 
 # Creates .venv with Python 3.14, even when other versions are installed (`py -3.14` is the Windows launcher).
+# On Linux, the game capture needs PyGObject from the system (python3-gi): the venv must see the system packages.
 venv:
 ifeq ($(OS),Windows_NT)
 	py -3.14 -m venv .venv
 else
-	python3.14 -m venv .venv
+	python3.14 -m venv $(if $(filter Linux,$(shell uname -s)),--system-site-packages) .venv
 endif
 
 # Web GUI (opens in your browser)

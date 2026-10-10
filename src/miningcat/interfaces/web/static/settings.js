@@ -487,13 +487,43 @@ function renderSyncSources() {
 function syncRow(source = {}) {
   const deck = selectWith(S.anki.decks, source.deck, "Deck");
   deck.dataset.role = "deck";
-  const field = el("input", { type: "text", class: "form-control", value: source.field || "", placeholder: "e.g. Hanzi", "data-role": "field" });
-  const reading = el("input", { type: "text", class: "form-control", value: source.reading_field || "", placeholder: "optional", "data-role": "reading" });
   const labelled = (text, control) => el("label", {}, el("span", { class: "form-label d-block", text }), control);
+  const fieldSelects = (fields, field, reading) => {
+    const pick = selectWith(fields, field, fields.length || !deck.value ? "Field" : "Open Anki to list fields");
+    const pickReading = selectWith(fields, reading, "(none)");
+    pick.dataset.role = "field";
+    pickReading.dataset.role = "reading";
+    return [pick, pickReading];
+  };
+  const [pick, pickReading] = fieldSelects([], source.field, source.reading_field);
+  const fieldLabel = labelled("Word field", pick);
+  const readingLabel = labelled("Reading field", pickReading);
+  // The field lists follow the deck chosen, the values chosen being kept when the new deck has them too.
+  const renderFields = async (field, reading, deckChanged = false) => {
+    const fields = deck.value && S.anki.connected ? await deckFields(deck.value) : [];
+    const kept = (value) => (!deckChanged || fields.includes(value) ? value : "");
+    const [pick, pickReading] = fieldSelects(fields, kept(field), kept(reading));
+    fieldLabel.lastChild.replaceWith(pick);
+    readingLabel.lastChild.replaceWith(pickReading);
+  };
+  deck.addEventListener("change", () => {
+    const get = (role) => row.querySelector(`[data-role="${role}"]`).value;
+    renderFields(get("field"), get("reading"), true);
+  });
   const row = el("div", { class: "sync-source d-flex flex-wrap align-items-end gap-2 mb-2" },
-    labelled("Deck", deck), labelled("Word field", field), labelled("Reading field", reading),
+    labelled("Deck", deck), fieldLabel, readingLabel,
     el("button", { class: "btn btn-outline-danger", type: "button", title: "Remove", "aria-label": "Remove", onclick: () => row.remove() }, icon("trash")));
+  renderFields(source.field, source.reading_field);
   return row;
+}
+
+const deckFieldsCache = {};
+
+function deckFields(deck) {
+  deckFieldsCache[deck] ??= api(`/api/anki/deck-fields?deck=${encodeURIComponent(deck)}`)
+    .then((data) => data.fields)
+    .catch((err) => { delete deckFieldsCache[deck]; showError(err); return []; });
+  return deckFieldsCache[deck];
 }
 
 async function saveSync() {

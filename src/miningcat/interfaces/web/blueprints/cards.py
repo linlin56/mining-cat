@@ -31,6 +31,12 @@ def api_anki_fields():
     return jsonify(fields=fields, guess=anki.guess_field_templates(fields, study_language(language) if language else ""))
 
 
+@bp.get("/api/anki/deck-fields")
+def api_anki_deck_fields():
+    """The fields of the notes of a deck, for the decks whose words' statuses are read."""
+    return jsonify(fields=anki.deck_fields(request.args.get("deck", "")))
+
+
 @bp.post("/api/anki/deck")
 def api_anki_deck():
     """Creates MiningCat's deck of a language in Anki."""

@@ -61,6 +61,7 @@ function showTab() {
   if (name === "cards") loadCards();
   if (name === "languages") loadWords();
   if (name === "anki") refreshAnki();
+  if (name === "translation") renderTranslation();
 }
 
 // ---------------------------------------------------------------- dictionaries
@@ -251,7 +252,6 @@ async function refreshAnki() {
   S.cardFields = card_fields;
   $("anki-url").value = config.url;
   $("known-interval").value = config.known_interval;
-  renderTranslation();
   $("anki-state").textContent = "Checking Anki…";
   $("anki-state").className = "small text-body-secondary m-0";
   S.anki = await api("/api/anki/status");
@@ -342,61 +342,94 @@ async function renderVoices(language) {
   } catch (err) { showError(err); }
 }
 
+// The translation model of the settings (NLLB-200 or Qwen3) and the language sentences are translated to.
 async function renderTranslation() {
   try {
     const { languages, chosen } = await api("/api/translate/languages");
     // Translating to the language studied is pointless: it's only listed if it was chosen before.
     const targets = languages.filter((l) => l.id !== STUDY || l.id === chosen);
     options($("translation-language"), [["", "None: no translation"], ...targets.map((l) => [l.id, l.name])], chosen);
-    S.translatable = languages.some((l) => l.id === STUDY);
-    $("model-download").disabled = !chosen || chosen === STUDY || !S.translatable;
+    S.translationModel = null;
     renderModels(await api("/api/translate/models"));
   } catch (err) { showError(err); }
 }
 
-const megabytes = (bytes) => `${Math.round(bytes / 1e6)} MB`;
+const megabytes = (bytes) => (bytes >= 1e9 ? `${(bytes / 1e9).toFixed(1)} GB` : `${Math.round(bytes / 1e6)} MB`);
+const chosenModel = () => S.translationModels.find((m) => m.id === $("translation-model").value) || S.translationModels[0];
 
 let modelPoll = null;
-function renderModels({ available, installed, job }) {
-  const list = $("model-list");
-  if (!available) {
-    list.replaceChildren(el("p", { class: EMPTY, text: "Translation needs the argostranslate package (pip install argostranslate)." }));
-    $("model-download").disabled = true;
-    return;
-  }
-  list.replaceChildren(installed.length
-    ? el("table", { class: "table table-sm align-middle mb-0" }, el("tbody", {}, ...installed.map((m) => el("tr", {},
-      el("td", { text: m.name }), el("td", { class: "text-body-secondary", text: megabytes(m.size) }),
-      el("td", { class: "text-end" }, el("button", { type: "button", class: "btn btn-sm btn-outline-danger", title: "Remove", "aria-label": `Remove ${m.name}`,
-        onclick: async () => {
-          try { renderModels(await api(`/api/translate/models/${m.from}/${m.to}/delete`, {})); } catch (err) { showError(err); }
-        } }, icon("trash")))))))
-    : el("p", { class: EMPTY, text: "No model yet: they're downloaded the first time a language is translated." }));
-
+function renderModels({ model, models, job, cards_with_context }) {
+  const wasRunning = S.translationJob === "running";
   const running = job.state === "running";
+  S.translationJob = job.state;
+  S.translationModels = models;
+  // the model chosen in the list stays, saved or not
+  S.translationModel ??= model;
+  if ($("translation-model").value) S.translationModel = $("translation-model").value;
+  options($("translation-model"), models.map((m) => [m.id, `${m.label} (${megabytes(m.size)}${m.installed ? "" : ", not downloaded"})`]), S.translationModel);
+  if (S.cardsWithContext === undefined) $("cards-context").checked = S.cardsWithContext = cards_with_context;
+  renderCardsContext();
+
+  $("model-list").replaceChildren(el("table", { class: "table table-sm align-middle mb-0" }, el("tbody", {}, ...models.map((m) => el("tr", {},
+    el("td", { text: m.label }),
+    el("td", { class: "text-body-secondary", text: m.installed ? megabytes(m.size) : "not downloaded" }),
+    el("td", { class: "text-end" }, m.installed
+      ? el("button", { type: "button", class: "btn btn-sm btn-outline-danger", title: "Remove", "aria-label": `Remove ${m.label}`,
+        onclick: async () => {
+          try { renderModels(await api(`/api/translate/models/${m.id}/delete`, {})); } catch (err) { showError(err); }
+        } }, icon("trash"))
+      : el("button", { type: "button", class: "btn btn-sm btn-outline-secondary", disabled: running, onclick: () => installModel(m) },
+        icon("download"), ` Download (${megabytes(m.size)})`)))))));
+
   $("model-progress").hidden = !running && job.state !== "error";
-  const target = $("translation-language").value;
-  $("model-download").disabled = running || !target || target === STUDY || !S.translatable;
   if (running) {
+    const label = (models.find((m) => m.id === job.model) || { label: job.model }).label;
     $("model-progress-bar").style.width = `${job.total ? (100 * job.done) / job.total : 0}%`;
-    $("model-progress-text").textContent = `${langName(job.language)}${job.step ? ` (model ${job.step})` : ""}: `
-      + (job.total ? `${megabytes(job.done)} / ${megabytes(job.total)}` : "starting…");
+    $("model-progress-text").textContent = `${label}: ${job.step === "packages" ? "installing its packages (see the terminal)…"
+      : job.total ? `${megabytes(job.done)} / ${megabytes(job.total)}` : "starting…"}`;
   } else if (job.state === "error") {
     $("model-progress-bar").style.width = "0%";
     $("model-progress-text").textContent = `Download failed: ${job.error}`;
   }
   clearTimeout(modelPoll);
   if (running) modelPoll = setTimeout(async () => { try { renderModels(await api("/api/translate/models")); } catch (err) { showError(err); } }, 700);
+  else if (wasRunning && job.state === "done") dialog("Downloaded", "The translation model is downloaded.");
 }
 
-async function downloadModels() {
-  try { renderModels(await api("/api/translate/models", { language: STUDY })); } catch (err) { showError(err); }
+// Qwen3 translates the subtitles; the cards' sentences too only when asked (NLLB-200 does, faster).
+function renderCardsContext() {
+  $("cards-context-field").hidden = !chosenModel().context;
+}
+
+// A model is downloaded once, in the background (with the packages of its engine, when they're missing).
+async function installModel(m) {
+  const about = m.context
+    ? "It translates subtitles with the lines before them as context, better but slower. It needs an NVIDIA GPU or an " +
+      "Apple Silicon Mac, with 16 GB of memory."
+    : "Its license (CC-BY-NC 4.0) only allows non-commercial use.";
+  const install = await confirmBox(`Download ${m.label}?`,
+    `${m.label} is downloaded once (${megabytes(m.size)}) and translates every language, on your computer. ${about}` +
+    `\n\nYou can also run \`make install-translation TRANSLATION=${m.id}\`.`, "Download");
+  if (!install) return false;
+  try { renderModels(await api(`/api/translate/models/${m.id}/install`, {})); } catch (err) { showError(err); return false; }
+  return true;
 }
 
 async function saveTranslation() {
+  const m = chosenModel();
+  const target = $("translation-language").value;
+  // a model not downloaded yet: offered first (the choice is saved either way)
+  if (target && !m.installed && S.translationJob !== "running") await installModel(m);
   try {
-    S.config = (await api("/api/anki/config", { translation_language: $("translation-language").value })).config;
-    renderTranslation();
+    S.config = (await api("/api/anki/config", {
+      translation_model: m.id, translation_language: target, translation_cards_with_context: $("cards-context").checked,
+    })).config;
+    S.cardsWithContext = $("cards-context").checked;
+    // the cards' sentences need an NLLB model
+    const nllb = S.translationModels.filter((x) => !x.context);
+    if (target && m.context && !$("cards-context").checked && !nllb.some((x) => x.installed)) {
+      dialog("Cards", `The cards' sentences are translated with ${nllb[0].label}, which isn't downloaded yet: download it under Models.`);
+    }
     $("translation-saved").textContent = "Saved.";
     setTimeout(() => { $("translation-saved").textContent = ""; }, 3000);
   } catch (err) { showError(err); }
@@ -454,13 +487,43 @@ function renderSyncSources() {
 function syncRow(source = {}) {
   const deck = selectWith(S.anki.decks, source.deck, "Deck");
   deck.dataset.role = "deck";
-  const field = el("input", { type: "text", class: "form-control", value: source.field || "", placeholder: "e.g. Hanzi", "data-role": "field" });
-  const reading = el("input", { type: "text", class: "form-control", value: source.reading_field || "", placeholder: "optional", "data-role": "reading" });
   const labelled = (text, control) => el("label", {}, el("span", { class: "form-label d-block", text }), control);
+  const fieldSelects = (fields, field, reading) => {
+    const pick = selectWith(fields, field, fields.length || !deck.value ? "Field" : "Open Anki to list fields");
+    const pickReading = selectWith(fields, reading, "(none)");
+    pick.dataset.role = "field";
+    pickReading.dataset.role = "reading";
+    return [pick, pickReading];
+  };
+  const [pick, pickReading] = fieldSelects([], source.field, source.reading_field);
+  const fieldLabel = labelled("Word field", pick);
+  const readingLabel = labelled("Reading field", pickReading);
+  // The field lists follow the deck chosen, the values chosen being kept when the new deck has them too.
+  const renderFields = async (field, reading, deckChanged = false) => {
+    const fields = deck.value && S.anki.connected ? await deckFields(deck.value) : [];
+    const kept = (value) => (!deckChanged || fields.includes(value) ? value : "");
+    const [pick, pickReading] = fieldSelects(fields, kept(field), kept(reading));
+    fieldLabel.lastChild.replaceWith(pick);
+    readingLabel.lastChild.replaceWith(pickReading);
+  };
+  deck.addEventListener("change", () => {
+    const get = (role) => row.querySelector(`[data-role="${role}"]`).value;
+    renderFields(get("field"), get("reading"), true);
+  });
   const row = el("div", { class: "sync-source d-flex flex-wrap align-items-end gap-2 mb-2" },
-    labelled("Deck", deck), labelled("Word field", field), labelled("Reading field", reading),
+    labelled("Deck", deck), fieldLabel, readingLabel,
     el("button", { class: "btn btn-outline-danger", type: "button", title: "Remove", "aria-label": "Remove", onclick: () => row.remove() }, icon("trash")));
+  renderFields(source.field, source.reading_field);
   return row;
+}
+
+const deckFieldsCache = {};
+
+function deckFields(deck) {
+  deckFieldsCache[deck] ??= api(`/api/anki/deck-fields?deck=${encodeURIComponent(deck)}`)
+    .then((data) => data.fields)
+    .catch((err) => { delete deckFieldsCache[deck]; showError(err); return []; });
+  return deckFieldsCache[deck];
 }
 
 async function saveSync() {
@@ -608,7 +671,7 @@ async function init() {
     $("note-type-install").addEventListener("click", installNoteType);
     $("deck-create").addEventListener("click", createDeck);
     $("translation-save").addEventListener("click", saveTranslation);
-    $("model-download").addEventListener("click", downloadModels);
+    $("translation-model").addEventListener("change", renderCardsContext);
     $("sync-add").addEventListener("click", () => {
       $("sync-sources").querySelector(".sync-empty")?.remove();
       $("sync-sources").append(syncRow());

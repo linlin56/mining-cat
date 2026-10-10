@@ -68,31 +68,31 @@ def api_translate_languages():
 def api_translate():
     body = json_body()
     try:
-        translated = translation.translate(study_language(body.get("language")), str(body.get("text") or ""),
-                                           download=not body.get("prefetch"))
+        translated = translation.translate(study_language(body.get("language")), str(body.get("text") or ""))
     except translation.TranslateError as exc:
         raise UserError("Translation", str(exc))
     return jsonify(translation=translated, target=translation.target_language())
 
 
+# The NLLB-200 models: downloaded in the background (with the packages, when they're missing), removed.
 @bp.get("/api/translate/models")
 def api_translate_models():
     return jsonify(translation.models())
 
 
-@bp.post("/api/translate/models")
-def api_download_translate_models():
+@bp.post("/api/translate/models/<name>/install")
+def api_install_translate_model(name: str):
     try:
-        translation.start_download(study_language(json_body().get("language")))
+        translation.start_install(name)
     except translation.TranslateError as exc:
         raise UserError("Translation", str(exc))
     return jsonify(translation.models())
 
 
-@bp.post("/api/translate/models/<source>/<target>/delete")
-def api_delete_translate_model(source: str, target: str):
+@bp.post("/api/translate/models/<name>/delete")
+def api_delete_translate_model(name: str):
     try:
-        translation.delete_model(source, target)
+        translation.delete_model(name)
     except translation.TranslateError as exc:
         raise UserError("Translation", str(exc))
     return jsonify(translation.models())

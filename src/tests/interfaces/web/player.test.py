@@ -8,7 +8,7 @@ import pytest
 from miningcat.infrastructure.files.json_files import write_json
 from miningcat.infrastructure.media import browser_video, subtitle_files
 
-from shared import redirect_path
+from shared import FakeNllb, redirect_path
 
 pytest.importorskip("flask")
 
@@ -331,6 +331,32 @@ def test_progress_and_prefs(client, library):
 
     data = client.get(f"/player/api/videos/{video_id}").get_json()
     assert data["prefs"]["primary"] == "1" and data["progress"]["time"] == 50
+
+
+def test_second_subtitles(client, library, monkeypatch):
+    from miningcat.application.mining import translation
+    monkeypatch.setattr(translation, "nllb", FakeNllb(installed={"nllb-600m"}))
+    video_id = make_entry(library, language="ja")
+    (library / "videos" / video_id / "subs").mkdir()
+    (library / "videos" / video_id / "subs" / "001.srt").write_text(JA_SRT, encoding="utf-8")
+    assert client.get(f"/player/api/videos/{video_id}/translation").get_json()["translation"] == {"state": "idle"}
+
+    res = client.post(f"/player/api/videos/{video_id}/subtitles/1/translate", json={}, headers=HEADERS)
+    assert res.status_code == 200
+    data = client.get(f"/player/api/videos/{video_id}/translation").get_json()
+    job = data["translation"]
+    assert job["state"] == "done" and (job["done"], job["total"]) == (3, 3) and job["target"] == "English"
+    assert job["track"]["label"] == "English (translated)" and job["track"]["origin"] == "translation"
+    assert [t["id"] for t in data["tracks"]] == ["1", job["track"]["id"]]
+    assert data["prefs"]["secondary"] == job["track"]["id"]  # shown under the subtitles
+    cues = client.get(f"/player/api/videos/{video_id}/subtitles/{job['track']['id']}").get_json()["cues"]
+    assert cues == [{"start": 0.2, "end": 1.2, "text": "[ja>en] 吾輩は猫である。"},
+                    {"start": 1.4, "end": 2.6, "text": "[ja>en] 名前は [ja>en] まだ無い。"}]
+
+    assert client.post(f"/player/api/videos/{video_id}/subtitles/7/translate", json={}, headers=HEADERS).status_code == 400
+    client.post(f"/player/api/videos/{video_id}/prefs", json={"language": "en"}, headers=HEADERS)
+    res = client.post(f"/player/api/videos/{video_id}/subtitles/1/translate", json={}, headers=HEADERS)
+    assert res.status_code == 400 and "already in English" in res.get_json()["error"]
 
 
 def test_settings(client):

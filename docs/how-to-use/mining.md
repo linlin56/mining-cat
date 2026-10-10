@@ -110,13 +110,30 @@ The rank is also shown:
 - add an image: *Choose a file*, drop one on the window, paste one with Ctrl+V, or paste a link;
 - add the word's audio or the sentence's audio the same way. The word's audio is filled in when an online recording exists (when there are several, pick another one under *Recording*); when there's none, the word is read by the voice of the settings, as below (pick another voice under *Word audio* and click **Generate**), and for a book [converted with its audio](reader.md#audio-of-a-converted-book), so is the sentence's;
 - when the sentence has no audio, it is read by the voice chosen for its language in **Settings › Anki** (*Voice reading sentences without audio*), with the same Edge-TTS voices as for generating a book's audio (an Internet connection is needed; Taigi's voice is local). Pick another voice under *Sentence audio* and click **Generate** to try it; choose *None* in the settings to only generate by hand;
-- the sentence's translation is filled in, offline, in the language chosen in **Settings › Anki** (*Sentence translation*, English by default, *None* to turn it off). It uses [Argos Translate](https://github.com/argosopentech/argos-translate): the first time a language is translated, its model (about 100 MB) is downloaded; to download it ahead of time, or to remove models, use *Models* in the same panel. Cantonese and Taiwanese Hokkien have no model;
+- the sentence's translation is filled in, offline, in the language chosen in **Settings › Translation** (English by default, *None* to turn it off), see [Translation](#translation);
 - edit the translation, add notes and tags.
 - Mandarin: under the sentence, *Readings* shows the reading of every word of the sentence, chosen from your dictionaries by the context (跑得快 *de*, 我得走 *děi*, 長得高 *zhǎng*, 很長 *cháng*). A dotted word has other readings in your dictionaries: click it for the next one.
 
 **Add to Anki** sends the card straight away. **Save for later** keeps it in MiningCat.
 
 The word becomes *learning* as soon as the card is made.
+
+### Translation
+
+Sentences, and [second subtitles](video.md#second-subtitles-translation), are translated on your computer. Choose the model in **Settings › Translation** (*Model*); each translates every language, directly from one to the other:
+
+- **NLLB-200 600M** (630 MB, default) and **NLLB-200 1.3B** (1.4 GB, more accurate, slower): Meta's [No Language Left Behind](https://ai.meta.com/research/no-language-left-behind/), fast, a line at a time. Cantonese included, not Taiwanese Hokkien. It runs with [CTranslate2](https://github.com/OpenNMT/CTranslate2), on the CPU (or an NVIDIA GPU). Its license (CC-BY-NC 4.0) only allows non-commercial use.
+- **Qwen3 4B** (8 GB): [Qwen3-4B-Instruct](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507) (Alibaba, Apache 2.0), a language model. It translates subtitles 16 lines at a time, with the 8 lines before them and their translations as context: it understands who speaks and what is meant (omitted subjects, pronouns, a sentence cut over two lines, slang) much better than NLLB. It also translates Taiwanese Hokkien written in Hanji, roughly (words that mean something else in Mandarin, like 俗 *cheap* or 歹勢 *sorry*, are often mistaken), not in Tâi-lô or Pe̍h-ōe-jī. But it's slower (about a second per line on an Apple M2: some minutes for an episode, in the background), and it needs an NVIDIA GPU or an Apple Silicon Mac with 16 GB of memory. It runs with [transformers](https://github.com/huggingface/transformers), like [Qwen3-ASR](audiobook-ebook.md#qwen3-asr-optional).
+
+    With Qwen3, the cards' sentences are still translated by NLLB-200, fast (the 1.3B model when it's downloaded, else the 600M one): tick *Also translate the cards' sentences with Qwen3* to use it there too (the first card then waits for it to load, about 15 seconds, and each sentence takes a second or two).
+
+The models aren't part of the regular install: when you save the settings, MiningCat offers to download the one chosen (with the packages of its engine if they're missing), or use *Models* in the same tab, where you can also remove them. They're kept in `library/translation_models/`. From the terminal:
+
+```bash
+make install-translation                         # NLLB-200 600M
+make install-translation TRANSLATION=nllb-1.3b   # NLLB-200 1.3B
+make install-translation TRANSLATION=qwen3-4b    # Qwen3 4B
+```
 
 ## 4. Connect Anki
 

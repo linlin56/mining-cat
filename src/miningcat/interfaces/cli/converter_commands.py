@@ -167,6 +167,9 @@ class VideoCommand(Command):
         parser.add_argument("--ocr-fps", dest="ocr_fps", type=int, default=OCR_FPS_DEFAULT,
                             choices=range(OCR_FPS_MIN, OCR_FPS_MAX + 1), metavar=f"[{OCR_FPS_MIN}-{OCR_FPS_MAX}]",
                             help=f"OCR frame sampling rate in frames/second (default: {OCR_FPS_DEFAULT})")
+        parser.add_argument("--second-subs", dest="second_subs", default=None, metavar="TRACK",
+                            help="Also add second subtitles, translated to the language of the settings, from 'main' "
+                                 "(the generated subtitles) or the index of a subtitle track of the video (0-based)")
 
     @staticmethod
     def request(args):
@@ -177,6 +180,8 @@ class VideoCommand(Command):
             builder.url(args.url, app_id=args.app_id)
         if args.ocr:
             builder.ocr(args.ocr_region, args.ocr_fps)
+        if args.second_subs is not None:
+            builder.second_subtitles(args.second_subs)
         return builder.build()
 
     def run(self, args):

@@ -76,6 +76,7 @@ Click **Aa**. For this video:
 
 The library only shows the videos of the language you study: the videos you add are filed under it.
 - **Subtitles** and **Second subtitles**: the second track (a translation, for example) is shown smaller, under the first one, and isn't looked up. With **Use secondary subtitles as translation** (on by default), a card's sentence translation is the second track's lines at the same time; off, or without a second track, the sentence is translated offline.
+- **Generate second subtitles**: translates a track (**From track:**) to the language chosen in **Settings › Translation**, offline, with the same timings and formatting. The new track (e.g. **English (translated)**) becomes the second subtitles. It runs in the background: you can keep watching.
 - **Subtitle timing**: when the subtitles are early or late (`[` `]`).
 - **Audio track**, for videos with several (e.g. dubs). A browser can only play the first audio track of a file, so MiningCat makes a copy with the chosen one.
 - **Add subtitles…** (or drop a subtitle file on the page) and **Remove these subtitles**.

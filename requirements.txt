@@ -16,7 +16,6 @@ pyobjc; platform_system == "Darwin"
 opencc-python-reimplemented>=0.1.7
 taibun>=1.1.8
 edge-tts>=7.0
-argostranslate>=1.9
 flask>=3.0
 pypresence>=4.3
 genanki>=0.13

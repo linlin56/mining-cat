@@ -95,20 +95,22 @@ class InstallJob(Job):
         listener.log("\nInstalled.\n")
 
 
-def _latest_file(directory: Path, pattern: str) -> Path | None:
+def _latest_file(directory: Path, pattern: str, exclude: str | None = None) -> Path | None:
     if not directory.exists():
         return None
-    files = sorted(directory.glob(pattern), key=lambda p: p.stat().st_mtime)
+    files = sorted((p for p in directory.glob(pattern) if not (exclude and p.match(exclude))),
+                   key=lambda p: p.stat().st_mtime)
     return files[-1] if files else None
 
 
 def find_video_srt(directory: Path) -> Path | None:
     """The subtitles of the last video, for its frequency lists: the transcribed (Whisper or Qwen3-ASR) or OCR ones
-    (always made, most complete) rather than the ones the platform gave."""
+    (always made, most complete) rather than the ones the platform gave; never the translated ones (in another
+    language)."""
     transcribed = [f for f in (_latest_file(directory, "*_whisper.srt"), _latest_file(directory, "*_qwen.srt")) if f]
     return (max(transcribed, key=lambda f: f.stat().st_mtime, default=None)
             or _latest_file(directory, "*_ocr.srt")
-            or _latest_file(directory, "*.srt"))
+            or _latest_file(directory, "*.srt", exclude="*_translated_*.srt"))
 
 
 class VideoJob(Job):
@@ -124,6 +126,8 @@ class VideoJob(Job):
         command = (CliCommand("video").option("--model", request.model_name).option("--language", request.language.id)
                    .option("--file", request.video_path).option("--url", request.url)
                    .option("--convert-to", request.convert_target).option("--audio-track", request.audio_track))
+        if request.second_subtitles:
+            command.option("--second-subs", "main" if request.second_from is None else request.second_from)
         if request.use_ocr:
             command.flag("--ocr").option("--ocr-fps", request.ocr_fps)
             if request.ocr_region is not None:

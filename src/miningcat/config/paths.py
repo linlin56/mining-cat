@@ -111,6 +111,11 @@ class ProjectPaths:
     def card_exports(self) -> Path:
         return self.library / "exports"
 
+    @property
+    def translation_models(self) -> Path:
+        """The translation models (NLLB-200), one folder each."""
+        return self.library / "translation_models"
+
     def dictionary_media(self, dict_id: int) -> Path:
         return self.library / "dictionaries" / str(dict_id)
 

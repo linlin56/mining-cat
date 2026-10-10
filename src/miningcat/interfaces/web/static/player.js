@@ -26,7 +26,9 @@ const P = {
   libraryTimer: null,
   osdTimer: null,
   token: 0,
-  fileVersion: 0,       // changes when the video is prepared again, so that the browser doesn't reuse the old file
+  fileVersion: 0,
+  translationTarget: null,  // {id, name}: the language second subtitles are translated to (the settings'), or null
+  translationTimer: null,       // changes when the video is prepared again, so that the browser doesn't reuse the old file
 };
 
 // ---------------------------------------------------------------- helpers
@@ -337,6 +339,7 @@ async function openVideo(id) {
   syncVideoSettings();
   await loadTracks();
   waitUntilReady(token);
+  followTranslation(token);
 }
 
 function closeVideo() {
@@ -350,6 +353,7 @@ function closeVideo() {
   P.video = null;
   P.cues = [];
   P.second = [];
+  clearTimeout(P.translationTimer);
   if (window.MiningCatMining) { MiningCatMining.hide(); MiningCatMining.clearColours(); }
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 }
@@ -868,10 +872,79 @@ function syncVideoSettings() {
   const options = (none) => [new Option(none, ""), ...(v.tracks || []).map((t) => new Option(`${t.label} · ${t.cues} lines`, t.id))];
   $("set-primary").replaceChildren(...options("None"));
   $("set-secondary").replaceChildren(...options("None"));
+  const from = $("second-from").value;
+  $("second-from").replaceChildren(...options("None").slice(1));
+  $("second-from").value = (v.tracks || []).some((t) => t.id === from) ? from : (P.prefs.primary || ((v.tracks || [])[0] || {}).id || "");
+  syncSecondGenerate();
   $("out-offset").textContent = `${offset() >= 0 ? "+" : ""}${offset().toFixed(1)} s`;
   $("audio-setting").hidden = P.audioTracks.length < 2;
   $("set-audio").replaceChildren(...P.audioTracks.map((t) => new Option(t.label, String(t.index))));
   $("set-audio").value = String(P.prefs.audio_track || 0);
+}
+
+// ---------------------------------------------------------------- second subtitles
+
+// "Generate second subtitles": a track translated, in the background, to the language of the settings.
+function syncSecondGenerate(job = null) {
+  const target = P.translationTarget;
+  const running = Boolean(job && job.state === "running");
+  const hasTracks = Boolean(P.video && P.video.tracks && P.video.tracks.length);
+  $("second-from").disabled = running || !hasTracks;
+  $("second-generate-btn").disabled = running || !hasTracks || !target;
+  const status = $("second-generate-status");
+  status.classList.toggle("text-danger", Boolean(job && job.state === "error"));
+  if (running) {
+    status.textContent = job.total ? `Translating to ${job.target}… ${job.done}/${job.total} lines` : "Preparing the translation model…";
+  } else if (job && job.state === "error") {
+    status.textContent = `The subtitles couldn't be translated:\n${job.error}`;
+  } else if (!target) {
+    status.replaceChildren("Choose the language sentences are translated to in ", Object.assign(document.createElement("a"), { href: "/settings/#translation", target: "_blank", textContent: "Settings › Translation" }), " first.");
+  } else if (!hasTracks) {
+    status.textContent = "Add subtitles to translate first.";
+  } else {
+    status.textContent = `Second subtitles will be generated in ${target.name}.`;
+  }
+}
+
+async function generateSecondSubtitles() {
+  const trackId = $("second-from").value;
+  if (!P.video || !trackId) return;
+  try {
+    const { translation } = await api(`/player/api/videos/${P.video.id}/subtitles/${trackId}/translate`, {});
+    syncSecondGenerate(translation);
+    followTranslation(P.token);
+  } catch (err) { showError(err); }
+}
+
+// Follows the translation of the video's subtitles (also one started before the page was reloaded); once it's done,
+// the new track becomes the second subtitles.
+async function followTranslation(token) {
+  clearTimeout(P.translationTimer);
+  try {
+    const data = await api(`/player/api/videos/${P.video.id}/translation`);
+    if (token !== P.token) return;
+    const job = data.translation;
+    if (job.state === "running") {
+      syncSecondGenerate(job);
+      P.translationTimer = setTimeout(() => followTranslation(token), POLL_MS);
+      return;
+    }
+    if (job.state === "done" && job.track && !P.video.tracks.some((t) => t.id === job.track.id)) {
+      P.video.tracks = data.tracks;
+      P.prefs = data.prefs;
+      syncVideoSettings();
+      await loadTracks();
+      osd(`Second subtitles: ${job.track.label}`);
+    }
+    syncSecondGenerate(job.state === "error" ? job : null);
+  } catch { /* the video was closed or deleted */ }
+}
+
+async function loadTranslationTarget() {
+  try {
+    const { languages, chosen } = await api("/api/translate/languages");
+    P.translationTarget = languages.find((l) => l.id === chosen) || null;
+  } catch { P.translationTarget = null; }
 }
 
 async function saveSettings(changes) {
@@ -984,6 +1057,12 @@ function wireSettings() {
     if (P.video) await loadTracks();
   });
   $("set-secondary-translation").addEventListener("change", (e) => saveSettings({ secondary_translation: e.target.checked }));
+  $("second-generate-btn").addEventListener("click", generateSecondSubtitles);
+  // the language of the translations may have been changed in the settings meanwhile
+  $("settings-panel").addEventListener("show.bs.offcanvas", async () => {
+    await loadTranslationTarget();
+    if (P.video) followTranslation(P.token);
+  });
   for (const [id, key] of [["set-audio-before", "audio_before"], ["set-audio-after", "audio_after"]]) {
     $(id).addEventListener("change", (e) => saveSettings({ [key]: Number(e.target.value) }));
   }
@@ -1128,6 +1207,7 @@ async function route() {
 
 async function init() {
   P.settings = await api("/player/api/settings");
+  await loadTranslationTarget();
   syncSettingsForm();
   wireLibrary();
   wireSettings();

@@ -54,7 +54,7 @@ MiningCat extracts frames from the region, reads their text, merges identical co
 
 ## Second subtitles (translation)
 
-Learners often want the subtitles in their own language too. Check **Generate second subtitles**: a subtitle track is translated, offline, to the language chosen in **Settings › Translation**: "Second subtitles will be generated in …".
+Learners often want the subtitles in their own language too. Check **Generate second subtitles**: a subtitle track is translated, offline, to the language chosen in **Settings › Translation**: "Second subtitles will be generated in … with …" names the language and the model (NLLB-200 or Qwen3 4B, chosen in the same place).
 
 - **From track:** the subtitles translated: one of the subtitle tracks of the local file, or **Use generated main subtitles** (the Whisper or OCR ones, always offered, and the only choice for a URL).
 - The translation keeps the numbers, timestamps, line breaks and formatting of the original, line by line. It's saved as `_translated_<language>.srt` and added to the video as a track labelled e.g. **English (translated)**, with its own language.

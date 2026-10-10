@@ -28,6 +28,7 @@ const P = {
   token: 0,
   fileVersion: 0,
   translationTarget: null,  // {id, name}: the language second subtitles are translated to (the settings'), or null
+  translationModel: "",     // the name of the model translating them (the settings')
   translationTimer: null,       // changes when the video is prepared again, so that the browser doesn't reuse the old file
 };
 
@@ -894,7 +895,7 @@ function syncSecondGenerate(job = null) {
   const status = $("second-generate-status");
   status.classList.toggle("text-danger", Boolean(job && job.state === "error"));
   if (running) {
-    status.textContent = job.total ? `Translating to ${job.target}… ${job.done}/${job.total} lines` : "Preparing the translation model…";
+    status.textContent = job.total ? `Translating to ${job.target} with ${job.model}… ${job.done}/${job.total} lines` : `Preparing ${job.model}…`;
   } else if (job && job.state === "error") {
     status.textContent = `The subtitles couldn't be translated:\n${job.error}`;
   } else if (!target) {
@@ -902,7 +903,8 @@ function syncSecondGenerate(job = null) {
   } else if (!hasTracks) {
     status.textContent = "Add subtitles to translate first.";
   } else {
-    status.textContent = `Second subtitles will be generated in ${target.name}.`;
+    status.replaceChildren(`Second subtitles will be generated in ${target.name} with ${P.translationModel} (`,
+      Object.assign(document.createElement("a"), { href: "/settings/#translation", target: "_blank", textContent: "change" }), ").");
   }
 }
 
@@ -942,8 +944,9 @@ async function followTranslation(token) {
 
 async function loadTranslationTarget() {
   try {
-    const { languages, chosen } = await api("/api/translate/languages");
+    const { languages, chosen, model } = await api("/api/translate/languages");
     P.translationTarget = languages.find((l) => l.id === chosen) || null;
+    P.translationModel = model;
   } catch { P.translationTarget = null; }
 }
 

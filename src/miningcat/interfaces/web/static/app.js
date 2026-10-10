@@ -401,7 +401,8 @@ function renderSecondSubtitles() {
   hint.hidden = !v.second && !box.disabled;
   if (!target) hint.replaceChildren("Choose the language sentences are translated to in ", Object.assign(document.createElement("a"), { href: "/settings/#translation", textContent: "Settings › Translation" }), " to generate second subtitles.");
   else if (!S.lang.translatable) hint.textContent = `${S.lang.label} subtitles can't be translated to ${target.name}.`;
-  else hint.textContent = `Second subtitles will be generated in ${target.name}`;
+  else hint.replaceChildren(`Second subtitles will be generated in ${target.name} with ${target.model} (`,
+    Object.assign(document.createElement("a"), { href: "/settings/#translation", textContent: "change" }), ")");
 
   const tracks = v.mode === "Local file" ? v.subtitles : [];
   const values = [...tracks.map((t) => String(t.index)), "main"];

@@ -23,7 +23,7 @@ Dictionaries are stored in `library/miningcat.db`, with your words and cards.
 
 Click a word in the reader. The popup shows:
 
-![The dictionary popup: reading, status, definitions and the + Card button](../assets/screenshots/reader-lookup.png)
+![The dictionary popup: reading, rank in the frequency list, status, definitions and the + Card button](../assets/screenshots/reader-lookup.png)
 
 - the word, its reading, and how it was conjugated when you clicked an inflected form (Japanese, Korean, French, Spanish…: 泣いていた gives 泣く « -て « -いる « -た, 먹었어요 gives 먹다 « -았/었 « -아/어요);
 - the definitions of every dictionary. A word has one entry per pronunciation (行 xíng and 行 háng are two entries, 行動 another one), whatever the dictionary and however it writes the reading: 行 xíng, 行 xing2 and 行 ㄒㄧㄥˊ are one entry. Its definitions are merged without repeats: "walk, OK" and "walk, go" give "walk, OK, go". Senses a dictionary tags differently (parts of speech, numbered senses) stay apart;
@@ -104,7 +104,7 @@ The rank is also shown:
 
 **+ Card** opens the card creator, filled in with the word, its reading, the definition of the first dictionary, the sentence (the word in bold) and the book's title. Everything can be edited before sending:
 
-![The card creator: word, reading, definition, sentence with its readings and translation, audio](../assets/screenshots/card-creator.png)
+![The card creator: word, reading, frequency rank, definition, sentence with its readings and translation, audio](../assets/screenshots/card-creator.png)
 
 - tick other dictionaries to add their definitions;
 - add an image: *Choose a file*, drop one on the window, paste one with Ctrl+V, or paste a link;
@@ -121,6 +121,8 @@ The word becomes *learning* as soon as the card is made.
 ### Translation
 
 Sentences, and [second subtitles](video.md#second-subtitles-translation), are translated on your computer. Choose the model in **Settings › Translation** (*Model*); each translates every language, directly from one to the other:
+
+![Settings › Translation: the model, the language sentences are translated to, and the models downloaded](../assets/screenshots/settings-translation.png)
 
 - **NLLB-200 600M** (630 MB, default) and **NLLB-200 1.3B** (1.4 GB, more accurate, slower): Meta's [No Language Left Behind](https://ai.meta.com/research/no-language-left-behind/), fast, a line at a time. Cantonese included, not Taiwanese Hokkien. It runs with [CTranslate2](https://github.com/OpenNMT/CTranslate2), on the CPU (or an NVIDIA GPU). Its license (CC-BY-NC 4.0) only allows non-commercial use.
 - **Qwen3 4B** (8 GB): [Qwen3-4B-Instruct](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507) (Alibaba, Apache 2.0), a language model. It translates subtitles 16 lines at a time, with the 8 lines before them and their translations as context: it understands who speaks and what is meant (omitted subjects, pronouns, a sentence cut over two lines, slang) much better than NLLB. It also translates Taiwanese Hokkien written in Hanji, roughly (words that mean something else in Mandarin, like 俗 *cheap* or 歹勢 *sorry*, are often mistaken), not in Tâi-lô or Pe̍h-ōe-jī. But it's slower (about a second per line on an Apple M2: some minutes for an episode, in the background), and it needs an NVIDIA GPU or an Apple Silicon Mac with 16 GB of memory. It runs with [transformers](https://github.com/huggingface/transformers), like [Qwen3-ASR](audiobook-ebook.md#qwen3-asr-optional).

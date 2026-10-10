@@ -44,6 +44,8 @@
   font-family: "Noto Sans TC", "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
 .subs :lang(zh-Hans), .subs :lang(zh-CN), .cue-text:lang(zh-Hans), .cue-text:lang(zh-CN) {
   font-family: "Noto Sans SC", "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif; }
+.subs :lang(nan), .cue-text:lang(nan) {
+  font-family: var(--mc-taigi-sans), "Noto Sans TC", "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
 .subs :lang(ko), .cue-text:lang(ko) { font-family: "Noto Sans KR", "Noto Sans CJK KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
 
 /* ---------- subtitle list ---------- */

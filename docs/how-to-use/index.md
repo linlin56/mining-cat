@@ -48,6 +48,10 @@ From the home page, open the **Converter**, the [Reader](reader.md), the [Player
 
 ![The home page, once the language is chosen: Converter, Reader, Player and Settings](../assets/screenshots/home-hub.png)
 
+The **Settings** have a tab per topic: **Dictionaries** (import a dictionary or a frequency list), **Words**, **Anki**, **Translation**, **Cards** (the cards waiting for Anki) and **User preferences**: the theme (light, dark, or your system's), the highlight colours (with palettes for colour blindness) and the Discord status. The moon button in the header of every page also switches between light and dark.
+
+![Settings › User preferences: theme, highlight colours and Discord status](../assets/screenshots/settings-preferences.png)
+
 While MiningCat runs, your Discord profile shows what you do in it ("Reading a book", "Watching a video"...) and the language you study, if the Discord app is open on the same computer. Turn it off in **Settings › User preferences › Discord**.
 
 You can drag and drop files on the audio, book and video panels. The files you pick are copied into the project's `sources/` folder, like before.

@@ -27,6 +27,9 @@
   font-size: .9rem;
   writing-mode: horizontal-tb;
 }
+/* Taigi in the popup and the card creator: its word, its reading (see --mc-taigi-sans in theme.css) */
+.mc-popup :lang(nan), .mc-creator :lang(nan) {
+  font-family: var(--mc-taigi-sans), "Noto Sans TC", "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
 .mc-word rt { font-size: .45em; font-weight: 400; color: var(--bs-secondary-color); }
 .mc-entry.mc-selected { box-shadow: inset 3px 0 0 var(--bs-primary); padding-left: .5rem; }
 

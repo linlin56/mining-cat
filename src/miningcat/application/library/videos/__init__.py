@@ -6,6 +6,7 @@ from miningcat.application.library.videos.online import dismiss_download, downlo
 from miningcat.application.library.videos.player_settings import DEFAULT_SETTINGS, get_settings, save_settings
 from miningcat.application.library.videos.preparation import audio_tracks, get_meta, start_prepare
 from miningcat.application.library.videos.progress import get_prefs, get_progress, save_prefs, save_progress
+from miningcat.application.library.videos.second_subtitles import start_translation, translation_state
 from miningcat.application.library.videos.store import video_folder, videos_dir
 from miningcat.application.library.videos.subtitles import (
     SUBTITLE_EXTENSIONS,
@@ -22,5 +23,5 @@ __all__ = [
     "clip", "cues", "delete_video", "dismiss_download", "downloads", "file_path", "fingerprint", "frame", "get_meta",
     "get_prefs", "get_progress", "get_settings", "import_file", "import_stream", "list_videos", "parse_subtitles",
     "play_plan", "remove_subtitles", "save_prefs", "save_progress", "save_settings", "start_download",
-    "start_prepare", "thumb_path", "video_folder", "videos_dir",
+    "start_prepare", "start_translation", "thumb_path", "translation_state", "video_folder", "videos_dir",
 ]

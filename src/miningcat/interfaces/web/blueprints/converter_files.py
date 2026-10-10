@@ -8,7 +8,7 @@ from miningcat.application.converter.video_download import download_video
 from miningcat.config.paths import paths
 from miningcat.infrastructure.media import video_frames
 from miningcat.infrastructure.media.audio_files import AUDIO_EXTENSIONS
-from miningcat.infrastructure.media.video_file import list_audio_tracks
+from miningcat.infrastructure.media.video_file import list_audio_tracks, source_subtitle_labels
 from miningcat.interfaces.web import uploads
 from miningcat.interfaces.web.blueprints.converter import refs
 from miningcat.interfaces.web.errors import UserError
@@ -60,7 +60,12 @@ def api_video_tracks():
         tracks = list_audio_tracks(video_file)
     except Exception:
         tracks = []
-    return jsonify(tracks=[{"index": t["index"], "label": options.audio_track_label(t)} for t in tracks])
+    try:
+        subtitles = source_subtitle_labels(video_file)
+    except Exception:
+        subtitles = []
+    return jsonify(tracks=[{"index": t["index"], "label": options.audio_track_label(t)} for t in tracks],
+                   subtitles=[{"index": i, "label": label} for i, label in enumerate(subtitles)])
 
 
 @bp.post("/api/video/validate")

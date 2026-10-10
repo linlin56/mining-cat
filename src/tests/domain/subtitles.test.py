@@ -6,6 +6,7 @@ from miningcat.domain.subtitles.punctuation import (
     restore_opening_punct,
 )
 from miningcat.domain.subtitles.segment import Segment
+from miningcat.domain.subtitles.srt import replace_srt_lines, srt_lines
 from miningcat.infrastructure.files.srt_files import save_srt
 
 # --- Segment ---
@@ -163,3 +164,41 @@ def test_prepare_text_strips_japanese_annotations():
     raw = "本文［＃改ページ］続き"
     result = prepare_text(raw, Language.JAPANESE)
     assert result == "本文続き"
+
+
+# --- translated SRT: the same numbers, timestamps and formatting
+
+SRT_TO_TRANSLATE = """1
+00:00:01,000 --> 00:00:02,500
+<i>你好</i>
+
+2
+00:00:03,000 --> 00:00:04,000
+{\\an8}- 你好
+- 再見
+
+3
+00:00:05,000 --> 00:00:06,000
+<font color="red">我</font>們走
+"""
+
+
+def test_srt_lines_without_formatting_each_once():
+    assert srt_lines(SRT_TO_TRANSLATE) == ["你好", "再見", "我們走"]
+
+
+def test_replace_srt_lines_keeps_the_rest():
+    translated = replace_srt_lines(SRT_TO_TRANSLATE.replace("\n", "\r\n"), {"你好": "Hello", "再見": "Bye", "我們走": "Let's go"})
+    assert translated == """1
+00:00:01,000 --> 00:00:02,500
+<i>Hello</i>
+
+2
+00:00:03,000 --> 00:00:04,000
+{\\an8}- Hello
+- Bye
+
+3
+00:00:05,000 --> 00:00:06,000
+Let's go
+"""

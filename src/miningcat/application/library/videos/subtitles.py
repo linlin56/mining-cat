@@ -62,12 +62,16 @@ def add_subtitles(video_id: str, filename: str, data: bytes, origin: str = "file
     return track
 
 
+def subtitle_path(video_id: str, track_id: str) -> Path:
+    """The SRT file of a track."""
+    if not track_id.isdigit() or not any(t["id"] == track_id for t in read_meta(video_id).get("tracks", [])):
+        raise VideoError("No such subtitle track.")
+    return video_folder(video_id) / "subs" / f"{int(track_id):03d}.srt"
+
+
 def cues(video_id: str, track_id: str, punctuation: str = "") -> list[dict]:
     """The lines of a track; with `punctuation` (a language tag), in that language's punctuation (zh-Hant: ，。)."""
-    meta = read_meta(video_id)
-    if not any(t["id"] == track_id for t in meta.get("tracks", [])) or not track_id.isdigit():
-        raise VideoError("No such subtitle track.")
-    path = video_folder(video_id) / "subs" / f"{int(track_id):03d}.srt"
+    path = subtitle_path(video_id, track_id)
     found = parse_subtitles(path.read_text(encoding="utf-8", errors="replace"))
     if punctuation:
         found = [{**c, "text": fullwidth_punctuation(c["text"], punctuation)} for c in found]

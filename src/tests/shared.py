@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 
+from miningcat.infrastructure.translation.argos import TranslateError
+
 MOCK_DIR = Path(__file__).parent / "mock"
 MOCK_EPUB_TW = MOCK_DIR / "book_zh-TW.epub"
 MOCK_EPUB_CN = MOCK_DIR / "book_zh-CN.epub"
@@ -240,3 +242,39 @@ def redirect_path(monkeypatch, name: str, path) -> None:
     from miningcat.config.paths import ProjectPaths
 
     monkeypatch.setattr(ProjectPaths, name, property(lambda self: path))
+
+
+class FakeArgos:
+    """Argos Translate with a few models to download, translating "text" to "[source>target] text"."""
+
+    def __init__(self, installed: set):
+        self.models = {("zh", "en"), ("zt", "en"), ("en", "fr"), ("ja", "en")}
+        self.installed_pairs = set(installed)
+        self.downloads = []
+
+    def available(self) -> bool:
+        return True
+
+    def require(self) -> None:
+        pass
+
+    def has_model(self, source, target) -> bool:
+        return (source, target) in self.models
+
+    def installed(self) -> set:
+        return set(self.installed_pairs)
+
+    def installed_models(self) -> list:
+        return []
+
+    def install(self, source, target, progress=None) -> None:
+        self.downloads.append((source, target))
+        self.installed_pairs.add((source, target))
+
+    def uninstall(self, source, target) -> None:
+        if (source, target) not in self.installed_pairs:
+            raise TranslateError("This model isn't installed.")
+        self.installed_pairs.remove((source, target))
+
+    def translate(self, text, source, target) -> str:
+        return f"[{source}>{target}] {text}"

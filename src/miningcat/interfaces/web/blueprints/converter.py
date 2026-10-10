@@ -6,10 +6,11 @@ from flask import Blueprint, Response, jsonify, request
 from miningcat.application import study_language
 from miningcat.application.converter import options
 from miningcat.application.converter.audiobook_request import AudiobookRequestBuilder
-from miningcat.application.converter.jobs import AudiobookJob, VideoJob
+from miningcat.application.converter.jobs import AudiobookJob, InstallJob, VideoJob
 from miningcat.application.converter.modes import ConversionMode
 from miningcat.application.converter.video_request import VideoRequestBuilder
 from miningcat.domain.languages import Language
+from miningcat.infrastructure.speech import engine_install
 from miningcat.interfaces.web import uploads
 from miningcat.interfaces.web.errors import UserError
 from miningcat.interfaces.web.jobs import JobBusyError, current_state
@@ -68,6 +69,15 @@ def api_events():
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
+@bp.post("/api/install-engines")
+def api_install_engines():
+    engines = json_body().get("engines")
+    if engines not in (engine_install.QWEN, engine_install.TAIGI):
+        raise UserError("Unknown engines", f"Unknown speech engines: {engines!r}")
+    state = current_state()
+    return start(InstallJob(engines), lambda _: state.bus.publish({"type": "done", "kind": "install"}))
+
+
 @bp.post("/api/run/audiobook")
 def api_run_audiobook():
     body = json_body()
@@ -81,7 +91,7 @@ def api_run_audiobook():
         .audio(refs(body.get("audio")) if mode.needs_audio else [])
         .ebook(refs(body.get("ebook")) if mode.needs_ebook else [], body.get("chapters"))
         .voice(body.get("voice"))
-        .whisper(options.model_for(body.get("precision"), lang))
+        .whisper(options.model_for(body.get("precision"), lang, aligning=mode is ConversionMode.STANDARD))
         .convert_to(options.convert_target(body.get("convert"), lang))
         .build()
     )

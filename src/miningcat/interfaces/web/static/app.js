@@ -5,7 +5,7 @@ const $ = (id) => document.getElementById(id);
 
 const MODE_HELP = {
   "Standard": "Audio files + book: one MP4 per chapter, with subtitles aligned on the book's text.",
-  "Generate subtitles": "Audio files only: subtitles are transcribed by Whisper (less accurate than with the book).",
+  "Generate subtitles": "Audio files only: subtitles are transcribed by Whisper or Qwen3-ASR (less accurate than with the book).",
   "Generate audio": "Book only: audio is generated with a text-to-speech voice, with matching subtitles.",
 };
 
@@ -156,8 +156,45 @@ function onLanguageChange() {
   fillSelect($("voice"), S.lang.voices, S.lang.default_voice);
   renderSecondSubtitles();
   if (!S.lang.precision.includes(S.precision)) S.precision = S.lang.precision[0];
-  for (const sel of document.querySelectorAll(".precision-select")) fillSelect(sel, S.lang.precision, S.precision);
+  fillPrecision();
   updateFreqButtons();
+  if (S.lang.needs_install) offerInstall();
+}
+
+// The language's speech engines aren't installed (Taigi's): offered once per page load, the installation then runs as
+// a job (its log is the page's).
+async function offerInstall() {
+  if (S.installOffered || S.running) return;
+  S.installOffered = true;
+  const install = await askInstall();
+  if (!install) return;
+  try {
+    await api("/api/install-engines", { engines: S.lang.needs_install });
+  } catch (err) { showError(err); }
+}
+
+// What each install brings (see engine_install.py).
+const INSTALL_ENGINES = {
+  qwen: "transcribed with Qwen3-ASR, which isn't installed yet",
+  taigi: "transcribed with Qwen3-ASR, and read and aligned with Meta's MMS, which aren't installed yet",
+};
+
+const askInstall = () => showDialog("Install the speech engines?",
+  `${S.lang.label} is ${INSTALL_ENGINES[S.lang.needs_install]}. ` +
+  "The install is large (several GB with the models, a few minutes) and runs on your computer.\n\n" +
+  `Install them now? You can also run \`make install-${S.lang.needs_install}\`.`, [
+    { label: "Not now", value: false },
+    { label: "Install", value: true, primary: true },
+  ]);
+
+// Qwen3-ASR's models only transcribe: they aren't offered to align a book (the Standard mode)
+function fillPrecision() {
+  const aligning = $("mode").value === "Standard";
+  for (const sel of document.querySelectorAll(".precision-select")) {
+    const values = aligning && sel.id === "precision" ? S.lang.align_precision : S.lang.precision;
+    // like the server: a model not offered gives the default one
+    fillSelect(sel, values, values.includes(S.precision) ? S.precision : S.opts.default_precision);
+  }
 }
 
 function renderSource() {
@@ -181,6 +218,7 @@ function renderMode() {
   $("mode-help").textContent = MODE_HELP[mode] || "";
   // Precision is only used when Whisper runs (not in TTS mode)
   $("precision-field").hidden = mode === "Generate audio";
+  if (S.lang) fillPrecision();
   $("audio-panel").hidden = mode === "Generate audio";
   $("voice-panel").hidden = mode !== "Generate audio";
   $("ebook-panel").hidden = mode === "Generate subtitles";
@@ -795,6 +833,18 @@ function setStatus(text, pct) {
   $("progress-bar").style.width = `${Math.max(0, Math.min(100, pct))}%`;
 }
 
+// The languages' options after an install: the engines are there, the Qwen3-ASR models offered.
+async function reloadOptions() {
+  try {
+    S.opts = await api("/api/options");
+    S.installOffered = false;
+    const id = $("language").value;
+    S.lang = S.opts.languages.find((l) => l.id === id);
+    onLanguageChange();
+    await alertBox("Done", "The speech engines are installed. Their models are downloaded the first time they're used.");
+  } catch (err) { showError(err); }
+}
+
 function handleEvent(id, ev) {
   const replay = id <= S.replayUntil;
   switch (ev.type) {
@@ -809,6 +859,10 @@ function handleEvent(id, ev) {
       setStatus(ev.text, ev.pct);
       break;
     case "done":
+      if (ev.kind === "install") {
+        if (!replay) reloadOptions();
+        break;
+      }
       // On a replay, /api/state already gave the current subtitles (the output may have been cleared since).
       if (ev.kind === "video" && !replay) {
         S.lastVideoSrt = ev.has_srt ? true : null;
@@ -907,7 +961,7 @@ function wire() {
   for (const sel of document.querySelectorAll(".precision-select")) {
     sel.addEventListener("change", () => {
       S.precision = sel.value;
-      for (const other of document.querySelectorAll(".precision-select")) other.value = S.precision;
+      fillPrecision();
     });
   }
   S.precision = o.default_precision;

@@ -86,7 +86,7 @@ install:
 # On Linux without an NVIDIA GPU, PyTorch's default CUDA build drags several GB of useless nvidia-* packages: use the CPU one.
 	@if [ "$$(uname -s)" = "Linux" ] && ! command -v nvidia-smi >/dev/null 2>&1; then \
 		echo "No NVIDIA GPU detected: installing the CPU build of PyTorch"; \
-		$(PYTHON) -m pip install torch --index-url https://download.pytorch.org/whl/cpu; \
+		$(PYTHON) -m pip install torch torchaudio torchvision --index-url https://download.pytorch.org/whl/cpu; \
 	fi
 	$(PYTHON) -m pip install -r requirements.txt
 # Install separately with --no-deps to avoid the PyGObject build error on Linux.

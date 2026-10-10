@@ -5,8 +5,8 @@ from miningcat.domain.languages import LANGUAGES
 from miningcat.domain.words.status import DEFAULT_KNOWN_INTERVAL
 from miningcat.infrastructure.anki.ankiconnect import AnkiConnect
 from miningcat.infrastructure.persistence.settings_store import settings
-from miningcat.infrastructure.translation.nllb import DEFAULT_MODEL as DEFAULT_TRANSLATION_MODEL
-from miningcat.infrastructure.translation.nllb import MODELS as TRANSLATION_MODELS
+from miningcat.infrastructure.translation.install import DEFAULT_MODEL as DEFAULT_TRANSLATION_MODEL
+from miningcat.infrastructure.translation.install import MODELS as TRANSLATION_MODELS
 
 DEFAULT_URL = "http://127.0.0.1:8765"
 DEFAULT_TAG = "mining-cat"
@@ -23,7 +23,9 @@ def get_config() -> dict:
     config.setdefault("sync", {})    # language -> [{deck, field, reading_field}]
     config.setdefault("tts_voices", {})  # language -> Edge-TTS voice reading the sentences, "" = none
     config.setdefault("translation_language", "en")  # sentences are translated to it, "" = not translated
-    config.setdefault("translation_model", DEFAULT_TRANSLATION_MODEL)  # the NLLB-200 model translating them
+    config.setdefault("translation_model", DEFAULT_TRANSLATION_MODEL)  # the model translating them (install.MODELS)
+    # Qwen3 also translates the cards' sentences, when it's the model (else NLLB-200 does)
+    config.setdefault("translation_cards_with_context", False)
     config.pop("translation_engine", None)  # Argos Translate or NLLB-200, before Argos was removed
     for setup in config["notes"].values():
         if setup.get("tags") == OLD_DEFAULT_TAG:  # the default tag was "miningcat" before
@@ -65,6 +67,8 @@ def save_config(values: dict) -> dict:
         if name not in TRANSLATION_MODELS:
             raise AnkiError(f"Unknown translation model: {name!r}")
         config["translation_model"] = name
+    if "translation_cards_with_context" in values:
+        config["translation_cards_with_context"] = bool(values["translation_cards_with_context"])
     for language, voice in (values.get("tts_voices") or {}).items():
         if language in LANGUAGES:
             config["tts_voices"][language] = str(voice or "")

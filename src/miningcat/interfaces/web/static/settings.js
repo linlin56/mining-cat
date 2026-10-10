@@ -342,7 +342,7 @@ async function renderVoices(language) {
   } catch (err) { showError(err); }
 }
 
-// The NLLB-200 model of the settings and the language sentences are translated to.
+// The translation model of the settings (NLLB-200 or Qwen3) and the language sentences are translated to.
 async function renderTranslation() {
   try {
     const { languages, chosen } = await api("/api/translate/languages");
@@ -354,11 +354,11 @@ async function renderTranslation() {
   } catch (err) { showError(err); }
 }
 
-const megabytes = (bytes) => `${Math.round(bytes / 1e6)} MB`;
+const megabytes = (bytes) => (bytes >= 1e9 ? `${(bytes / 1e9).toFixed(1)} GB` : `${Math.round(bytes / 1e6)} MB`);
 const chosenModel = () => S.translationModels.find((m) => m.id === $("translation-model").value) || S.translationModels[0];
 
 let modelPoll = null;
-function renderModels({ model, models, job }) {
+function renderModels({ model, models, job, cards_with_context }) {
   const wasRunning = S.translationJob === "running";
   const running = job.state === "running";
   S.translationJob = job.state;
@@ -367,6 +367,8 @@ function renderModels({ model, models, job }) {
   S.translationModel ??= model;
   if ($("translation-model").value) S.translationModel = $("translation-model").value;
   options($("translation-model"), models.map((m) => [m.id, `${m.label} (${megabytes(m.size)}${m.installed ? "" : ", not downloaded"})`]), S.translationModel);
+  if (S.cardsWithContext === undefined) $("cards-context").checked = S.cardsWithContext = cards_with_context;
+  renderCardsContext();
 
   $("model-list").replaceChildren(el("table", { class: "table table-sm align-middle mb-0" }, el("tbody", {}, ...models.map((m) => el("tr", {},
     el("td", { text: m.label }),
@@ -394,11 +396,20 @@ function renderModels({ model, models, job }) {
   else if (wasRunning && job.state === "done") dialog("Downloaded", "The translation model is downloaded.");
 }
 
-// A model is downloaded once, in the background (with its packages, when they're missing).
+// Qwen3 translates the subtitles; the cards' sentences too only when asked (NLLB-200 does, faster).
+function renderCardsContext() {
+  $("cards-context-field").hidden = !chosenModel().context;
+}
+
+// A model is downloaded once, in the background (with the packages of its engine, when they're missing).
 async function installModel(m) {
+  const about = m.context
+    ? "It translates subtitles with the lines before them as context, better but slower. It needs an NVIDIA GPU or an " +
+      "Apple Silicon Mac, with 16 GB of memory."
+    : "Its license (CC-BY-NC 4.0) only allows non-commercial use.";
   const install = await confirmBox(`Download ${m.label}?`,
-    `${m.label} is downloaded once (${megabytes(m.size)}) and translates every language, on your computer. ` +
-    "Its license (CC-BY-NC 4.0) only allows non-commercial use.\n\nYou can also run `make install-nllb`.", "Download");
+    `${m.label} is downloaded once (${megabytes(m.size)}) and translates every language, on your computer. ${about}` +
+    `\n\nYou can also run \`make install-translation TRANSLATION=${m.id}\`.`, "Download");
   if (!install) return false;
   try { renderModels(await api(`/api/translate/models/${m.id}/install`, {})); } catch (err) { showError(err); return false; }
   return true;
@@ -410,7 +421,15 @@ async function saveTranslation() {
   // a model not downloaded yet: offered first (the choice is saved either way)
   if (target && !m.installed && S.translationJob !== "running") await installModel(m);
   try {
-    S.config = (await api("/api/anki/config", { translation_model: m.id, translation_language: target })).config;
+    S.config = (await api("/api/anki/config", {
+      translation_model: m.id, translation_language: target, translation_cards_with_context: $("cards-context").checked,
+    })).config;
+    S.cardsWithContext = $("cards-context").checked;
+    // the cards' sentences need an NLLB model
+    const nllb = S.translationModels.filter((x) => !x.context);
+    if (target && m.context && !$("cards-context").checked && !nllb.some((x) => x.installed)) {
+      dialog("Cards", `The cards' sentences are translated with ${nllb[0].label}, which isn't downloaded yet: download it under Models.`);
+    }
     $("translation-saved").textContent = "Saved.";
     setTimeout(() => { $("translation-saved").textContent = ""; }, 3000);
   } catch (err) { showError(err); }
@@ -622,6 +641,7 @@ async function init() {
     $("note-type-install").addEventListener("click", installNoteType);
     $("deck-create").addEventListener("click", createDeck);
     $("translation-save").addEventListener("click", saveTranslation);
+    $("translation-model").addEventListener("change", renderCardsContext);
     $("sync-add").addEventListener("click", () => {
       $("sync-sources").querySelector(".sync-empty")?.remove();
       $("sync-sources").append(syncRow());

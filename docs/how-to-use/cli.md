@@ -125,17 +125,17 @@ python -m miningcat video --file <PATH> [options]
 | `--second-subs`     |               | Add second subtitles translated to the settings' translation language, from `main` (the generated subtitles) or the 0-based index of a subtitle track of the video |
 | `--app-id`          | `web`         | Instagram only: `X-IG-App-ID` header (`web`, `ios` or a numeric id), if downloads start failing |
 
-## `install-nllb`
+## `install-translation`
 
-Installs [NLLB-200](mining.md#translation), which translates the sentences and subtitles: its packages (`requirements-nllb.txt`), then its model.
+Installs a model [translating the sentences and subtitles](mining.md#translation): the packages of its engine (`requirements-nllb.txt` for NLLB-200, `requirements-qwen.txt` for Qwen3), then the model.
 
 ```bash
-python -m miningcat install-nllb [--model nllb-600m|nllb-1.3b]
+python -m miningcat install-translation [--model nllb-600m|nllb-1.3b|qwen3-4b]
 ```
 
-| Option    | Default     | Description                                                       |
-| --------- | ----------- | ----------------------------------------------------------------- |
-| `--model` | `nllb-600m` | `nllb-600m` (630 MB) or `nllb-1.3b` (1.4 GB, more accurate, slower) |
+| Option    | Default     | Description                                                                                  |
+| --------- | ----------- | -------------------------------------------------------------------------------------------- |
+| `--model` | `nllb-600m` | `nllb-600m` (630 MB), `nllb-1.3b` (1.4 GB, more accurate) or `qwen3-4b` (8 GB, with context) |
 
 Then choose it in Settings › **Translation**.
 
@@ -213,7 +213,7 @@ The Makefile wraps the most common commands. Variables can be overridden on the 
 | `make run [RANGE=4-9]`           | `run [--range 4-9]`                              |
 | `make video URL=...`             | `video --url ...`                                |
 | `make video FILE=...`            | `video --file ...`                               |
-| `make install-nllb [NLLB=nllb-1.3b]` | `install-nllb [--model nllb-1.3b]`           |
+| `make install-translation [TRANSLATION=qwen3-4b]` | `install-translation [--model qwen3-4b]` |
 | `make game-setup`                | `game setup`                                     |
 | `make game [HOTKEY=F9]`          | `game serve --language ... --hotkey F9`          |
 | `make clean`                     | Delete generated files in `output/` and `temp/`  |

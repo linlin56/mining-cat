@@ -1,4 +1,4 @@
-.PHONY: help gui reader player install install-nllb install-qwen install-taigi test coverage audio epub align export chapter1 chapter run clean video game-setup game
+.PHONY: help gui reader player install install-translation install-qwen install-taigi test coverage audio epub align export chapter1 chapter run clean video game-setup game
 
 # Defaults
 CHAPTER  ?= 1
@@ -10,7 +10,7 @@ RANGE    ?=
 URL      ?=
 FILE     ?=
 APP_ID   ?= web
-NLLB     ?= nllb-600m
+TRANSLATION ?= nllb-600m
 HOTKEY   ?= F9
 ifeq ($(OS),Windows_NT)
   _VENV_PYTHON := .venv/Scripts/python.exe
@@ -46,7 +46,7 @@ help:
 	@echo "Usage:"
 	@echo "  make install                    Install dependencies"
 	@echo "  make install-qwen               Install Qwen3-ASR, optional instead of Whisper (MODEL=qwen3-0.6b|qwen3-1.7b)"
-	@echo "  make install-nllb [NLLB=nllb-1.3b] Install NLLB-200, which translates sentences and subtitles (nllb-600m by default)"
+	@echo "  make install-translation [TRANSLATION=nllb-1.3b|qwen3-4b] Install a translation model (nllb-600m by default)"
 	@echo "  make install-taigi              Install Taigi's local speech engines (Qwen3-ASR and Meta's MMS)"
 	@echo "  make gui [PORT=5050]            Open the GUI in your browser"
 	@echo "  make reader                     Open the ebook reader in your browser"
@@ -77,10 +77,10 @@ install:
 # Install separately with --no-deps to avoid the PyGObject build error on Linux.
 	$(PYTHON) -m pip install --no-deps "owocr>=1.26.8"
 
-# NLLB-200, which translates sentences and subtitles (optional, large): its packages (requirements-nllb.txt), then its model. Same as the
-# settings' install (infrastructure/translation/nllb_install.py).
-install-nllb:
-	$(MAIN) install-nllb --model $(NLLB)
+# The model translating sentences and subtitles (optional, large): the packages of its engine (requirements-nllb.txt or
+# requirements-qwen.txt), then the model. Same as the settings' install (infrastructure/translation/install.py).
+install-translation:
+	$(MAIN) install-translation --model $(TRANSLATION)
 
 # Local speech engines, not in the regular install because very large. Same commands as
 # infrastructure/speech/engine_install.py (the converter's offer).

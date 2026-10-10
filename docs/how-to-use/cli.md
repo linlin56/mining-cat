@@ -62,7 +62,7 @@ _Standard mode._ Aligns each chapter's text on its audio and writes the subtitle
 
 ### `transcribe`
 
-_Generate subtitles mode._ Transcribes the audio chapters with Whisper, without an ebook. Same options as `align`.
+_Generate subtitles mode._ Transcribes the audio chapters with Whisper, without an ebook. Same options as `align`, and `--model` also takes `qwen3-0.6b` or `qwen3-1.7b` to transcribe with [Qwen3-ASR](audiobook-ebook.md#qwen3-asr-optional) (`make install-qwen`).
 
 ### `tts`
 
@@ -115,7 +115,7 @@ python -m miningcat video --file <PATH> [options]
 | Option              | Default       | Description                                                                                  |
 | ------------------- | ------------- | -------------------------------------------------------------------------------------------- |
 | `--url` / `--file`  | _one required_| Video URL, or path to a local video file                                                     |
-| `--model`           | `tiny`        | Whisper model                                                                                |
+| `--model`           | `tiny`        | Whisper model, or `qwen3-0.6b` / `qwen3-1.7b` for [Qwen3-ASR](audiobook-ebook.md#qwen3-asr-optional) (`make install-qwen`) |
 | `--language`        | `mandarin_tw` | See [language ids](#language-ids)                                                            |
 | `--convert-to`      |               | Convert the generated subtitles to `s`, `tw`, `t` or `hk`                                    |
 | `--audio-track`     | container default | 0-based index of the audio stream to transcribe, for videos with several dubs            |
@@ -170,6 +170,7 @@ Serves the page on <http://127.0.0.1:6677/> and opens it in the browser. Capture
 | `japanese`     | Japanese                              |
 | `korean`       | Korean                                |
 | `vietnamese`   | Vietnamese                            |
+| `russian`      | Russian                               |
 | `english_us`   | English - United States               |
 | `english_uk`   | English - United Kingdom              |
 | `french`       | French                                |

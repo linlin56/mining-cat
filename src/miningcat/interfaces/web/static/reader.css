@@ -83,6 +83,10 @@
   font-family: "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", SimSun, serif; }
 .content.sans:lang(zh-Hans), .content.sans:lang(zh-CN), .content.sans:lang(zh) {
   font-family: "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; }
+.content.serif:lang(nan) {
+  font-family: var(--mc-taigi-serif), "Noto Serif TC", "Noto Serif CJK TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif; }
+.content.sans:lang(nan) {
+  font-family: var(--mc-taigi-sans), "Noto Sans TC", "Noto Sans CJK TC", "Source Han Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
 .content.serif:lang(ko) { font-family: "Noto Serif KR", "Noto Serif CJK KR", "Source Han Serif K", "Nanum Myeongjo", AppleMyungjo, Batang, serif; }
 .content.sans:lang(ko) { font-family: "Noto Sans KR", "Noto Sans CJK KR", "Source Han Sans K", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
 

@@ -4,7 +4,7 @@ MiningCat is an all-in-one tool for learning languages through immersion and sen
 
 Everything runs locally, in your browser: nothing is sent online.
 
-![The reader: words coloured by status, and the dictionary popup on 年糕](assets/screenshots/reader-lookup.png)
+![The reader: words coloured by status, and the dictionary popup on 太陽 with its rank in a frequency list](assets/screenshots/reader-lookup.png)
 
 - **Read** ebooks (EPUB, TXT, horizontal or vertical text) and comics or manga, whose text is read by OCR, in the [reader](how-to-use/reader.md).
 - **Watch** local videos with their subtitles, or YouTube, Instagram and Bilibili videos with their captions, in the [player](how-to-use/player.md).

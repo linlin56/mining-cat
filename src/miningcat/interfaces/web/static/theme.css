@@ -207,3 +207,11 @@
   --mc-hl-i1-focus: rgba(255, 255, 255, .20);
   --mc-hl-lookup: rgba(255, 255, 255, .32);
 }
+
+/* Taigi's romanizations (Tâi-lô, POJ) take combining marks few fonts have (a̍ U+030D, o͘ U+0358, ⁿ U+207F): in a
+   font without them the browser draws empty boxes. Taigi text starts with fonts that have them, which draw the
+   Latin letters; the Chinese fonts after them draw the Hanji. */
+:root {
+  --mc-taigi-serif: "Charis SIL", "Gentium Plus", "Noto Serif", "DejaVu Serif", "Times New Roman";
+  --mc-taigi-sans: "Noto Sans", "DejaVu Sans", Arial;
+}

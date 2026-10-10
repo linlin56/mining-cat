@@ -750,7 +750,7 @@
       word.append(entry.expression);
     }
     const parts = [word];
-    if (language !== "ja" && entry.reading && entry.reading !== entry.expression) parts.push(el("span", { class: "fs-6 text-body-secondary", text: entry.display_reading || entry.reading }));
+    if (language !== "ja" && entry.reading && entry.reading !== entry.expression) parts.push(el("span", { class: "fs-6 text-body-secondary", lang: `${language}-Latn`, text: entry.display_reading || entry.reading }));
     return el("div", { class: "d-flex flex-wrap align-items-baseline column-gap-2" }, ...parts);
   }
 
@@ -1530,7 +1530,7 @@
     const later = el("button", { type: "button", class: "btn btn-outline-secondary", text: "Save for later" });
     const cancel = el("button", { type: "button", class: "btn btn-outline-secondary", "data-bs-dismiss": "modal", text: "Cancel" });
 
-    const dialog = el("div", { class: "modal", tabindex: "-1", "aria-labelledby": "mc-creator-title" },
+    const dialog = el("div", { class: "modal mc-creator", tabindex: "-1", "aria-labelledby": "mc-creator-title" },
       el("div", { class: "modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-lg-down" },
         el("div", { class: "modal-content" },
           el("div", { class: "modal-header" },

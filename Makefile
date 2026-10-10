@@ -1,4 +1,4 @@
-.PHONY: help gui reader player install install-translation install-qwen install-taigi test coverage audio epub align export chapter1 chapter run clean video game-setup game
+.PHONY: help gui reader player install install-translation install-qwen install-taigi test coverage screenshots audio epub align export chapter1 chapter run clean video game-setup game
 
 # Defaults
 CHAPTER  ?= 1
@@ -52,6 +52,7 @@ help:
 	@echo "  make reader                     Open the ebook reader in your browser"
 	@echo "  make player                     Open the video player in your browser"
 	@echo "  make test                       Run tests"
+	@echo "  make screenshots [ONLY=reader] [FREQ=TOCFL]  Retake the docs' screenshots (needs Playwright)"
 	@echo "  make audio                      Step 1: prepare audio chapters"
 	@echo "  make epub [RANGE=4-9]           Step 2: extract epub text"
 	@echo "  make align [CHAPTER=1|all]      Step 3: align chapter(s)"
@@ -98,6 +99,11 @@ test:
 
 coverage:
 	$(PYTHON) -m pytest --cov=src/miningcat --cov-report=xml --cov-report=term-missing
+
+# The docs' screenshots, on demo data. ONLY: one screen (home, reader, card, player, settings, converter, taigi).
+# FREQ: a frequency list for the popup and the card creator, a file or the title of a list of library/.
+screenshots:
+	$(PYTHON) tools/screenshots.py $(if $(ONLY),--only $(ONLY)) $(if $(FREQ),--frequency "$(FREQ)")
 
 audio:
 	$(MAIN) audio

@@ -11,6 +11,7 @@
   font-family: "Noto Serif TC", "Noto Serif SC", "Noto Serif JP", "Noto Serif KR", "Songti TC", "Hiragino Mincho ProN", serif;
   overflow-wrap: anywhere;
 }
+.mc-text:lang(nan) { font-family: var(--mc-taigi-serif), "Noto Serif TC", "Songti TC", "PMingLiU", serif; }
 
 /* Room under the last line of a text, so that it can be read in the middle of the screen */
 .mc-feed { padding-bottom: 40vh; }

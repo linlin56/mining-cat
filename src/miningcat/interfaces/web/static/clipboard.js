@@ -112,8 +112,10 @@ function init() {
   select.hidden = C.study.tags.length < 2;
   const saved = load(STORE_TAG);
   if (C.study.tags.some((t) => t.tag === saved)) select.value = saved;
+  $("editor").lang = language();  // its fonts (Taigi's romanizations)
   select.addEventListener("change", () => {
     store(STORE_TAG, select.value);
+    $("editor").lang = language();
     if (C.reading) { edit(); read(); }
   });
 

@@ -40,6 +40,9 @@ In the converter, *Precision* picks Qwen3-ASR's size: **0.6B** (default) or **1.
 
 - **Converter**: *Convert subtitles to* writes the subtitles of a book, an audiobook or a video in Hanji, Tâi-lô or POJ. On the command line: `--convert-to hanji|tailo|poj`, or `python -m miningcat convert --source nan --target poj` for the files of `output/srt/`.
 - **Clipboard**: *Write in…* rewrites the pasted text in the system you pick.
+
+    ![The clipboard: a Hanji text rewritten in Pe̍h-ōe-jī with Write in…](../assets/screenshots/taigi-convert.png)
+
 - **Video game / Screen share**: the OCR'd text can be converted the same way.
 
 Between the two romanizations, the conversion is exact, syllable by syllable (tone marks or tone numbers, o͘ / oo, ⁿ / nn, ch / ts...). Hanji are read with [taibun](https://github.com/andreihar/taibun) (the Ministry of Education's dictionary). Writing romanized text in Hanji is a best guess: a pronunciation often has several Hanji, the most common one is chosen, and a syllable without Hanji stays romanized.
@@ -51,3 +54,9 @@ Between the two romanizations, the conversion is exact, syllable by syllable (to
 - An entry without a reading gets taibun's.
 - In **Settings › Languages & words**, choose the romanization of the popup and of the cards' *Reading* field: **Tâi-lô** or **Pe̍h-ōe-jī**. A word saved in one is the same word in the other.
 - Card fields: `{tailo}` and `{poj}` give the reading in each romanization, `{word_readings}` gives 食飯[tsia̍h-pn̄g], and `{sentence_readings}` gives the reading of every Hanji word of the sentence.
+
+![The popup on 食飯 in a Hanji text: its Tâi-lô reading, tsia̍h-pn̄g](../assets/screenshots/taigi-lookup.png)
+
+![The popup on chia̍h-pn̄g, written in Pe̍h-ōe-jī: it finds 食飯 from its reading](../assets/screenshots/taigi-lookup-romanized.png)
+
+![Settings › Words while studying Taigi: the romanization of the popup and of the cards, Tâi-lô or Pe̍h-ōe-jī](../assets/screenshots/taigi-settings.png)

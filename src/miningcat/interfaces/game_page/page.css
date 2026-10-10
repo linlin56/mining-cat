@@ -7,6 +7,7 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+.line:lang(nan) { font-family: var(--mc-taigi-serif), "Noto Serif TC", serif; }
 
 /* the screenshot is context: dimmed, it wakes up on hover */
 .shot { filter: saturate(0.55) brightness(0.7); transition: filter 180ms ease; }

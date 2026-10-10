@@ -82,13 +82,16 @@ Then open <http://localhost:8000>. When adding a page, add it to the `nav` in `z
 
 ### Screenshots
 
-The screenshots in `docs/assets/screenshots/` are taken by `tools/screenshots.py`. It runs the GUI from a temporary copy of `src/`, with demo data (a short story, a small dictionary, a generated video, a fake AnkiConnect), so your own library never shows up. Then it drives Chrome with [Playwright](https://playwright.dev/python/):
+The screenshots in `docs/assets/screenshots/` are taken by `tools/screenshots.py`. It runs the GUI from a temporary copy of `src/`, with demo data (a short story, small Mandarin and Taigi dictionaries, a generated video, a fake AnkiConnect), so your own library never shows up. Then it drives Chrome with [Playwright](https://playwright.dev/python/) (ffmpeg makes the video):
 
 ```bash
-pip install playwright         # uses your installed Chrome, no browser download
-make screenshots               # every screenshot
-make screenshots ONLY=reader   # only the reader's
+pip install playwright           # uses your installed Chrome, no browser download
+make screenshots                 # every screenshot
+make screenshots ONLY=reader     # only the reader's: home, reader, card, player, settings, converter or taigi
+make screenshots FREQ=TOCFL      # with a frequency list: a file, or the title of one of your library/
 ```
+
+With `FREQ`, the popup and the card creator show the word's rank. A list of your library is only read (exported to the temporary copy), and the translation models you downloaded are linked into the copy, so that the card creator and Settings › Translation work.
 
 Retake them when a screen changes. To add one, add a step in `tools/screenshots.py` and reference the image from the page: `![What it shows](../assets/screenshots/<name>.png)`.
 

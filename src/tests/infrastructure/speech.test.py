@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 import types
 
@@ -357,6 +358,7 @@ def test_omnivoice_install_commands(monkeypatch):
         [*pip, "torch", "torchaudio", "--index-url", engine_install.PYTORCH_CPU_INDEX],
         [*pip, "-r", str(engine_install.PROJECT_ROOT / "requirements-omnivoice.txt")],
         [*pip, "--no-deps", engine_install.OMNIVOICE_REQUIREMENT],
+        [str(omnivoice_tts.PYTHON), "-c", "from huggingface_hub import snapshot_download; snapshot_download('k2-fsa/OmniVoice')"],
     ]
     monkeypatch.setattr(engine_install.shutil, "which", lambda name: "/usr/bin/nvidia-smi")
     assert engine_install.commands(engine_install.OMNIVOICE)[1] == [*pip, "torch", "torchaudio"]
@@ -417,7 +419,11 @@ def omnivoice_process(monkeypatch):
     """OmniVoice "installed", its process faked (the processes started)."""
     started = []
 
+    real_popen = subprocess.Popen
+
     def popen(command, **kwargs):
+        if command[0] == "ffmpeg":  # the mp3 encoding of the chapters is real
+            return real_popen(command, **kwargs)
         assert command[1:] == ["-m", "miningcat.infrastructure.speech.omnivoice_worker"]
         assert command[0] == str(omnivoice_tts.PYTHON)  # its own environment's Python
         started.append(FakeOmniVoiceProcess())

@@ -174,6 +174,7 @@ def test_audiobook_request_checks_what_the_mode_needs(tmp_path):
     book.write_text("Il était une fois.", encoding="utf-8")
     with pytest.raises(ConverterError, match="chapter"):
         AudiobookRequestBuilder(ConversionMode.GENERATE_AUDIO, Language.FRENCH).ebook([book], [])
+    save_config({"tts_use_edge": False})
     with pytest.raises(ConverterError, match="voice"):  # Edge's voices only when the settings use edge-tts
         AudiobookRequestBuilder(ConversionMode.GENERATE_AUDIO, Language.FRENCH).voice("Denise - French (France), female")
     save_config({"tts_use_edge": True})

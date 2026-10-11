@@ -13,9 +13,9 @@
 
 Everything else (Whisper, yt-dlp, edge-tts, OpenCC, [owocr](https://pypi.org/project/owocr/)...) is installed by `make install`.
 The local voice reading the sentences and the books, [OmniVoice](https://github.com/k2-fsa/OmniVoice), is large: install
-it from Settings › Anki (Install OmniVoice), or with `make install-omnivoice` (about 4 GB with its model, in its own
-environment `.venv-omnivoice`). Settings › Anki also sets its quality, and can use edge-tts when it's available (faster,
-but online): Edge's voices are then listed too, and OmniVoice takes over when Edge fails.
+it from Settings › Voice (Install OmniVoice), or with `make install-omnivoice` (about 4 GB with its model, in its own
+environment `.venv-omnivoice`). The first use can be long: the model is put in the cache, and each language's voice is made up once. Settings › Voice also sets its quality. edge-tts is used by default (faster, but online): once OmniVoice is installed,
+OmniVoice takes over when Edge fails, and reads everything if you untick "Use edge-tts when available".
 
 ## Installation
 

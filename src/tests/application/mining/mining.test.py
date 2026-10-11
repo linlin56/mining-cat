@@ -1012,9 +1012,10 @@ def test_http_word_audio(client, monkeypatch):
 
 def test_tts_voices_by_language():
     from miningcat.application.mining import sentence_tts
+    anki.save_config({"tts_use_edge": False})
     assert sentence_tts.voices("zh") == {"voices": [], "default": ""}  # no OmniVoice, and Edge isn't used
     assert sentence_tts.voices("nan")["default"] == "nan-TW-MmsTaigi"  # a local voice
-    anki.save_config({"tts_use_edge": True})
+    anki.save_config({"tts_use_edge": True})  # the default
     zh = sentence_tts.voices("zh")
     assert zh["default"] == "zh-TW-HsiaoChenNeural" and "zh-CN-XiaoxiaoNeural" in [v["id"] for v in zh["voices"]]
     assert [v["id"] for v in sentence_tts.voices("yue")["voices"]][0].startswith("zh-HK-")
@@ -1081,7 +1082,8 @@ def fake_omnivoice(monkeypatch):
 
 def test_omnivoice_voices(fake_omnivoice):
     from miningcat.application.mining import sentence_tts
-    # Only OmniVoice's, unless the settings use edge-tts.
+    # Only OmniVoice's, unless the settings use edge-tts (the default).
+    anki.save_config({"tts_use_edge": False})
     assert sentence_tts.voices("zh") == {"voices": [{"id": "zh-OmniVoice", "label": "OmniVoice - Mandarin (local)"}],
                                          "default": "zh-OmniVoice"}
     assert [v["id"] for v in sentence_tts.voices("yue")["voices"]] == ["yue-OmniVoice"]
@@ -1097,6 +1099,7 @@ def test_omnivoice_voices(fake_omnivoice):
 def test_omnivoice_reads_its_voices(client, monkeypatch, fake_omnivoice):
     from miningcat.application.mining import sentence_tts
     monkeypatch.setattr(sentence_tts, "tts", types.SimpleNamespace(synthesize=lambda text, voice: pytest.fail("Edge used")))
+    anki.save_config({"tts_use_edge": False})
     assert sentence_tts.synthesize("zh", "位處大陸", "zh-OmniVoice") == "omni:位處大陸".encode()
     anki.save_config({"tts_steps": 32})
     assert sentence_tts.synthesize("nan", "我欲食飯", "nan-OmniVoice") == "omni:我欲食飯".encode()
@@ -1129,16 +1132,16 @@ def test_edge_failure_without_omnivoice(monkeypatch):
     with pytest.raises(sentence_tts.TtsError, match="Edge returned no audio"):
         sentence_tts.synthesize("fr", "Bonjour", "fr-FR-DeniseNeural")
     anki.save_config({"tts_use_edge": False})
-    assert sentence_tts.voices("fr") == {"voices": [], "default": ""}  # Settings › Anki offers to install OmniVoice
+    assert sentence_tts.voices("fr") == {"voices": [], "default": ""}  # Settings › Voice offers to install OmniVoice
 
 
 def test_local_voice_settings(client):
     state = client.get("/api/tts/local-voice").get_json()
     assert state == {"installed": False, "install_command": "make install-omnivoice", "steps": [8, 16, 32],
-                     "chosen_steps": 8, "use_edge": False}
-    anki.save_config({"tts_use_edge": True, "tts_steps": "16"})
+                     "chosen_steps": 8, "use_edge": True}  # edge-tts by default
+    anki.save_config({"tts_use_edge": False, "tts_steps": "16"})
     assert client.get("/api/tts/local-voice").get_json()["chosen_steps"] == 16
-    assert anki.get_config()["tts_use_edge"] is True
+    assert anki.get_config()["tts_use_edge"] is False
     with pytest.raises(anki.AnkiError, match="8, 16, 32"):
         anki.save_config({"tts_steps": 12})
 

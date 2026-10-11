@@ -28,7 +28,7 @@ MiningCat relies on great open source projects:
 | [ffmpeg](https://ffmpeg.org/)                                             | Splitting, converting and rendering audio and video   |
 | [stable-ts](https://github.com/jianfch/stable-ts) and [faster-whisper](https://github.com/SYSTRAN/faster-whisper) | Transcription and alignment of the book text on the audio |
 | [OmniVoice](https://github.com/k2-fsa/OmniVoice)                          | Text-to-speech, local (model: CC BY-NC 4.0)           |
-| [edge-tts](https://github.com/rany2/edge-tts)                             | Text-to-speech, online, when chosen in the settings   |
+| [edge-tts](https://github.com/rany2/edge-tts)                             | Text-to-speech, online, used by default            |
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp)                                | Downloading online videos                             |
 | [owocr](https://github.com/AuroraWright/owocr) and [EasyOCR](https://github.com/JaidedAI/EasyOCR) | Reading burned-in subtitles                |
 | [EbookLib](https://github.com/aerkalov/ebooklib)                          | Reading `.epub` files                                 |

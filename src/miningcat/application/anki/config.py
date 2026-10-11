@@ -25,7 +25,7 @@ def get_config() -> dict:
     config.setdefault("tts_voices", {})  # language -> Edge-TTS voice reading the sentences, "" = none
     # Sentences are read by OmniVoice (local), or by Edge's voices when this is on (faster, online), OmniVoice taking
     # over when Edge fails.
-    config.setdefault("tts_use_edge", False)
+    config.setdefault("tts_use_edge", True)
     config.setdefault("tts_steps", omnivoice_tts.DEFAULT_STEPS)  # OmniVoice's diffusion steps (omnivoice_tts.STEPS)
     config.setdefault("translation_language", "en")  # sentences are translated to it, "" = not translated
     config.setdefault("translation_model", DEFAULT_TRANSLATION_MODEL)  # the model translating them (install.MODELS)

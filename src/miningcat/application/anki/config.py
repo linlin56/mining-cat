@@ -5,6 +5,7 @@ from miningcat.domain.languages import LANGUAGES
 from miningcat.domain.words.status import DEFAULT_KNOWN_INTERVAL
 from miningcat.infrastructure.anki.ankiconnect import AnkiConnect
 from miningcat.infrastructure.persistence.settings_store import settings
+from miningcat.infrastructure.speech import omnivoice_tts
 from miningcat.infrastructure.translation.install import DEFAULT_MODEL as DEFAULT_TRANSLATION_MODEL
 from miningcat.infrastructure.translation.install import MODELS as TRANSLATION_MODELS
 
@@ -22,6 +23,10 @@ def get_config() -> dict:
     config.setdefault("notes", {})   # language -> {deck, model, fields: {note field: template}, tags}
     config.setdefault("sync", {})    # language -> [{deck, field, reading_field}]
     config.setdefault("tts_voices", {})  # language -> Edge-TTS voice reading the sentences, "" = none
+    # Sentences are read by OmniVoice (local), or by Edge's voices when this is on (faster, online), OmniVoice taking
+    # over when Edge fails.
+    config.setdefault("tts_use_edge", False)
+    config.setdefault("tts_steps", omnivoice_tts.DEFAULT_STEPS)  # OmniVoice's diffusion steps (omnivoice_tts.STEPS)
     config.setdefault("translation_language", "en")  # sentences are translated to it, "" = not translated
     config.setdefault("translation_model", DEFAULT_TRANSLATION_MODEL)  # the model translating them (install.MODELS)
     # Qwen3 also translates the cards' sentences, when it's the model (else NLLB-200 does)
@@ -72,6 +77,16 @@ def save_config(values: dict) -> dict:
     for language, voice in (values.get("tts_voices") or {}).items():
         if language in LANGUAGES:
             config["tts_voices"][language] = str(voice or "")
+    if "tts_use_edge" in values:
+        config["tts_use_edge"] = bool(values["tts_use_edge"])
+    if "tts_steps" in values:
+        try:
+            steps = int(values["tts_steps"])
+        except (TypeError, ValueError):
+            steps = None
+        if steps not in omnivoice_tts.STEPS:
+            raise AnkiError(f"The voice quality must be one of {', '.join(map(str, omnivoice_tts.STEPS))} steps.")
+        config["tts_steps"] = steps
     for language, sources in (values.get("sync") or {}).items():
         if language not in LANGUAGES:
             continue

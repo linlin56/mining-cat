@@ -3,9 +3,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from miningcat.application.anki.config import save_config
 from miningcat.application.converter.errors import ConverterError
 from miningcat.application.converter.steps import speech_synthesis
 from miningcat.config.paths import paths
+from miningcat.domain.languages import Language
+from miningcat.infrastructure.speech import omnivoice_tts
 
 
 def test_run_exits_if_no_text_dir(tmp_path, monkeypatch):
@@ -121,3 +124,47 @@ def test_run_synthesizes_chapter(tmp_path, monkeypatch):
 
     assert (audio_dir / "chapter_001.mp3").read_bytes() == b"mp3data"
     assert (srt_dir / "chapter_001.srt").exists()
+
+
+@pytest.fixture
+def fake_omnivoice(monkeypatch):
+    """OmniVoice installed, reading each sentence in one second (the chapters it read: [(sentences, language, steps)])."""
+    read = []
+
+    def synthesize_chapter(sentences, language, audio_path, steps):
+        read.append((sentences, language, steps))
+        audio_path.write_bytes(b"omnivoice")
+        return [(i, i + 1.0, sentence) for i, sentence in enumerate(sentences)]
+
+    monkeypatch.setattr(omnivoice_tts, "installed", lambda: True)
+    monkeypatch.setattr(omnivoice_tts, "synthesize_chapter", synthesize_chapter)
+    return read
+
+
+def _one_chapter(text="Hello world. Bye."):
+    paths.chapters_text.mkdir(parents=True)
+    (paths.chapters_text / "chapter_001.txt").write_text(text, encoding="utf-8")
+
+
+def test_omnivoice_reads_the_chapters(fake_omnivoice):
+    _one_chapter()
+    with patch("edge_tts.Communicate") as edge:
+        speech_synthesis.run(voice="fr-OmniVoice", lang=Language.FRENCH)
+    edge.assert_not_called()
+    assert fake_omnivoice == [(["Hello world.", "Bye."], "fr", 8)]
+    assert (paths.chapters_audio / "chapter_001.mp3").read_bytes() == b"omnivoice"
+    assert "Bye." in (paths.srt / "chapter_001.srt").read_text(encoding="utf-8")
+
+
+def test_omnivoice_takes_over_when_edge_fails(fake_omnivoice):
+    _one_chapter()
+    save_config({"tts_steps": 16})
+    with patch("edge_tts.Communicate", side_effect=RuntimeError("403, message='Invalid response status'")):
+        speech_synthesis.run(voice="fr-FR-DeniseNeural", lang=Language.FRENCH)
+    assert fake_omnivoice == [(["Hello world.", "Bye."], "fr", 16)]
+
+
+def test_edge_failure_without_omnivoice(monkeypatch):
+    _one_chapter()
+    with patch("edge_tts.Communicate", side_effect=RuntimeError("403")), pytest.raises(RuntimeError, match="403"):
+        speech_synthesis.run(voice="fr-FR-DeniseNeural", lang=Language.FRENCH)

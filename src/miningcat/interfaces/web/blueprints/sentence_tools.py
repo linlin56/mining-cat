@@ -49,6 +49,22 @@ def api_tts_voices():
     return jsonify(**sentence_tts.voices(language), chosen=chosen)
 
 
+# OmniVoice, the local voice: installed or not, its steps. Its settings are saved with the cards' (/api/anki/config).
+@bp.get("/api/tts/local-voice")
+def api_tts_local_voice():
+    return jsonify(sentence_tts.local_voice())
+
+
+# OmniVoice makes up another voice for the language: its next sentence is read by it.
+@bp.post("/api/tts/new-voice")
+def api_tts_new_voice():
+    try:
+        sentence_tts.new_voice(study_language(json_body().get("language")))
+    except sentence_tts.TtsError as exc:
+        raise UserError("Text-to-speech", str(exc))
+    return jsonify(ok=True)
+
+
 @bp.post("/api/tts")
 def api_tts():
     body = json_body()

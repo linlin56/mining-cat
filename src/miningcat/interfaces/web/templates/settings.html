@@ -184,6 +184,28 @@
             </div>
           </div>
           <p class="small text-success m-0" id="note-saved"></p>
+          <div class="vstack gap-2">
+            <p class="small text-body-secondary m-0">Sentences are read by OmniVoice, a voice running on your computer (every
+              language), or by Edge's voices (saved right away).</p>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="tts-use-edge">
+              <label class="form-check-label" for="tts-use-edge">Use edge-tts when available (faster but not local)</label>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2" id="local-voice-install" hidden>
+              <button type="button" class="btn btn-sm btn-outline-primary" id="tts-install"><i class="bi bi-download" aria-hidden="true"></i> Install OmniVoice (local)</button>
+              <span class="small text-body-secondary" id="tts-install-state"></span>
+            </div>
+            <div class="row g-2 align-items-end" id="local-voice-options">
+              <div class="col-md-auto">
+                <label class="form-label" for="tts-steps">Local voice quality</label>
+                <select class="form-select" id="tts-steps"></select>
+              </div>
+              <div class="col-md-auto">
+                <button type="button" class="btn btn-outline-secondary" id="tts-new-voice"><i class="bi bi-shuffle" aria-hidden="true"></i> Try another {{ study.name }} voice</button>
+              </div>
+            </div>
+            <p class="small m-0" id="local-voice-state"></p>
+          </div>
         </div>
       </div>
 

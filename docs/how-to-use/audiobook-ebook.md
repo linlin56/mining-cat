@@ -31,7 +31,9 @@ Subtitles are less accurate than in standard mode (Whisper can mishear words, or
 
 ### Generate audio mode
 
-Provide the ebook only. The audio is generated with [edge-tts](https://github.com/rany2/edge-tts), and the subtitles come from the text.
+Provide the ebook only. The audio is generated with [OmniVoice](https://github.com/k2-fsa/OmniVoice), a local voice
+(`make install-omnivoice`), or with [edge-tts](https://github.com/rany2/edge-tts) when Settings › Anki says so (OmniVoice
+takes over when Edge fails). The subtitles come from the text.
 
 Pick a voice in the **Voice** panel (a few voices are available per language). Synthetic voices are less natural than a real narrator, but it's a great option when there is no audiobook.
 

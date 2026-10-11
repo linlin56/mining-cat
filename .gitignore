@@ -11,6 +11,7 @@ temp/
 
 # Python
 .venv/
+.venv-omnivoice/
 __pycache__/
 *.py[cod]
 *.egg-info/

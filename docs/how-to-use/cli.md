@@ -144,7 +144,7 @@ Then choose it in Settings › **Translation**.
 
 ## `game`
 
-Video game / screen share OCR: captures a window, reads its text area with OCR, and pushes the screenshot + text to a local web page. See [Video games & screen share](video-game.md) for the details.
+Video game / screen share OCR: captures a window (or a webcam / capture card), reads its text area with OCR, and pushes the screenshot + text to a local web page. See [Video games & screen share](video-game.md) for the details.
 
 ```bash
 python -m miningcat game setup [options]   # 1. pick the window, then draw the screenshot and text areas
@@ -155,11 +155,12 @@ The selection is saved in `sources/game_ocr.json`, so `setup` is only needed onc
 
 ### `game setup`
 
-Asks for the window (GNOME's sharing dialog on Linux, a numbered list on macOS), then opens two pages in your browser, one after the other, to draw the screenshot area and the text area.
+Asks for the window (GNOME's sharing dialog on Linux, a numbered list on macOS and Windows) or, with `--webcam`, the camera (a numbered list), then opens two pages in your browser, one after the other, to draw the screenshot area and the text area.
 
 | Option         | Description                                                                                     |
 | -------------- | ----------------------------------------------------------------------------------------------- |
-| `--window TEXT`| macOS: pick the first window whose app name or title contains `TEXT`, instead of asking          |
+| `--webcam`     | Capture a webcam or capture card (console, other computer...) instead of a window                |
+| `--window TEXT`| macOS, Windows, `--webcam`: pick the first window (or camera) whose name contains `TEXT`, instead of asking |
 | `--areas-only` | Keep the saved window, only draw the areas again                                                |
 
 ### `game serve`

@@ -26,17 +26,18 @@ def choose_window(windows: list[WindowInfo], query: str | None, ask: Callable[[s
         print("  Invalid choice.")
 
 
-# Asks the user for the game window: through the OS dialog (Wayland portal), or from a list MiningCat prints (macOS, Windows).
-def select_window(backend: CaptureBackend, settings: GameOcrSettings, query: str | None = None) -> None:
-    info = capture.backend_info()
+# Asks the user for the game window: through the OS dialog (Wayland portal), or from a list MiningCat prints (macOS, Windows,
+# webcams). `source_id` is the backend's id in capture.sources(), the OS's window backend by default.
+def select_window(backend: CaptureBackend, settings: GameOcrSettings, query: str | None = None, source_id: str | None = None) -> None:
+    source_id = source_id or capture.backend_info().id
     if backend.has_system_picker:
         print("A system dialog will ask which window to share: pick the game window.", flush=True)
         backend.select_window()
     else:
         backend.select_window(choose_window(backend.list_windows(), query))
-    settings.set_window(info.id, backend.state, backend.window_label)
+    settings.set_window(source_id, backend.state, backend.window_label)
     settings.save()
-    print(f"Window: {settings.window_label}")
+    print(f"{'Camera' if source_id == capture.WEBCAM.id else 'Window'}: {settings.window_label}")
 
 # Asks the user to select the screenshot and text areas, and saves them in the settings.
 def select_areas(backend: CaptureBackend, settings: GameOcrSettings) -> bool:
@@ -61,19 +62,20 @@ def select_areas(backend: CaptureBackend, settings: GameOcrSettings) -> bool:
     return True
 
 
-def setup(window_query: str | None = None, areas_only: bool = False) -> None:
+# `webcam`: capture a webcam / capture card instead of a window.
+def setup(window_query: str | None = None, areas_only: bool = False, webcam: bool = False) -> None:
     from miningcat.application.game_ocr.session import open_saved_window
 
     settings = GameOcrSettings.load()
-    info = capture.backend_info()
+    info = capture.WEBCAM if webcam else capture.backend_info()
     print(f"Capture backend: {info.label if info else sys.platform + ' (unsupported)'}")
     if areas_only:
         backend = open_saved_window(settings)
     else:
-        backend = capture.create_backend()
+        backend = capture.create_source(info.id) if webcam else capture.create_backend()
     with backend:
         if not areas_only:
-            select_window(backend, settings, window_query)
+            select_window(backend, settings, window_query, info.id)
         if not select_areas(backend, settings):
             sys.exit("Selection cancelled.")
     print("Done. Now run: python -m miningcat game serve")
@@ -101,7 +103,7 @@ def serve(
 
     backend = open_saved_window(settings)
     try:
-        print(f"Window:    {settings.window_label}")
+        print(f"Source:    {settings.window_label}")
         print(f"Language:  {language.profile.label}")
         print("Loading the OCR engine…", flush=True)
         session = GameOcrSession(backend, settings, language, convert_target=convert_target, join=join)
@@ -124,7 +126,7 @@ def serve(
 def main(args) -> None:
     try:
         if args.game_command == "setup":
-            setup(window_query=args.window, areas_only=args.areas_only)
+            setup(window_query=args.window, areas_only=args.areas_only, webcam=args.webcam)
         else:
             serve(
                 language=Language.from_id(args.language),

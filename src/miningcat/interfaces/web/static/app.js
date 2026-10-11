@@ -582,8 +582,15 @@ const GAME_AREAS = {
   },
 };
 
-// Server-side state of the capture panel: {supported, backend_label, hotkeys, page_url, running, settings}
-const G = { info: null, busy: false, windows: [] };
+// Server-side state of the capture panel: {supported, backend_label, sources, hotkeys, page_url, running, settings}.
+// `source` is the capture source picked in the panel (a window backend, or the webcams): the saved selection only counts
+// while it's the same source.
+const G = { info: null, busy: false, windows: [], source: null };
+
+function isWebcamSource() {
+  const source = G.info && G.info.sources.find((s) => s.id === G.source);
+  return !!(source && source.webcam);
+}
 
 function setLabel(el, text, selected) {
   el.textContent = text;
@@ -595,14 +602,27 @@ function renderGame() {
   const info = G.info;
   if (!info) return;
   const s = info.settings;
-  $("game-backend").textContent = info.backend_label;
-  setLabel($("game-window-label"), s.window_label || "No window selected", s.has_window);
-  setLabel($("game-screenshot-label"), s.screenshot_region ? "Selected" : (s.has_window ? "Whole capture" : "Not selected"), !!s.screenshot_region);
-  setLabel($("game-text-label"), s.text_region ? "Selected" : "Not selected", !!s.text_region);
+  const source = $("game-source");
+  if (source.options.length !== info.sources.length) {
+    source.replaceChildren(...info.sources.map((x) => new Option(x.label, x.id)));
+  }
+  if (!info.sources.some((x) => x.id === G.source)) {
+    G.source = info.sources.some((x) => x.id === s.source) ? s.source : (info.sources[0] || {}).id || null;
+  }
+  source.value = G.source || "";
+  const webcam = isWebcamSource();
+  $("game-window-text").textContent = webcam ? "Select camera…" : "Select window…";
+  $("game-window-icon").className = `bi ${webcam ? "bi-camera-video" : "bi-window"}`;
+  const selected = s.has_window && s.source === G.source;
+  const none = webcam ? "No camera selected" : "No window selected";
+  setLabel($("game-window-label"), selected ? s.window_label || none : none, selected);
+  setLabel($("game-screenshot-label"), selected && s.screenshot_region ? "Selected" : (selected ? "Whole capture" : "Not selected"), selected && !!s.screenshot_region);
+  setLabel($("game-text-label"), selected && s.text_region ? "Selected" : "Not selected", selected && !!s.text_region);
   const idle = info.supported && !G.busy;
+  source.disabled = !idle;
   $("game-window-btn").disabled = !idle;
-  $("game-screenshot-btn").disabled = !(idle && s.has_window);
-  $("game-text-btn").disabled = !(idle && s.has_window);
+  $("game-screenshot-btn").disabled = !(idle && selected);
+  $("game-text-btn").disabled = !(idle && selected);
   $("game-continuous").checked = s.continuous;
   const hotkey = $("game-hotkey");
   if (hotkey.options.length !== info.hotkeys.length) fillSelect(hotkey, info.hotkeys, s.hotkey);
@@ -613,7 +633,7 @@ function renderGame() {
   const running = S.running && S.jobKind === "game";
   const start = $("game-start");
   start.textContent = running ? "Stop" : "Start";
-  start.disabled = running ? false : (S.running || G.busy || !(info.supported && s.is_ready));
+  start.disabled = running ? false : (S.running || G.busy || !(info.supported && selected && s.is_ready));
   $("game-page").disabled = !running;
 }
 
@@ -639,7 +659,7 @@ async function gameRequest(path, body) {
 }
 
 async function loadWindowList() {
-  const { system_picker, windows } = await api("/api/game/windows");
+  const { system_picker, windows } = await api(`/api/game/windows?source=${encodeURIComponent(G.source || "")}`);
   G.windows = windows;
   $("window-list").replaceChildren(...windows.map((w) => new Option(w.label, String(w.id))));
   return system_picker;
@@ -648,8 +668,13 @@ async function loadWindowList() {
 async function selectGameWindow() {
   try {
     // Wayland: the OS shows its own dialog, which this request waits for.
-    if (await loadWindowList()) return await gameRequest("/api/game/window", {});
+    if (await loadWindowList()) return await gameRequest("/api/game/window", { source: G.source });
   } catch (err) { return showError(err); }
+  const webcam = isWebcamSource();
+  $("window-title").textContent = webcam ? "Select the camera" : "Select the game window";
+  $("window-hint").textContent = webcam
+    ? "Pick the webcam or capture card to capture (it must be plugged in):"
+    : "Pick the window to capture (it must be open, and not minimized):";
   MiningCatUI.showModal($("window-dialog"));
 }
 
@@ -657,13 +682,13 @@ async function confirmGameWindow() {
   const value = $("window-list").value;
   if (!value) return;
   MiningCatUI.hideModal($("window-dialog"));
-  try { await gameRequest("/api/game/window", { id: Number(value) }); } catch (err) { showError(err); }
+  try { await gameRequest("/api/game/window", { source: G.source, id: Number(value) }); } catch (err) { showError(err); }
 }
 
 function selectGameArea(area) {
   openRegionDialog({
     ...GAME_AREAS[area],
-    loading: "Capturing the window…",
+    loading: "Capturing…",
     region: [0, 0, 1, 1],
     load: async () => {
       const data = await api("/api/game/frame", { area });
@@ -699,6 +724,7 @@ async function toggleGame() {
 }
 
 function setupGame() {
+  $("game-source").addEventListener("change", (e) => { G.source = e.target.value; renderGame(); });
   $("game-window-btn").addEventListener("click", selectGameWindow);
   $("game-screenshot-btn").addEventListener("click", () => selectGameArea("screenshot"));
   $("game-text-btn").addEventListener("click", () => selectGameArea("text"));

@@ -15,13 +15,12 @@ from miningcat.infrastructure import capture
 from miningcat.infrastructure.capture import CaptureBackend, CaptureError
 
 
-# Opens the backend of the current OS on the window saved in `settings`, without asking the user again.
-# The backend state is saved back right away: Wayland portal restore tokens are single-use.
+# Opens the backend saved in `settings` (the window backend of the current OS, or the webcams) on the window / camera saved
+# there, without asking the user again. The backend state is saved back right away: Wayland portal restore tokens are single-use.
 def open_saved_window(settings: GameOcrSettings, save: Callable[[GameOcrSettings], None] = GameOcrSettings.save) -> CaptureBackend:
-    info = capture.backend_info()
-    if not settings.has_window or info is None or settings.backend != info.id:
+    if not settings.has_window or capture.source_info(settings.backend) is None:
         raise CaptureError("No window selected yet: select the game window first.")
-    backend = capture.create_backend()
+    backend = capture.create_source(settings.backend)
     try:
         backend.restore(settings.backend_state)
     except Exception:

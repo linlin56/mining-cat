@@ -14,7 +14,7 @@ from miningcat.infrastructure.hotkeys import DEFAULT_HOTKEY
 # - text_region: relative to the screenshot area. It's the only part that goes through OCR.
 @dataclass
 class GameOcrSettings:
-    backend: str | None = None  # id of the backend `backend_state` belongs to (see capture.BACKENDS)
+    backend: str | None = None  # id of the backend `backend_state` belongs to (see capture.sources())
     backend_state: dict = field(default_factory=dict)
     window_label: str = ""
     screenshot_region: Region | None = None

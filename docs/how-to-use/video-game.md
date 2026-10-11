@@ -80,12 +80,13 @@ The camera is remembered by its name, so it's found again even if you plug other
     - With a **capture card**, the capture is the console's whole screen: keep it as is.
 5. Click **Select text area (for OCR)…** and draw a box around the game's dialog box, where the text appears. It's pre-selected on the whole screenshot area, and **Reset to bottom third** is a good start for most games. Only this part is read by OCR, which makes it faster and avoids reading menus or the HUD.
 6. Pick the **Capture key** (`F9` by default), or check **Continuous capture** (see [below](#capture-key-or-continuous-capture)).
+    - Optionally, fill in **Source name** (e.g. the game and its console): the card creator's **Source** field starts with it, instead of `Video game`. It can be changed while capturing.
 7. Click **Start**. The page opens in a new tab of your browser (or click **Open page**).
 8. Play, and press the capture key on each line you want to mine! Click **Stop** when you're done.
 
 While the capture runs, the selection is locked and its log shows in the GUI's **Log** panel. Stopping MiningCat (`Ctrl+C` in its terminal) also stops the capture.
 
-The window (or camera), the areas and the capture mode are remembered for next time, in `sources/game_ocr.json`. Selecting a new window resets the areas, and selecting a new screenshot area resets the text area (it's relative to the screenshot area).
+The window (or camera), the areas, the capture mode and the source name are remembered for next time, in `sources/game_ocr.json`. Selecting a new window resets the areas, and selecting a new screenshot area resets the text area (it's relative to the screenshot area).
 
 !!! tip "Moving or resizing the window"
     Areas are stored as fractions of the window, so moving the window is fine, and resizing it keeps working as long as the game layout scales with it.

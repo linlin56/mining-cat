@@ -22,6 +22,8 @@ class GameOcrSettings:
     # How captures are triggered: the capture key (default), or continuously when the text changes.
     hotkey: str = DEFAULT_HOTKEY
     continuous: bool = False
+    # The card creator's Source field ("Video game" when empty), e.g. the game and its console.
+    source_name: str = ""
 
     @property
     def has_window(self) -> bool:

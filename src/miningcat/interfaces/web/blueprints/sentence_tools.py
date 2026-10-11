@@ -52,7 +52,8 @@ def api_tts_voices():
 # OmniVoice, the local voice: installed or not, its steps. Its settings are saved with the cards' (/api/anki/config).
 @bp.get("/api/tts/local-voice")
 def api_tts_local_voice():
-    return jsonify(sentence_tts.local_voice())
+    language = request.args.get("language")
+    return jsonify(sentence_tts.local_voice(study_language(language) if language else ""))
 
 
 # OmniVoice makes up another voice for the language: its next sentence is read by it.

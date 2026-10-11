@@ -66,14 +66,17 @@ _Generate subtitles mode._ Transcribes the audio chapters with Whisper, without 
 
 ### `tts`
 
-_Generate audio mode._ Generates the audio of each extracted chapter with edge-tts, along with its subtitles.
+_Generate audio mode._ Generates the audio of each extracted chapter with edge-tts (default), or with OmniVoice (local) when
+Settings › Voice doesn't use edge-tts, along with its subtitles.
 
 | Option       | Default       | Description                                               |
 | ------------ | ------------- | --------------------------------------------------------- |
-| `--voice`    | _required_    | edge-tts voice name, e.g. `zh-TW-HsiaoChenNeural`         |
+| `--voice`    | _required_    | `zh-OmniVoice` (local), or an edge-tts voice name, e.g. `zh-TW-HsiaoChenNeural` |
 | `--language` | `mandarin_tw` | See [language ids](#language-ids)                         |
 
-List the available voices with `edge-tts --list-voices`. Taigi has no Edge voice: use `nan-TW-MmsTaigi`, a local voice (see [Taigi](taigi.md)).
+OmniVoice's voice of a language is its key followed by `-OmniVoice` (`fr-OmniVoice`, `yue-OmniVoice`...): it needs
+`make install-omnivoice`. List Edge's voices with `edge-tts --list-voices`: OmniVoice takes over when Edge fails. Taigi
+has no Edge voice: use `nan-TW-MmsTaigi` or `nan-OmniVoice`, local voices (see [Taigi](taigi.md)).
 
 ### `convert`
 

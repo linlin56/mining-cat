@@ -72,7 +72,8 @@ def api_events():
 @bp.post("/api/install-engines")
 def api_install_engines():
     engines = json_body().get("engines")
-    if engines not in (engine_install.QWEN, engine_install.TAIGI):
+    # OmniVoice: offered by Settings › Voice, which follows the install with /api/state.
+    if engines not in (engine_install.QWEN, engine_install.TAIGI, engine_install.OMNIVOICE):
         raise UserError("Unknown engines", f"Unknown speech engines: {engines!r}")
     state = current_state()
     return start(InstallJob(engines), lambda _: state.bus.publish({"type": "done", "kind": "install"}))

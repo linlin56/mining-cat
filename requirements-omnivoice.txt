@@ -1,0 +1,13 @@
+# OmniVoice, the local voice reading the sentences and the books (optional, large): `make install-omnivoice`. Installed
+# in its own environment, .venv-omnivoice: it needs transformers 5, while Qwen3-ASR pins 4.57.6 (requirements-qwen.txt).
+# PyTorch is installed first (the CPU build on Linux without an NVIDIA GPU), and omnivoice itself last with --no-deps
+# (see infrastructure/speech/engine_install.py): it pins packages only its demo and its training use (gradio,
+# tensorboardX, webdataset).
+transformers>=5.3.0
+accelerate>=1.12.0
+huggingface_hub
+numpy
+soundfile>=0.12
+pydub
+audioop-lts; python_version >= "3.13"  # pydub needs audioop, gone from Python 3.13 (gradio brought it)
+librosa>=0.10

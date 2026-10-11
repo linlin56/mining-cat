@@ -1,6 +1,7 @@
 """What the converter offers for a language: the dropdowns of the GUIs, and the checks of their values."""
 from miningcat.application.converter.modes import ConversionMode
 from miningcat.application.mining import translation
+from miningcat.application.voices import language_voices
 from miningcat.config.app_info import GITHUB_URL
 from miningcat.domain.languages import Language, SpeechEngine
 from miningcat.domain.ocr.sampling import DEFAULT_REGION, OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
@@ -84,7 +85,7 @@ def supports_character_list(lang: Language) -> bool:
 
 
 def language_options(lang: Language) -> dict:
-    voices = lang.profile.voices
+    voices = language_voices(lang)  # OmniVoice's when it's installed, Edge's when the settings use edge-tts
     return {
         "id": lang.id,
         "label": lang.profile.label,

@@ -12,6 +12,12 @@
 - **make**, to use the shortcuts below (you can also call `python -m miningcat` directly, see [CLI reference](cli.md))
 
 Everything else (Whisper, yt-dlp, edge-tts, OpenCC, [owocr](https://pypi.org/project/owocr/)...) is installed by `make install`.
+The local voice reading the sentences and the books, [OmniVoice](https://github.com/k2-fsa/OmniVoice), is large: install
+it from Settings › Voice (Install OmniVoice), or with `make install-omnivoice` (about 4 GB with its model, in its own
+environment `.venv-omnivoice`). The first use can be long: the model is put in the cache, and each language's voice is made up once.
+
+![Settings › Voice: edge-tts or OmniVoice, its install and its quality](../assets/screenshots/settings-voice.png) Settings › Voice also sets its quality. edge-tts is used by default (faster, but online): once OmniVoice is installed,
+OmniVoice takes over when Edge fails, and reads everything if you untick "Use edge-tts when available".
 
 ## Installation
 

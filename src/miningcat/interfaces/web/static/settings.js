@@ -62,6 +62,7 @@ function showTab() {
   if (name === "languages") loadWords();
   if (name === "anki") refreshAnki();
   if (name === "translation") renderTranslation();
+  if (name === "voice") renderLocalVoice();
 }
 
 // ---------------------------------------------------------------- dictionaries
@@ -339,6 +340,136 @@ async function renderVoices(language) {
     const { voices, chosen } = await api(`/api/tts/voices?language=${encodeURIComponent(language)}`);
     options(select, [["", voices.length ? "None: generate by hand" : "No voice for this language"], ...voices.map((v) => [v.id, v.label])], chosen);
     select.disabled = !voices.length;
+  } catch (err) { showError(err); }
+}
+
+// OmniVoice, the local voice of every language (see infrastructure/speech/omnivoice_tts.py): its quality, whether
+// Edge's voices are used instead when they answer, and another voice for the language studied. Saved right away.
+const STEP_LABELS = { 8: "Fast (8 steps)", 16: "Better (16 steps, 2× slower)", 32: "Best (32 steps, 4× slower)" };
+
+async function renderLocalVoice() {
+  try {
+    const voice = await api(`/api/tts/local-voice?language=${encodeURIComponent(STUDY)}`);
+    $("tts-use-edge").checked = voice.use_edge;
+    const taigi = Boolean(voice.mms);  // Edge has no Taigi voice: MMS or OmniVoice
+    $("edge-option").hidden = taigi;
+    $("tts-intro").textContent = taigi
+      ? "Sentences are read by Meta's MMS or by OmniVoice, voices running on your computer (saved right away). MMS is generally faster."
+      : "Sentences are read by OmniVoice, a voice running on your computer (every language), or by Edge's voices (saved right away).";
+    renderTaigiVoice(taigi);
+    options($("tts-steps"), voice.steps.map((s) => [String(s), STEP_LABELS[s] || `${s} steps`]), String(voice.chosen_steps));
+    $("local-voice-options").hidden = !voice.installed;
+    $("local-voice-install").hidden = voice.installed;
+    $("mms-voice").hidden = !voice.mms || voice.mms.installed;  // Taigi's own voice
+    if ((voice.mms && !voice.mms.installed) || (taigi && !voice.installed)) followInstall();
+    const state = $("local-voice-state");
+    if (taigi) {
+      state.textContent = voice.installed
+        ? "OmniVoice is installed. The first sentence takes longer: the voice loads (and is made up, the first time)."
+        : `OmniVoice is optional for Taigi, MMS reads it. Large: about 4 GB with its model (or ${voice.install_command}).`;
+      state.className = "small text-body-secondary m-0";
+    } else if (voice.installed) {
+      state.textContent = voice.use_edge
+        ? "OmniVoice is installed: it reads the sentences when Edge doesn't answer, and its voices are in the list above."
+        : "OmniVoice is installed. The first sentence takes longer: the voice loads (and is made up, the first time for a language).";
+      state.className = "small text-body-secondary m-0";
+    } else {
+      state.textContent = voice.use_edge
+        ? `Without OmniVoice, sentences can't be read when Edge doesn't answer. Large: about 4 GB with its model (or ${voice.install_command}).`
+        : `Without OmniVoice or edge-tts, sentences can't be read. Large: about 4 GB with its model (or ${voice.install_command}).`;
+      state.className = "small text-warning-emphasis m-0";
+      followInstall();  // an install started before the page loaded
+    }
+  } catch (err) { showError(err); }
+}
+
+// Taigi's voice: MMS or OmniVoice (when installed), the one reading its sentences.
+async function renderTaigiVoice(taigi) {
+  const box = $("taigi-voice-choice");
+  box.hidden = true;
+  if (!taigi) return;
+  try {
+    const { voices, chosen } = await api(`/api/tts/voices?language=${encodeURIComponent(STUDY)}`);
+    options($("taigi-voice"), voices.map((v) => [v.id, v.label]), chosen);
+    box.hidden = voices.length < 2;
+  } catch (err) { showError(err); }
+}
+
+async function saveTaigiVoice() {
+  try {
+    S.config = (await api("/api/anki/config", { tts_voices: { [STUDY]: $("taigi-voice").value } })).config;
+    renderVoices(STUDY);
+  } catch (err) { showError(err); }
+}
+
+async function saveLocalVoice() {
+  try {
+    S.config = (await api("/api/anki/config", {
+      tts_use_edge: $("tts-use-edge").checked, tts_steps: Number($("tts-steps").value),
+    })).config;
+    renderLocalVoice();
+    renderVoices(STUDY);  // Edge's voices are only listed with edge-tts
+  } catch (err) { showError(err); }
+}
+
+// The install runs as a job of the converter (its log is the Converter page's): followed here until it ends.
+async function installOmniVoice() {
+  const sure = await confirmBox("Install OmniVoice?",
+    "OmniVoice reads the sentences on your computer, in every language. The install is large (about 4 GB with its " +
+    "model, a few minutes) and goes into its own folder, .venv-omnivoice.", "Install");
+  if (!sure) return;
+  try {
+    await api("/api/install-engines", { engines: "omnivoice" });
+    followInstall();
+  } catch (err) { showError(err); }
+}
+
+async function installTaigiVoice() {
+  const sure = await confirmBox("Install Taigi's voice?",
+    "Meta's MMS reads Taigi on your computer. It comes with Taigi's speech engines (Qwen3-ASR, Meta's MMS): a large " +
+    "install, a few minutes.", "Install");
+  if (!sure) return;
+  try {
+    await api("/api/install-engines", { engines: "taigi" });
+    followInstall();
+  } catch (err) { showError(err); }
+}
+
+let installPoll = null;
+async function followInstall() {
+  if (installPoll) return;
+  const buttons = [$("tts-install"), $("mms-install")];
+  const states = [$("tts-install-state"), $("mms-install-state")];
+  let seen = false;  // the install was seen running: its end is reported
+  const check = async () => {
+    let job;
+    try { ({ job } = await api("/api/state")); } catch { return; }
+    const installing = job.running && job.kind === "install";
+    seen ||= installing;
+    for (const button of buttons) button.disabled = installing;
+    for (const state of states) state.textContent = installing ? `${job.status || "Installing…"} (log: Converter page)` : "";
+    if (installing) return;
+    clearInterval(installPoll);
+    installPoll = null;
+    if (!seen) return;
+    const voice = await api(`/api/tts/local-voice?language=${encodeURIComponent(STUDY)}`).catch(() => ({}));
+    if (voice.installed || (voice.mms && voice.mms.installed)) {
+      renderLocalVoice();
+      renderVoices(STUDY);
+    } else if (job.status !== "Done") {
+      for (const state of states) state.textContent = "The install didn't finish: see its log on the Converter page.";
+    }
+  };
+  installPoll = setInterval(check, 2000);
+  await check();
+}
+
+async function newLocalVoice() {
+  const sure = await confirmBox("Another voice", `OmniVoice will make up another ${langName(STUDY)} voice: the current one is forgotten.`, "Change the voice");
+  if (!sure) return;
+  try {
+    await api("/api/tts/new-voice", { language: STUDY });
+    $("local-voice-state").textContent = "The next sentence will be read by a new voice.";
   } catch (err) { showError(err); }
 }
 
@@ -668,6 +799,12 @@ async function init() {
       refreshAnki();
     });
     $("note-save").addEventListener("click", saveNoteSetup);
+    $("tts-use-edge").addEventListener("change", saveLocalVoice);
+    $("tts-steps").addEventListener("change", saveLocalVoice);
+    $("taigi-voice").addEventListener("change", saveTaigiVoice);
+    $("tts-new-voice").addEventListener("click", newLocalVoice);
+    $("tts-install").addEventListener("click", installOmniVoice);
+    $("mms-install").addEventListener("click", installTaigiVoice);
     $("note-type-install").addEventListener("click", installNoteType);
     $("deck-create").addEventListener("click", createDeck);
     $("translation-save").addEventListener("click", saveTranslation);

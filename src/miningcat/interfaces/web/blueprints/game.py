@@ -201,6 +201,9 @@ def api_source_name():
     settings = load_settings()
     settings.source_name = str(json_body().get("source_name") or "").strip()
     settings.save()
+    discord = current_state().discord
+    if discord is not None:
+        discord.game_renamed(settings.source_name)
     return jsonify(settings=describe(settings))
 
 

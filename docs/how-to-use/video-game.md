@@ -1,20 +1,21 @@
 # Video games & screen share
 
-Select **Video game / Screen share** as the **Source** at the top of the GUI to mine sentences from anything displayed in a window: a video game, a visual novel, a video call, a website...
+Select **Video game / Screen share** as the **Source** at the top of the GUI to mine sentences from anything displayed in a window: a video game, a visual novel, a video call, a website... or from a **webcam / capture card**: a console or another computer plugged into an HDMI capture box.
 
-MiningCat watches a window, reads its text with OCR, and pushes the **screenshot + text** to a web page. Open that page next to your game, click a word to look it up in your [dictionaries](mining.md), and make an Anki card: the screenshot goes on the card. Yomitan or any other browser extension works on the page too.
+MiningCat watches a window (or a camera), reads its text with OCR, and pushes the **screenshot + text** to a web page. Open that page next to your game, click a word to look it up in your [dictionaries](mining.md), and make an Anki card: the screenshot goes on the card. Yomitan or any other browser extension works on the page too.
 
 Nothing is recorded in `output/`: everything lives in the page, while the capture runs.
 
 ## Supported systems
 
-Window capture works very differently from one OS to another, so MiningCat picks the right implementation for yours automatically. The one in use is shown on the **Capture** line of the panel.
+Window capture works very differently from one OS to another, so MiningCat picks the right implementation for yours automatically: it's the **Window** choice of the panel's **Capture** list. The other choice, **Webcam / capture card**, works the same on every OS (see [below](#webcam-or-capture-card)).
 
 | System | Capture | Status |
 | ------ | ------- | ------ |
 | **Linux** | Desktop portal (ScreenCast) + PipeWire | Tested on Ubuntu, GNOME, Wayland |
 | **macOS** | ScreenCaptureKit (macOS 14 or later) | Tested on macOS 15 |
 | **Windows** | `PrintWindow` (GDI) | Tested on Windows 11 |
+| **Webcam / capture card** (any OS) | OpenCV | Tested on macOS 15 with a MiraBox capture card |
 
 ### Linux setup
 
@@ -50,25 +51,41 @@ Nothing to install: capture uses the Windows API directly (`PrintWindow`), with 
 
 A handful of games using exclusive fullscreen DirectX, or protected by an anti-cheat, may capture as a black image: switch them to **windowed** or **borderless fullscreen** mode.
 
+## Webcam or capture card
+
+Pick **Webcam / capture card** in the **Capture** list to read a webcam, or a **capture card** (an HDMI capture box such as Elgato, MiraBox...): the way to mine a Switch, a PlayStation, or a game running on another computer.
+
+- **macOS**: the app you launch MiningCat from (Terminal, iTerm2, VS Code...) needs the **Camera** permission. macOS asks for it the first time you click **Select camera…**; otherwise enable it in **System Settings > Privacy & Security > Camera**, then restart that app.
+- **Linux**: nothing to install. Capture cards show up like webcams (`/dev/video*`).
+- **Windows**: nothing to install. Cameras are listed by name when ffmpeg is installed, as "Camera 1", "Camera 2"... otherwise.
+
+The camera is remembered by its name, so it's found again even if you plug other devices in. A camera can only be used by one app at a time: close OBS, or the capture card's own app, before starting the capture. MiningCat asks for full HD on Linux and Windows (drivers often default to a small size, too small for in-game text), and keeps the camera's own format on macOS.
+
+!!! tip "Capture key"
+    The capture key is listened to on the computer running MiningCat, not on the console: press it on that computer's keyboard, use the page's **Capture** button (from a phone or tablet too), or check **Continuous capture**.
+
 ## In the GUI
 
 ![The converter's Video game / Screen share screen](../assets/screenshots/converter-game.png)
 
 1. The game is in the language you study: pick its **Variant** if there are several (and **Convert to**, for Chinese).
-2. Click **Select window…** and pick the game window:
+2. Pick what to capture in the **Capture** list: the game's **Window**, or a **Webcam / capture card**.
+3. Click **Select window…** and pick the game window:
     - **Linux**: GNOME's sharing dialog opens, pick the window there.
     - **macOS** and **Windows**: MiningCat lists the open windows in a dialog (**Refresh** if the game isn't there yet). The game must be open and not minimized.
-3. Click **Select window's full size (for screenshot)…** and draw a box around the part of the window you want to see in the page. It's pre-selected on the whole capture.
+    - **Webcam / capture card**: the button is **Select camera…**, and lists the cameras plugged in.
+4. Click **Select window's full size (for screenshot)…** and draw a box around the part of the window you want to see in the page. It's pre-selected on the whole capture.
     - On **Linux**, the portal captures a screen-sized image with the window pasted on a black background: draw the box around the window's edges.
     - On **macOS** and **Windows**, the capture already is the window: keep it as is, or leave out the title bar or black borders.
-4. Click **Select text area (for OCR)…** and draw a box around the game's dialog box, where the text appears. It's pre-selected on the whole screenshot area, and **Reset to bottom third** is a good start for most games. Only this part is read by OCR, which makes it faster and avoids reading menus or the HUD.
-5. Pick the **Capture key** (`F9` by default), or check **Continuous capture** (see [below](#capture-key-or-continuous-capture)).
-6. Click **Start**. The page opens in a new tab of your browser (or click **Open page**).
-7. Play, and press the capture key on each line you want to mine! Click **Stop** when you're done.
+    - With a **capture card**, the capture is the console's whole screen: keep it as is.
+5. Click **Select text area (for OCR)…** and draw a box around the game's dialog box, where the text appears. It's pre-selected on the whole screenshot area, and **Reset to bottom third** is a good start for most games. Only this part is read by OCR, which makes it faster and avoids reading menus or the HUD.
+6. Pick the **Capture key** (`F9` by default), or check **Continuous capture** (see [below](#capture-key-or-continuous-capture)).
+7. Click **Start**. The page opens in a new tab of your browser (or click **Open page**).
+8. Play, and press the capture key on each line you want to mine! Click **Stop** when you're done.
 
 While the capture runs, the selection is locked and its log shows in the GUI's **Log** panel. Stopping MiningCat (`Ctrl+C` in its terminal) also stops the capture.
 
-The window, the areas and the capture mode are remembered for next time, in `sources/game_ocr.json`. Selecting a new window resets the areas, and selecting a new screenshot area resets the text area (it's relative to the screenshot area).
+The window (or camera), the areas and the capture mode are remembered for next time, in `sources/game_ocr.json`. Selecting a new window resets the areas, and selecting a new screenshot area resets the text area (it's relative to the screenshot area).
 
 !!! tip "Moving or resizing the window"
     Areas are stored as fractions of the window, so moving the window is fine, and resizing it keeps working as long as the game layout scales with it.
@@ -118,6 +135,7 @@ The lines of the dialog box are joined back together, since games wrap long sent
 
 ```bash
 python -m miningcat game setup                       # pick the window, then draw both areas in the browser
+python -m miningcat game setup --webcam              # pick a webcam / capture card instead
 python -m miningcat game serve --language japanese   # start capturing (F9), Ctrl+C to stop
 python -m miningcat game serve --hotkey F2           # another capture key
 python -m miningcat game serve --continuous          # continuous capture instead of the key
@@ -129,6 +147,7 @@ On macOS and Windows, `game setup` lists the windows and asks for a number, or u
 
 ```bash
 python -m miningcat game setup --window Ryujinx
+python -m miningcat game setup --webcam --window MiraBox
 ```
 
 See the [CLI reference](cli.md#game) for all options.
@@ -141,4 +160,7 @@ See the [CLI reference](cli.md#game) for all options.
 - **"The permission may have been revoked"** (Linux): GNOME forgot the window you shared (e.g. after restarting the game). Click **Select window…** again.
 - **Nothing shows up in the page**: check the log in the GUI. "no text detected" usually means the text area is wrong (select it again, a bit larger), or the selected **Language** doesn't match the game.
 - **The capture key does nothing**: check the log. On macOS, grant the Input Monitoring permission and restart the app you launch MiningCat from, and press **fn** with the key. On GNOME, make sure no other shortcut uses the same key. The page's camera button always works.
+- **"MiningCat needs the Camera permission"** (macOS, webcam / capture card): see [Webcam or capture card](#webcam-or-capture-card).
+- **"Camera not found"**, **"Could not open"**, **"didn't send any image in time"** (webcam / capture card): check that it's plugged in and that no other app (OBS, the capture card's app, a video call...) is using it. If you renamed or replaced the device, click **Select camera…** again.
+- **The capture card image is black or "no signal"**: check that the console is on and the HDMI cable connected. Some consoles (PlayStation) turn on HDCP, which capture cards can't record: turn it off in the console's settings.
 - **"Address already in use"**: another capture is already running (maybe from a terminal). Stop it first. From the terminal, you can also use another port with `--port`.

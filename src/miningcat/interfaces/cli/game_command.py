@@ -14,7 +14,10 @@ class GameCommand(Command):
         game_sub = parser.add_subparsers(dest="game_command", required=True)
         setup = game_sub.add_parser("setup", help="Select the game window, then its screenshot area and text area")
         setup.add_argument("--window", default=None, metavar="TITLE",
-                           help="macOS: pick the first window whose app name or title contains TITLE, instead of asking")
+                           help="macOS, Windows, --webcam: pick the first window (or camera) whose name or title contains "
+                                "TITLE, instead of asking")
+        setup.add_argument("--webcam", action="store_true",
+                           help="Capture a webcam or capture card (console, other computer...) instead of a window")
         setup.add_argument("--areas-only", dest="areas_only", action="store_true",
                            help="Keep the saved window, only select the areas again")
         serve = game_sub.add_parser("serve", help="Start capturing and serve the web page (Ctrl+C to stop)")

@@ -80,3 +80,44 @@ def test_base_backend_context_manager_closes():
     with backend as entered:
         assert entered is backend
     backend.close.assert_called_once()
+
+
+# capture sources: the window backend, then the webcams
+@pytest.mark.parametrize("platform, expected_ids", [
+    ("linux", ["linux_wayland", "webcam"]), ("darwin", ["macos", "webcam"]), ("win32", ["windows", "webcam"]),
+    ("freebsd", []),
+])
+def test_sources_are_the_window_backend_then_webcams(platform, expected_ids):
+    assert [s.id for s in capture.sources(platform)] == expected_ids
+
+
+def test_source_info_only_knows_the_platform_sources():
+    assert capture.source_info("webcam", "darwin") is capture.WEBCAM
+    assert capture.source_info("macos", "darwin").id == "macos"
+    assert capture.source_info("linux_wayland", "darwin") is None
+    assert capture.source_info(None, "darwin") is None
+
+
+def test_create_source_webcam():
+    fake_cls = MagicMock()
+    with patch.object(capture.importlib, "import_module", return_value=MagicMock(WebcamCapture=fake_cls)) as import_module:
+        backend = capture.create_source("webcam", "linux")
+    import_module.assert_called_once_with("miningcat.infrastructure.capture.webcam")
+    assert backend is fake_cls.return_value
+
+
+def test_create_source_window_backend_goes_through_create_backend():
+    with patch.object(capture, "create_backend") as create_backend:
+        assert capture.create_source("macos", "darwin") is create_backend.return_value
+    create_backend.assert_called_once_with("darwin")
+
+
+def test_create_source_of_another_platform_raises():
+    with pytest.raises(CaptureError, match="'windows' isn't available on 'darwin'"):
+        capture.create_source("windows", "darwin")
+
+
+def test_webcam_module_and_class_exist():
+    import importlib
+    module = importlib.import_module(capture.WEBCAM.module)
+    assert issubclass(getattr(module, capture.WEBCAM.class_name), CaptureBackend)

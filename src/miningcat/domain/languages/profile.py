@@ -23,7 +23,8 @@ class SpeechEngine(Enum):
 
 @dataclass(frozen=True)
 class Voice:
-    """An edge-tts voice, or a local one (Meta's MMS voices, see infrastructure/speech/mms_tts.py)."""
+    """An edge-tts voice, or a local one (Meta's MMS voices, see infrastructure/speech/mms_tts.py). OmniVoice's voices
+    aren't declared here: every language has one when it's installed (see application/voices.py)."""
 
     label: str
     voice_id: str

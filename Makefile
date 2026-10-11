@@ -1,4 +1,4 @@
-.PHONY: help venv gui reader player install install-translation install-qwen install-taigi test coverage screenshots audio epub align export chapter1 chapter run clean video game-setup game
+.PHONY: help venv gui reader player install install-translation install-qwen install-taigi install-omnivoice test coverage screenshots audio epub align export chapter1 chapter run clean video game-setup game
 
 # Defaults
 CHAPTER  ?= 1
@@ -57,6 +57,7 @@ help:
 	@echo "  make install-qwen               Install Qwen3-ASR, optional instead of Whisper (MODEL=qwen3-0.6b|qwen3-1.7b)"
 	@echo "  make install-translation [TRANSLATION=nllb-1.3b|qwen3-4b] Install a translation model (nllb-600m by default)"
 	@echo "  make install-taigi              Install Taigi's local speech engines (Qwen3-ASR and Meta's MMS)"
+	@echo "  make install-omnivoice          Install OmniVoice, the local voice of every language (in .venv-omnivoice)"
 	@echo "  make gui [PORT=5050]            Open the GUI in your browser"
 	@echo "  make reader                     Open the ebook reader in your browser"
 	@echo "  make player                     Open the video player in your browser"
@@ -107,6 +108,11 @@ install-qwen:
 # Taigi's: Qwen3-ASR transcribes it, Meta's MMS reads it and aligns its books.
 install-taigi: install-qwen
 	$(PYTHON) -m pip install -r requirements-taigi.txt
+
+# OmniVoice, the local voice of every language (sentences of the cards, books read aloud), in its own environment
+# .venv-omnivoice: it needs transformers 5, Qwen3-ASR pins 4.57.6. Same commands as engine_install.py.
+install-omnivoice:
+	$(MAIN) install-omnivoice
 
 test:
 	$(PYTHON) -m pytest

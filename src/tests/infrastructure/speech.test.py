@@ -1,11 +1,16 @@
+import json
 import sys
 import types
 
 import numpy as np
 import pytest
 
-from miningcat.domain.languages import Language
-from miningcat.infrastructure.speech import local_models, mms_aligner, mms_tts, qwen3_asr
+from miningcat.config.paths import paths
+from miningcat.domain.languages import LANGUAGES, Language
+from miningcat.domain.text import taigi
+from miningcat.infrastructure.speech import (
+    local_models, mms_aligner, mms_tts, omnivoice_tts, omnivoice_worker, qwen3_asr,
+)
 
 torch = pytest.importorskip("torch")
 
@@ -340,3 +345,137 @@ def test_engines_installed(monkeypatch):
     monkeypatch.setitem(sys.modules, "transformers", None)
     monkeypatch.setattr(engine_install.importlib.util, "find_spec", lambda name: None)
     assert engine_install.installed(engine_install.QWEN) and not engine_install.installed(engine_install.TAIGI)
+
+
+def test_omnivoice_install_commands(monkeypatch):
+    from miningcat.infrastructure.speech import engine_install
+    monkeypatch.setattr(engine_install.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(engine_install.shutil, "which", lambda name: None)  # no NVIDIA GPU
+    venv, pip = str(omnivoice_tts.VENV), [str(omnivoice_tts.PYTHON), "-m", "pip", "install"]
+    assert engine_install.commands(engine_install.OMNIVOICE) == [
+        [engine_install.PYTHON, "-m", "venv", venv],  # its own environment: it needs transformers 5
+        [*pip, "torch", "torchaudio", "--index-url", engine_install.PYTORCH_CPU_INDEX],
+        [*pip, "-r", str(engine_install.PROJECT_ROOT / "requirements-omnivoice.txt")],
+        [*pip, "--no-deps", engine_install.OMNIVOICE_REQUIREMENT],
+    ]
+    monkeypatch.setattr(engine_install.shutil, "which", lambda name: "/usr/bin/nvidia-smi")
+    assert engine_install.commands(engine_install.OMNIVOICE)[1] == [*pip, "torch", "torchaudio"]
+    assert not engine_install.installed(engine_install.OMNIVOICE)  # conftest: never the real one
+    monkeypatch.setattr(omnivoice_tts, "installed", lambda: True)
+    assert engine_install.installed(engine_install.OMNIVOICE)
+
+
+def test_omnivoice_text():
+    pytest.importorskip("opencc")
+    # Traditional characters get Cantonese readings: Mandarin is read in simplified ones.
+    assert omnivoice_tts._text_for("zh", "我每天都會花時間學中文。") == "我每天都会花时间学中文。"
+    # Taigi's Hanji are read in Mandarin: in POJ, like MMS.
+    assert omnivoice_tts._text_for("nan", "台語") == taigi.tts_text("台語")
+    assert omnivoice_tts._text_for("yue", "我好鍾意") == "我好鍾意"
+    assert omnivoice_tts._text_for("fr", "Bonjour") == "Bonjour"
+    assert all(omnivoice_tts.supports(key) for key in LANGUAGES) and not omnivoice_tts.supports("ar")
+    assert omnivoice_tts.voice_id("nan") == "nan-OmniVoice" and omnivoice_tts.voice_language("yue-OmniVoice") == "yue"
+    assert omnivoice_tts.is_voice("nan-OmniVoice") and not omnivoice_tts.is_voice("nan-TW-MmsTaigi")
+    assert omnivoice_tts.voice_label("zh") == "OmniVoice - Mandarin (local)"
+
+
+class FakeOmniVoiceProcess:
+    """omnivoice_worker.py's side: ready, then one second of silence per request (the requests it got)."""
+
+    def __init__(self, ready=None, fail=False):
+        self.requests, self.fail, self.killed = [], fail, False
+        self._lines = [omnivoice_worker.RESULT_PREFIX + json.dumps(ready or {"ready": True}) + "\n"]
+        self.stdin = types.SimpleNamespace(write=self._write, flush=lambda: None)
+        self.stdout = self
+
+    def __iter__(self):
+        while self._lines:
+            yield self._lines.pop(0)
+
+    def _write(self, line):
+        request = json.loads(line)
+        self.requests.append(request)
+        if self.fail:
+            answer = {"error": "RuntimeError: out of memory"}
+        else:
+            np.zeros(24000, dtype=np.float32).tofile(request["output"])
+            answer = {"sample_rate": 24000}
+        self._lines.append(omnivoice_worker.RESULT_PREFIX + json.dumps(answer) + "\n")
+
+    def poll(self):
+        return 1 if self.killed else None
+
+    def kill(self):
+        self.killed = True
+
+    def wait(self, timeout=None):
+        return 1
+
+
+@pytest.fixture
+def omnivoice_process(monkeypatch):
+    """OmniVoice "installed", its process faked (the processes started)."""
+    started = []
+
+    def popen(command, **kwargs):
+        assert command[1:] == ["-m", "miningcat.infrastructure.speech.omnivoice_worker"]
+        assert command[0] == str(omnivoice_tts.PYTHON)  # its own environment's Python
+        started.append(FakeOmniVoiceProcess())
+        return started[-1]
+
+    monkeypatch.setattr(omnivoice_tts, "installed", lambda: True)
+    monkeypatch.setattr(omnivoice_tts.subprocess, "Popen", popen)
+    monkeypatch.setattr(omnivoice_tts, "_worker", omnivoice_tts.OmniVoiceWorker())
+    return started
+
+
+def test_omnivoice_reads_with_the_voice_of_the_language(omnivoice_process):
+    pytest.importorskip("opencc")
+    samples, rate = omnivoice_tts.synthesize("時間", "zh", 16)
+    assert rate == 24000 and len(samples) == 24000 and samples.dtype == np.float32
+    omnivoice_tts.synthesize("Bonjour", "fr")
+    assert len(omnivoice_process) == 1  # started once, kept for the next sentences
+    zh, fr = omnivoice_process[0].requests
+    assert (zh["text"], zh["language"], zh["num_step"], zh["seed"]) == ("时间", "zh", 16, 0)
+    assert zh["voice"] == str(paths.user / "voices" / "omnivoice-zh.pt")
+    assert zh["reference_text"] == omnivoice_tts.REFERENCE_TEXTS["zh"]
+    assert (fr["num_step"], fr["voice"].endswith("omnivoice-fr.pt")) == (8, True)
+    with pytest.raises(local_models.SpeechError, match="steps"):
+        omnivoice_tts.synthesize("Bonjour", "fr", 12)
+    with pytest.raises(local_models.SpeechError, match="no voice"):
+        omnivoice_tts.synthesize("Hello", "ar")
+
+
+def test_omnivoice_errors(omnivoice_process, monkeypatch):
+    monkeypatch.setattr(omnivoice_tts.subprocess, "Popen", lambda command, **kwargs: FakeOmniVoiceProcess(fail=True))
+    with pytest.raises(local_models.SpeechError, match="out of memory"):
+        omnivoice_tts.synthesize("Bonjour", "fr")
+    omnivoice_tts._worker.stop()
+    monkeypatch.setattr(omnivoice_tts.subprocess, "Popen",
+                        lambda command, **kwargs: FakeOmniVoiceProcess(ready={"error": "OSError: no space left"}))
+    with pytest.raises(local_models.SpeechError, match="couldn't start: OSError: no space left"):
+        omnivoice_tts.synthesize("Bonjour", "fr")
+    monkeypatch.setattr(omnivoice_tts, "installed", lambda: False)
+    with pytest.raises(local_models.SpeechError, match="make install-omnivoice"):
+        omnivoice_tts.synthesize("Bonjour", "fr")
+
+
+def test_omnivoice_chapter(omnivoice_process, tmp_path):
+    path = tmp_path / "chapter.mp3"
+    timed = omnivoice_tts.synthesize_chapter(["Bonjour.", "Au revoir."], "fr", path)
+    assert [sentence for _, _, sentence in timed] == ["Bonjour.", "Au revoir."]
+    assert timed[0][:2] == (0.0, 1.0) and timed[1][0] == pytest.approx(1.0 + omnivoice_tts.PAUSE_SECONDS)
+    assert path.stat().st_size > 1000
+
+
+def test_new_omnivoice_voice(omnivoice_process):
+    omnivoice_tts.synthesize("Bonjour", "fr")
+    voice = omnivoice_tts._voice_file("fr")
+    voice.parent.mkdir(parents=True, exist_ok=True)
+    voice.write_bytes(b"prompt")
+    omnivoice_tts.new_voice("fr")
+    assert not voice.exists() and omnivoice_process[0].killed  # the worker forgets the old voice
+    omnivoice_tts.synthesize("Bonjour", "fr")
+    assert omnivoice_process[1].requests[0]["seed"] == 1  # another seed, another voice
+    with pytest.raises(local_models.SpeechError, match="no voice"):
+        omnivoice_tts.new_voice("ar")

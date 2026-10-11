@@ -17,3 +17,12 @@ def _isolated_paths(tmp_path, monkeypatch):
     yield
     database.reset_cache()
 
+
+# Never start the real OmniVoice (its model takes GBs of memory): it isn't installed, unless a test fakes it.
+@pytest.fixture(autouse=True)
+def _no_omnivoice(tmp_path, monkeypatch):
+    from miningcat.infrastructure.speech import omnivoice_tts
+    venv = tmp_path / "no-omnivoice-venv"
+    monkeypatch.setattr(omnivoice_tts, "VENV", venv)
+    monkeypatch.setattr(omnivoice_tts, "PYTHON", venv / "bin" / "python3")
+

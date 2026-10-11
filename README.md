@@ -30,7 +30,7 @@ MiningCat chains several speech and NLP components into one local, multilingual 
 | --- | --- |
 | Speech recognition | [faster-whisper](https://github.com/SYSTRAN/faster-whisper), with selectable model sizes (tiny to large / turbo); [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) for Taigi, and optionally instead of Whisper for the other languages (`make install-qwen`) |
 | Forced alignment of a book's text on its audiobook | [stable-ts](https://github.com/jianfch/stable-ts) (Whisper-based); Meta's MMS aligner on the romanized text for Taigi |
-| Speech synthesis | [edge-tts](https://github.com/rany2/edge-tts); Meta's [MMS-TTS](https://huggingface.co/facebook/mms-tts-nan) (local) for Taigi |
+| Speech synthesis | [OmniVoice](https://github.com/k2-fsa/OmniVoice) (local, every language: `make install-omnivoice`); [edge-tts](https://github.com/rany2/edge-tts) when chosen in the settings; Meta's [MMS-TTS](https://huggingface.co/facebook/mms-tts-nan) (local) for Taigi |
 | OCR (hardsubs, games, manga) | Apple Vision / Live Text on macOS, [EasyOCR](https://github.com/JaidedAI/EasyOCR) and [owocr](https://github.com/AuroraWright/owocr) elsewhere |
 | Offline machine translation of sentences and subtitles | Meta's [NLLB-200](https://github.com/facebookresearch/fairseq/tree/nllb) with [CTranslate2](https://github.com/OpenNMT/CTranslate2), or [Qwen3](https://github.com/QwenLM/Qwen3) with the subtitles' context (`make install-translation`) |
 | Word segmentation | Longest dictionary match, [jieba](https://github.com/fxsjy/jieba) and [Janome](https://github.com/mocobeta/janome) for frequency lists |

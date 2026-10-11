@@ -5,6 +5,7 @@ import pytest
 
 pytest.importorskip("flask")
 
+from miningcat.application.anki.config import save_config
 from miningcat.application.converter.errors import ConverterError
 from miningcat.application.converter.jobs import Job
 from miningcat.domain.languages import Language
@@ -91,6 +92,7 @@ def fake_jobs(monkeypatch):
 
 
 def test_options_endpoint(client):
+    save_config({"tts_use_edge": True})
     data = client.get("/api/options").get_json()
     ids = [lang["id"] for lang in data["languages"]]
     assert ids == Language.ids()
@@ -232,6 +234,7 @@ def test_generate_audio_needs_a_voice_but_no_audio(client, sync_jobs, fake_jobs)
     upload(client, "ebook", ("a.txt", "一".encode()))
     body = {"mode": "Generate audio", "language": "mandarin_tw", "ebook": ["sources/.staging/ebook/a.txt"], "chapters": [0]}
     assert post(client, "/api/run/audiobook", {**body, "voice": "nope"}).status_code == 400
+    save_config({"tts_use_edge": True})
     assert post(client, "/api/run/audiobook", {**body, "voice": "YunJhe - Mandarin (Taiwan), male"}).status_code == 200
     assert fake_jobs[0].voice_id == "zh-TW-YunJheNeural"
     assert fake_jobs[0].audio_files == []
@@ -438,3 +441,12 @@ def test_open_folder(client, monkeypatch, project):
     monkeypatch.setattr(converter_results, "open_folder", opened.append)
     assert post(client, "/api/open-folder", {"which": "frequency"}).status_code == 200
     assert opened == [project / "output/frequency"]
+
+
+def test_install_engines(client, sync_jobs, monkeypatch):
+    FakeJob.received = []
+    monkeypatch.setattr(converter, "InstallJob", lambda engines: FakeJob(engines))
+    assert post(client, "/api/install-engines", {"engines": "omnivoice"}).status_code == 200  # Settings › Anki's button
+    assert post(client, "/api/install-engines", {"engines": "taigi"}).status_code == 200
+    assert post(client, "/api/install-engines", {"engines": "everything"}).status_code == 400
+    assert FakeJob.received == ["omnivoice", "taigi"]

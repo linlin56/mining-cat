@@ -89,11 +89,12 @@ class TranscribeCommand(Command):
 
 
 class TtsCommand(Command):
-    name, help = "tts", "Generate audio from EPUB text using edge-tts (or a local voice)"
+    name, help = "tts", "Generate audio from EPUB text using OmniVoice (local), edge-tts or a local Taigi voice"
 
     def configure(self, parser):
         parser.add_argument("--voice", required=True,
-                            help="Edge-TTS voice name (e.g. zh-TW-HsiaoChenNeural), or nan-TW-MmsTaigi for Taigi (local)")
+                            help="OmniVoice's voice of the language (e.g. zh-OmniVoice, local), an Edge-TTS voice name "
+                                 "(e.g. zh-TW-HsiaoChenNeural), or nan-TW-MmsTaigi for Taigi (local)")
         self.add_language(parser)
 
     def run(self, args):
@@ -189,7 +190,7 @@ class VideoCommand(Command):
 
 
 class InstallCommand(Command):
-    """Installs local speech engines (optional, large): Qwen3-ASR, or Taigi's (Qwen3-ASR and Meta's MMS)."""
+    """Installs local speech engines (optional, large): Qwen3-ASR, Taigi's (Qwen3-ASR and Meta's MMS), or OmniVoice."""
 
     def __init__(self, engines: str, help: str):
         self.engines, self.name, self.help = engines, f"install-{engines}", help
@@ -204,4 +205,5 @@ CONVERTER_COMMANDS: list[Command] = [
     ConvertCommand(), RunCommand(), VideoCommand(),
     InstallCommand(engine_install.QWEN, "Install Qwen3-ASR (optional instead of Whisper)"),
     InstallCommand(engine_install.TAIGI, "Install Taigi's local speech engines (Qwen3-ASR and Meta's MMS)"),
+    InstallCommand(engine_install.OMNIVOICE, "Install OmniVoice, the local voice of every language (in .venv-omnivoice)"),
 ]

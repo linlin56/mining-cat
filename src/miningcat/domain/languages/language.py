@@ -232,7 +232,8 @@ class Language(Enum):
         # Vietnamese: the Latin model with the most diacritics (Tâi-lô's and POJ's come back as look-alikes,
         # see domain/text/taigi/ocr_repair.py).
         .latin_ocr(apple="vi-VT", easyocr="vi")
-        # Edge has no Taigi voice: Meta's MMS voice runs locally (infrastructure/speech/mms_tts.py).
+        # Edge has no Taigi voice: Meta's MMS voice runs locally (infrastructure/speech/mms_tts.py), like OmniVoice's
+        # (every language's, added when it's installed: application/voices.py).
         .voices(("MMS - Taigi (local, Meta MMS-TTS)", "nan-TW-MmsTaigi"))
         .youtube_captions("nan", "nan-TW", "zh-min-nan", "zh-TW", "zh-Hant")
         .script("nan")

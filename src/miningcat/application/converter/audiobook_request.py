@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Self
 
+from miningcat.application import voices
 from miningcat.application.converter.errors import ConverterError
 from miningcat.application.converter.modes import ConversionMode
 from miningcat.application.converter.source_files import load_chapters, normalize_ebook_selection
@@ -77,9 +78,9 @@ class AudiobookRequestBuilder:
         return self
 
     def voice(self, label: str | None) -> Self:
-        """The edge-tts voice reading the book, by its label (Generate audio mode)."""
+        """The voice reading the book, by its label (Generate audio mode): OmniVoice's, Edge's or MMS's."""
         if self._mode is ConversionMode.GENERATE_AUDIO:
-            voice_id = self._values["language"].profile.voice_id(label) if label else None
+            voice_id = voices.voice_id(self._values["language"], label) if label else None
             if voice_id is None:
                 raise ConverterError("Pick a voice.", "Missing voice")
             self._values["voice_id"] = voice_id

@@ -79,8 +79,8 @@ class AudiobookJob(Job):
 
 
 class InstallJob(Job):
-    """The install of local speech engines (python -m miningcat install-qwen|install-taigi), offered when a language
-    needs them."""
+    """The install of local speech engines (python -m miningcat install-qwen|install-taigi|install-omnivoice), offered
+    when a language needs them, and OmniVoice by Settings › Voice."""
 
     kind = "install"
 

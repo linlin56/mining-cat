@@ -16,7 +16,7 @@ flowchart TB
 | Layer            | What it holds                                                                                              | May import                          |
 | ---------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | `domain`         | Language data and pure algorithms. No file, network or database access.                                    | nothing of the package              |
-| `infrastructure` | Adapters to the outside world: the database, ffmpeg, Whisper, edge-tts, yt-dlp, AnkiConnect, OCR engines... | `domain`, `config`                  |
+| `infrastructure` | Adapters to the outside world: the database, ffmpeg, Whisper, OmniVoice, edge-tts, yt-dlp, AnkiConnect, OCR engines... | `domain`, `config`                  |
 | `application`    | The use cases: converter steps and jobs, dictionary lookups, cards, libraries, the video game capture.     | `domain`, `infrastructure`, `config` |
 | `interfaces`     | What the user runs: the CLI, the web GUI, the page of `game serve`.                                         | everything                          |
 | `config`         | Where files live (`paths`) and how the app runs its own processes.                                         | nothing of the package              |
@@ -53,7 +53,7 @@ src/miningcat/
 ├── infrastructure/
 │   ├── persistence/          # Database, SettingsStore, repositories (words, cards, dictionaries), DictionaryQueries
 │   ├── media/                # ffmpeg: FfmpegCommand builder, m4b chapters, video files, browser copies, title cards...
-│   ├── speech/               # Whisper, edge-tts; local engines for the languages they lack (Taigi): Qwen3-ASR, MMS
+│   ├── speech/               # Whisper, OmniVoice (own environment and process), edge-tts; Taigi's Qwen3-ASR, MMS
 │   ├── downloads/            # one VideoHandler per platform (yt-dlp), and their registry
 │   ├── capture/ hotkeys/     # window capture and the global capture key, one module per OS
 │   ├── ocr/                  # OcrEngine (owocr), and the OCR worker process of comics

@@ -1,9 +1,11 @@
-"""Generate audio mode: each chapter of the book read by an edge-tts voice (or a local one), with its subtitles."""
+"""Generate audio mode: each chapter of the book read by OmniVoice, an edge-tts voice or Taigi's MMS voice, with its
+subtitles."""
 import asyncio
 from pathlib import Path
 
 from tqdm import tqdm
 
+from miningcat.application.anki.config import get_config
 from miningcat.application.converter.errors import ConverterError
 from miningcat.config.paths import paths
 from miningcat.domain.languages import Language
@@ -11,7 +13,7 @@ from miningcat.domain.subtitles.punctuation import restore_opening_punct
 from miningcat.domain.subtitles.segment import Segment
 from miningcat.domain.text.sentences import split_sentences
 from miningcat.infrastructure.files.srt_files import save_srt
-from miningcat.infrastructure.speech import mms_tts
+from miningcat.infrastructure.speech import mms_tts, omnivoice_tts
 from miningcat.infrastructure.speech.edge_tts import TICKS_PER_SECOND, EdgeTts
 
 # Gap left between a subtitle and the next one.
@@ -45,8 +47,35 @@ async def _synthesize(text: str, voice: str, audio_path: Path, srt_path: Path,
 # A local voice (Taigi's MMS voice) reads the chapter sentence by sentence: the subtitles are its sentences.
 def _synthesize_local(text: str, voice: str, audio_path: Path, srt_path: Path) -> int:
     timed = mms_tts.synthesize_chapter(split_sentences(text), voice, audio_path)
+    return _save_timed(timed, srt_path)
+
+
+# OmniVoice reads the chapter sentence by sentence too, with the voice of the language.
+def _synthesize_omnivoice(text: str, lang: Language, audio_path: Path, srt_path: Path, steps: int) -> int:
+    timed = omnivoice_tts.synthesize_chapter(split_sentences(text), lang.profile.key, audio_path, steps)
+    return _save_timed(timed, srt_path)
+
+
+def _save_timed(timed: list[tuple[float, float, str]], srt_path: Path) -> int:
     save_srt([Segment(0, start, end, sentence) for start, end, sentence in timed], srt_path)
     return len(timed)
+
+
+def _synthesize_chapter(text: str, voice: str, lang: Language, audio_path: Path, srt_path: Path, config: dict) -> int:
+    """Reads a chapter with the voice: MMS's, OmniVoice's or Edge's (OmniVoice taking over when Edge fails). Returns
+    the number of subtitles."""
+    if mms_tts.is_local(voice):
+        return _synthesize_local(text, voice, audio_path, srt_path)
+    steps = config["tts_steps"]
+    if omnivoice_tts.is_voice(voice):
+        return _synthesize_omnivoice(text, lang, audio_path, srt_path, steps)
+    try:
+        return asyncio.run(_synthesize(text, voice, audio_path, srt_path, lang))
+    except Exception as exc:  # network errors, Edge refusing the request...
+        if not (omnivoice_tts.installed() and omnivoice_tts.supports(lang.profile.key)):
+            raise
+        tqdm.write(f"  Edge failed ({exc}): OmniVoice reads the chapter")
+        return _synthesize_omnivoice(text, lang, audio_path, srt_path, steps)
 
 
 def run(voice: str, lang: Language = Language.MANDARIN_TW) -> None:
@@ -60,6 +89,7 @@ def run(voice: str, lang: Language = Language.MANDARIN_TW) -> None:
 
     paths.chapters_audio.mkdir(parents=True, exist_ok=True)
     paths.srt.mkdir(parents=True, exist_ok=True)
+    config = get_config()
     print(f"Text chapters : {len(text_files)}")
     print(f"Voice         : {voice}")
     print()
@@ -71,10 +101,7 @@ def run(voice: str, lang: Language = Language.MANDARIN_TW) -> None:
             tqdm.write(f"  {text_file.stem} skip")
             continue
         text = text_file.read_text(encoding="utf-8").strip()
-        if mms_tts.is_local(voice):
-            n_segs = _synthesize_local(text, voice, audio_path, srt_path)
-        else:
-            n_segs = asyncio.run(_synthesize(text, voice, audio_path, srt_path, lang))
+        n_segs = _synthesize_chapter(text, voice, lang, audio_path, srt_path, config)
         tqdm.write(f"  {text_file.stem}  {n_segs} seg")
 
     print("\nDone.")

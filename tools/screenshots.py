@@ -412,7 +412,7 @@ class Shooter:
     def settings(self):
         self.demo.ensure_card()
         for tab, name, full in [("dictionaries", "settings-dictionaries", True), ("languages", "settings-languages", True),
-                                ("anki", "settings-anki", True), ("translation", "settings-translation", False),
+                                ("anki", "settings-anki", True), ("translation", "settings-translation", False), ("voice", "settings-voice", False),
                                 ("cards", "settings-cards", False), ("preferences", "settings-preferences", False)]:
             self.go("/settings/")
             self.page.click(f'[data-tab="{tab}"]')
@@ -454,6 +454,9 @@ class Shooter:
         self.page.click('[data-tab="languages"]')
         self.page.wait_for_timeout(2000)
         self.shot("taigi-settings")
+        self.page.click('[data-tab="voice"]')
+        self.page.wait_for_timeout(2000)
+        self.shot("taigi-voice")
         self.demo.study("zh")
 
 

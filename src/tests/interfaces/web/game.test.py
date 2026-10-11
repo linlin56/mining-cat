@@ -236,6 +236,16 @@ def test_trigger_is_remembered(client, backend):
     assert GameOcrSettings.load().hotkey == "F2"
 
 
+def test_source_name_is_remembered_even_while_capturing(client, backend, state):
+    state.game_capture = object()
+    data = post(client, "/api/game/source-name", {"source_name": "  Sample Quest - Console  "}).get_json()
+    assert data["settings"]["source_name"] == "Sample Quest - Console"
+    assert client.get("/api/game/state").get_json()["settings"]["source_name"] == "Sample Quest - Console"
+    post(client, "/api/game/source-name", {"source_name": ""})
+    assert GameOcrSettings.load().source_name == ""
+    state.game_capture = None
+
+
 def test_start_needs_a_ready_selection(client, backend):
     response = post(client, "/api/game/start", {"language": "japanese"})
     assert response.status_code == 400

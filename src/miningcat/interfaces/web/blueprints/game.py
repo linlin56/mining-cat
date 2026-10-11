@@ -66,6 +66,7 @@ def describe(settings: GameOcrSettings) -> dict:
         "text_region": list(settings.text_region) if settings.text_region else None,
         "hotkey": settings.hotkey if settings.hotkey in HOTKEYS else DEFAULT_HOTKEY,
         "continuous": settings.continuous,
+        "source_name": settings.source_name,
         "is_ready": settings.is_ready,
     }
 
@@ -190,6 +191,15 @@ def api_trigger():
         settings.hotkey = body["hotkey"]
     if "continuous" in body:
         settings.continuous = bool(body["continuous"])
+    settings.save()
+    return jsonify(settings=describe(settings))
+
+
+# The card creator's Source field. Can change while capturing: the page reads it again when it gets the focus back.
+@bp.post("/source-name")
+def api_source_name():
+    settings = load_settings()
+    settings.source_name = str(json_body().get("source_name") or "").strip()
     settings.save()
     return jsonify(settings=describe(settings))
 

@@ -629,6 +629,8 @@ function renderGame() {
   hotkey.value = s.hotkey;
   hotkey.disabled = s.continuous;
   $("game-hotkey-hint").hidden = s.continuous;
+  const sourceName = $("game-source-name");
+  if (document.activeElement !== sourceName) sourceName.value = s.source_name || "";
 
   const running = S.running && S.jobKind === "game";
   const start = $("game-start");
@@ -723,6 +725,14 @@ async function toggleGame() {
   }
 }
 
+async function setGameSourceName(e) {
+  try {
+    const data = await api("/api/game/source-name", { source_name: e.target.value });
+    G.info.settings = data.settings;
+  } catch (err) { showError(err); }
+  renderGame();
+}
+
 function setupGame() {
   $("game-source").addEventListener("change", (e) => { G.source = e.target.value; renderGame(); });
   $("game-window-btn").addEventListener("click", selectGameWindow);
@@ -730,6 +740,7 @@ function setupGame() {
   $("game-text-btn").addEventListener("click", () => selectGameArea("text"));
   $("game-hotkey").addEventListener("change", (e) => setGameTrigger({ hotkey: e.target.value }));
   $("game-continuous").addEventListener("change", (e) => setGameTrigger({ continuous: e.target.checked }));
+  $("game-source-name").addEventListener("change", setGameSourceName);
   $("game-start").addEventListener("click", toggleGame);
   $("game-page").addEventListener("click", () => window.open("/game/", "miningcat-game"));
   $("window-refresh").addEventListener("click", () => loadWindowList().catch(showError));

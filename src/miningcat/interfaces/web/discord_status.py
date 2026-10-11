@@ -9,19 +9,23 @@ import os
 from flask import request
 
 from miningcat.application import study_language, user_preferences
+from miningcat.application.game_ocr.settings import GameOcrSettings
 from miningcat.domain.languages import LANGUAGES
 from miningcat.infrastructure.system.discord_presence import Activity, DiscordPresence
 
 DISCORD_CLIENT_ID = "1558140415755165768"
 LOGO = "logo"
+GAME_PAGE = "pages.game_page"
+# Discord refuses longer lines.
+MAX_DETAILS = 128
 
 # The pages (Flask endpoints) and what the user does there; (without, with) an id in the URL for the libraries.
 PAGES = {
     "pages.home": "In the menu",
     "pages.converter": "Making mineable videos",
-    "pages.game": "Playing a game",
-    "pages.clipboard": "Reading a text",
-    "pages.settings": "In the settings",
+    GAME_PAGE: "Playing a game",
+    "pages.clipboard_page": "Reading a text",
+    "pages.settings_page": "In the settings",
     "comics.comic_page": "Reading a comic",
     "books.page": ("Choosing a book", "Reading a book"),
     "player.page": ("Choosing a video", "Watching a video"),
@@ -47,16 +51,32 @@ def page_activity(endpoint: str | None, view_args: dict | None) -> str | None:
     return doing
 
 
+# The game page shows the source name of the converter ("Playing <name>"), when there is one.
+def game_activity(source_name: str) -> str:
+    if not source_name:
+        return PAGES[GAME_PAGE]
+    doing = f"Playing {source_name}"
+    return doing if len(doing) <= MAX_DETAILS else doing[:MAX_DETAILS - 1] + "…"
+
+
 class DiscordStatus:
     def __init__(self, presence: DiscordPresence):
         self.presence = presence
         self.doing: str | None = None
+        self.on_game_page = False
 
     def page_opened(self) -> None:
         """before_request hook: a page of MiningCat was opened in the browser."""
         doing = page_activity(request.endpoint, request.view_args) if request.method == "GET" else None
         if doing:
-            self.doing = doing
+            self.on_game_page = request.endpoint == GAME_PAGE
+            self.doing = game_activity(GameOcrSettings.load().source_name) if self.on_game_page else doing
+            self.refresh()
+
+    def game_renamed(self, source_name: str) -> None:
+        """The source name was changed in the converter: shown right away if the game page is the last one opened."""
+        if self.on_game_page:
+            self.doing = game_activity(source_name)
             self.refresh()
 
     def refresh(self) -> None:

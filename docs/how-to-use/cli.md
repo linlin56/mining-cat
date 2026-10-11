@@ -66,8 +66,8 @@ _Generate subtitles mode._ Transcribes the audio chapters with Whisper, without 
 
 ### `tts`
 
-_Generate audio mode._ Generates the audio of each extracted chapter with OmniVoice (local), or with edge-tts when
-Settings › Anki says so, along with its subtitles.
+_Generate audio mode._ Generates the audio of each extracted chapter with edge-tts (default), or with OmniVoice (local) when
+Settings › Voice doesn't use edge-tts, along with its subtitles.
 
 | Option       | Default       | Description                                               |
 | ------------ | ------------- | --------------------------------------------------------- |

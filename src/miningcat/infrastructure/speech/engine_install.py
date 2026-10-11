@@ -17,6 +17,8 @@ QWEN, TAIGI, OMNIVOICE = "qwen", "taigi", "omnivoice"
 QWEN_ASR_REQUIREMENT = "qwen-asr==0.0.6"
 # Installed apart, with --no-deps: it pins packages only its demo and its training use (gradio, tensorboardX...).
 OMNIVOICE_REQUIREMENT = "omnivoice==0.2.1"
+# Downloaded by the install (2.4 GB), not by the first sentence read, which would wait minutes with no word of it.
+OMNIVOICE_MODEL = "k2-fsa/OmniVoice"  # same as omnivoice_worker.MODEL
 # On Linux without an NVIDIA GPU, PyTorch's default build drags several GB of useless CUDA packages (as `make install`).
 PYTORCH_CPU_INDEX = "https://download.pytorch.org/whl/cpu"
 
@@ -26,7 +28,7 @@ def _pip(*args: str) -> list[str]:
 
 
 def _omnivoice_commands() -> list[list[str]]:
-    """.venv-omnivoice, then PyTorch, OmniVoice's packages and OmniVoice in it."""
+    """.venv-omnivoice, then PyTorch, OmniVoice's packages, OmniVoice and its model in it."""
     pip = [str(omnivoice_tts.PYTHON), "-m", "pip", "install"]
     pytorch = [*pip, "torch", "torchaudio"]
     if platform.system() == "Linux" and shutil.which("nvidia-smi") is None:
@@ -36,6 +38,8 @@ def _omnivoice_commands() -> list[list[str]]:
         pytorch,
         [*pip, "-r", str(PROJECT_ROOT / "requirements-omnivoice.txt")],
         [*pip, "--no-deps", OMNIVOICE_REQUIREMENT],
+        [str(omnivoice_tts.PYTHON), "-c",
+         f"from huggingface_hub import snapshot_download; snapshot_download({OMNIVOICE_MODEL!r})"],
     ]
 
 

@@ -62,6 +62,7 @@ function showTab() {
   if (name === "languages") loadWords();
   if (name === "anki") refreshAnki();
   if (name === "translation") renderTranslation();
+  if (name === "voice") renderLocalVoice();
 }
 
 // ---------------------------------------------------------------- dictionaries
@@ -286,7 +287,6 @@ async function renderNoteSetup() {
   $("note-model").replaceWith(model);
   $("note-tags").value = setup.tags || "mining-cat";
   renderVoices(language);
-  renderLocalVoice();
   model.addEventListener("change", () => renderMapping(model.value, {}));
   $("deck-create").disabled = !S.anki.connected;
   renderNoteTypeOffer();

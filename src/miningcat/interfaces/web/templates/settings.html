@@ -214,17 +214,29 @@
       <div class="card">
         <h2 class="card-header h6">Text-to-speech</h2>
         <div class="card-body vstack gap-2">
-          <p class="small text-body-secondary m-0">Sentences are read by OmniVoice, a voice running on your computer (every
+          <p class="small text-body-secondary m-0" id="tts-intro">Sentences are read by OmniVoice, a voice running on your computer (every
             language), or by Edge's voices (saved right away).</p>
           <p class="small text-body-secondary m-0">The first use of OmniVoice can be long: the model is put in the cache, and
             the voice of each language is made up once.</p>
-          <div class="form-check">
+          <div class="form-check" id="edge-option">
             <input class="form-check-input" type="checkbox" id="tts-use-edge">
             <label class="form-check-label" for="tts-use-edge">Use edge-tts when available (not local but faster)</label>
+          </div>
+          <div id="taigi-voice-choice" hidden>
+            <label class="form-label" for="taigi-voice">Taigi voice</label>
+            <select class="form-select w-auto" id="taigi-voice"></select>
           </div>
           <div class="d-flex flex-wrap align-items-center gap-2" id="local-voice-install" hidden>
             <button type="button" class="btn btn-sm btn-outline-primary" id="tts-install"><i class="bi bi-download" aria-hidden="true"></i> Install OmniVoice (local)</button>
             <span class="small text-body-secondary" id="tts-install-state"></span>
+          </div>
+          <div class="vstack gap-1" id="mms-voice" hidden>
+            <p class="small text-body-secondary m-0">Taigi also has its own local voice, Meta's MMS, installed with
+              Taigi's speech engines (Qwen3-ASR as well): it reads the sentences in Pe̍h-ōe-jī.</p>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <button type="button" class="btn btn-sm btn-outline-primary" id="mms-install"><i class="bi bi-download" aria-hidden="true"></i> Install Taigi's voice (MMS)</button>
+              <span class="small text-body-secondary" id="mms-install-state"></span>
+            </div>
           </div>
           <div class="row g-2 align-items-end" id="local-voice-options">
             <div class="col-md-auto">

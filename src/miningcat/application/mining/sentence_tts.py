@@ -3,7 +3,7 @@ import re
 from miningcat.application.anki.config import get_config
 from miningcat.application.voices import language_voices
 from miningcat.domain.languages import Language, language_key
-from miningcat.infrastructure.speech import mms_tts, omnivoice_tts
+from miningcat.infrastructure.speech import engine_install, mms_tts, omnivoice_tts
 from miningcat.infrastructure.speech.edge_tts import EdgeTts
 from miningcat.infrastructure.speech.local_models import SpeechError
 
@@ -95,14 +95,18 @@ def _omnivoice(language: str, text: str) -> bytes:
         raise TtsError(f"The voice couldn't be generated: {exc}")
 
 
-def local_voice() -> dict:
+def local_voice(language: str = "") -> dict:
     """OmniVoice's state, for the settings: installed or how to install it, the steps offered and chosen, and whether
-    Edge's voices are used instead when available."""
+    Edge's voices are used instead when available. For Taigi, its own local voice (MMS) as well: installed or not."""
     config = get_config()
-    return {
+    state = {
         "installed": omnivoice_tts.installed(), "install_command": omnivoice_tts.INSTALL_COMMAND,
         "steps": list(omnivoice_tts.STEPS), "chosen_steps": config["tts_steps"], "use_edge": config["tts_use_edge"],
     }
+    if language == "nan":
+        state["mms"] = {"installed": engine_install.installed(engine_install.TAIGI),
+                        "install_command": "make install-taigi"}
+    return state
 
 
 def new_voice(language: str) -> None:

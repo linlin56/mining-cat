@@ -18,9 +18,9 @@ Whisper doesn't know Taigi and Edge has no Taigi voice, so Taigi uses other open
 | ---- | ------ |
 | Transcription (*Generate subtitles*, videos) | [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) (Alibaba, Apache 2.0), which knows Minnan among its Chinese dialects |
 | Aligning a book on its audiobook (*Standard*) | Meta's [MMS aligner](https://pytorch.org/audio/stable/tutorials/forced_alignment_for_multilingual_data_tutorial.html), on the book's text read as Tâi-lô |
-| Speech synthesis (*Generate audio*, sentence audio of cards) | Meta's [MMS-TTS Taigi voice](https://huggingface.co/facebook/mms-tts-nan) |
+| Speech synthesis (*Generate audio*, sentence audio of cards) | Meta's [MMS-TTS Taigi voice](https://huggingface.co/facebook/mms-tts-nan), or [OmniVoice](audiobook-ebook.md) (optional, see [below](#voice)) |
 
-Install them once with (the converter also offers it, in a pop-up, when you choose Taigi and they aren't installed):
+Install them once from the pop-up the converter offers when you choose Taigi, from **Settings › Voice** (*Install Taigi's voice (MMS)*), or with:
 
 ```bash
 make install-taigi
@@ -30,9 +30,23 @@ It installs [Qwen3-ASR](audiobook-ebook.md#qwen3-asr-optional) (`make install-qw
 
 Their models are downloaded the first time they're used: about 1.8 GB for Qwen3-ASR 0.6B (4.7 GB for 1.7B), 1.2 GB for the aligner, 140 MB for the voice. An NVIDIA GPU or an Apple Silicon Mac makes transcription much faster, but a CPU works.
 
+## Voice
+
+Edge has no Taigi voice, so **the edge-tts option of Settings › Voice doesn't apply to Taigi**: it isn't shown. Two local voices read the sentences of your cards and the books you generate:
+
+| Voice | |
+| ----- | - |
+| **MMS** (default) | Meta's voice, installed with the engines above. Generally faster, and light (140 MB). |
+| **OmniVoice** | Optional, large (about 4 GB, in its own environment): the same voice engine as the other languages, and a voice made up for Taigi. Slower, especially the first time (the model is put in the cache and the voice is made up once). |
+
+Once OmniVoice is installed (**Install OmniVoice** in the same tab, or `make install-omnivoice`), *Taigi voice* lets you pick one or the other: it's saved right away, and it's the same choice as *Voice reading sentences without audio* in **Settings › Anki**. OmniVoice's quality (8, 16 or 32 steps) and *Try another Taigi voice* also appear then.
+
+![Settings › Voice while studying Taigi: MMS reads it, OmniVoice is optional](../assets/screenshots/taigi-voice.png)
+
 !!! warning "Limits"
     - Qwen3-ASR writes what it hears in Chinese characters, often the Mandarin ones (要 rather than 欲): the subtitles of a video are a help to follow it, not a Hanji transcription to learn from.
     - The MMS voice was trained on Bible recordings in POJ: the text is read in POJ, whatever it's written in. Its licence (CC BY-NC 4.0) only allows non-commercial use.
+    - OmniVoice barely knows Hanji (it was trained on little Taigi) and reads them in Mandarin: here too, the text is converted to POJ before it's read. Its model has a non-commercial licence as well (CC BY-NC 4.0).
 
 In the converter, *Precision* picks Qwen3-ASR's size: **0.6B** (default) or **1.7B** (more accurate, slower). On the command line, `--model qwen3-0.6b` or `qwen3-1.7b` (Whisper sizes work too: `medium`, `large` and `turbo` use 1.7B).
 

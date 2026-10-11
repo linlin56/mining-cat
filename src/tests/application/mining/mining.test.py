@@ -1135,10 +1135,15 @@ def test_edge_failure_without_omnivoice(monkeypatch):
     assert sentence_tts.voices("fr") == {"voices": [], "default": ""}  # Settings › Voice offers to install OmniVoice
 
 
-def test_local_voice_settings(client):
+def test_local_voice_settings(client, monkeypatch):
+    from miningcat.infrastructure.speech import engine_install
+    monkeypatch.setattr(engine_install, "installed", lambda engines: False)
     state = client.get("/api/tts/local-voice").get_json()
     assert state == {"installed": False, "install_command": "make install-omnivoice", "steps": [8, 16, 32],
                      "chosen_steps": 8, "use_edge": True}  # edge-tts by default
+    assert "mms" not in state
+    assert client.get("/api/tts/local-voice?language=nan").get_json()["mms"] == {
+        "installed": False, "install_command": "make install-taigi"}  # Taigi's own voice
     anki.save_config({"tts_use_edge": False, "tts_steps": "16"})
     assert client.get("/api/tts/local-voice").get_json()["chosen_steps"] == 16
     assert anki.get_config()["tts_use_edge"] is False

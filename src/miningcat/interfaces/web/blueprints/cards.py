@@ -2,7 +2,9 @@
 from flask import Blueprint, jsonify, request, send_file
 
 from miningcat.application import anki
+from miningcat.application.anki import reviews
 from miningcat.interfaces.web.errors import UserError
+from miningcat.interfaces.web.jobs import current_state
 from miningcat.interfaces.web.requests import json_body, study_language
 
 bp = Blueprint("cards", __name__)
@@ -11,6 +13,19 @@ bp = Blueprint("cards", __name__)
 @bp.get("/api/anki/status")
 def api_anki_status():
     return jsonify(anki.status())
+
+
+# Today's reviews in the language's decks, the streak and the heatmap's days (the home page). The streak goes to the
+# Discord status too.
+@bp.get("/api/anki/reviews")
+def api_anki_reviews():
+    summary = reviews.summary(study_language(request.args.get("language")))
+    discord = current_state().discord
+    if discord is not None and summary.get("connected"):
+        discord.streak_changed(summary["streak"])
+    elif discord is not None and not summary["linked"]:
+        discord.streak_changed(0)
+    return jsonify(summary)
 
 
 @bp.get("/api/anki/config")

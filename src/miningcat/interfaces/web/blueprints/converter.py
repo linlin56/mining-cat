@@ -71,12 +71,14 @@ def api_events():
 
 @bp.post("/api/install-engines")
 def api_install_engines():
-    engines = json_body().get("engines")
-    # OmniVoice: offered by Settings › Voice, which follows the install with /api/state.
+    body = json_body()
+    engines = body.get("engines")
+    # OmniVoice: offered by Settings › Voice, which follows the install with /api/state and shows its log.
     if engines not in (engine_install.QWEN, engine_install.TAIGI, engine_install.OMNIVOICE):
         raise UserError("Unknown engines", f"Unknown speech engines: {engines!r}")
+    page = "settings" if body.get("page") == "settings" else "converter"
     state = current_state()
-    return start(InstallJob(engines), lambda _: state.bus.publish({"type": "done", "kind": "install"}))
+    return start(InstallJob(engines, page), lambda _: state.bus.publish({"type": "done", "kind": "install"}))
 
 
 @bp.post("/api/run/audiobook")

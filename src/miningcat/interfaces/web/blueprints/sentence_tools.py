@@ -70,10 +70,11 @@ def api_tts_new_voice():
 def api_tts():
     body = json_body()
     try:
-        audio = sentence_tts.synthesize(study_language(body.get("language")), str(body.get("text") or ""), str(body.get("voice") or ""))
+        speech = sentence_tts.synthesize(study_language(body.get("language")), str(body.get("text") or ""), str(body.get("voice") or ""))
     except sentence_tts.TtsError as exc:
         raise UserError("Text-to-speech", str(exc))
-    return jsonify(data="data:audio/mpeg;base64," + base64.b64encode(audio).decode("ascii"), name="sentence.mp3")
+    return jsonify(data="data:audio/mpeg;base64," + base64.b64encode(speech.audio).decode("ascii"), name="sentence.mp3",
+                   notice=speech.notice)
 
 
 @bp.get("/api/translate/languages")

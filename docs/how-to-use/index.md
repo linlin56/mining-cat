@@ -17,7 +17,7 @@ it from Settings › Voice (Install OmniVoice), or with `make install-omnivoice`
 environment `.venv-omnivoice`). The first use can be long: the model is put in the cache, and each language's voice is made up once.
 
 ![Settings › Voice: edge-tts or OmniVoice, its install and its quality](../assets/screenshots/settings-voice.png) Settings › Voice also sets its quality. edge-tts is used by default (faster, but online): once OmniVoice is installed,
-OmniVoice takes over when Edge fails, and reads everything if you untick "Use edge-tts when available".
+OmniVoice takes over when Edge fails (a message tells you), and reads everything if you untick "Use edge-tts when available".
 
 ## Installation
 

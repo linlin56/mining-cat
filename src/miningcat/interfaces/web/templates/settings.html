@@ -21,57 +21,73 @@
     </ul>
 
     <!-- ================= Dictionaries ================= -->
-    <section id="tab-dictionaries" class="tab-panel vstack gap-3" hidden>
-      <div class="card">
-        <h2 class="card-header h6">Import a {{ study.name }} dictionary</h2>
-        <div class="card-body vstack gap-3">
-          <p class="small text-body-secondary m-0">MiningCat reads dictionaries in Yomitan's format (.zip). For example CC-CEDICT (Mandarin),
-            words.hk (Cantonese), JMdict (Japanese), and frequency lists.
-            They're stored in the project's <code>library/</code> folder.</p>
-          <div>
-            <button type="button" class="btn btn-primary" id="dict-pick"><i class="bi bi-upload" aria-hidden="true"></i> Choose a .zip…</button>
-            <input type="file" id="dict-file" accept=".zip" hidden>
-          </div>
-          <div id="dict-progress" hidden>
-            <div class="progress" role="progressbar" aria-label="Import" style="height: .5rem">
-              <div class="progress-bar" id="dict-progress-bar" style="width: 0%"></div>
+    <section id="tab-dictionaries" class="tab-panel" hidden>
+      <div class="row g-3">
+        <!-- Dictionaries -->
+        <div class="col-lg-6 vstack gap-3">
+          <h2 class="h5 m-0">{{ study.name }} dictionaries</h2>
+          <div class="card">
+            <h3 class="card-header h6">Import a dictionary</h3>
+            <div class="card-body vstack gap-3">
+              <p class="small text-body-secondary m-0">MiningCat reads dictionaries in Yomitan's format (.zip). For example CC-CEDICT (Mandarin),
+                words.hk (Cantonese), JMdict (Japanese).
+                They're stored in the project's <code>library/</code> folder.</p>
+              <div>
+                <button type="button" class="btn btn-primary" id="dict-pick"><i class="bi bi-upload" aria-hidden="true"></i> Choose a .zip…</button>
+                <input type="file" id="dict-file" accept=".zip" hidden>
+              </div>
+              <div id="dict-progress" hidden>
+                <div class="progress" role="progressbar" aria-label="Import" style="height: .5rem">
+                  <div class="progress-bar" id="dict-progress-bar" style="width: 0%"></div>
+                </div>
+                <p class="small text-body-secondary mt-1 mb-0" id="dict-progress-text"></p>
+              </div>
             </div>
-            <p class="small text-body-secondary mt-1 mb-0" id="dict-progress-text"></p>
+          </div>
+
+          <div class="card">
+            <h3 class="card-header h6">Your dictionaries</h3>
+            <div class="card-body vstack gap-3">
+              <p class="small text-body-secondary m-0">Results are shown in this order. Disable a dictionary to hide it without deleting it.</p>
+              <div id="dict-list"></div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <h2 class="card-header h6">{{ study.name }} frequency lists</h2>
-        <div class="card-body vstack gap-3">
-          <p class="small text-body-secondary m-0">Recommended sentences (i+1) only teach frequent words: their new word must be high enough in your
-            frequency lists. The more of their words you know, the further down the lists they go. With several lists, a
-            word ranks by its best rank in any of them. The rank is also shown in the dictionary popup and the card creator.<br>
-            Import a Yomitan frequency dictionary (.zip), or a JSON frequency list (.json, the words from the most
-            frequent; a text file with a word per line works too).</p>
-          <fieldset>
-            <legend class="form-label fs-6">Used for recommendations</legend>
-            <div id="freq-lists" class="vstack gap-1"></div>
-          </fieldset>
-          <div>
-            <button type="button" class="btn btn-outline-secondary" id="freq-pick"><i class="bi bi-upload" aria-hidden="true"></i> Import a frequency list…</button>
-            <input type="file" id="freq-file" accept=".zip,.json,.txt,.csv,.tsv" hidden>
-          </div>
-          <div id="freq-progress" hidden>
-            <div class="progress" role="progressbar" aria-label="Import" style="height: .5rem">
-              <div class="progress-bar" id="freq-progress-bar" style="width: 0%"></div>
+        <!-- Frequency lists -->
+        <div class="col-lg-6 vstack gap-3">
+          <h2 class="h5 m-0">{{ study.name }} frequency lists</h2>
+          <div class="card">
+            <h3 class="card-header h6">Import a frequency list</h3>
+            <div class="card-body vstack gap-3">
+              <p class="small text-body-secondary m-0">A Yomitan frequency dictionary (.zip), or a JSON frequency list (.json, the words from the most
+                frequent; a text file with a word per line works too).</p>
+              <div>
+                <button type="button" class="btn btn-primary" id="freq-pick"><i class="bi bi-upload" aria-hidden="true"></i> Import a frequency list…</button>
+                <input type="file" id="freq-file" accept=".zip,.json,.txt,.csv,.tsv" hidden>
+              </div>
+              <div id="freq-progress" hidden>
+                <div class="progress" role="progressbar" aria-label="Import" style="height: .5rem">
+                  <div class="progress-bar" id="freq-progress-bar" style="width: 0%"></div>
+                </div>
+                <p class="small text-body-secondary mt-1 mb-0" id="freq-progress-text"></p>
+              </div>
             </div>
-            <p class="small text-body-secondary mt-1 mb-0" id="freq-progress-text"></p>
           </div>
-          <p class="text-body-secondary m-0" id="freq-frontier"></p>
-        </div>
-      </div>
 
-      <div class="card">
-        <h2 class="card-header h6">Your {{ study.name }} dictionaries</h2>
-        <div class="card-body vstack gap-3">
-          <p class="small text-body-secondary m-0">Results are shown in this order. Disable a dictionary to hide it without deleting it.</p>
-          <div id="dict-list"></div>
+          <div class="card">
+            <h3 class="card-header h6">Your frequency lists</h3>
+            <div class="card-body vstack gap-3">
+              <p class="small text-body-secondary m-0">Recommended sentences (i+1) only teach frequent words: their new word must be high enough in your
+                frequency lists. The more of their words you know, the further down the lists they go. With several lists, a
+                word ranks by its best rank in any of them. The rank is also shown in the dictionary popup and the card creator.</p>
+              <fieldset>
+                <legend class="form-label fs-6">Used for recommendations</legend>
+                <div id="freq-lists" class="vstack gap-1"></div>
+              </fieldset>
+              <p class="text-body-secondary m-0" id="freq-frontier"></p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -238,6 +254,7 @@
               <span class="small text-body-secondary" id="mms-install-state"></span>
             </div>
           </div>
+          <pre class="bg-body-tertiary rounded p-2 m-0 small mc-log" id="install-log" aria-label="Install log" hidden></pre>
           <div class="row g-2 align-items-end" id="local-voice-options">
             <div class="col-md-auto">
               <label class="form-label" for="tts-steps">Local voice quality</label>

@@ -67,16 +67,19 @@ function showTab() {
 
 // ---------------------------------------------------------------- dictionaries
 
+// A dictionary that only has word frequencies: listed with the frequency lists, not with the dictionaries.
+const frequencyOnly = (d, frequencyIds) => frequencyIds.has(d.id) && !d.term_count && !d.kanji_count;
+
 async function loadDictionaries() {
-  const { dictionaries } = await api("/api/dict");
+  const [{ dictionaries }, { lists }] = await Promise.all([api("/api/dict"), api(`/api/frequency/lists?language=${STUDY}`)]);
+  const frequencyIds = new Set(lists.map((l) => l.id));
   const box = $("dict-list");
-  if (!dictionaries.some((d) => d.language === STUDY)) {
+  const list = dictionaries.filter((d) => d.language === STUDY && !frequencyOnly(d, frequencyIds));
+  if (!list.length) {
     box.replaceChildren(el("p", { class: EMPTY, text: "No dictionary yet." }));
     return;
   }
-  const byLang = {};
-  for (const d of dictionaries) if (d.language === STUDY) (byLang[d.language] = byLang[d.language] || []).push(d);
-  box.replaceChildren(...Object.entries(byLang).map(([lang, list]) => el("div", { class: "list-group" },
+  box.replaceChildren(el("div", { class: "list-group" },
     ...list.map((d, i) => {
       const enabled = el("input", { type: "checkbox", class: "form-check-input m-0", checked: Boolean(d.enabled), "aria-label": `Use ${d.title}` });
       enabled.addEventListener("change", async () => {
@@ -86,7 +89,7 @@ async function loadDictionaries() {
         const ids = list.map((x) => x.id);
         const j = i + delta;
         [ids[i], ids[j]] = [ids[j], ids[i]];
-        const others = dictionaries.filter((x) => x.language !== lang).map((x) => x.id);
+        const others = dictionaries.filter((x) => !ids.includes(x.id)).map((x) => x.id);  // other languages, frequency lists
         try { await api("/api/dict/reorder", { ids: [...ids, ...others] }); loadDictionaries(); loadFrequency(); } catch (err) { showError(err); }
       };
       const counts = [d.term_count ? `${d.term_count.toLocaleString()} terms` : null,
@@ -106,7 +109,7 @@ async function loadDictionaries() {
             try { await api(`/api/dict/${d.id}/delete`, {}); loadDictionaries(); loadFrequency(); } catch (err) { showError(err); }
           },
         }, icon("trash")));
-    }))));
+    })));
 }
 
 // ---------------------------------------------------------------- frequency lists
@@ -131,10 +134,18 @@ async function loadFrequency() {
         try { await api(`/api/dict/${l.id}/delete`, {}); loadDictionaries(); loadFrequency(); } catch (err) { showError(err); }
       },
     }, icon("trash"));
+    // A disabled list that is a dictionary too is enabled again with the dictionaries; one that isn't, here.
+    const enable = !l.enabled && !l.has_terms ? el("button", {
+      class: "btn btn-sm btn-link p-0", type: "button", text: "Enable",
+      onclick: async () => {
+        try { await api(`/api/dict/${l.id}`, { enabled: true }); loadFrequency(); } catch (err) { showError(err); }
+      },
+    }) : null;
     return el("div", { class: "d-flex align-items-center gap-2" },
       el("div", { class: "form-check m-0" }, check,
-        el("label", { class: "form-check-label", for: id, text: l.enabled ? l.title : `${l.title} (disabled)` })),
-      remove);
+        el("label", { class: "form-check-label", for: id }, l.enabled ? l.title : `${l.title} (disabled)`,
+          l.meta_count ? el("small", { class: "text-body-secondary ms-2", text: `${l.meta_count.toLocaleString()} entries` }) : "")),
+      ...(enable ? [enable] : []), remove);
   }) : [el("p", { class: EMPTY, text: "No frequency list yet." })]));
   const several = frontier && frontier.dictionaries.length > 1;
   $("freq-frontier").textContent = frontier
@@ -412,14 +423,14 @@ async function saveLocalVoice() {
   } catch (err) { showError(err); }
 }
 
-// The install runs as a job of the converter (its log is the Converter page's): followed here until it ends.
+// The install runs as a job of the converter: followed here until it ends, its log shown under the buttons.
 async function installOmniVoice() {
   const sure = await confirmBox("Install OmniVoice?",
     "OmniVoice reads the sentences on your computer, in every language. The install is large (about 4 GB with its " +
     "model, a few minutes) and goes into its own folder, .venv-omnivoice.", "Install");
   if (!sure) return;
   try {
-    await api("/api/install-engines", { engines: "omnivoice" });
+    await api("/api/install-engines", { engines: "omnivoice", page: "settings" });
     followInstall();
   } catch (err) { showError(err); }
 }
@@ -430,9 +441,32 @@ async function installTaigiVoice() {
     "install, a few minutes.", "Install");
   if (!sure) return;
   try {
-    await api("/api/install-engines", { engines: "taigi" });
+    await api("/api/install-engines", { engines: "taigi", page: "settings" });
     followInstall();
   } catch (err) { showError(err); }
+}
+
+// The log of an install started here, from the converter's events (they start over with each job); an install the
+// Converter page offered keeps its log there. Returns a function closing it.
+function showInstallLog() {
+  const log = $("install-log");
+  log.textContent = "";
+  let install = false;  // the events are those of an install started here (and not of another job)
+  const source = new EventSource("/api/events?last=0");
+  source.onmessage = (e) => {
+    let ev;
+    try { ev = JSON.parse(e.data); } catch { return; }
+    if (ev.type === "start") {
+      install = ev.kind === "install" && ev.page === "settings";
+      log.textContent = "";
+      log.hidden = !install;
+    }
+    if (ev.type !== "log" || !install) return;
+    const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 24;
+    log.textContent += ev.text;
+    if (atBottom) log.scrollTop = log.scrollHeight;
+  };
+  return () => source.close();
 }
 
 let installPoll = null;
@@ -441,23 +475,27 @@ async function followInstall() {
   const buttons = [$("tts-install"), $("mms-install")];
   const states = [$("tts-install-state"), $("mms-install-state")];
   let seen = false;  // the install was seen running: its end is reported
+  let closeLog = null;
   const check = async () => {
     let job;
     try { ({ job } = await api("/api/state")); } catch { return; }
     const installing = job.running && job.kind === "install";
     seen ||= installing;
+    if (installing && !closeLog) closeLog = showInstallLog();
     for (const button of buttons) button.disabled = installing;
-    for (const state of states) state.textContent = installing ? `${job.status || "Installing…"} (log: Converter page)` : "";
+    for (const state of states) state.textContent = installing ? job.status || "Installing…" : "";
     if (installing) return;
     clearInterval(installPoll);
     installPoll = null;
+    // The last lines arrive with the job's end: the log stays open a moment, and stays shown.
+    if (closeLog) setTimeout(closeLog, 3000);
     if (!seen) return;
     const voice = await api(`/api/tts/local-voice?language=${encodeURIComponent(STUDY)}`).catch(() => ({}));
     if (voice.installed || (voice.mms && voice.mms.installed)) {
       renderLocalVoice();
       renderVoices(STUDY);
     } else if (job.status !== "Done") {
-      for (const state of states) state.textContent = "The install didn't finish: see its log on the Converter page.";
+      for (const state of states) state.textContent = "The install didn't finish: see its log below.";
     }
   };
   installPoll = setInterval(check, 2000);

@@ -8,6 +8,7 @@
 - **ffmpeg**, used to split, convert and render audio and video
     - macOS: `brew install ffmpeg`
     - Debian/Ubuntu: `sudo apt install ffmpeg`
+    - Windows: see [Installation on Windows](#installation-on-windows)
 - **A web browser**: the GUI is a local web page (nothing is sent online)
 - **make**, to use the shortcuts below (you can also call `python -m miningcat` directly, see [CLI reference](cli.md))
 
@@ -17,7 +18,7 @@ it from Settings › Voice (Install OmniVoice), or with `make install-omnivoice`
 environment `.venv-omnivoice`). The first use can be long: the model is put in the cache, and each language's voice is made up once.
 
 ![Settings › Voice: edge-tts or OmniVoice, its install and its quality](../assets/screenshots/settings-voice.png) Settings › Voice also sets its quality. edge-tts is used by default (faster, but online): once OmniVoice is installed,
-OmniVoice takes over when Edge fails, and reads everything if you untick "Use edge-tts when available".
+OmniVoice takes over when Edge fails (a message tells you), and reads everything if you untick "Use edge-tts when available".
 
 ## Installation
 
@@ -35,6 +36,44 @@ make install
 
 !!! tip
     The Makefile automatically uses `.venv/bin/python3` when it exists, so `make` commands work even if you forget to activate the environment.
+
+### Installation on Windows
+
+Windows doesn't come with `make`, Python 3.14 or ffmpeg. The simplest way to get them is [Chocolatey](https://chocolatey.org/install), a package manager for Windows.
+
+1. Open **PowerShell as administrator** (right-click on PowerShell › *Run as administrator*), and install Chocolatey by following [its guide](https://chocolatey.org/install#individual).
+2. In the same window, install the tools:
+
+    ```powershell
+    choco install git make python314 ffmpeg -y
+    ```
+
+3. Close PowerShell and open a new one, **not** as administrator this time (the new window sees the newly installed tools). Then:
+
+    ```powershell
+    git clone https://github.com/linlin56/mining-cat.git
+    cd mining-cat
+
+    make venv       # creates .venv with Python 3.14
+    make install    # installs the dependencies in .venv
+    make gui
+    ```
+
+The Makefile uses `.venv\Scripts\python.exe` when it exists: no need to activate the environment.
+
+!!! tip "Without make"
+    Every `make` command is a shortcut for a Python command (see [CLI reference](cli.md)). In PowerShell, from the `mining-cat` folder:
+
+    ```powershell
+    py -3.14 -m venv .venv
+    .venv\Scripts\python.exe -m pip install -r requirements.txt
+    .venv\Scripts\python.exe -m pip install --no-deps "owocr>=1.26.8"
+
+    $env:PYTHONPATH = "src"
+    .venv\Scripts\python.exe -m miningcat.interfaces.web --port 5050
+    ```
+
+    Don't forget the `owocr` line: it isn't in `requirements.txt` (it's installed apart, without its dependencies), and the [video game](video-game.md) OCR needs it. `$env:PYTHONPATH` only lasts as long as the PowerShell window: set it again in a new one.
 
 ## Launch the GUI
 

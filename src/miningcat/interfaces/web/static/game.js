@@ -8,6 +8,7 @@ const $ = (id) => document.getElementById(id);
 const G = {
   pageUrl: null,     // the capture server, e.g. http://127.0.0.1:6677/
   language: null,    // BCP-47 tag of the game's language
+  sourceName: "",    // the card creator's Source field, set in the converter ("Video game" when empty)
   socket: null,
   count: 0,
   images: new WeakMap(),  // capture element -> screenshot data URL
@@ -96,6 +97,7 @@ async function waitForCapture() {
   try {
     const state = await MiningCatMining.api("/api/game/state");
     G.pageUrl = state.page_url;
+    G.sourceName = state.settings.source_name;
     if (state.running && state.language_tag) {
       G.language = state.language_tag;
       setStatus("connecting…");
@@ -109,6 +111,13 @@ async function waitForCapture() {
   setTimeout(waitForCapture, 2000);
 }
 
+// The source name can be changed in the converter while capturing.
+async function refreshSourceName() {
+  try {
+    G.sourceName = (await MiningCatMining.api("/api/game/state")).settings.source_name;
+  } catch { /* kept */ }
+}
+
 // The capture server has no CORS headers: these requests are fire-and-forget ("no-cors").
 function post(path) {
   if (G.pageUrl) fetch(G.pageUrl + path, { method: "POST", mode: "no-cors" }).catch(() => {});
@@ -118,10 +127,11 @@ function init() {
   resetFeed();
   $("capture").addEventListener("click", () => post("capture"));
   $("clear").addEventListener("click", () => post("clear"));
+  window.addEventListener("focus", refreshSourceName);
   MiningCatMining.onAnalysis(markRecommended);
   MiningCatMining.attach($("feed"), {
     getLanguage: () => G.language || "und",
-    getSource: () => "Video game",
+    getSource: () => G.sourceName || "Video game",
     getMode: () => "click",
     isVertical: () => false,
     getImage: (node) => {

@@ -174,7 +174,7 @@ def test_lookup_and_settings_api(tmp_path, monkeypatch):
 
     lists = client.get("/api/frequency/lists?language=en").get_json()
     assert lists["chosen"] == [d["id"]] and lists["frontier"]["words"] == 2
-    assert [entry["has_terms"] for entry in lists["lists"]] == [False]
+    assert [(entry["has_terms"], entry["meta_count"]) for entry in lists["lists"]] == [(False, 2)]
     assert client.post("/api/frequency/list", json={"language": "en", "ids": [999]}, headers=HEADERS).status_code == 400
     chosen = client.post("/api/frequency/list", json={"language": "en", "ids": []}, headers=HEADERS).get_json()
     assert chosen["frontier"] is None

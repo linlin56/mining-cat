@@ -202,11 +202,14 @@
         <section class="card">
           <h2 class="card-header h6">Video game / Screen share</h2>
           <div class="card-body vstack gap-3">
-            <p class="m-0">Capture: <span id="game-backend" class="text-body-secondary"></span></p>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <label class="form-label m-0" for="game-source">Capture</label>
+              <select class="form-select w-auto" id="game-source"></select>
+            </div>
             <div class="row g-2 align-items-center">
               <div class="col-sm-5 col-lg-4">
                 <button type="button" class="btn btn-outline-secondary w-100 text-start" id="game-window-btn">
-                  <i class="bi bi-window" aria-hidden="true"></i> Select window…
+                  <i class="bi bi-window" aria-hidden="true" id="game-window-icon"></i> <span id="game-window-text">Select window…</span>
                 </button>
               </div>
               <div class="col-sm-7 col-lg-8 text-truncate text-body-secondary" id="game-window-label">No window selected</div>
@@ -235,6 +238,11 @@
                 <input class="form-check-input" type="checkbox" id="game-continuous">
                 <label class="form-check-label" for="game-continuous">Continuous capture (whenever the text changes, instead of the capture key)</label>
               </div>
+            </div>
+            <div class="border-top pt-3">
+              <label class="form-label" for="game-source-name">Source name</label>
+              <input type="text" class="form-control" id="game-source-name" placeholder="Video game">
+              <div class="form-text">The card creator's Source field, e.g. the game and its console.</div>
             </div>
           </div>
         </section>
@@ -415,7 +423,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <label class="form-label text-body-secondary" for="window-list">Pick the window to capture (it must be open, and not minimized):</label>
+          <label class="form-label text-body-secondary" for="window-list" id="window-hint">Pick the window to capture (it must be open, and not minimized):</label>
           <select class="form-select" id="window-list" size="12"></select>
         </div>
         <div class="modal-footer">

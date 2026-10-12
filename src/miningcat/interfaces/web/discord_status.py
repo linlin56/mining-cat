@@ -10,19 +10,23 @@ import os
 from flask import request
 
 from miningcat.application import study_language, user_preferences
+from miningcat.application.game_ocr.settings import GameOcrSettings
 from miningcat.domain.languages import LANGUAGES
 from miningcat.infrastructure.system.discord_presence import Activity, DiscordPresence
 
 DISCORD_CLIENT_ID = "1558140415755165768"
 LOGO = "logo"
+GAME_PAGE = "pages.game_page"
+# Discord refuses longer lines.
+MAX_DETAILS = 128
 
 # The pages (Flask endpoints) and what the user does there; (without, with) an id in the URL for the libraries.
 PAGES = {
     "pages.home": "In the menu",
     "pages.converter": "Making mineable videos",
-    "pages.game": "Playing a game",
-    "pages.clipboard": "Reading a text",
-    "pages.settings": "In the settings",
+    GAME_PAGE: "Playing a game",
+    "pages.clipboard_page": "Reading a text",
+    "pages.settings_page": "In the settings",
     "comics.comic_page": "Reading a comic",
     "books.page": ("Choosing a book", "Reading a book"),
     "player.page": ("Choosing a video", "Watching a video"),

@@ -99,10 +99,50 @@ def test_state_describes_the_saved_selection(client, backend):
 
 def test_unsupported_os(client, monkeypatch):
     monkeypatch.setattr(capture, "backend_info", lambda platform=None: None)
+    monkeypatch.setattr(capture, "sources", lambda platform=None: [])
     data = client.get("/api/game/state").get_json()
     assert data["supported"] is False
     response = post(client, "/api/game/start", {"language": "japanese"})
     assert response.status_code == 400
+
+
+def test_os_without_window_capture_still_offers_webcams(client, monkeypatch):
+    monkeypatch.setattr(capture, "backend_info", lambda platform=None: None)
+    data = client.get("/api/game/state").get_json()
+    assert data["supported"] is True
+    assert data["sources"] == [{"id": "webcam", "label": "Webcam / capture card", "webcam": True}]
+
+
+def test_state_lists_windows_then_webcams(client, backend):
+    data = client.get("/api/game/state").get_json()
+    assert data["sources"] == [
+        {"id": "fake", "label": "Window - Fake OS", "webcam": False},
+        {"id": "webcam", "label": "Webcam / capture card", "webcam": True},
+    ]
+
+
+def test_select_a_webcam(client, backend, monkeypatch):
+    class FakeWebcam(FakeBackend):
+        windows = [WindowInfo(0, "Capture box"), WindowInfo(1, "FaceTime")]
+
+    created = []
+    monkeypatch.setattr(capture, "create_source", lambda backend_id, platform=None: created.append(backend_id) or FakeWebcam())
+    data = client.get("/api/game/windows?source=webcam").get_json()
+    assert data["windows"] == [{"id": 0, "label": "Capture box"}, {"id": 1, "label": "FaceTime"}]
+    data = post(client, "/api/game/window", {"source": "webcam", "id": 0}).get_json()
+    assert data["settings"]["source"] == "webcam"
+    assert data["settings"]["window_label"] == "Capture box"
+    assert created == ["webcam", "webcam"]
+    saved = GameOcrSettings.load()
+    assert (saved.backend, saved.backend_state) == ("webcam", {"id": 0, "owner": "Capture box"})
+    # still there after a reload: the webcam is a source of this OS
+    assert client.get("/api/game/state").get_json()["settings"]["has_window"] is True
+
+
+def test_unknown_source_is_refused(client, backend):
+    response = post(client, "/api/game/window", {"source": "nope", "id": 1})
+    assert response.status_code == 400
+    assert "Unknown capture source" in response.get_json()["error"]
 
 
 def test_settings_of_another_os_are_ignored(client, backend):
@@ -194,6 +234,16 @@ def test_trigger_is_remembered(client, backend):
     assert (settings.hotkey, settings.continuous) == ("F2", True)
     post(client, "/api/game/trigger", {"hotkey": "Escape"})
     assert GameOcrSettings.load().hotkey == "F2"
+
+
+def test_source_name_is_remembered_even_while_capturing(client, backend, state):
+    state.game_capture = object()
+    data = post(client, "/api/game/source-name", {"source_name": "  Sample Quest - Console  "}).get_json()
+    assert data["settings"]["source_name"] == "Sample Quest - Console"
+    assert client.get("/api/game/state").get_json()["settings"]["source_name"] == "Sample Quest - Console"
+    post(client, "/api/game/source-name", {"source_name": ""})
+    assert GameOcrSettings.load().source_name == ""
+    state.game_capture = None
 
 
 def test_start_needs_a_ready_selection(client, backend):

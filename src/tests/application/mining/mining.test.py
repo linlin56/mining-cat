@@ -1032,6 +1032,7 @@ def test_http_sentence_tts(client, monkeypatch):
     res = client.post("/api/tts", json={"language": "zh", "text": " 位處大陸\n中央 ", "voice": "zh-TW-YunJheNeural"}, headers=HEADERS)
     assert res.status_code == 200
     assert base64.b64decode(res.get_json()["data"].split(",", 1)[1]) == "zh-TW-YunJheNeural:位處大陸 中央".encode()
+    assert res.get_json()["notice"] == ""
     assert client.post("/api/tts", json={"language": "zh", "text": "x", "voice": "ja-JP-NanamiNeural"}, headers=HEADERS).status_code == 400
     assert client.post("/api/tts", json={"language": "zh", "text": "  ", "voice": "zh-TW-YunJheNeural"}, headers=HEADERS).status_code == 400
 
@@ -1100,9 +1101,9 @@ def test_omnivoice_reads_its_voices(client, monkeypatch, fake_omnivoice):
     from miningcat.application.mining import sentence_tts
     monkeypatch.setattr(sentence_tts, "tts", types.SimpleNamespace(synthesize=lambda text, voice: pytest.fail("Edge used")))
     anki.save_config({"tts_use_edge": False})
-    assert sentence_tts.synthesize("zh", "位處大陸", "zh-OmniVoice") == "omni:位處大陸".encode()
+    assert sentence_tts.synthesize("zh", "位處大陸", "zh-OmniVoice") == sentence_tts.Speech("omni:位處大陸".encode())
     anki.save_config({"tts_steps": 32})
-    assert sentence_tts.synthesize("nan", "我欲食飯", "nan-OmniVoice") == "omni:我欲食飯".encode()
+    assert sentence_tts.synthesize("nan", "我欲食飯", "nan-OmniVoice") == sentence_tts.Speech("omni:我欲食飯".encode())
     assert fake_omnivoice == [("位處大陸", "zh", 8), ("我欲食飯", "nan", 32)]
     with pytest.raises(sentence_tts.TtsError, match="Unknown voice"):
         sentence_tts.synthesize("zh", "位處大陸", "zh-TW-HsiaoChenNeural")  # edge-tts isn't used
@@ -1119,10 +1120,25 @@ def test_omnivoice_takes_over_when_edge_fails(monkeypatch, fake_omnivoice):
 
     monkeypatch.setattr(sentence_tts, "tts", types.SimpleNamespace(synthesize=edge_down))
     anki.save_config({"tts_use_edge": True})
-    assert sentence_tts.synthesize("fr", "Bonjour", "fr-FR-DeniseNeural") == "omni:Bonjour".encode()
+    speech = sentence_tts.synthesize("fr", "Bonjour", "fr-FR-DeniseNeural")
+    assert speech.audio == "omni:Bonjour".encode()
+    assert "OmniVoice" in speech.notice  # the user is told another voice read it
     monkeypatch.setattr(sentence_tts, "tts", types.SimpleNamespace(synthesize=lambda text, voice: b"edge"))
-    assert sentence_tts.synthesize("fr", "Bonjour", "fr-FR-DeniseNeural") == b"edge"  # Edge first when it works
+    assert sentence_tts.synthesize("fr", "Bonjour", "fr-FR-DeniseNeural") == sentence_tts.Speech(b"edge")  # Edge first when it works
     assert fake_omnivoice == [("Bonjour", "fr", 8)]
+
+
+def test_http_sentence_tts_tells_when_omnivoice_took_over(client, monkeypatch, fake_omnivoice):
+    from miningcat.application.mining import sentence_tts
+
+    def edge_down(text, voice):
+        raise RuntimeError("403, message='Invalid response status'")
+
+    monkeypatch.setattr(sentence_tts, "tts", types.SimpleNamespace(synthesize=edge_down))
+    anki.save_config({"tts_use_edge": True})
+    res = client.post("/api/tts", json={"language": "fr", "text": "Bonjour", "voice": "fr-FR-DeniseNeural"}, headers=HEADERS)
+    assert base64.b64decode(res.get_json()["data"].split(",", 1)[1]) == b"omni:Bonjour"
+    assert "OmniVoice" in res.get_json()["notice"]
 
 
 def test_edge_failure_without_omnivoice(monkeypatch):

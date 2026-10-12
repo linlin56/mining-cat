@@ -18,6 +18,8 @@ class Job(ABC):
     """A conversion run by a GUI."""
 
     kind: str
+    # The page showing the job's log: the converter's, or Settings (the installs it offers)
+    page: str = "converter"
 
     @abstractmethod
     def run(self, listener: ProgressListener):
@@ -84,8 +86,9 @@ class InstallJob(Job):
 
     kind = "install"
 
-    def __init__(self, engines: str):
+    def __init__(self, engines: str, page: str = "converter"):
         self.engines = engines
+        self.page = page
 
     def run(self, listener: ProgressListener) -> None:
         listener.status("Installing the speech engines (large, it takes a few minutes)…", 10)

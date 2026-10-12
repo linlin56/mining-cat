@@ -1,4 +1,5 @@
 import re
+from dataclasses import dataclass
 
 from miningcat.application.anki.config import get_config
 from miningcat.application.voices import language_voices
@@ -57,8 +58,14 @@ def preload(voice: str) -> None:
         omnivoice_tts.preload()
 
 
-def synthesize(language: str, text: str, voice: str) -> bytes:
-    """The text read by the voice, as MP3: OmniVoice's, MMS's or Edge's (OmniVoice taking over when Edge fails)."""
+@dataclass
+class Speech:
+    audio: bytes  # MP3
+    notice: str = ""  # why another voice than the one asked for read it, for the user
+
+
+def synthesize(language: str, text: str, voice: str) -> Speech:
+    """The text read by the voice: OmniVoice's, MMS's or Edge's (OmniVoice taking over when Edge fails, with a notice)."""
     text = re.sub(r"\s+", " ", text or "").strip()
     if not text:
         raise TtsError("There's no sentence to read.")
@@ -68,22 +75,23 @@ def synthesize(language: str, text: str, voice: str) -> bytes:
         raise TtsError(f"Unknown voice: {voice!r}")
     if mms_tts.is_local(voice):
         try:
-            return mms_tts.synthesize_mp3(text, voice)
+            return Speech(mms_tts.synthesize_mp3(text, voice))
         except SpeechError as exc:
             raise TtsError(str(exc))
         except Exception as exc:  # a model that couldn't be downloaded...
             raise TtsError(f"The voice couldn't be generated: {exc}")
     if omnivoice_tts.is_voice(voice):
-        return _omnivoice(language, text)
+        return Speech(_omnivoice(language, text))
     try:
-        return _edge(text, voice)
+        return Speech(_edge(text, voice))
     except TtsError as edge_error:
         if not (omnivoice_tts.installed() and omnivoice_tts.supports(language)):
             raise
         try:  # Edge is down or offline: the local voice takes over
-            return _omnivoice(language, text)
+            audio = _omnivoice(language, text)
         except TtsError as exc:
             raise TtsError(f"{edge_error} The local voice couldn't take over: {exc}")
+        return Speech(audio, "edge-tts isn't working right now: OmniVoice, the local voice, read it instead.")
 
 
 def _omnivoice(language: str, text: str) -> bytes:

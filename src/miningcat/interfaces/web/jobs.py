@@ -80,7 +80,7 @@ class AppState:
                 raise JobBusyError("A job is already running.")
             self._job = JobSnapshot(running=True, kind=kind, status="Preparing…", pct=0)
         self.bus.reset()
-        self.bus.publish({"type": "start", "kind": kind})
+        self.bus.publish({"type": "start", "kind": kind, "page": job.page})
         self.bus.publish({"type": "status", "text": "Preparing…", "pct": 0})
 
         def run() -> None:

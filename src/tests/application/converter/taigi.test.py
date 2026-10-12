@@ -78,7 +78,7 @@ def test_sentence_tts_with_a_local_voice(monkeypatch):
     assert {"id": "nan-TW-MmsTaigi", "label": "MMS - Taigi (local, Meta MMS-TTS)"} in sentence_tts.voices("nan")["voices"]
     assert sentence_tts.voices("nan")["default"] == "nan-TW-MmsTaigi"
     monkeypatch.setattr(mms_tts, "synthesize_mp3", lambda text, voice: b"mp3:" + text.encode())
-    assert sentence_tts.synthesize("nan", "我欲食飯", "nan-TW-MmsTaigi") == "mp3:我欲食飯".encode()
+    assert sentence_tts.synthesize("nan", "我欲食飯", "nan-TW-MmsTaigi") == sentence_tts.Speech("mp3:我欲食飯".encode())
 
     def fails(text, voice):
         raise SpeechError("There's nothing the voice can read in this text.")

@@ -5,6 +5,7 @@ import pytest
 pytest.importorskip("flask")
 
 from miningcat.application import study_language
+from miningcat.application.game_ocr.settings import GameOcrSettings
 from miningcat.interfaces.web import app as web_app
 import fake_ankiconnect
 from miningcat.interfaces.web.discord_status import DiscordStatus, game_activity, page_activity, studying
@@ -38,7 +39,7 @@ def test_page_activities():
     assert page_activity("books.page", {}) == "Choosing a book"
     assert page_activity("books.page", {"book_id": "abc"}) == "Reading a book"
     assert page_activity("player.page", {"video_id": "abc"}) == "Watching a video"
-    assert page_activity("pages.game", {}) == "Playing a game"
+    assert page_activity("pages.game_page", {}) == "Playing a game"
     assert page_activity("preferences.api_preferences", {}) is None
     assert page_activity(None, None) is None
 
@@ -49,6 +50,19 @@ def test_the_page_opened_is_shown(client, presence):
     assert activity.details == "Reading a book"
     assert activity.state == "Studying Japanese"
     assert activity.large_image == "logo"
+
+
+# The endpoints of PAGES must be real: a renamed view function would silently drop its status.
+def test_every_page_is_an_endpoint(client):
+    from miningcat.interfaces.web.discord_status import PAGES
+    assert set(PAGES) <= set(client.application.view_functions)
+
+
+@pytest.mark.parametrize("url, doing", [("/game/", "Playing a game"), ("/clipboard/", "Reading a text"),
+                                        ("/settings/", "In the settings")])
+def test_pages_are_shown(client, presence, url, doing):
+    client.get(url)
+    assert presence.shown[-1].details == doing
 
 
 def test_api_calls_dont_change_it(client, presence):

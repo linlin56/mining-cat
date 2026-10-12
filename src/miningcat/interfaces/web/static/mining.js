@@ -981,6 +981,8 @@
       preview.replaceChildren();
       if (!state.value) return;
       const src = state.value.data || state.value.url;
+      // A recording found online: where it comes from (gone with it when it's removed or replaced)
+      if (state.value.source) preview.append(el("span", { class: "form-text m-0", text: `Found audio from ${state.value.source}` }));
       preview.append(state.value.wave ? el("span", { class: "form-text m-0", text: "The span chosen on the waveform." })
         : kind === "image" ? el("img", { src, alt: "", class: "img-fluid rounded" }) : el("audio", { src, controls: true, class: "w-100" }),
         el("button", { type: "button", class: "btn btn-sm btn-link link-danger p-0", onclick: () => { state.value = null; url.value = ""; render(); } }, ...withIcon("x-lg", "Remove")));
@@ -1041,7 +1043,8 @@
       button.textContent = "Generating…";
       try {
         const audio = await api("/api/tts", { language, text, voice: select.value });
-        if (row.isConnected) slot.setValue(audio);
+        if (row.isConnected) slot.setValue({ data: audio.data, name: audio.name });
+        if (audio.notice) toast(audio.notice, "info");
       } catch (err) {
         toast(err.message, "error");
       } finally {
@@ -1490,7 +1493,7 @@
     const image = mediaSlot("image", "Image", "image/*");
     const audio = mediaSlot("audio", "Word audio", "audio/*");
     const wordTts = ttsRow(language, () => word.value, audio);
-    wordTts.row.hidden = true;  // shown when no recording is found
+    wordTts.row.hidden = true;  // shown once the recordings are looked up
     audio.zone.insertBefore(wordTts.row, audio.preview);
     const sentenceAudio = mediaSlot("sentence_audio", "Sentence audio", "audio/*,video/*");
     const range = sentence.text && ctx && ctx.node && hasWave() ? options.sentenceRange(sentence.text, ctx.node) : null;
@@ -1641,21 +1644,23 @@
     }
 
     // A recording of the word, when an online source has one; the others can be picked instead. Without one (or
-    // offline), the word is read by the settings' voice, as a sentence without audio.
-    const readWord = () => wordTts.ready.then((voice) => {
+    // offline), the word is read by the settings' voice, as a sentence without audio. The voice can read it either way.
+    const showWordTts = (read) => wordTts.ready.then((voice) => {
       if (!dialog.isConnected || !wordTts.available()) return;
       wordTts.row.hidden = false;
-      if (voice && word.value.trim() && !audio.state.value) wordTts.generate();
+      if (read && voice && word.value.trim() && !audio.state.value) wordTts.generate();
     });
     wordAudio(entry, language).catch(() => []).then((sources) => {
       if (!dialog.isConnected) return;
-      if (!sources.length) return readWord();
-      if (!audio.state.value) audio.setValue({ url: sources[0].url });
+      showWordTts(!sources.length);
+      if (!sources.length) return;
+      const recording = (source) => ({ url: source.url, source: source.name });
+      if (!audio.state.value) audio.setValue(recording(sources[0]));
       if (sources.length < 2) return;
       const pick = el("select", { class: "form-select form-select-sm", "aria-label": "Recording" });
       sources.forEach((source, i) => pick.append(el("option", { value: String(i), text: `${i + 1}. ${source.name}` })));
       pick.addEventListener("change", () => {
-        audio.setValue({ url: sources[Number(pick.value)].url });
+        audio.setValue(recording(sources[Number(pick.value)]));
         audio.preview.querySelector("audio")?.play().catch(() => {});
       });
       audio.zone.insertBefore(el("div", { class: "d-flex align-items-center gap-2" }, el("span", { class: LABEL, text: "Recording" }), pick), audio.preview);

@@ -12,6 +12,8 @@ numpy
 loguru
 curl_cffi
 easyocr
+# webcams / capture cards for the video game source (already a dependency of easyocr)
+opencv-python-headless
 pyobjc; platform_system == "Darwin"
 opencc-python-reimplemented>=0.1.7
 taibun>=1.1.8

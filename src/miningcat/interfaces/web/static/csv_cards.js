@@ -200,8 +200,10 @@ async function csvEntry(language, word, reading) {
   return same[0] || null;
 }
 
-async function voiceAudio(language, text, voice, name) {
+// notes: the card's notes, told when another voice read the text (edge-tts down: OmniVoice took over).
+async function voiceAudio(language, text, voice, name, notes) {
   const audio = await api("/api/tts", { language, text, voice });
+  if (audio.notice && !notes.includes(audio.notice)) notes.push(audio.notice);
   return { data: audio.data, name };
 }
 
@@ -228,10 +230,10 @@ async function makeCsvCard(row, settings) {
     if (sources.length) media.audio = { url: sources[0].url };
   }
   if (!media.audio && settings.wordAudio && settings.voice) {
-    media.audio = await voiceAudio(language, word, settings.voice, "word.mp3").catch((err) => { notes.push(`no word audio: ${err.message}`); return undefined; });
+    media.audio = await voiceAudio(language, word, settings.voice, "word.mp3", notes).catch((err) => { notes.push(`no word audio: ${err.message}`); return undefined; });
   }
   if (settings.sentenceAudio && settings.voice && sentence) {
-    media.sentence_audio = await voiceAudio(language, sentence, settings.voice, "sentence.mp3")
+    media.sentence_audio = await voiceAudio(language, sentence, settings.voice, "sentence.mp3", notes)
       .catch((err) => { notes.push(`no sentence audio: ${err.message}`); return undefined; });
   }
   for (const key of Object.keys(media)) if (!media[key]) delete media[key];

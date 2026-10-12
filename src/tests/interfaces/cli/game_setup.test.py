@@ -116,6 +116,21 @@ def test_setup_selects_window_then_areas_and_closes_backend():
     assert backend.closed
 
 
+def test_setup_webcam_saves_the_webcam_source(capsys):
+    backend = FakeBackend()
+    with patch.object(cli.capture, "create_source", return_value=backend) as create_source, \
+         patch.object(cli.capture, "create_backend") as create_backend, \
+         patch.object(cli, "select_areas", return_value=True):
+        cli.setup(window_query="quest", webcam=True)
+    create_source.assert_called_once_with("webcam")
+    create_backend.assert_not_called()
+    assert GameOcrSettings.load().backend == "webcam"
+    out = capsys.readouterr().out
+    assert "Capture backend: Webcam / capture card" in out
+    assert "Camera: SampleApp - Sample Quest" in out
+    assert backend.closed
+
+
 def test_setup_areas_only_reopens_saved_window():
     backend = FakeBackend()
     with patch.object(cli.capture, "backend_info", return_value=MACOS), \
@@ -161,7 +176,7 @@ def test_serve_wires_session_and_server_then_closes_backend():
 # main
 def _args(**overrides):
     values = dict(game_command="serve", language="japanese", convert_to=None, port=None, interval=None,
-                  continuous=False, hotkey="F9", keep_line_breaks=False, no_browser=False, window=None, areas_only=False)
+                  continuous=False, hotkey="F9", keep_line_breaks=False, no_browser=False, window=None, areas_only=False, webcam=False)
     values.update(overrides)
     return argparse.Namespace(**values)
 
@@ -178,7 +193,13 @@ def test_main_dispatches_serve_options():
 def test_main_dispatches_setup():
     with patch.object(cli, "setup") as setup:
         cli.main(_args(game_command="setup", window="quest", areas_only=True))
-    setup.assert_called_once_with(window_query="quest", areas_only=True)
+    setup.assert_called_once_with(window_query="quest", areas_only=True, webcam=False)
+
+
+def test_main_dispatches_setup_of_a_webcam():
+    with patch.object(cli, "setup") as setup:
+        cli.main(_args(game_command="setup", window="mirabox", webcam=True))
+    setup.assert_called_once_with(window_query="mirabox", areas_only=False, webcam=True)
 
 
 def test_main_turns_capture_errors_into_exit_message():

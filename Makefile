@@ -12,19 +12,25 @@ FILE     ?=
 APP_ID   ?= web
 TRANSLATION ?= nllb-600m
 HOTKEY   ?= F9
+# On Windows, make runs the recipes with cmd.exe: no shell syntax in them (`VAR=x cmd`, `if [ ... ]`, `$$(...)`), make
+# conditionals instead. The venv's Python has backslashes there, cmd.exe reading `.venv/...` as an option.
 ifeq ($(OS),Windows_NT)
   _VENV_PYTHON := .venv/Scripts/python.exe
+  _VENV_PYTHON_CMD := .venv\Scripts\python.exe
 else
   _VENV_PYTHON := .venv/bin/python3
+  _VENV_PYTHON_CMD := $(_VENV_PYTHON)
 endif
 ifeq ($(wildcard $(_VENV_PYTHON)),)
   PYTHON ?= python
 else
-  PYTHON ?= $(_VENV_PYTHON)
+  PYTHON ?= $(_VENV_PYTHON_CMD)
 endif
 # The package lives in src/: `python -m miningcat` runs the CLI, `python -m miningcat.interfaces.web` the web GUI.
-MAIN     := PYTHONPATH=src $(PYTHON) -m miningcat
-WEB      := PYTHONPATH=src $(PYTHON) -m miningcat.interfaces.web
+# Exported by make itself, so that it also works with cmd.exe.
+export PYTHONPATH := src
+MAIN     := $(PYTHON) -m miningcat
+WEB      := $(PYTHON) -m miningcat.interfaces.web
 
 PORT     ?= 5050
 
@@ -85,10 +91,12 @@ help:
 
 install:
 # On Linux without an NVIDIA GPU, PyTorch's default CUDA build drags several GB of useless nvidia-* packages: use the CPU one.
+ifneq ($(OS),Windows_NT)
 	@if [ "$$(uname -s)" = "Linux" ] && ! command -v nvidia-smi >/dev/null 2>&1; then \
 		echo "No NVIDIA GPU detected: installing the CPU build of PyTorch"; \
 		$(PYTHON) -m pip install torch torchaudio torchvision --index-url https://download.pytorch.org/whl/cpu; \
 	fi
+endif
 	$(PYTHON) -m pip install -r requirements.txt
 # Install separately with --no-deps to avoid the PyGObject build error on Linux.
 	$(PYTHON) -m pip install --no-deps "owocr>=1.26.8"
@@ -129,25 +137,13 @@ audio:
 	$(MAIN) audio
 
 epub:
-	@if [ -n "$(RANGE)" ]; then \
-		$(MAIN) epub --range $(RANGE); \
-	else \
-		$(MAIN) epub; \
-	fi
+	$(MAIN) epub $(if $(RANGE),--range $(RANGE))
 
 align:
-	@if [ "$(CHAPTER)" = "all" ]; then \
-		$(MAIN) align --model $(MODEL) --language $(LANGUAGE); \
-	else \
-		$(MAIN) align --model $(MODEL) --language $(LANGUAGE) --only $(CHAPTER); \
-	fi
+	$(MAIN) align --model $(MODEL) --language $(LANGUAGE) $(if $(filter-out all,$(CHAPTER)),--only $(CHAPTER))
 
 export:
-	@if [ "$(CHAPTER)" = "all" ]; then \
-		$(MAIN) export --all --preset $(PRESET); \
-	else \
-		$(MAIN) export --chapter $(CHAPTER) --preset $(PRESET); \
-	fi
+	$(MAIN) export $(if $(filter all,$(CHAPTER)),--all,--chapter $(CHAPTER)) --preset $(PRESET)
 
 chapter1:
 	$(MAIN) align --only 1 --model $(MODEL) --language $(LANGUAGE)
@@ -159,23 +155,18 @@ chapter:
 	$(MAIN) export --chapter $(N) --preset $(PRESET)
 
 run:
-	@if [ -n "$(RANGE)" ]; then \
-		$(MAIN) run --range $(RANGE); \
-	else \
-		$(MAIN) run; \
-	fi
+	$(MAIN) run $(if $(RANGE),--range $(RANGE))
 
 # make video URL=https://www.instagram.com/reel/xxxxx/
 # make video FILE=path/to/movie.mp4
 video:
-	@if [ -n "$(FILE)" ]; then \
-		$(MAIN) video --file "$(FILE)" --model $(MODEL) --language $(LANGUAGE); \
-	elif [ -n "$(URL)" ]; then \
-		$(MAIN) video --url "$(URL)" --model $(MODEL) --language $(LANGUAGE) --app-id $(APP_ID); \
-	else \
-		echo "Error: URL or FILE is required, e.g. make video URL=https://www.instagram.com/reel/xxxxx/"; \
-		exit 1; \
-	fi
+ifneq ($(FILE),)
+	$(MAIN) video --file "$(FILE)" --model $(MODEL) --language $(LANGUAGE)
+else ifneq ($(URL),)
+	$(MAIN) video --url "$(URL)" --model $(MODEL) --language $(LANGUAGE) --app-id $(APP_ID)
+else
+	$(error URL or FILE is required, e.g. make video URL=https://www.instagram.com/reel/xxxxx/)
+endif
 
 game-setup:
 	$(MAIN) game setup

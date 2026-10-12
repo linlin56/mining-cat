@@ -10,6 +10,8 @@ The [video game / screen share](../how-to-use/video-game.md) source captures a w
 
 Everything else (areas, OCR, change detection, the web page, the GUI) is shared: a new backend only has to return images of a window.
 
+Next to the window backend of the OS, every OS also offers **webcams and capture cards** (`webcam.py`, `WEBCAM` in `__init__.py`), with OpenCV. The GUI's **Capture** list and `capture.sources()` show both: `settings.backend` is the id of the one picked.
+
 ## How it fits together
 
 ```mermaid
@@ -22,7 +24,8 @@ flowchart LR
 ```
 
 - `infrastructure/capture/base.py`: the `CaptureBackend` interface, `WindowInfo` and `CaptureError`.
-- `infrastructure/capture/__init__.py`: the per-OS switch (`BACKENDS`, `backend_info()`, `create_backend()`).
+- `infrastructure/capture/__init__.py`: the per-OS switch (`BACKENDS`, `backend_info()`, `create_backend()`), and the capture sources of the OS (`sources()`, `source_info()`, `create_source()`): its window backend, then `WEBCAM`.
+- `infrastructure/capture/webcam.py`: webcams and capture cards, the same `CaptureBackend` interface, a camera being a `WindowInfo` (OpenCV index + name).
 - `application/game_ocr/settings.py`: the selected window (`backend` id + `backend_state`) and the two areas, saved in `sources/game_ocr.json`.
 - `application/game_ocr/session.py`: crops the screenshot and text areas, runs OCR with `infrastructure/ocr/engine.py`'s `OcrEngine`, and decides when the text changed (with `domain/ocr/`).
 - `interfaces/game_page/server.py` + `page.html`: the local web page (aiohttp + websocket).

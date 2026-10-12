@@ -445,8 +445,9 @@ def test_open_folder(client, monkeypatch, project):
 
 def test_install_engines(client, sync_jobs, monkeypatch):
     FakeJob.received = []
-    monkeypatch.setattr(converter, "InstallJob", lambda engines: FakeJob(engines))
-    assert post(client, "/api/install-engines", {"engines": "omnivoice"}).status_code == 200  # Settings › Anki's button
+    monkeypatch.setattr(converter, "InstallJob", lambda engines, page: FakeJob((engines, page)))
+    # Settings › Voice's button: its log is shown there, not on the converter page
+    assert post(client, "/api/install-engines", {"engines": "omnivoice", "page": "settings"}).status_code == 200
     assert post(client, "/api/install-engines", {"engines": "taigi"}).status_code == 200
     assert post(client, "/api/install-engines", {"engines": "everything"}).status_code == 400
-    assert FakeJob.received == ["omnivoice", "taigi"]
+    assert FakeJob.received == [("omnivoice", "settings"), ("taigi", "converter")]

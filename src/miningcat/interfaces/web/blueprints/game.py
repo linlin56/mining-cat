@@ -3,7 +3,7 @@ list, a fresh capture for the area picker), and the capture run as a job."""
 import io
 import threading
 
-from flask import Blueprint, jsonify, send_file
+from flask import Blueprint, jsonify, request, send_file
 
 from miningcat.application.converter import options
 from miningcat.application.converter.jobs import Job
@@ -32,10 +32,17 @@ def _error(message: str, status: int = 400) -> UserError:
 # Settings saved for another OS (file copied over?) can't be restored here: start from scratch.
 def load_settings() -> GameOcrSettings:
     settings = GameOcrSettings.load()
-    info = capture.backend_info()
-    if settings.backend is not None and info is not None and settings.backend != info.id:
+    if settings.backend is not None and capture.source_info(settings.backend) is None:
         return GameOcrSettings()
     return settings
+
+
+# The capture source asked for (a window backend or the webcams, see capture.sources()), the OS's windows by default.
+def _source(source_id: str | None) -> capture.BackendInfo:
+    info = capture.source_info(source_id) if source_id else (capture.backend_info() or next(iter(capture.sources()), None))
+    if info is None:
+        raise _error(f"Unknown capture source: {source_id!r}")
+    return info
 
 
 def _check_unlocked() -> None:
@@ -52,12 +59,14 @@ def _region(value) -> Region:
 
 def describe(settings: GameOcrSettings) -> dict:
     return {
+        "source": settings.backend,
         "window_label": settings.window_label,
         "has_window": settings.has_window,
         "screenshot_region": list(settings.screenshot_region) if settings.screenshot_region else None,
         "text_region": list(settings.text_region) if settings.text_region else None,
         "hotkey": settings.hotkey if settings.hotkey in HOTKEYS else DEFAULT_HOTKEY,
         "continuous": settings.continuous,
+        "source_name": settings.source_name,
         "is_ready": settings.is_ready,
     }
 
@@ -65,10 +74,13 @@ def describe(settings: GameOcrSettings) -> dict:
 @bp.get("/state")
 def api_state():
     info = capture.backend_info()
+    sources = capture.sources()
     return jsonify(
         language_tag=current_state().game_language,
-        supported=info is not None,
+        supported=bool(sources),
         backend_label=info.label if info else "Not supported on this OS yet",
+        sources=[{"id": s.id, "label": f"Window - {s.label}" if s.id != capture.WEBCAM.id else s.label,
+                  "webcam": s.id == capture.WEBCAM.id} for s in sources],
         hotkeys=list(HOTKEYS),
         page_url=page_url(),
         running=current_state().game_capture is not None,
@@ -76,10 +88,11 @@ def api_state():
     )
 
 
+# Windows (or cameras) of the `source` query parameter.
 # Backends with a system picker (Wayland portal) don't list windows: the OS asks the user on select.
 @bp.get("/windows")
 def api_windows():
-    backend = capture.create_backend()
+    backend = capture.create_source(_source(request.args.get("source")).id)
     try:
         if backend.has_system_picker:
             return jsonify(system_picker=True, windows=[])
@@ -89,17 +102,19 @@ def api_windows():
     return jsonify(system_picker=False, windows=[{"id": w.id, "label": w.label} for w in windows])
 
 
-# Body: {"id": window id from /windows}, ignored with a system picker (its dialog blocks until the user answers).
+# Body: {"source": capture source id, "id": window id from /windows}. The id is ignored with a system picker (its dialog
+# blocks until the user answers).
 @bp.post("/window")
 def api_select_window():
     _check_unlocked()
-    info = capture.backend_info()
-    backend = capture.create_backend()
+    body = json_body()
+    info = _source(body.get("source"))
+    backend = capture.create_source(info.id)
     with backend:
         if backend.has_system_picker:
             backend.select_window()
         else:
-            window_id = json_body().get("id")
+            window_id = body.get("id")
             window = next((w for w in backend.list_windows() if w.id == window_id), None)
             if window is None:
                 raise _error("This window is gone: refresh the list and pick it again.")
@@ -180,6 +195,18 @@ def api_trigger():
     return jsonify(settings=describe(settings))
 
 
+# The card creator's Source field. Can change while capturing: the page reads it again when it gets the focus back.
+@bp.post("/source-name")
+def api_source_name():
+    settings = load_settings()
+    settings.source_name = str(json_body().get("source_name") or "").strip()
+    settings.save()
+    discord = current_state().discord
+    if discord is not None:
+        discord.game_renamed(settings.source_name)
+    return jsonify(settings=describe(settings))
+
+
 class GameCaptureJob(Job):
     """Runs `python -m miningcat game serve` until it exits (Stop button, or error), its output in the job's log."""
 
@@ -215,7 +242,7 @@ def api_start():
     body = json_body()
     lang = converter_language(body.get("language"))
     settings = load_settings()
-    if capture.backend_info() is None:
+    if not capture.sources():
         raise UserError("Not supported", "Video game / screen share capture isn't supported on this OS yet.")
     if not settings.is_ready:
         raise UserError("Missing selection", "Select the game window and its text area first.")

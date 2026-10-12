@@ -887,11 +887,13 @@ function handleEvent(id, ev) {
   const replay = id <= S.replayUntil;
   switch (ev.type) {
     case "start":
-      $("log").textContent = "";
+      // An install started from Settings › Voice has its log there: only its progress is shown here.
+      S.logElsewhere = ev.page === "settings";
+      $("log").textContent = S.logElsewhere ? "Installing from Settings › Voice: its log is shown there.\n" : "";
       setRunning(true, ev.kind);
       break;
     case "log":
-      appendLog(ev.text);
+      if (!S.logElsewhere) appendLog(ev.text);
       break;
     case "status":
       setStatus(ev.text, ev.pct);

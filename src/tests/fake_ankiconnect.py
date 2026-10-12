@@ -17,6 +17,11 @@ class FakeAnki:
         self.cards: dict[int, dict] = {}
         self.media: dict[str, dict] = {}
         self.next_id = 1_700_000_000_000
+        # The review log: [(review id = time in ms, deck, review type)], and the decks' due counts
+        # ({deck: {"new_count", "learn_count", "review_count"}}, the decks not listed having none).
+        self.revlog: list[tuple[int, str, int]] = []
+        self.deck_stats: dict[str, dict] = {}
+        self.review_reads: list[tuple[str, int]] = []  # the cardReviews calls: (deck, startID)
 
     def _id(self) -> int:
         self.next_id += 1
@@ -106,6 +111,14 @@ class FakeAnki:
                 return [{"cardId": cid, "note": self.cards[cid]["note"], "interval": self.cards[cid]["interval"],
                          "queue": self.cards[cid]["queue"], "deckName": self.cards[cid]["deck"]}
                         for cid in params["cards"] if cid in self.cards]
+            if action == "cardReviews":  # the reviews of the deck itself, not of its subdecks
+                self.review_reads.append((params["deck"], params["startID"]))
+                return [[rid, 1, -1, 3, 10, 5, 2500, 6000, kind] for rid, deck, kind in self.revlog
+                        if deck == params["deck"] and rid > params["startID"]]
+            if action == "getDeckStats":
+                empty = {"new_count": 0, "learn_count": 0, "review_count": 0}
+                return {str(self.decks[name]): {"deck_id": self.decks[name], "name": name, **empty, **self.deck_stats.get(name, {})}
+                        for name in params["decks"]}
             raise ValueError(f"unsupported action: {action}")
 
 

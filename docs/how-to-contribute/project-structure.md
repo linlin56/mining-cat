@@ -143,7 +143,8 @@ the markup with Bootstrap's components and utility classes (`card`, `btn`, `form
   drawn: the colour mode (`data-bs-theme`: light, dark or the system's; the reader sets its own while a book is read
   with `MiningCatTheme.set()`) and the highlight palette (`data-mc-highlights`). Controls only need an attribute:
   `data-mc-theme-toggle`, `data-mc-theme-choice`, `data-mc-highlights-choice`.
-- `discord_status.py`: the user's Discord status (Rich Presence), from the page last opened and the language studied;
+- `discord_status.py`: the user's Discord status (Rich Presence), from the page last opened, the language studied
+  and the Anki streak (`application/anki/reviews.py`, given by the home page's `/api/anki/reviews`);
   `infrastructure/system/discord_presence.py` sends it to the Discord app from a thread. It needs the Application ID
   of a Discord application (`DISCORD_CLIENT_ID`, or the `MININGCAT_DISCORD_CLIENT_ID` environment variable), whose
   name is the one Discord shows and whose Rich Presence art asset `logo` is the image (`docs/assets/logo/miningcat.png`).

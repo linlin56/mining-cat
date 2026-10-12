@@ -90,14 +90,18 @@ The home page first asks which language you study. Every screen then only shows 
 ![The home page asks which language you study](../assets/screenshots/home-language-picker.png)
 
 From the home page, open the **Converter**, the [Reader](reader.md), the [Player](player.md) or the **Settings**.
+When Anki is open (with AnkiConnect), the home page also shows, under the screens, where your reviews stand today
+(not started, cards left, or done), your streak of days in a row with reviews, and a heatmap of your reviews over the
+last year. Only the decks linked to the language you study count (with their subdecks): the deck its cards go
+to and the decks synced with its words, in **Settings › Anki**. Your other decks (maths...) don't.
 
-![The home page, once the language is chosen: Converter, Reader, Player and Settings](../assets/screenshots/home-hub.png)
+![The home page, once the language is chosen: the screens, then today's Anki reviews, the streak and the heatmap](../assets/screenshots/home-hub.png)
 
 The **Settings** have a tab per topic: **Dictionaries** (import a dictionary or a frequency list), **Words**, **Anki**, **Translation**, **Cards** (the cards waiting for Anki) and **User preferences**: the theme (light, dark, or your system's), the highlight colours (with palettes for colour blindness) and the Discord status. The moon button in the header of every page also switches between light and dark.
 
 ![Settings › User preferences: theme, highlight colours and Discord status](../assets/screenshots/settings-preferences.png)
 
-While MiningCat runs, your Discord profile shows what you do in it ("Reading a book", "Watching a video", "Playing" and the [source name](video-game.md) of a game...) and the language you study, if the Discord app is open on the same computer. Turn it off in **Settings › User preferences › Discord**.
+While MiningCat runs, your Discord profile shows what you do in it ("Reading a book", "Watching a video", "Playing" and the [source name](video-game.md) of a game...) and the language you study, with your Anki streak once the home page got it ("Japanese · 🔥 12-day streak"), if the Discord app is open on the same computer. Turn it off in **Settings › User preferences › Discord**.
 
 You can drag and drop files on the audio, book and video panels. The files you pick are copied into the project's `sources/` folder, like before.
 

@@ -45,7 +45,7 @@ It is a Python project with a local web interface, tested on Linux, macOS and Wi
 
 > There are currently no executable files: installation requires the terminal.
 
-**Requirements:** Python 3.14 (tested with 3.14.5), [ffmpeg](https://ffmpeg.org/) (`brew install ffmpeg` / `sudo apt install ffmpeg`), a web browser, and `make`.
+**Requirements:** Python 3.14 (tested with 3.14.5), [ffmpeg](https://ffmpeg.org/) (`brew install ffmpeg` / `sudo apt install ffmpeg`), a web browser, and `make`. On Windows, see [Installation on Windows](https://linlin56.github.io/mining-cat/how-to-use/#installation-on-windows).
 
 ```bash
 git clone https://github.com/linlin56/mining-cat.git

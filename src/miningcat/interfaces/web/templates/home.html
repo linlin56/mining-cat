@@ -67,6 +67,23 @@
           </a>
         </div>
       </nav>
+
+      <!-- Anki, under the screens: today's reviews in the language's decks, the streak, the heatmap of the last year -->
+      <section class="card mt-4" id="reviews" aria-labelledby="reviews-message" hidden>
+        <div class="card-body vstack gap-3">
+          <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2">
+            <p class="m-0" id="reviews-message"></p>
+            <p class="small text-body-secondary m-0" id="reviews-streak"></p>
+          </div>
+          <div class="vstack gap-2" id="reviews-history" hidden>
+            <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2">
+              <h3 class="small fw-semibold text-body-secondary m-0" id="reviews-history-title"></h3>
+              <p class="small text-body-secondary m-0" id="reviews-history-decks"></p>
+            </div>
+            <div id="reviews-heatmap"></div>
+          </div>
+        </div>
+      </section>
     </section>
 
     <!-- Language choice -->

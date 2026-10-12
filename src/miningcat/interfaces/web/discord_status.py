@@ -1,4 +1,5 @@
-"""The Discord status of the user (Settings › User preferences): the page they're on and the language they study.
+"""The Discord status of the user (Settings › User preferences): the page they're on, the language they study, and
+their Anki streak (known once the home page asked Anki for it).
 
 It needs a Discord application (https://discord.com/developers/applications): its name is the one Discord shows
 ("Playing MiningCat"), its Application ID goes in DISCORD_CLIENT_ID or the MININGCAT_DISCORD_CLIENT_ID environment
@@ -51,6 +52,12 @@ def page_activity(endpoint: str | None, view_args: dict | None) -> str | None:
     return doing
 
 
+def studying(language: str | None, streak: int) -> str:
+    """The second line: "Japanese · 🔥 12-day streak"."""
+    parts = [LANGUAGES[language] if language else "", f"🔥 {streak}-day streak" if streak > 0 else ""]
+    return " · ".join(part for part in parts if part)
+
+
 # The game page shows the source name of the converter ("Playing <name>"), when there is one.
 def game_activity(source_name: str) -> str:
     if not source_name:
@@ -64,6 +71,7 @@ class DiscordStatus:
         self.presence = presence
         self.doing: str | None = None
         self.on_game_page = False
+        self.streak = 0
 
     def page_opened(self) -> None:
         """before_request hook: a page of MiningCat was opened in the browser."""
@@ -79,11 +87,17 @@ class DiscordStatus:
             self.doing = game_activity(source_name)
             self.refresh()
 
+    def streak_changed(self, streak: int) -> None:
+        """The Anki streak, as the home page last got it."""
+        if streak != self.streak:
+            self.streak = streak
+            self.refresh()
+
     def refresh(self) -> None:
         """Shows the last page opened, or nothing if the user turned it off."""
         if not self.doing or user_preferences.get_preferences()["discord"] != "on":
             self.presence.show(None)
             return
         language = study_language.current()
-        self.presence.show(Activity(details=self.doing, state=f"Studying {LANGUAGES[language]}" if language else "",
+        self.presence.show(Activity(details=self.doing, state=studying(language, self.streak),
                                     large_image=LOGO, large_text="MiningCat"))

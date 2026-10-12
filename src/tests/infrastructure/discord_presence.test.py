@@ -18,7 +18,7 @@ class FakeClient:
         self.closed = True
 
 
-READING = Activity(details="Reading a book", state="Studying Japanese", large_image="logo", large_text="MiningCat")
+READING = Activity(details="Reading a book", state="Japanese", large_image="logo", large_text="MiningCat")
 
 
 def test_sends_the_activity_once():
@@ -29,7 +29,7 @@ def test_sends_the_activity_once():
     presence.sync()
     assert len(client.updates) == 1
     assert client.updates[0]["details"] == "Reading a book"
-    assert client.updates[0]["state"] == "Studying Japanese"
+    assert client.updates[0]["state"] == "Japanese"
     assert client.updates[0]["large_image"] == "logo"
     presence.show(None)
     presence.sync()

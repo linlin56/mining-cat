@@ -12,8 +12,10 @@ copy, so that the card creator and Settings › Translation work. Chrome (instal
 Needs Playwright (pip install playwright, it uses the installed Chrome) and ffmpeg.
 """
 import argparse
+import datetime
 import json
 import os
+import random
 import shutil
 import socket
 import sqlite3
@@ -182,6 +184,20 @@ def frequency_list(name: str, folder: Path) -> Path:
 
 # ------------------------------------------------------------------ servers
 
+def demo_reviews() -> list[list]:
+    """The home page's heatmap: reviews of Mining::Chinese on most days of the last 10 months, the last 23 in a row,
+    as AnkiConnect's cardReviews gives them ([review id = time in ms, ..., review type])."""
+    rng = random.Random(7)
+    noon = datetime.datetime.combine(datetime.date.today(), datetime.time(12))
+    rows = []
+    for d in range(300):
+        count = rng.randint(5, 140)
+        if d < 23 or (d > 23 and rng.random() < 0.75):
+            start = int((noon - datetime.timedelta(days=d)).timestamp() * 1000)
+            rows += [[start + i, 1, -1, 3, 10, 5, 2500, 6000, 1] for i in range(34 if d == 0 else count)]
+    return rows
+
+
 class FakeAnki(BaseHTTPRequestHandler):
     """AnkiConnect with a few decks and note types; notes are not kept."""
 
@@ -190,11 +206,21 @@ class FakeAnki(BaseHTTPRequestHandler):
     ANSWERS = {"version": 6, "deckNames": ["Default", "Mining::Chinese", "Mining::Japanese"],
                "modelNames": sorted(MODELS), "findNotes": [], "findCards": [], "notesInfo": [], "cardsInfo": [],
                "requestPermission": {"permission": "granted"}}
+    REVIEWS = demo_reviews()
 
     def do_POST(self):
         request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         action, params = request.get("action"), request.get("params") or {}
-        result = self.MODELS.get(params.get("modelName"), []) if action == "modelFieldNames" else self.ANSWERS.get(action)
+        if action == "modelFieldNames":
+            result = self.MODELS.get(params.get("modelName"), [])
+        elif action == "getDeckStats":  # the home page: some reviews left today
+            result = {str(i): {"deck_id": i, "name": name, "new_count": 0, "learn_count": 0,
+                               "review_count": 21 if name == "Mining::Chinese" else 0}
+                      for i, name in enumerate(params.get("decks") or [])}
+        elif action == "cardReviews":
+            result = [row for row in self.REVIEWS if row[0] > params["startID"]] if params.get("deck") == "Mining::Chinese" else []
+        else:
+            result = self.ANSWERS.get(action)
         body = json.dumps({"result": result, "error": None}).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")

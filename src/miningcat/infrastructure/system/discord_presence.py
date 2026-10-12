@@ -23,7 +23,7 @@ COALESCE_DELAY = 1.0
 @dataclass(frozen=True)
 class Activity:
     details: str            # first line, e.g. "Reading a book"
-    state: str = ""         # second line, e.g. "Studying Japanese"
+    state: str = ""         # second line, e.g. "Japanese"
     large_image: str = ""   # the key of an image uploaded in the Discord application's Rich Presence assets
     large_text: str = ""
 

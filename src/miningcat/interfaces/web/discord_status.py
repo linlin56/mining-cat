@@ -53,8 +53,8 @@ def page_activity(endpoint: str | None, view_args: dict | None) -> str | None:
 
 
 def studying(language: str | None, streak: int) -> str:
-    """The second line: "Studying Japanese · 🔥 12-day streak"."""
-    parts = [f"Studying {LANGUAGES[language]}" if language else "", f"🔥 {streak}-day streak" if streak > 0 else ""]
+    """The second line: "Japanese · 🔥 12-day streak"."""
+    parts = [LANGUAGES[language] if language else "", f"🔥 {streak}-day streak" if streak > 0 else ""]
     return " · ".join(part for part in parts if part)
 
 

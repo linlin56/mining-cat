@@ -48,7 +48,7 @@ def test_the_page_opened_is_shown(client, presence):
     client.get("/reader/some-book")
     activity = presence.shown[-1]
     assert activity.details == "Reading a book"
-    assert activity.state == "Studying Japanese"
+    assert activity.state == "Japanese"
     assert activity.large_image == "logo"
 
 
@@ -106,8 +106,8 @@ def test_renaming_elsewhere_keeps_the_page_shown(client, presence):
 
 
 def test_studying_line():
-    assert studying("ja", 0) == "Studying Japanese"
-    assert studying("ja", 12) == "Studying Japanese · 🔥 12-day streak"
+    assert studying("ja", 0) == "Japanese"
+    assert studying("ja", 12) == "Japanese · 🔥 12-day streak"
     assert studying(None, 3) == "🔥 3-day streak"
 
 
@@ -127,6 +127,6 @@ def test_the_anki_streak_is_shown(client, presence, monkeypatch):
         assert len(presence.shown) == shown  # the same streak: not sent again
         anki.save_config({"notes": {"ja": None}})  # no deck linked any more: no streak
         assert client.get("/api/anki/reviews?language=ja").get_json() == {"linked": False}
-        assert presence.shown[-1].state == "Studying Japanese"
+        assert presence.shown[-1].state == "Japanese"
     finally:
         server.shutdown()

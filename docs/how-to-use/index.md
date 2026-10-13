@@ -37,6 +37,20 @@ make install
 !!! tip
     The Makefile automatically uses `.venv/bin/python3` when it exists, so `make` commands work even if you forget to activate the environment.
 
+!!! note "macOS 26.0 to 26.2"
+    If you're on macOS 26.0, 26.1 or 26.2 and Python installed with Homebrew doesn't work (`Symbol not found: _XML_SetAllocTrackerActivationThreshold`),
+    it's a [Homebrew issue](https://github.com/Homebrew/homebrew-core/issues/277330). Install Python another way, then recreate the environment:
+
+    - the installer from [python.org](https://www.python.org/downloads/macos/), then `rm -rf .venv && python3.14 -m venv .venv`
+    - or [uv](https://docs.astral.sh/uv/):
+
+        ```bash
+        uv python install 3.14
+        rm -rf .venv && uv venv --python 3.14 --seed .venv
+        ```
+
+    Then `make install` as usual.
+
 ### Installation on Windows
 
 Windows doesn't come with `make`, Python 3.14 or ffmpeg. The simplest way to get them is [Chocolatey](https://chocolatey.org/install), a package manager for Windows.

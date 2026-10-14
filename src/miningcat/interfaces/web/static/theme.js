@@ -3,8 +3,10 @@
 // so that it never flashes in the wrong colours:
 // - the colour mode (Bootstrap's data-bs-theme): light, dark, or the system's. A page can choose its own (the
 //   reader's light, sepia or dark);
-// - the highlight colours of the text (data-mc-highlights, see theme.css): default, or a palette for colour blindness.
-// Buttons and radios set them with data-mc-theme-toggle, data-mc-theme-choice and data-mc-highlights-choice.
+// - the highlight colours of the text (data-mc-highlights, see theme.css): default, or a palette for colour blindness;
+// - the colour of the heatmap of reviews (data-mc-heatmap): orange by default.
+// Buttons and radios set them with data-mc-theme-toggle, data-mc-theme-choice, data-mc-highlights-choice and
+// data-mc-heatmap-choice.
 "use strict";
 
 window.MiningCatTheme = (() => {
@@ -12,7 +14,8 @@ window.MiningCatTheme = (() => {
   const dark = matchMedia("(prefers-color-scheme: dark)");
   // the other tabs of MiningCat follow the choices made in this one
   const tabs = window.BroadcastChannel ? new BroadcastChannel("miningcat-preferences") : null;
-  const prefs = { theme: root.dataset.mcTheme || "system", highlights: root.dataset.mcHighlights || "default" };
+  const prefs = { theme: root.dataset.mcTheme || "system", highlights: root.dataset.mcHighlights || "default",
+    heatmap: root.dataset.mcHeatmap || "orange" };
   let chosen = "auto";   // the page's own theme
 
   // The day / night of the whole site: the user's choice, else the system's.
@@ -30,6 +33,7 @@ window.MiningCatTheme = (() => {
     root.dataset.bsTheme = theme;
     root.dataset.mcTheme = prefs.theme;
     root.dataset.mcHighlights = prefs.highlights;
+    root.dataset.mcHeatmap = prefs.heatmap;
     for (const button of document.querySelectorAll("[data-mc-theme-toggle]")) {
       const night = theme === "dark";
       button.querySelector("i").className = `bi bi-${night ? "sun" : "moon-stars"}`;
@@ -38,9 +42,10 @@ window.MiningCatTheme = (() => {
     }
     for (const control of document.querySelectorAll("[data-mc-theme-choice]")) mark(control, control.dataset.mcThemeChoice === prefs.theme);
     for (const control of document.querySelectorAll("[data-mc-highlights-choice]")) mark(control, control.dataset.mcHighlightsChoice === prefs.highlights);
+    for (const control of document.querySelectorAll("[data-mc-heatmap-choice]")) mark(control, control.dataset.mcHeatmapChoice === prefs.heatmap);
   }
 
-  // changes: {theme?, highlights?}, applied at once and saved by the server
+  // changes: {theme?, highlights?, heatmap?}, applied at once and saved by the server
   function save(changes) {
     Object.assign(prefs, changes);
     if ("theme" in changes) chosen = "auto";
@@ -74,6 +79,8 @@ window.MiningCatTheme = (() => {
     if (theme) save({ theme: theme.dataset.mcThemeChoice });
     const highlights = e.target.closest("[data-mc-highlights-choice]");
     if (highlights) save({ highlights: highlights.dataset.mcHighlightsChoice });
+    const heatmap = e.target.closest("[data-mc-heatmap-choice]");
+    if (heatmap) save({ heatmap: heatmap.dataset.mcHeatmapChoice });
   });
   apply();
 

@@ -81,7 +81,7 @@ function heatmap(days, todayIso) {
   const limits = [quartile(0.25), quartile(0.5), quartile(0.75)];
   const shade = (n) => (n <= 0 ? 0 : 1 + limits.filter((limit) => n > limit).length);
   const FILL = ["var(--bs-secondary-bg)", ".3", ".55", ".8", "1"];
-  const style = (level) => (level ? `fill: var(--bs-primary); fill-opacity: ${FILL[level]}` : `fill: ${FILL[0]}`);
+  const style = (level) => (level ? `fill: var(--mc-heatmap); fill-opacity: ${FILL[level]}` : `fill: ${FILL[0]}`);
 
   const root = svg("svg", { viewBox: `0 0 ${WEEKS * STEP - GAP} ${TOP + 7 * STEP - GAP}`, role: "img",
     "aria-label": "Anki reviews per day over the last year", class: "d-block w-100 h-auto" });

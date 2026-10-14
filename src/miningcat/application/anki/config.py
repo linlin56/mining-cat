@@ -22,7 +22,7 @@ def get_config() -> dict:
     config.setdefault("known_interval", DEFAULT_KNOWN_INTERVAL)
     config.setdefault("notes", {})   # language -> {deck, model, fields: {note field: template}, tags}
     config.setdefault("sync", {})    # language -> [{deck, field, reading_field}]
-    config.setdefault("tts_voices", {})  # language -> Edge-TTS voice reading the sentences, "" = none
+    config.setdefault("tts_voices", {})  # language -> the voice reading the sentences, "" = none
     # Sentences are read by OmniVoice (local), or by Edge's voices when this is on (faster, online), OmniVoice taking
     # over when Edge fails.
     config.setdefault("tts_use_edge", True)
@@ -75,8 +75,12 @@ def save_config(values: dict) -> dict:
     if "translation_cards_with_context" in values:
         config["translation_cards_with_context"] = bool(values["translation_cards_with_context"])
     for language, voice in (values.get("tts_voices") or {}).items():
-        if language in LANGUAGES:
-            config["tts_voices"][language] = str(voice or "")
+        if language not in LANGUAGES:
+            continue
+        if voice is None:  # back to the language's default voice
+            config["tts_voices"].pop(language, None)
+        else:
+            config["tts_voices"][language] = str(voice)
     if "tts_use_edge" in values:
         config["tts_use_edge"] = bool(values["tts_use_edge"])
     if "tts_steps" in values:

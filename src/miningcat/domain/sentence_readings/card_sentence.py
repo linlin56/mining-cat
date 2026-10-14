@@ -5,6 +5,9 @@ import re
 from miningcat.domain.text.zhuyin import numbered_pinyin, pinyin_to_zhuyin, zhuyin_to_pinyin
 
 _TAG = re.compile(r"<(/?)([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>")
+_HAN = "\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U0003134f〇"
+_HAN_RUNS = re.compile(f"[{_HAN}]+|[^{_HAN}]+")
+_HAN_CHAR = re.compile(f"[{_HAN}]")
 
 
 def plain_sentence(sentence_html: str) -> tuple[str, tuple[int, int] | None]:
@@ -43,6 +46,32 @@ def _escape(text: str) -> str:
     return html.escape(text, quote=False).replace("\n", "<br>")
 
 
+def han_readings(text: str, pinyin: str) -> list[tuple[str, str]]:
+    """The parts of a word with their readings: only its Chinese characters are read (the readings of a word's
+    letters and digits, A[a5], aren't readings). AA制 read "a5 a5 zhi4" or "zhi4": [("AA", ""), ("制", "zhi4")].
+    A word without characters, or whose readings can't be matched to them, has none: [(text, "")]."""
+    runs = _HAN_RUNS.findall(text)
+    han = [run for run in runs if _HAN_CHAR.match(run)]
+    syllables = pinyin.split()
+    count = sum(map(len, han))
+    if not han or not syllables:
+        return [(text, "")]
+    if len(syllables) == len(text) and count != len(text):  # a syllable for each letter too: those of the characters
+        syllables = [syl for ch, syl in zip(text, syllables) if _HAN_CHAR.match(ch)]
+    if len(runs) == 1:
+        return [(text, pinyin)]
+    if len(syllables) != count:
+        return [(text, "")]
+    parts = []
+    for run in runs:
+        if _HAN_CHAR.match(run):
+            parts.append((run, " ".join(syllables[:len(run)])))
+            syllables = syllables[len(run):]
+        else:
+            parts.append((run, ""))
+    return parts
+
+
 def bracketed(text: str, tokens: list[dict]) -> str:
     """The sentence with each word's reading in brackets after it, the card's word in bold: 你[ni3]<b>好[hao3]</b>."""
     out: list[str] = []
@@ -57,6 +86,5 @@ def bracketed(text: str, tokens: list[dict]) -> str:
 
 
 def word_field(word: str, reading: str) -> str:
-    """The card's word with its reading in brackets: 繁體字[fan2 ti3 zi4]."""
-    pinyin = numbered_pinyin(reading)
-    return f"{word}[{pinyin}]" if word and pinyin else word
+    """The card's word with its reading in brackets: 繁體字[fan2 ti3 zi4], AA制 -> AA制[zhi4], A -> A."""
+    return "".join(f"{part}[{pinyin}]" if pinyin else part for part, pinyin in han_readings(word, numbered_pinyin(reading)))

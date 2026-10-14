@@ -1,10 +1,12 @@
 import re
 from dataclasses import dataclass
 
+from miningcat.application import elevenlabs
 from miningcat.application.anki.config import get_config
-from miningcat.application.voices import language_voices
+from miningcat.application.voices import language_voices, may_default
 from miningcat.domain.languages import Language, language_key
-from miningcat.infrastructure.speech import engine_install, mms_tts, omnivoice_tts
+from miningcat.infrastructure.speech import elevenlabs_tts, engine_install, mms_tts, omnivoice_tts
+from miningcat.infrastructure.speech.elevenlabs_tts import ElevenLabsError
 from miningcat.infrastructure.speech.edge_tts import EdgeTts
 from miningcat.infrastructure.speech.local_models import SpeechError
 
@@ -16,17 +18,20 @@ class TtsError(Exception):
 
 
 # "zh-TW-HsiaoChenNeural" -> "zh", "zh-HK-HiuMaanNeural" -> "yue" (Edge's Hong Kong voices speak Cantonese),
-# "yue-OmniVoice" -> "yue".
+# "yue-OmniVoice" -> "yue", "zh-ElevenLabs" -> "zh".
 def _voice_language(voice_id: str) -> str:
     if omnivoice_tts.is_voice(voice_id):
         return omnivoice_tts.voice_language(voice_id)
+    if elevenlabs_tts.is_voice(voice_id):
+        return elevenlabs_tts.voice_language(voice_id)
     locale = "-".join(voice_id.split("-")[:2])
     return "yue" if locale.lower() == "zh-hk" else language_key(locale)
 
 
 def voices(language: str) -> dict:
     """{voices: [{id, label}], default: id} for a language key ("zh", "ja"...): OmniVoice's when it's installed,
-    Edge's when the settings use edge-tts (see application/voices.py)."""
+    Edge's when the settings use edge-tts, ElevenLabs' when it's set up (see application/voices.py). ElevenLabs is
+    only the default when it's the main voice: it uses credits."""
     found, default = [], ""
     for lang in Language:
         variant_voices = language_voices(lang)
@@ -36,14 +41,18 @@ def voices(language: str) -> dict:
             found.append({"id": voice.voice_id, "label": voice.label})
             if not default and voice == variant_voices[0]:
                 default = voice.voice_id
-    return {"voices": found, "default": default or (found[0]["id"] if found else "")}
+    if not (default and may_default(default)):
+        default = next((v["id"] for v in found if may_default(v["id"])), "")
+    # ElevenLabs' after the voices of every variant (before them when it's the main voice), as in language_voices
+    found.sort(key=lambda v: elevenlabs_tts.is_voice(v["id"]) != elevenlabs.is_main())
+    return {"voices": found, "default": default}
 
 
 def default_voice(language: str) -> str:
     """The voice chosen in the settings for a language ("" when sentences aren't read), else the language's default."""
     available = voices(language)
     chosen = get_config()["tts_voices"].get(language)
-    if chosen == "" or chosen in {v["id"] for v in available["voices"]}:
+    if chosen == "" or (chosen in {v["id"] for v in available["voices"]} and may_default(chosen)):
         return chosen
     return available["default"]
 
@@ -65,7 +74,8 @@ class Speech:
 
 
 def synthesize(language: str, text: str, voice: str) -> Speech:
-    """The text read by the voice: OmniVoice's, MMS's or Edge's (OmniVoice taking over when Edge fails, with a notice)."""
+    """The text read by the voice: OmniVoice's, MMS's, ElevenLabs' or Edge's (OmniVoice taking over when Edge fails,
+    with a notice)."""
     text = re.sub(r"\s+", " ", text or "").strip()
     if not text:
         raise TtsError("There's no sentence to read.")
@@ -82,6 +92,11 @@ def synthesize(language: str, text: str, voice: str) -> Speech:
             raise TtsError(f"The voice couldn't be generated: {exc}")
     if omnivoice_tts.is_voice(voice):
         return Speech(_omnivoice(language, text))
+    if elevenlabs_tts.is_voice(voice):
+        try:
+            return Speech(elevenlabs.client().synthesize_mp3(text, elevenlabs.voice(language), elevenlabs.model(language)))
+        except ElevenLabsError as exc:
+            raise TtsError(str(exc))
     try:
         return Speech(_edge(text, voice))
     except TtsError as edge_error:

@@ -126,8 +126,8 @@ The home page first asks which language you study. Every screen then only shows 
 
 From the home page, open the **Converter**, the [Reader](reader.md), the [Player](player.md) or the **Settings**.
 When Anki is open (with AnkiConnect), the home page also shows, under the screens, where your reviews stand today
-(not started, cards left, or done), your streak of days in a row with reviews, and a heatmap of your reviews over the
-last year. Only the decks linked to the language you study count (with their subdecks): the deck its cards go
+(not started, cards left, or done), your streak of days in a row with reviews, and a heatmap of your reviews in the
+current year (its buttons go to the years before, when they have reviews). Only the decks linked to the language you study count (with their subdecks): the deck its cards go
 to and the decks synced with its words, in **Settings › Anki**. Your other decks (maths...) don't.
 
 ![The home page, once the language is chosen: the screens, then today's Anki reviews, the streak and the heatmap](../assets/screenshots/home-hub.png)

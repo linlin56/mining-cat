@@ -71,12 +71,14 @@ Settings › Voice doesn't use edge-tts, along with its subtitles.
 
 | Option       | Default       | Description                                               |
 | ------------ | ------------- | --------------------------------------------------------- |
-| `--voice`    | _required_    | `zh-OmniVoice` (local), or an edge-tts voice name, e.g. `zh-TW-HsiaoChenNeural` |
+| `--voice`    | _required_    | `zh-OmniVoice` (local), `zh-ElevenLabs`, or an edge-tts voice name, e.g. `zh-TW-HsiaoChenNeural` |
 | `--language` | `mandarin_tw` | See [language ids](#language-ids)                         |
 
 OmniVoice's voice of a language is its key followed by `-OmniVoice` (`fr-OmniVoice`, `yue-OmniVoice`...): it needs
 `make install-omnivoice`. List Edge's voices with `edge-tts --list-voices`: OmniVoice takes over when Edge fails. Taigi
-has no Edge voice: use `nan-TW-MmsTaigi` or `nan-OmniVoice`, local voices (see [Taigi](taigi.md)).
+has no Edge voice: use `nan-TW-MmsTaigi` or `nan-OmniVoice`, local voices (see [Taigi](taigi.md)). `zh-ElevenLabs`
+(the language's key followed by `-ElevenLabs`) reads with the ElevenLabs voice of Settings › Voice, using your credits
+(see [ElevenLabs](index.md#elevenlabs-optional-paid)).
 
 ### `convert`
 

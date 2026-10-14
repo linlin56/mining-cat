@@ -267,6 +267,47 @@
           <p class="small m-0" id="local-voice-state"></p>
         </div>
       </div>
+
+      <div class="card">
+        <h2 class="card-header h6">ElevenLabs (online, your own account)</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">ElevenLabs reads with the voice of your choice, using your account's credits for each
+            character read. Once set up, its voice is offered in the voice lists (the card creator, CSV to cards, the
+            converter's <em>Generate audio</em>), after the others: it only reads what you pick it for.</p>
+          <div>
+            <label class="form-label" for="el-key">API key</label>
+            <div class="d-flex flex-wrap gap-2">
+              <input type="password" class="form-control w-auto flex-grow-1" id="el-key" autocomplete="off" spellcheck="false">
+              <button type="button" class="btn btn-outline-secondary" id="el-key-save">Save the key</button>
+            </div>
+            <p class="small text-body-secondary mt-1 mb-0">Create one in ElevenLabs › Developers › API keys, with these permissions:
+              <span id="el-permissions"></span> (<em>Voices: read</em> as well, to show the voice's name).
+              A free account can't use the voices of the voice library through the API.</p>
+          </div>
+          <div class="vstack gap-3" id="el-options" hidden>
+            <div class="row g-2 align-items-end">
+              <div class="col-md-auto">
+                <label class="form-label" for="el-model">Model</label>
+                <select class="form-select" id="el-model"></select>
+              </div>
+              <div class="col-md">
+                <label class="form-label" for="el-voice">Voice ID for {{ study.name }}</label>
+                <input type="text" class="form-control" id="el-voice" autocomplete="off" spellcheck="false" placeholder="e.g. xrDmUzhnE51Df8z38r1M">
+              </div>
+              <div class="col-md-auto">
+                <button type="button" class="btn btn-primary" id="el-save">Save</button>
+              </div>
+            </div>
+            <p class="small text-body-secondary m-0">Pick a voice in the <a id="el-library" target="_blank" rel="noopener">voice library</a>
+              (one with the accent you're learning), then copy its ID (<i class="bi bi-three-dots" aria-hidden="true"></i> › Copy voice ID).</p>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="el-main">
+              <label class="form-check-label" for="el-main">Use ElevenLabs as the main voice</label>
+            </div>
+            <p class="small m-0" id="el-state"></p>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ================= Cards ================= -->

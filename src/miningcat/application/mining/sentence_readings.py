@@ -1,7 +1,7 @@
 from miningcat.application.mining import segmentation
 from miningcat.application.mining.preferences import reading_system
 from miningcat.domain.segmentation.lexicon import match
-from miningcat.domain.sentence_readings.card_sentence import bracketed, display_pinyin, plain_sentence
+from miningcat.domain.sentence_readings.card_sentence import bracketed, display_pinyin, han_readings, plain_sentence
 from miningcat.domain.sentence_readings.context_rules import Context, choose_reading
 from miningcat.domain.sentence_readings.senses import reading_weight
 from miningcat.domain.text.zhuyin import numbered_pinyin
@@ -63,8 +63,25 @@ def annotate(language: str, sentence_html: str, word_reading: str = "") -> dict:
             token["pinyin"] = choose_reading(options, token["headword"], Context(tokens, i))
         else:
             token["pinyin"] = ""
-        token["choices"] = [{"pinyin": o["pinyin"], "display": display_pinyin(o["pinyin"], system)} for o in options]
+        token["choices"] = [o["pinyin"] for o in options]
         del token["headword"]
+    tokens = [part for token in tokens for part in _han_parts(token)]
+    for token in tokens:
+        token["choices"] = [{"pinyin": c, "display": display_pinyin(c, system)} for c in token["choices"]]
     return {"text": text, "tokens": tokens, "field": bracketed(text, tokens)}
+
+
+def _han_parts(token: dict) -> list[dict]:
+    """A token split into its Chinese characters, read, and the rest (letters, digits), not read: A has no reading,
+    AA制 is AA and 制[zhi4] (see han_readings). Each part keeps the readings that can be its own."""
+    parts = han_readings(token["text"], token["pinyin"])
+    choices = [han_readings(token["text"], c) for c in token["choices"]]
+    split, start = [], token["start"]
+    for i, (text, pinyin) in enumerate(parts):
+        own = [c[i][1] for c in choices if len(c) == len(parts) and c[i][1]] if pinyin else []
+        split.append({**token, "start": start, "end": start + len(text), "text": text, "pinyin": pinyin,
+                      "choices": list(dict.fromkeys(own))})
+        start += len(text)
+    return split
 
 

@@ -68,7 +68,7 @@
         </div>
       </nav>
 
-      <!-- Anki, under the screens: today's reviews in the language's decks, the streak, the heatmap of the last year -->
+      <!-- Anki, under the screens: today's reviews in the language's decks, the streak, the heatmap of a year -->
       <section class="card mt-4" id="reviews" aria-labelledby="reviews-message" hidden>
         <div class="card-body vstack gap-3">
           <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2">
@@ -78,9 +78,14 @@
           <div class="vstack gap-2" id="reviews-history" hidden>
             <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2">
               <h3 class="small fw-semibold text-body-secondary m-0" id="reviews-history-title"></h3>
-              <p class="small text-body-secondary m-0" id="reviews-history-decks"></p>
+              <div class="btn-group btn-group-sm" role="group" aria-label="Year of the heatmap">
+                <button type="button" class="btn btn-outline-secondary" id="reviews-year-prev" title="Previous year" aria-label="Previous year"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" id="reviews-year-current">This year</button>
+                <button type="button" class="btn btn-outline-secondary" id="reviews-year-next" title="Next year" aria-label="Next year"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+              </div>
             </div>
             <div id="reviews-heatmap"></div>
+            <p class="small text-body-secondary m-0" id="reviews-history-decks"></p>
           </div>
         </div>
       </section>

@@ -69,35 +69,43 @@ function svg(tag, attrs, ...children) {
   return node;
 }
 
-// The reviews of each day of the last 53 weeks, a column per week (Monday on top), darker with more reviews.
-function heatmap(days, todayIso) {
-  const CELL = 11, GAP = 3, STEP = CELL + GAP, TOP = 14, WEEKS = 53;
+// The reviews of each day of a year, a column per week (Monday on top), darker with more reviews. The days after
+// today aren't drawn.
+function heatmap(days, todayIso, year) {
+  const CELL = 11, GAP = 3, STEP = CELL + GAP, TOP = 14;
   const today = Date.parse(`${todayIso}T00:00:00Z`);
-  const weekday = (new Date(today).getUTCDay() + 6) % 7;  // Monday: 0
-  const start = today - (weekday + (WEEKS - 1) * 7) * DAY_MS;
-  // 4 shades, from the quartiles of the days with reviews
-  const counts = Object.values(days).filter((n) => n > 0).sort((a, b) => a - b);
+  const first = Date.UTC(year, 0, 1), last = Date.UTC(year, 11, 31);
+  const start = first - ((new Date(first).getUTCDay() + 6) % 7) * DAY_MS;  // the Monday of the week of January 1st
+  const WEEKS = Math.floor((last - start) / DAY_MS / 7) + 1;  // 53 or 54
+  // 4 shades, from the quartiles of the year's days with reviews
+  const counts = Object.entries(days).filter(([day, n]) => n > 0 && day.startsWith(`${year}-`)).map(([, n]) => n)
+    .sort((a, b) => a - b);
   const quartile = (q) => counts[Math.min(counts.length - 1, Math.floor(q * counts.length))] || 0;
   const limits = [quartile(0.25), quartile(0.5), quartile(0.75)];
   const shade = (n) => (n <= 0 ? 0 : 1 + limits.filter((limit) => n > limit).length);
   const FILL = ["var(--bs-secondary-bg)", ".3", ".55", ".8", "1"];
-  const style = (level) => (level ? `fill: var(--bs-primary); fill-opacity: ${FILL[level]}` : `fill: ${FILL[0]}`);
+  // --mc-week: the rainbow colour's hue (theme.css), 0 to 52, from red in January to violet in December
+  const hue = (week) => Math.round((week * 52) / (WEEKS - 1));
+  const style = (level, week) => (level ? `fill: var(--mc-heatmap-cell); fill-opacity: ${FILL[level]}; --mc-week: ${hue(week)}` : `fill: ${FILL[0]}`);
 
   const root = svg("svg", { viewBox: `0 0 ${WEEKS * STEP - GAP} ${TOP + 7 * STEP - GAP}`, role: "img",
-    "aria-label": "Anki reviews per day over the last year", class: "d-block w-100 h-auto" });
+    "aria-label": `Anki reviews per day in ${year}`, class: "d-block w-100 h-auto" });
   let month = null;
   for (let week = 0; week < WEEKS; week++) {
+    // the month of the week's first day of the year, written over its first week
+    const monday = Math.max(start + week * 7 * DAY_MS, first);
+    if (new Date(monday).getUTCMonth() !== month) {
+      month = new Date(monday).getUTCMonth();
+      if (week < WEEKS - 2) root.append(svg("text", { x: week * STEP, y: 9, style: "fill: var(--bs-secondary-color); font-size: 9px" }, MONTHS[month]));
+    }
     for (let day = 0; day < 7; day++) {
       const t = start + (week * 7 + day) * DAY_MS;
-      if (t > today) break;
+      if (t > today || t > last) break;
+      if (t < first) continue;
       const iso = isoDay(t);
       const n = days[iso] || 0;
-      if (day === 0 && new Date(t).getUTCMonth() !== month) {
-        month = new Date(t).getUTCMonth();
-        if (week < WEEKS - 2) root.append(svg("text", { x: week * STEP, y: 9, style: "fill: var(--bs-secondary-color); font-size: 9px" }, MONTHS[month]));
-      }
       const date = new Date(t).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-      root.append(svg("rect", { x: week * STEP, y: TOP + day * STEP, width: CELL, height: CELL, rx: 2, style: style(shade(n)) },
+      root.append(svg("rect", { x: week * STEP, y: TOP + day * STEP, width: CELL, height: CELL, rx: 2, class: "mc-heatmap-cell", style: style(shade(n), week) },
         svg("title", {}, `${n ? plural(n, "review") : "No review"} · ${date}`)));
     }
   }
@@ -105,6 +113,20 @@ function heatmap(days, todayIso) {
 }
 
 let study = null;  // the language studied ({id, name...}): only its decks count
+let reviewsShown = null;  // the last reviews read ({today, days...}) and the year of the heatmap
+let heatmapYear = null;
+
+// The heatmap of a year, with its buttons: the year before when it has reviews, this year, the year after up to this one.
+function showYear(year) {
+  const r = reviewsShown;
+  const thisYear = Number(r.today.slice(0, 4));
+  heatmapYear = year;
+  $("reviews-history-title").textContent = `Your ${study.name} reviews in ${year}`;
+  $("reviews-heatmap").replaceChildren(heatmap(r.days, r.today, year));
+  $("reviews-year-prev").disabled = !Object.keys(r.days).some((day) => day < `${year}-01-01`);
+  $("reviews-year-current").disabled = year === thisYear;
+  $("reviews-year-next").disabled = year >= thisYear;
+}
 
 function reviewsNotice(text) {
   const message = $("reviews-message");
@@ -129,9 +151,9 @@ async function loadReviews() {
   message.replaceChildren(i, text);
   $("reviews-streak").textContent = streakText(r);
   $("reviews").hidden = false;
-  $("reviews-history-title").textContent = `Your ${study.name} reviews over the last year`;
   $("reviews-history-decks").textContent = r.decks.join(" · ");
-  $("reviews-heatmap").replaceChildren(heatmap(r.days, r.today));
+  reviewsShown = r;
+  showYear(heatmapYear ?? Number(r.today.slice(0, 4)));
   $("reviews-history").hidden = false;
 }
 
@@ -166,6 +188,9 @@ async function choose(id) {
 }
 
 async function init() {
+  $("reviews-year-prev").addEventListener("click", () => showYear(heatmapYear - 1));
+  $("reviews-year-current").addEventListener("click", () => showYear(Number(reviewsShown.today.slice(0, 4))));
+  $("reviews-year-next").addEventListener("click", () => showYear(heatmapYear + 1));
   try {
     const { current, languages } = await api("/api/profile");
     if (current) renderHub(current);

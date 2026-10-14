@@ -53,7 +53,7 @@ def test_only_the_decks_of_the_language_count(fake_anki):
         (review_id(1), "Mining::Chinese", 1), (review_id(2), "Mining::Chinese", 0),
         (review_id(0), "Maths", 1), (review_id(5), "Maths", 1),  # not linked to Mandarin
         (review_id(3), "Mining::Chinese", 4),  # a manual reschedule, not a review
-        (review_id(400), "Mining::Chinese", 1),  # more than a year ago: in the longest streak, not in the heatmap
+        (review_id(400), "Mining::Chinese", 1),  # more than a year ago: in the longest streak and the heatmap of 2025
     ]
     fake_anki.deck_stats = {"Mining::Chinese": {"review_count": 10, "learn_count": 2, "new_count": 5},
                             "Maths": {"review_count": 24}}
@@ -62,7 +62,7 @@ def test_only_the_decks_of_the_language_count(fake_anki):
     assert (summary["today"], summary["reviewed"], summary["due"], summary["new"]) == ("2026-10-12", 2, 12, 5)
     assert summary["state"] == "in_progress"
     assert (summary["streak"], summary["longest"]) == (3, 3)
-    assert summary["days"] == {"2026-10-10": 1, "2026-10-11": 1, "2026-10-12": 2}
+    assert summary["days"] == {"2025-09-07": 1, "2026-10-10": 1, "2026-10-11": 1, "2026-10-12": 2}
 
 
 def test_reviews_not_started(fake_anki):

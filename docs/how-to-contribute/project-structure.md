@@ -136,7 +136,8 @@ the markup with Bootstrap's components and utility classes (`card`, `btn`, `form
 
 - `templates/base.html`: what every page loads (Bootstrap, the theme, `ui.js`); `_macros.html`: the header (`navbar()`).
 - `static/theme.css`: MiningCat's colours, as Bootstrap variables (the orange primary, light, dark and the reader's
-  sepia mode), and the highlight colours of the text (`--mc-hl-*`: the default palette and two for colour blindness).
+  sepia mode), the highlight colours of the text (`--mc-hl-*`: the default palette and two for colour blindness) and
+  the colour of the heatmap of reviews (`--mc-heatmap`).
   Bootstrap is used without Sass: a colour changes here, not in the pages.
 - `static/theme.js`: the user's colour preferences (`application/user_preferences.py`, kept in
   `user/user-config.json`, `/api/preferences`), written on `<html>` by `base.html` and applied before the page is

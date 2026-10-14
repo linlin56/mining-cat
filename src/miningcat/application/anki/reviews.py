@@ -1,17 +1,15 @@
 """The user's Anki reviews in the decks of a language (Settings › Anki: the deck of its new cards, the decks synced
-with its words), for the home page and the Discord status: today's state, the streak, the days of the last year
-(the heatmap)."""
+with its words), for the home page and the Discord status: today's state, the streak, the days with reviews
+(the heatmap, a year at a time)."""
 import threading
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from miningcat.application.anki.config import anki, get_config
 from miningcat.domain.cards import reviews
 from miningcat.domain.cards.errors import AnkiError
 from miningcat.infrastructure.anki.ankiconnect import AnkiConnect
 
-# The days shown by the heatmap: 53 weeks, the current one included.
-HEATMAP_DAYS = 53 * 7
 # The first read of a deck's review log can be long (years of reviews); then only the new reviews are read.
 HISTORY_TIMEOUT = 60
 
@@ -54,7 +52,7 @@ review_days = ReviewDays()
 def summary(language: str, now: datetime | None = None) -> dict:
     """{linked: False} when no deck is linked to the language, {connected: False, error} when Anki doesn't answer,
     else {linked, connected, today (ISO date), reviewed, due, new, state (see domain/cards/reviews.py), streak, longest,
-    days: {ISO date: reviews} of the heatmap's days}."""
+    days: {ISO date: reviews} of every day with reviews, for the heatmap's years}."""
     linked = language_decks(language)
     if not linked:
         return {"linked": False}
@@ -72,10 +70,9 @@ def summary(language: str, now: datetime | None = None) -> dict:
     reviewed = by_day[today]
     due = sum(deck["review_count"] + deck["learn_count"] for deck in stats)
     current, longest = reviews.streaks(by_day, today)
-    first_day = today - timedelta(days=HEATMAP_DAYS - 1)
     return {
         "linked": True, "connected": True, "decks": top, "today": today.isoformat(), "reviewed": reviewed, "due": due,
         "new": sum(deck["new_count"] for deck in stats), "state": reviews.today_state(reviewed, due),
         "streak": current, "longest": longest,
-        "days": {day.isoformat(): count for day, count in sorted(by_day.items()) if day >= first_day and count},
+        "days": {day.isoformat(): count for day, count in sorted(by_day.items()) if count},
     }

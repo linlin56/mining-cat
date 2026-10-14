@@ -53,7 +53,7 @@ src/miningcat/
 ├── infrastructure/
 │   ├── persistence/          # Database, SettingsStore, repositories (words, cards, dictionaries), DictionaryQueries
 │   ├── media/                # ffmpeg: FfmpegCommand builder, m4b chapters, video files, browser copies, title cards...
-│   ├── speech/               # Whisper, OmniVoice (own environment and process), edge-tts; Taigi's Qwen3-ASR, MMS
+│   ├── speech/               # Whisper, OmniVoice (own environment and process), edge-tts, ElevenLabs; Taigi's Qwen3-ASR, MMS
 │   ├── downloads/            # one VideoHandler per platform (yt-dlp), and their registry
 │   ├── capture/ hotkeys/     # window capture and the global capture key, one module per OS (+ webcams, any OS)
 │   ├── ocr/                  # OcrEngine (owocr), and the OCR worker process of comics

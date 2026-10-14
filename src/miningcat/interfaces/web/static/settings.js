@@ -62,7 +62,7 @@ function showTab() {
   if (name === "languages") loadWords();
   if (name === "anki") refreshAnki();
   if (name === "translation") renderTranslation();
-  if (name === "voice") renderLocalVoice();
+  if (name === "voice") { renderLocalVoice(); renderElevenLabs(); }
 }
 
 // ---------------------------------------------------------------- dictionaries
@@ -421,6 +421,77 @@ async function saveLocalVoice() {
     renderLocalVoice();
     renderVoices(STUDY);  // Edge's voices are only listed with edge-tts
   } catch (err) { showError(err); }
+}
+
+// ElevenLabs, the online voice of the user's own account (see application/elevenlabs.py): the key (never shown back,
+// only its end), then the model, the voice of the language studied and whether it's the main voice.
+async function renderElevenLabs() {
+  try {
+    const el11 = await api(`/api/tts/elevenlabs?language=${encodeURIComponent(STUDY)}`);
+    $("el-permissions").textContent = el11.permissions.join(", ");
+    $("el-library").href = el11.voice_library;
+    $("el-key").value = "";
+    $("el-key").placeholder = el11.has_key ? `Saved (${el11.key_hint}): paste another one to replace it`
+      : el11.key_error ? "The saved key can't be read anymore: paste it again" : "sk_…";
+    $("el-key").title = el11.key_error;
+    $("el-voice").value = el11.voice;
+    $("el-main").checked = el11.main;
+    $("el-options").hidden = !el11.has_key;
+    if (el11.has_key) await renderElevenLabsAccount(el11);
+  } catch (err) { showError(err); }
+}
+
+// The models and the credits left, asked to ElevenLabs with the key: an error there is most often a permission the
+// key lacks, shown under the options.
+async function renderElevenLabsAccount(el11) {
+  const state = $("el-state");
+  const voice = el11.voice ? `Voice: ${el11.voice_name || el11.voice}.` : "Add a voice ID to use ElevenLabs.";
+  options($("el-model"), [["", "Latest"], ...(el11.model ? [[el11.model, el11.model]] : [])], el11.model);
+  try {
+    const { models, credits } = await api("/api/tts/elevenlabs/account");
+    const label = (m) => `${m.name}${m.languages.length && !m.languages.includes(STUDY) ? " - doesn't list this language" : ""}`;
+    const latest = models.find((m) => m.languages.includes(STUDY)) || models[0];
+    const listed = [["", latest ? `Latest (now ${latest.name})` : "Latest"], ...models.map((m) => [m.id, label(m)])];
+    if (el11.model && !models.some((m) => m.id === el11.model)) listed.splice(1, 0, [el11.model, el11.model]);
+    options($("el-model"), listed, el11.model);
+    const left = credits.limit != null ? `${(credits.limit - credits.used).toLocaleString()} of ${credits.limit.toLocaleString()} credits left` : "";
+    const reset = credits.reset ? `, until ${new Date(credits.reset * 1000).toLocaleDateString()}` : "";
+    state.textContent = `${voice} ${left}${reset}.`;
+    state.className = "small text-body-secondary m-0";
+  } catch (err) {
+    state.textContent = `${voice} ${err.message}`;
+    state.className = "small text-warning-emphasis m-0";
+  }
+}
+
+async function saveElevenLabs(values) {
+  try {
+    await api("/api/tts/elevenlabs", { language: STUDY, ...values });
+    S.config = (await api("/api/anki/config")).config;  // the sentence voice follows the main option
+    await renderElevenLabs();
+    renderVoices(STUDY);
+  } catch (err) { showError(err); }
+}
+
+async function saveElevenLabsKey() {
+  const key = $("el-key").value.trim();
+  if (!key) return showError({ title: "ElevenLabs", message: "Paste your API key first." });
+  await saveElevenLabs({ api_key: key });
+}
+
+// Main voice: every sentence without audio is then read by ElevenLabs when a card is made, and it's the converter's
+// first voice. Each one uses credits: asked before.
+async function toggleElevenLabsMain() {
+  const box = $("el-main");
+  if (box.checked) {
+    const sure = await confirmBox("Use ElevenLabs as the main voice?",
+      "ElevenLabs then reads every sentence without audio of the cards you make (and every word without a recording), " +
+      "and it's the first voice of the converter's Generate audio. Each character read uses your " +
+      "ElevenLabs credits, and a book reads many characters. When your credits run out, the audio isn't generated " +
+      "until you add some.", "Use ElevenLabs");
+    if (!sure) { box.checked = false; return; }
+  }
+  await saveElevenLabs({ main: box.checked });
 }
 
 // The install runs as a job of the converter: followed here until it ends, its log shown under the buttons.
@@ -842,6 +913,9 @@ async function init() {
     $("taigi-voice").addEventListener("change", saveTaigiVoice);
     $("tts-new-voice").addEventListener("click", newLocalVoice);
     $("tts-install").addEventListener("click", installOmniVoice);
+    $("el-key-save").addEventListener("click", saveElevenLabsKey);
+    $("el-save").addEventListener("click", () => saveElevenLabs({ model: $("el-model").value, voice: $("el-voice").value.trim() }));
+    $("el-main").addEventListener("change", toggleElevenLabsMain);
     $("mms-install").addEventListener("click", installTaigiVoice);
     $("note-type-install").addEventListener("click", installNoteType);
     $("deck-create").addEventListener("click", createDeck);

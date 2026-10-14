@@ -33,7 +33,8 @@ Subtitles are less accurate than in standard mode (Whisper can mishear words, or
 
 Provide the ebook only. The audio is generated with [edge-tts](https://github.com/rany2/edge-tts) by default (online, faster), or with
 [OmniVoice](https://github.com/k2-fsa/OmniVoice), a local voice (`make install-omnivoice`), when Settings › Voice doesn't
-use edge-tts (OmniVoice also takes over when Edge fails). The subtitles come from the text.
+use edge-tts (OmniVoice also takes over when Edge fails), or with [ElevenLabs](index.md#elevenlabs-optional-paid) when
+you set it up (it uses your credits: a book has hundreds of thousands of characters). The subtitles come from the text.
 
 Pick a voice in the **Voice** panel (a few voices are available per language). Synthetic voices are less natural than a real narrator, but it's a great option when there is no audiobook.
 

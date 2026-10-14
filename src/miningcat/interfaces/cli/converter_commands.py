@@ -89,12 +89,13 @@ class TranscribeCommand(Command):
 
 
 class TtsCommand(Command):
-    name, help = "tts", "Generate audio from EPUB text using OmniVoice (local), edge-tts or a local Taigi voice"
+    name, help = "tts", "Generate audio from EPUB text using OmniVoice (local), edge-tts, ElevenLabs or a local Taigi voice"
 
     def configure(self, parser):
         parser.add_argument("--voice", required=True,
                             help="OmniVoice's voice of the language (e.g. zh-OmniVoice, local), an Edge-TTS voice name "
-                                 "(e.g. zh-TW-HsiaoChenNeural), or nan-TW-MmsTaigi for Taigi (local)")
+                                 "(e.g. zh-TW-HsiaoChenNeural), the ElevenLabs voice of Settings › Voice (e.g. "
+                                 "zh-ElevenLabs, uses credits), or nan-TW-MmsTaigi for Taigi (local)")
         self.add_language(parser)
 
     def run(self, args):

@@ -142,6 +142,12 @@ class ProjectPaths:
         """The preferences of every page (Settings › User preferences): theme, highlight colours."""
         return self.user / "user-config.json"
 
+    @property
+    def secret_key(self) -> Path:
+        """The key encrypting the secrets kept in the database (API keys), away from it: library/ alone doesn't give
+        them."""
+        return self.user / "secret.key"
+
     # References to files under the root
 
     def to_ref(self, path: Path) -> str:

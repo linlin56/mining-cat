@@ -208,6 +208,31 @@
   --mc-hl-lookup: rgba(255, 255, 255, .32);
 }
 
+/* ---------- the colour of the heatmap of reviews (home.js) ----------
+   Its days get lighter shades of it. Chosen in Settings › User preferences (data-mc-heatmap, set by theme.js).
+   The rainbow's colour is each cell's own, from its week (--mc-week, 0 to 52, set on the cell): it is set on the
+   cells (--mc-heatmap-cell), where --mc-week is known. */
+
+:root,
+[data-mc-heatmap="orange"] { --mc-heatmap: var(--mc-orange); }
+[data-mc-heatmap="green"] { --mc-heatmap: #2da44e; }
+[data-mc-heatmap="blue"] { --mc-heatmap: #0969da; }
+[data-mc-heatmap="purple"] { --mc-heatmap: #8250df; }
+[data-mc-heatmap="pink"] { --mc-heatmap: #d6337f; }
+[data-bs-theme="dark"][data-mc-heatmap="green"],
+[data-bs-theme="dark"] [data-mc-heatmap="green"] { --mc-heatmap: #3fb950; }
+[data-bs-theme="dark"][data-mc-heatmap="blue"],
+[data-bs-theme="dark"] [data-mc-heatmap="blue"] { --mc-heatmap: #4493f8; }
+[data-bs-theme="dark"][data-mc-heatmap="purple"],
+[data-bs-theme="dark"] [data-mc-heatmap="purple"] { --mc-heatmap: #a371f7; }
+[data-bs-theme="dark"][data-mc-heatmap="pink"],
+[data-bs-theme="dark"] [data-mc-heatmap="pink"] { --mc-heatmap: #f778ba; }
+.mc-heatmap-cell, .mc-sample-heatmap > span { --mc-heatmap-cell: var(--mc-heatmap); }
+[data-mc-heatmap="rainbow"] .mc-heatmap-cell,
+[data-mc-heatmap="rainbow"].mc-sample-heatmap > span { --mc-heatmap-cell: hsl(calc(var(--mc-week, 0) * 280deg / 52) 80% 50%); }
+[data-bs-theme="dark"][data-mc-heatmap="rainbow"] .mc-heatmap-cell,
+[data-bs-theme="dark"] [data-mc-heatmap="rainbow"].mc-sample-heatmap > span { --mc-heatmap-cell: hsl(calc(var(--mc-week, 0) * 280deg / 52) 75% 62%); }
+
 /* Taigi's romanizations (Tâi-lô, POJ) take combining marks few fonts have (a̍ U+030D, o͘ U+0358, ⁿ U+207F): in a
    font without them the browser draws empty boxes. Taigi text starts with fonts that have them, which draw the
    Latin letters; the Chinese fonts after them draw the Hanji. */

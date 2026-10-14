@@ -16,10 +16,10 @@ def client():
 
 
 def test_preferences_api(client):
-    assert client.get("/api/preferences").get_json() == {"theme": "system", "highlights": "default", "discord": "on"}
+    assert client.get("/api/preferences").get_json() == {"theme": "system", "highlights": "default", "heatmap": "orange", "discord": "on"}
     res = client.post("/api/preferences", json={"theme": "dark", "highlights": "deutan"}, headers=HEADERS)
-    assert res.get_json() == {"theme": "dark", "highlights": "deutan", "discord": "on"}
-    assert client.get("/api/preferences").get_json() == {"theme": "dark", "highlights": "deutan", "discord": "on"}
+    assert res.get_json() == {"theme": "dark", "highlights": "deutan", "heatmap": "orange", "discord": "on"}
+    assert client.get("/api/preferences").get_json() == {"theme": "dark", "highlights": "deutan", "heatmap": "orange", "discord": "on"}
 
 
 def test_saving_needs_the_header(client):
@@ -30,4 +30,4 @@ def test_saving_needs_the_header(client):
 def test_pages_get_the_preferences_before_they_are_drawn(client):
     client.post("/api/preferences", json={"theme": "light", "highlights": "tritan"}, headers=HEADERS)
     page = client.get("/").get_data(as_text=True)
-    assert '<html lang="en" data-mc-theme="light" data-mc-highlights="tritan">' in page
+    assert '<html lang="en" data-mc-theme="light" data-mc-highlights="tritan" data-mc-heatmap="orange">' in page

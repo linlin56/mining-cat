@@ -439,7 +439,7 @@ class Shooter:
         self.demo.ensure_card()
         for tab, name, full in [("dictionaries", "settings-dictionaries", True), ("languages", "settings-languages", True),
                                 ("anki", "settings-anki", True), ("translation", "settings-translation", False), ("voice", "settings-voice", False),
-                                ("cards", "settings-cards", False), ("preferences", "settings-preferences", False)]:
+                                ("cards", "settings-cards", False), ("preferences", "settings-preferences", True)]:
             self.go("/settings/")
             self.page.click(f'[data-tab="{tab}"]')
             self.page.wait_for_timeout(2000)

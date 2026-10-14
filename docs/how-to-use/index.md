@@ -126,13 +126,13 @@ The home page first asks which language you study. Every screen then only shows 
 
 From the home page, open the **Converter**, the [Reader](reader.md), the [Player](player.md) or the **Settings**.
 When Anki is open (with AnkiConnect), the home page also shows, under the screens, where your reviews stand today
-(not started, cards left, or done), your streak of days in a row with reviews, and a heatmap of your reviews over the
-last year. Only the decks linked to the language you study count (with their subdecks): the deck its cards go
+(not started, cards left, or done), your streak of days in a row with reviews, and a heatmap of your reviews in the
+current year (its buttons go to the years before, when they have reviews). Only the decks linked to the language you study count (with their subdecks): the deck its cards go
 to and the decks synced with its words, in **Settings › Anki**. Your other decks (maths...) don't.
 
 ![The home page, once the language is chosen: the screens, then today's Anki reviews, the streak and the heatmap](../assets/screenshots/home-hub.png)
 
-The **Settings** have a tab per topic: **Dictionaries** (import a dictionary or a frequency list), **Words**, **Anki**, **Translation**, **Cards** (the cards waiting for Anki) and **User preferences**: the theme (light, dark, or your system's), the highlight colours (with palettes for colour blindness) and the Discord status. The moon button in the header of every page also switches between light and dark.
+The **Settings** have a tab per topic: **Dictionaries** (import a dictionary or a frequency list), **Words**, **Anki**, **Translation**, **Cards** (the cards waiting for Anki) and **User preferences**: the theme (light, dark, or your system's), the highlight colours (with palettes for colour blindness), the colour of the heatmap of reviews (orange, green, blue, purple, pink, or a rainbow along the year) and the Discord status. The moon button in the header of every page also switches between light and dark.
 
 ![Settings › User preferences: theme, highlight colours and Discord status](../assets/screenshots/settings-preferences.png)
 

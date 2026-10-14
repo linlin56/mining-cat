@@ -132,7 +132,7 @@ to and the decks synced with its words, in **Settings › Anki**. Your other dec
 
 ![The home page, once the language is chosen: the screens, then today's Anki reviews, the streak and the heatmap](../assets/screenshots/home-hub.png)
 
-The **Settings** have a tab per topic: **Dictionaries** (import a dictionary or a frequency list), **Words**, **Anki**, **Translation**, **Cards** (the cards waiting for Anki) and **User preferences**: the theme (light, dark, or your system's), the highlight colours (with palettes for colour blindness) and the Discord status. The moon button in the header of every page also switches between light and dark.
+The **Settings** have a tab per topic: **Dictionaries** (import a dictionary or a frequency list), **Words**, **Anki**, **Translation**, **Cards** (the cards waiting for Anki) and **User preferences**: the theme (light, dark, or your system's), the highlight colours (with palettes for colour blindness), the colour of the heatmap of reviews (orange, green, blue, purple or pink) and the Discord status. The moon button in the header of every page also switches between light and dark.
 
 ![Settings › User preferences: theme, highlight colours and Discord status](../assets/screenshots/settings-preferences.png)
 

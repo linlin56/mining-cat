@@ -56,10 +56,12 @@
 
 /* The samples of the heatmap's colours (theme.css): its 4 shades */
 .mc-sample-heatmap { display: inline-flex; gap: 3px; }
-.mc-sample-heatmap > span { width: 11px; height: 11px; border-radius: 2px; background-color: var(--mc-heatmap); }
+.mc-sample-heatmap > span { width: 11px; height: 11px; border-radius: 2px; background-color: var(--mc-heatmap-cell); }
 .mc-sample-heatmap > span:nth-child(1) { opacity: .3; }
 .mc-sample-heatmap > span:nth-child(2) { opacity: .55; }
 .mc-sample-heatmap > span:nth-child(3) { opacity: .8; }
+/* the rainbow: its colours along the year rather than its shades */
+[data-mc-heatmap="rainbow"].mc-sample-heatmap > span { opacity: 1; }
 
 /* ---------- clipboard ---------- */
 

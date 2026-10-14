@@ -81,7 +81,8 @@ function heatmap(days, todayIso) {
   const limits = [quartile(0.25), quartile(0.5), quartile(0.75)];
   const shade = (n) => (n <= 0 ? 0 : 1 + limits.filter((limit) => n > limit).length);
   const FILL = ["var(--bs-secondary-bg)", ".3", ".55", ".8", "1"];
-  const style = (level) => (level ? `fill: var(--mc-heatmap); fill-opacity: ${FILL[level]}` : `fill: ${FILL[0]}`);
+  // --mc-week: the rainbow colour's hue (theme.css), from red on the oldest week to violet on this one
+  const style = (level, week) => (level ? `fill: var(--mc-heatmap-cell); fill-opacity: ${FILL[level]}; --mc-week: ${week}` : `fill: ${FILL[0]}`);
 
   const root = svg("svg", { viewBox: `0 0 ${WEEKS * STEP - GAP} ${TOP + 7 * STEP - GAP}`, role: "img",
     "aria-label": "Anki reviews per day over the last year", class: "d-block w-100 h-auto" });
@@ -97,7 +98,7 @@ function heatmap(days, todayIso) {
         if (week < WEEKS - 2) root.append(svg("text", { x: week * STEP, y: 9, style: "fill: var(--bs-secondary-color); font-size: 9px" }, MONTHS[month]));
       }
       const date = new Date(t).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-      root.append(svg("rect", { x: week * STEP, y: TOP + day * STEP, width: CELL, height: CELL, rx: 2, style: style(shade(n)) },
+      root.append(svg("rect", { x: week * STEP, y: TOP + day * STEP, width: CELL, height: CELL, rx: 2, class: "mc-heatmap-cell", style: style(shade(n), week) },
         svg("title", {}, `${n ? plural(n, "review") : "No review"} · ${date}`)));
     }
   }

@@ -31,5 +31,6 @@ def test_a_broken_file_gives_the_defaults():
 
 
 def test_heatmap_colour():
+    assert user_preferences.save_preferences({"heatmap": "rainbow"})["heatmap"] == "rainbow"
     assert user_preferences.save_preferences({"heatmap": "green"})["heatmap"] == "green"
-    assert user_preferences.save_preferences({"heatmap": "rainbow"})["heatmap"] == "green"
+    assert user_preferences.save_preferences({"heatmap": "plaid"})["heatmap"] == "green"

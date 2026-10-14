@@ -4,6 +4,7 @@ import base64
 
 from flask import Blueprint, jsonify, request
 
+from miningcat.application import elevenlabs
 from miningcat.application.mining import sentence_readings, sentence_tts, translation, word_audio
 from miningcat.domain.text import taigi
 from miningcat.interfaces.web.errors import UserError
@@ -64,6 +65,31 @@ def api_tts_new_voice():
     except sentence_tts.TtsError as exc:
         raise UserError("Text-to-speech", str(exc))
     return jsonify(ok=True)
+
+
+# ElevenLabs, the online voice of the user's account: its settings for the language studied (never the key itself),
+# its models and the credits left (asked to ElevenLabs with the key).
+@bp.get("/api/tts/elevenlabs")
+def api_tts_elevenlabs():
+    return jsonify(elevenlabs.public_settings(study_language(request.args.get("language"))))
+
+
+@bp.post("/api/tts/elevenlabs")
+def api_tts_elevenlabs_save():
+    body = json_body()
+    values = {key: body[key] for key in ("api_key", "model", "voice", "main") if key in body}
+    try:
+        return jsonify(elevenlabs.save_settings(values, study_language(body.get("language"))))
+    except elevenlabs.ElevenLabsError as exc:
+        raise UserError("ElevenLabs", str(exc))
+
+
+@bp.get("/api/tts/elevenlabs/account")
+def api_tts_elevenlabs_account():
+    try:
+        return jsonify(models=elevenlabs.models(), credits=elevenlabs.credits())
+    except elevenlabs.ElevenLabsError as exc:
+        raise UserError("ElevenLabs", str(exc))
 
 
 @bp.post("/api/tts")

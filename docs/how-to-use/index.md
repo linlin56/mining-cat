@@ -20,6 +20,27 @@ environment `.venv-omnivoice`). The first use can be long: the model is put in t
 ![Settings › Voice: edge-tts or OmniVoice, its install and its quality](../assets/screenshots/settings-voice.png) Settings › Voice also sets its quality. edge-tts is used by default (faster, but online): once OmniVoice is installed,
 OmniVoice takes over when Edge fails (a message tells you), and reads everything if you untick "Use edge-tts when available".
 
+### ElevenLabs (optional, paid)
+
+[ElevenLabs](https://elevenlabs.io) can read with a voice of your choice (e.g. one with the accent you're learning), using
+your own account's credits. In **Settings › Voice › ElevenLabs**:
+
+1. Paste an API key (ElevenLabs › Developers › API keys) with the permissions **Text to Speech**, **Models: read** and
+   **User: read** (**Voices: read** as well, to show the voice's name). A free account can't use the voices of the voice
+   library through the API: a paid plan is needed for them. The key is kept encrypted in the database, with the key
+   file `user/secret.key`: moving MiningCat to another computer, take it along with `library/`, or paste the API key
+   again.
+2. Pick the model (the list comes from your account). *Latest* (the default) is ElevenLabs' latest model that reads
+   the language, the newer one as soon as ElevenLabs releases it.
+3. Paste the ID of the voice reading the language you study: find a voice in the
+   [voice library](https://elevenlabs.io/app/voice-library), then *Copy voice ID*.
+
+Its voice is then offered in every voice list (the card creator, *CSV to cards*, the converter's *Generate audio*), after
+the others: it only reads what you pick it for. Tick **Use ElevenLabs as the main voice** to have it read every sentence
+without audio of the cards you make (and every word without a recording) and be the converter's first voice: each
+character read uses credits, and the audio isn't generated once they run out. The text in square brackets (the
+readings of `字[zi4]`) is never sent: the recent models would read it as audio tags.
+
 ## Installation
 
 ```bash

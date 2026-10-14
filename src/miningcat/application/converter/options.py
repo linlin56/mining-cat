@@ -1,7 +1,7 @@
 """What the converter offers for a language: the dropdowns of the GUIs, and the checks of their values."""
 from miningcat.application.converter.modes import ConversionMode
 from miningcat.application.mining import translation
-from miningcat.application.voices import language_voices
+from miningcat.application.voices import default_voice, language_voices
 from miningcat.config.app_info import GITHUB_URL
 from miningcat.domain.languages import Language, SpeechEngine
 from miningcat.domain.ocr.sampling import DEFAULT_REGION, OCR_FPS_DEFAULT, OCR_FPS_MAX, OCR_FPS_MIN
@@ -91,7 +91,7 @@ def language_options(lang: Language) -> dict:
         "label": lang.profile.label,
         "convert": convert_labels_for(lang),
         "voices": [voice.label for voice in voices],
-        "default_voice": voices[0].label if voices else "",
+        "default_voice": default.label if (default := default_voice(lang)) else "",
         "precision": precision_values_for(lang),
         "align_precision": precision_values_for(lang, aligning=True),
         "char_list": supports_character_list(lang),

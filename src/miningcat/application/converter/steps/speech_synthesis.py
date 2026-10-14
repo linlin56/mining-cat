@@ -1,10 +1,11 @@
-"""Generate audio mode: each chapter of the book read by OmniVoice, an edge-tts voice or Taigi's MMS voice, with its
-subtitles."""
+"""Generate audio mode: each chapter of the book read by OmniVoice, an edge-tts voice, Taigi's MMS voice or the user's
+ElevenLabs voice, with its subtitles."""
 import asyncio
 from pathlib import Path
 
 from tqdm import tqdm
 
+from miningcat.application import elevenlabs
 from miningcat.application.anki.config import get_config
 from miningcat.application.converter.errors import ConverterError
 from miningcat.config.paths import paths
@@ -13,7 +14,8 @@ from miningcat.domain.subtitles.punctuation import restore_opening_punct
 from miningcat.domain.subtitles.segment import Segment
 from miningcat.domain.text.sentences import split_sentences
 from miningcat.infrastructure.files.srt_files import save_srt
-from miningcat.infrastructure.speech import mms_tts, omnivoice_tts
+from miningcat.infrastructure.speech import elevenlabs_tts, mms_tts, omnivoice_tts
+from miningcat.infrastructure.speech.elevenlabs_tts import ElevenLabsError
 from miningcat.infrastructure.speech.edge_tts import TICKS_PER_SECOND, EdgeTts
 
 # Gap left between a subtitle and the next one.
@@ -56,16 +58,30 @@ def _synthesize_omnivoice(text: str, lang: Language, audio_path: Path, srt_path:
     return _save_timed(timed, srt_path)
 
 
+# ElevenLabs reads it sentence by sentence as well, with the voice of the language in its settings.
+def _synthesize_elevenlabs(text: str, lang: Language, audio_path: Path, srt_path: Path) -> int:
+    voice = elevenlabs.voice(lang.profile.key)
+    if not voice:
+        raise ConverterError(f"Set up ElevenLabs' {lang.profile.label} voice in Settings › Voice first.")
+    try:
+        timed = elevenlabs.client().synthesize_chapter(split_sentences(text), voice, elevenlabs.model(lang.profile.key), audio_path)
+    except ElevenLabsError as exc:
+        raise ConverterError(str(exc), "ElevenLabs")
+    return _save_timed(timed, srt_path)
+
+
 def _save_timed(timed: list[tuple[float, float, str]], srt_path: Path) -> int:
     save_srt([Segment(0, start, end, sentence) for start, end, sentence in timed], srt_path)
     return len(timed)
 
 
 def _synthesize_chapter(text: str, voice: str, lang: Language, audio_path: Path, srt_path: Path, config: dict) -> int:
-    """Reads a chapter with the voice: MMS's, OmniVoice's or Edge's (OmniVoice taking over when Edge fails). Returns
-    the number of subtitles."""
+    """Reads a chapter with the voice: MMS's, OmniVoice's, ElevenLabs' or Edge's (OmniVoice taking over when Edge
+    fails). Returns the number of subtitles."""
     if mms_tts.is_local(voice):
         return _synthesize_local(text, voice, audio_path, srt_path)
+    if elevenlabs_tts.is_voice(voice):
+        return _synthesize_elevenlabs(text, lang, audio_path, srt_path)
     steps = config["tts_steps"]
     if omnivoice_tts.is_voice(voice):
         return _synthesize_omnivoice(text, lang, audio_path, srt_path, steps)

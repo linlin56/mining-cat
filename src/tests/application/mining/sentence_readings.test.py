@@ -60,6 +60,11 @@ TERMS = [
     ("一", "ㄧ", ["one"]),
     ("受", "ㄕㄡˋ", ["to receive"]),
     ("不", "ㄅㄨˋ", ["not"]),
+    # letters have readings in CC-CEDICT: not readings of Chinese characters
+    ("A", "A", ["(slang) (Tw) to steal"]),
+    ("AA制", "A A zhi4", ["to split the bill"]),
+    ("AA制", "A A zhi1", ["(made up) another reading"]),
+    ("制", "ㄓˋ", ["system"]),
 ]
 
 
@@ -114,6 +119,16 @@ def test_words_missing_from_the_dictionaries_and_punctuation_are_kept(cedict):
     assert annotate("zh", "Hello，你 & 他<br>好")["field"] == "Hello，你[ni3] &amp; 他[ta1]<br>好[hao3]"
 
 
+def test_only_chinese_characters_are_read(cedict):
+    result = annotate("zh", "我AA制，他<b>A</b>錢")
+    assert result["field"] == "我[wo3]AA制[zhi4]，他[ta1]<b>A</b>錢[qian2]"
+    tokens = {t["text"]: t for t in result["tokens"]}
+    assert tokens["AA"]["pinyin"] == "" and tokens["AA"]["choices"] == []
+    assert [c["pinyin"] for c in tokens["制"]["choices"]] == ["zhi4", "zhi1"]  # the readings of AA制, for 制
+    assert tokens["A"]["target"] and tokens["A"]["pinyin"] == ""
+    assert annotate("zh", "他<b>A</b>錢", "A")["field"] == "他[ta1]<b>A</b>錢[qian2]"  # the popup's reading
+
+
 def test_the_cards_word_keeps_the_reading_picked_in_the_popup(cedict):
     assert annotate("zh", "你<b>還</b>錢", "ㄏㄞˊ")["field"] == "你[ni3]<b>還[hai2]</b>錢[qian2]"
 
@@ -129,6 +144,10 @@ def test_card_fields_are_derived_when_the_creator_gave_none(cedict):
 def test_word_field():
     assert word_field("繁體字", "ㄈㄢˊㄊㄧˇㄗˋ") == "繁體字[fan2 ti3 zi4]"
     assert word_field("繁體字", "") == "繁體字"
+    assert word_field("A", "A") == "A"
+    assert word_field("AA制", "A A zhi4") == word_field("AA制", "zhi4") == "AA制[zhi4]"
+    assert word_field("A咖", "a5 ka1") == "A咖[ka1]"
+    assert word_field("卡拉OK", "ka3 la1 O K") == "卡拉OK"  # not a reading MiningCat reads
 
 
 def test_other_languages_get_nothing(cedict):

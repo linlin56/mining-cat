@@ -75,4 +75,4 @@ The MiningCat logo ([docs/assets/logo/](docs/assets/logo/)) is © linlin56, unde
 MiningCat doesn't provide any book or video. Only use it with content you are allowed to use.
 
 ## Community
-Join our (Discord server)[https://discord.gg/w7kRrq6BVS]!
+Join our [Discord server](https://discord.gg/w7kRrq6BVS)!

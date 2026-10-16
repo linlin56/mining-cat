@@ -73,3 +73,6 @@ MiningCat is free software, released under the [GNU Affero General Public Licens
 The MiningCat logo ([docs/assets/logo/](docs/assets/logo/)) is © linlin56, under the [CC BY-SA 4.0](docs/assets/logo/LICENSE.md) license. The name and the logo stay the identity of this project: a fork must use its own.
 
 MiningCat doesn't provide any book or video. Only use it with content you are allowed to use.
+
+## Community
+Join our [Discord server](https://discord.gg/w7kRrq6BVS)!

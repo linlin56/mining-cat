@@ -46,6 +46,8 @@ With the keyboard, while the popup is open:
 
 In the reader's settings (Aa), *Look up words* can be set to *Shift + hover* (like Yomitan), or *Off* if you prefer to keep using Yomitan.
 
+To look up several words as one, **select them with the mouse and press `Shift`**: in 你好嗎, a click gives 你, 你好, 好 or 嗎, a selection gives 好嗎. When no dictionary has it, the popup says so but still has **+ Card**. Its reading is made from the readings of its words when your dictionaries have them all (好嗎 hǎo ma, 食べたい店 たべたいみせ; Taigi with taibun): check it, write the definition yourself, and let the voice of the settings read the word when no recording exists.
+
 ## Word colours
 
 The reader colours the words of the book by status, so you see at a glance what you don't know yet:

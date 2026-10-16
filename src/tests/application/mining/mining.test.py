@@ -252,6 +252,29 @@ def test_part_of_speech_must_match(ja_dict):
 
 def test_lookup_without_dictionary():
     assert lookup.lookup("ko", "사랑")["dictionaries"] == 0
+    # a selection still gives an entry, to make a card of it
+    entry, = lookup.lookup_selection("ko", " 사랑 ")["entries"]
+    assert entry["free"] and entry["expression"] == "사랑" and entry["definitions"] == []
+
+
+def test_selection_lookup_is_exact(zh_dict):
+    # the selection's entries only, not the shorter words it starts with
+    assert [e["expression"] for e in lookup.lookup_selection("zh", "說話")["entries"]] == ["說話"]
+    # a selection no dictionary has: one entry without definitions
+    entry, = lookup.lookup_selection("zh", "說我們")["entries"]
+    assert entry["free"] and entry["expression"] == "說我們" and entry["length"] == 3 and entry["definitions"] == []
+    assert entry["status"]["status"] == "new"
+    # read word by word, when every word has a reading
+    assert entry["reading"] == "shuō wǒmen"
+    assert lookup.lookup_selection("zh", "說他")["entries"][0]["reading"] == ""
+    assert lookup.lookup_selection("zh", "  ")["entries"] == []
+
+
+def test_selection_lookup_reads_japanese_words(ja_dict):
+    # the conjugated ending kept, the kana as they are
+    assert lookup.lookup_selection("ja", "食べた区")["entries"][0]["reading"] == "たべたく"
+    assert lookup.lookup_selection("ja", "食べ物た")["entries"][0]["reading"] == "たべものた"
+    assert lookup.lookup_selection("ja", "食べ猫")["entries"][0]["reading"] == ""
 
 
 def test_latin_lookup_uses_word_boundaries(tmp_path):
@@ -590,6 +613,9 @@ def test_http_lookup_status_and_cards(client, zh_dict, fake_anki):
     assert entry["reading_match"] == 2
     entry = client.post("/api/dict/lookup", json={"language": "zh", "text": "說話", "reading": "shuòhuà"}, headers=HEADERS).get_json()["entries"][0]
     assert entry["reading_match"] == 1
+    # text selected in the page (Shift): exactly it, an entry even when no dictionary has it
+    entries = client.post("/api/dict/lookup", json={"language": "zh", "text": "話我", "exact": True}, headers=HEADERS).get_json()["entries"]
+    assert len(entries) == 1 and entries[0]["free"] and entries[0]["display_reading"] == ""
 
     assert client.post("/api/words/status", json={"language": "zh", "expression": "說話", "reading": "shuōhuà", "status": "known"},
                        headers=HEADERS).get_json() == {"status": "known"}

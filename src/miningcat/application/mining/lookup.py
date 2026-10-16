@@ -1,11 +1,14 @@
+import html
 import json
+import os
 import re
 
-from miningcat.application.mining import preferences, words
+from miningcat.application.mining import preferences, segmentation, sentence_readings, words
 from miningcat.domain.dictionary import glossary
 from miningcat.domain.dictionary.definitions import merge_definitions, move_other_readings, readable
 from miningcat.domain.dictionary.deinflection import Deinflection, LanguageTransformer, transformer_for
 from miningcat.domain.languages import CHINESE_LANGUAGES, is_no_space
+from miningcat.domain.sentence_readings.card_sentence import display_pinyin
 from miningcat.domain.text import taigi
 from miningcat.domain.text.chinese_script import chinese_counterpart, chinese_script
 from miningcat.domain.text.readings import reading_key
@@ -239,3 +242,76 @@ class DictionaryLookup:
 def lookup(language: str, text: str) -> dict:
     """Entries for `text` (the text from the cursor onwards), longest match first."""
     return DictionaryLookup(language, text).run()
+
+
+def lookup_selection(language: str, text: str) -> dict:
+    """Entries for exactly `text` (words selected in the page): the dictionaries' when they have it, else one entry
+    without definitions ("free": True), so that a card can still be made of it (好嗎, a set phrase)."""
+    text = text.strip()
+    result = lookup(language, text)
+    result["entries"] = [e for e in result["entries"] if e["length"] == len(text)]
+    if text and not result["entries"]:
+        result["entries"] = [_free_entry(language, text)]
+    return result
+
+
+def _free_entry(language: str, text: str) -> dict:
+    """An entry for a text no dictionary has, read word by word when possible, with the characters of the
+    character dictionaries."""
+    form = words.preferred_form(language, text)
+    entry = {
+        "expression": text, "reading": _free_reading(language, text), "source": text, "length": len(text),
+        "inflections": [], "definitions": [],
+        "score": 0, "frequencies": [], "pronunciations": [], "characters": [], "free": True,
+        "form": form, "status": words.status_of(language, form),
+    }
+    with database.session() as conn:
+        queries = DictionaryQueries(conn)
+        dicts = queries.enabled_dictionaries(language)
+        if dicts:
+            DictionaryLookup._add_characters(queries, dicts, [entry])
+    return entry
+
+
+def _free_reading(language: str, text: str) -> str:
+    """The reading of a text made of several words, from the readings of its words; "" when one is missing."""
+    if language in sentence_readings.LANGUAGES:
+        return _chinese_reading(language, text)
+    if language == "nan":
+        return taigi.reading(text)
+    if language == "ja":
+        return _japanese_reading(text)
+    return ""
+
+
+def _chinese_reading(language: str, text: str) -> str:
+    """The pinyin of the words of `text`, chosen by the context like the readings of a card's sentence: 好嗎 hǎo ma."""
+    tokens = sentence_readings.annotate(language, html.escape(text, quote=False))["tokens"]
+    if not tokens or any(HAN_CHARACTER.search(t["text"]) and not t["pinyin"] for t in tokens):
+        return ""
+    return " ".join(display_pinyin(t["pinyin"], "pinyin").replace(" ", "") for t in tokens if t["pinyin"])
+
+
+def _japanese_reading(text: str) -> str:
+    """The kana of the words of `text`, their conjugated endings included: 食べたい店 たべたいみせ."""
+    tokens = segmentation.segment("ja", text)
+    found: dict[str, str] = {}
+    with database.session() as conn:
+        for expression, reading, _ in DictionaryQueries(conn).readings("ja", [t[2] for t in tokens if t[2]]):
+            found.setdefault(expression, reading or expression)
+    parts, pos = [], 0
+    for start, length, headword in tokens:
+        surface = text[start:start + length]
+        parts += [text[pos:start], _inflected_reading(surface, headword, found.get(headword)) if headword in found else surface]
+        pos = start + length
+    reading = "".join([*parts, text[pos:]])
+    return "" if HAN_CHARACTER.search(reading) else reading
+
+
+def _inflected_reading(surface: str, headword: str, reading: str) -> str:
+    """The reading of a conjugated word from its dictionary form's: 食べた from 食べる たべる gives たべた."""
+    stem = os.path.commonprefix([surface, headword])
+    ending = headword[len(stem):]
+    if not stem or HAN_CHARACTER.search(ending) or not reading.endswith(ending):
+        return surface
+    return reading[:len(reading) - len(ending)] + surface[len(stem):]

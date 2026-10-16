@@ -21,7 +21,8 @@ def api_lookup():
     language = study_language(body.get("language"))
     # a known reading (a CSV's pinyin column): tells the entry of that pronunciation (還 huán, not hái)
     wanted = str(body.get("reading") or "").strip()[:100]
-    result = lookup.lookup(language, text)
+    # exact: the text selected in the page, an entry even when no dictionary has it
+    result = lookup.lookup_selection(language, text) if body.get("exact") else lookup.lookup(language, text)
     ranker = frequency.Ranker(language)
     for entry in result["entries"]:
         entry["display_reading"] = words.display_reading(language, entry["expression"], entry.get("reading") or "")

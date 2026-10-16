@@ -2,7 +2,8 @@
 //
 // MiningCatMining.attach(container, {getLanguage, getSource, getMode}) makes the text of `container`
 // searchable: a click (or Shift + hover) on a word looks it up in the imported dictionaries and shows
-// a popup with the definitions, the word's status and a "+ Card" button that opens the card creator.
+// a popup with the definitions, the word's status and a "+ Card" button that opens the card creator. Shift with
+// text selected looks the selection up as one word: without a dictionary entry, the popup still has "+ Card".
 // Optional: hasAudio(), sentenceAudio(text, node) -> {url, start, end} and sentenceClip(text, node) -> {data, name}
 // when the text has audio (a book converted by MiningCat): the popup can then play the sentence, and
 // the card creator gets the sentence's audio. With sentenceRange(text, node) -> {start, end, before, after} and
@@ -20,6 +21,7 @@
 (() => {
   const STATUSES = [["new", "New"], ["learning", "Learning"], ["known", "Known"], ["ignored", "Ignored"]];
   const SCAN_CHARS = 40;
+  const SELECTION_CHARS = 100;  // the longest selection looked up (with Shift)
   const CJK = /^(ja|zh|yue|nan)/;
   const SENTENCE_END = /[。！？!?…\n]|[.](?=\s|$)/;
   const CLOSERS = /[」』）)】〉》”’"'\s]/;
@@ -140,6 +142,25 @@
       while (start > 0 && /[\p{L}\p{M}'’-]/u.test(text[start - 1])) start--;
     }
     return { text, chars, start, language };
+  }
+
+  // The text selected in `container` (in the block where the selection starts), as a scan and its length.
+  function selectionScan(container) {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) return null;
+    const range = selection.getRangeAt(0);
+    const startNode = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentElement : range.startContainer;
+    if (!container.contains(startNode) || startNode.closest("[data-mc-ignore]")) return null;
+    const { text, chars } = blockText(startNode.closest(BLOCK) || container);
+    const inside = (c) => range.comparePoint(c.node, c.offset) === 0 && range.comparePoint(c.node, c.offset + 1) === 0;
+    let start = chars.findIndex(inside);
+    if (start < 0) return null;
+    let end = start;
+    while (end < chars.length && inside(chars[end])) end++;
+    while (start < end && /\s/.test(text[start])) start++;
+    while (end > start && /\s/.test(text[end - 1])) end--;
+    if (start === end) return null;
+    return { scan: { text, chars, start, language: options.getLanguage() }, length: Math.min(end - start, SELECTION_CHARS) };
   }
 
   // ------------------------------------------------------------ highlight
@@ -783,10 +804,11 @@
     const box = ensurePopup();
     box.replaceChildren();
     const close = el("button", { type: "button", class: "btn-close float-end position-sticky top-0 ms-2", "aria-label": "Close", onclick: hidePopup });
-    if (!data.dictionaries) {
-      box.append(close, el("p", { class: "text-body-secondary my-1" },
-        "No dictionary for this language yet. ",
-        el("a", { href: "/settings/#dictionaries", target: "_blank", text: "Import one in Settings" }), "."));
+    const noDictionary = () => el("p", { class: "text-body-secondary my-1" },
+      "No dictionary for this language yet. ",
+      el("a", { href: "/settings/#dictionaries", target: "_blank", text: "Import one in Settings" }), ".");
+    if (!data.dictionaries && !data.entries.length) {
+      box.append(close, noDictionary());
       return;
     }
     if (!data.entries.length) {
@@ -822,6 +844,8 @@
       for (const p of entry.pronunciations || []) meta.append(pronunciation(p, entry, language));
 
       const notes = [];
+      // selected text no dictionary has (looked up with Shift): a card can still be made of it
+      if (entry.free) notes.push(data.dictionaries ? el("p", { class: "text-body-secondary my-1", text: "Not in your dictionaries." }) : noDictionary());
       if (entry.form !== entry.expression) notes.push(el("p", { class: "small text-body-secondary my-1" }, "Saved as ", el("strong", { lang: displayLang(language), text: entry.form }), " (the script you learn)."));
       if (entry.status.linked) {
         const s = entry.status.linked;
@@ -842,7 +866,7 @@
         el("div", { class: "d-flex align-items-start gap-2" }, headword(entry, language), listen, add),
         meta.childNodes.length ? meta : null,
         ...notes,
-        statusControl(entry, language),
+        entry.free ? null : statusControl(entry, language),
         defs,
         chars));
     }
@@ -901,18 +925,19 @@
     return wrap;
   }
 
-  async function lookupScan(scan, anchorRect) {
+  // selected: the length of the text selected from scan.start, looked up as a whole (an entry even without definitions)
+  async function lookupScan(scan, anchorRect, selected = 0) {
     const token = ++lookupToken;
-    const query = scan.text.slice(scan.start, scan.start + SCAN_CHARS);
+    const query = scan.text.slice(scan.start, scan.start + (selected || SCAN_CHARS));
     let data;
     try {
-      data = await api("/api/dict/lookup", { language: scan.language, text: query });
+      data = await api("/api/dict/lookup", { language: scan.language, text: query, ...(selected ? { exact: true } : {}) });
     } catch (err) {
       toast(err.message, "error");
       return;
     }
     if (token !== lookupToken) return;
-    const length = data.entries.length ? data.entries[0].length : 1;
+    const length = selected || (data.entries.length ? data.entries[0].length : 1);
     const range = highlight(scan, length);
     const rect = range ? range.getBoundingClientRect() : anchorRect;
     current = {
@@ -1747,8 +1772,22 @@
       e.stopPropagation();
       lookupScan(scan, { left: e.clientX, right: e.clientX, top: e.clientY, bottom: e.clientY });
     });
+    // Shift with text selected: looks the selection up as one word, even one no dictionary has (to make a card of it).
+    // Until Shift is released, hovering doesn't replace it.
+    let selectionShift = false;
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Shift" || e.repeat || e.ctrlKey || e.metaKey || e.altKey || options.getMode() === "off") return;
+      if (e.target.closest && e.target.closest("input, select, textarea, [contenteditable], .modal")) return;
+      const selected = selectionScan(container);
+      if (!selected) return;
+      selectionShift = true;
+      const rect = window.getSelection().getRangeAt(0).getBoundingClientRect();
+      window.getSelection().removeAllRanges();  // the lookup's highlight shows it
+      lookupScan(selected.scan, rect, selected.length);
+    });
+    document.addEventListener("keyup", (e) => { if (e.key === "Shift") selectionShift = false; });
     container.addEventListener("mousemove", (e) => {
-      if (options.getMode() !== "shift" || !e.shiftKey) return;
+      if (options.getMode() !== "shift" || !e.shiftKey || selectionShift) return;
       clearTimeout(hoverTimer);
       const { clientX: x, clientY: y } = e;
       hoverTimer = setTimeout(() => {

@@ -1,0 +1,37 @@
+/* The header: the GitHub link and the Discord server next to it (overrides/partials/source.html). */
+@media screen and (min-width: 60em) {
+  .md-header__source {
+    width: 13.5rem;
+    max-width: 13.5rem;
+  }
+}
+
+.mc-source {
+  display: flex;
+  align-items: center;
+}
+
+.mc-source .md-source {
+  flex: 1;
+  min-width: 0;
+}
+
+.mc-discord {
+  display: flex;
+  flex-shrink: 0;
+  margin-right: 0.6rem;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.25s;
+}
+
+.mc-discord:hover,
+.mc-discord:focus {
+  opacity: 1;
+}
+
+.mc-discord svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: currentcolor;
+}

@@ -1,0 +1,18 @@
+{#-
+  The theme's partials/source.html (the GitHub link of the header, with its stars and forks), with the Discord
+  server before it.
+-#}
+<div class="mc-source">
+  <a href="{{ config.extra.discord }}" title="Join the Discord Server" class="mc-discord md-icon" aria-label="Join the Discord Server" target="_blank" rel="noopener">
+    {% include ".icons/fontawesome/brands/discord.svg" %}
+  </a>
+  <a href="{{ config.repo_url }}" title="{{ lang.t('source') }}" class="md-source" data-md-component="source">
+    <div class="md-source__icon md-icon">
+      {% set icon = config.theme.icon.repo or "fontawesome/brands/git-alt" %}
+      {% include ".icons/" ~ icon ~ ".svg" %}
+    </div>
+    <div class="md-source__repository">
+      {{ config.repo_name }}
+    </div>
+  </a>
+</div>

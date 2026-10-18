@@ -31,6 +31,8 @@ class GameCommand(Command):
                            help="Capture continuously, whenever the text changes, instead of with the capture key")
         serve.add_argument("--interval", type=float, default=None,
                            help="Seconds between two looks at the text area in continuous mode (default: 0.5)")
+        serve.add_argument("--no-audio", dest="no_audio", action="store_true",
+                           help="Don't record the window's sound (macOS), for the lines' audio on the cards")
         serve.add_argument("--keep-line-breaks", dest="keep_line_breaks", action="store_true",
                            help="Keep the text's line breaks instead of joining wrapped lines")
         serve.add_argument("--no-browser", dest="no_browser", action="store_true",

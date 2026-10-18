@@ -1,5 +1,6 @@
 """The Video game / Screen share source of the converter: the window and areas saved in sources/game_ocr.json (window
 list, a fresh capture for the area picker), and the capture run as a job."""
+import base64
 import io
 import threading
 
@@ -8,6 +9,7 @@ from flask import Blueprint, jsonify, request, send_file
 from miningcat.application.converter import options
 from miningcat.application.converter.jobs import Job
 from miningcat.application.converter.progress import ProgressListener
+from miningcat.application.game_ocr import line_audio
 from miningcat.application.game_ocr.capture_process import GameCaptureProcess
 from miningcat.application.game_ocr.session import crop_region, open_saved_window
 from miningcat.application.game_ocr.settings import GameOcrSettings
@@ -67,6 +69,7 @@ def describe(settings: GameOcrSettings) -> dict:
         "hotkey": settings.hotkey if settings.hotkey in HOTKEYS else DEFAULT_HOTKEY,
         "continuous": settings.continuous,
         "source_name": settings.source_name,
+        "record_audio": settings.record_audio,
         "is_ready": settings.is_ready,
     }
 
@@ -80,7 +83,7 @@ def api_state():
         supported=bool(sources),
         backend_label=info.label if info else "Not supported on this OS yet",
         sources=[{"id": s.id, "label": f"Window - {s.label}" if s.id != capture.WEBCAM.id else s.label,
-                  "webcam": s.id == capture.WEBCAM.id} for s in sources],
+                  "webcam": s.id == capture.WEBCAM.id, "records_audio": s.records_audio} for s in sources],
         hotkeys=list(HOTKEYS),
         page_url=page_url(),
         running=current_state().game_capture is not None,
@@ -181,7 +184,8 @@ def api_area():
     return jsonify(settings=describe(settings))
 
 
-# How captures are triggered: the capture key, or continuously when the text changes. Remembered for next time.
+# How captures are triggered: the capture key, or continuously when the text changes, and whether the window's sound is
+# recorded. Remembered for next time.
 @bp.post("/trigger")
 def api_trigger():
     _check_unlocked()
@@ -191,6 +195,8 @@ def api_trigger():
         settings.hotkey = body["hotkey"]
     if "continuous" in body:
         settings.continuous = bool(body["continuous"])
+    if "record_audio" in body:
+        settings.record_audio = bool(body["record_audio"])
     settings.save()
     return jsonify(settings=describe(settings))
 
@@ -250,6 +256,7 @@ def api_start():
     process = GameCaptureProcess(
         lang, options.convert_target(body.get("convert"), lang), continuous=settings.continuous,
         hotkey=settings.hotkey if settings.hotkey in HOTKEYS else DEFAULT_HOTKEY, open_browser=False,
+        record_audio=settings.record_audio,
     )
     try:
         state.start_job(GameCaptureJob(state, lang, process))
@@ -264,3 +271,25 @@ def api_stop():
     if process is not None:
         threading.Thread(target=process.stop, daemon=True).start()
     return jsonify(stopping=process is not None)
+
+
+def _capture_url() -> str:
+    if current_state().game_capture is None:
+        raise _error("The capture isn't running any more: its sound is gone.", 409)
+    return page_url()
+
+
+# The clip of a capture's line: {id, duration, start, end}, its line's span in it (s). A word of it was looked up.
+@bp.post("/audio/<capture_id>/info")
+def api_audio_info(capture_id: str):
+    return jsonify(line_audio.info(_capture_url(), capture_id))
+
+
+# A span of a capture's clip as a data URL for the card creator: MP3 for the card, `format` "wav" for the waveform.
+@bp.post("/audio/<capture_id>")
+def api_audio(capture_id: str):
+    body = json_body()
+    fmt = "wav" if body.get("format") == "wav" else "mp3"
+    data = line_audio.clip(_capture_url(), capture_id, body.get("start"), body.get("end"), fmt)
+    mime = "audio/wav" if fmt == "wav" else "audio/mpeg"
+    return jsonify(data=f"data:{mime};base64," + base64.b64encode(data).decode("ascii"), name=f"sentence.{fmt}")

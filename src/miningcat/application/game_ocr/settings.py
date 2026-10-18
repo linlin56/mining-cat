@@ -24,6 +24,8 @@ class GameOcrSettings:
     continuous: bool = False
     # The card creator's Source field ("Video game" when empty), e.g. the game and its console.
     source_name: str = ""
+    # Record the window's sound, for the lines' audio on the cards (when the capture source can, see capture.BackendInfo).
+    record_audio: bool = True
 
     @property
     def has_window(self) -> bool:

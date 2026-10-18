@@ -624,6 +624,8 @@ function renderGame() {
   $("game-screenshot-btn").disabled = !(idle && selected);
   $("game-text-btn").disabled = !(idle && selected);
   $("game-continuous").checked = s.continuous;
+  $("game-audio-row").hidden = !(info.sources.find((x) => x.id === G.source) || {}).records_audio;
+  $("game-audio").checked = s.record_audio;
   const hotkey = $("game-hotkey");
   if (hotkey.options.length !== info.hotkeys.length) fillSelect(hotkey, info.hotkeys, s.hotkey);
   hotkey.value = s.hotkey;
@@ -740,6 +742,7 @@ function setupGame() {
   $("game-text-btn").addEventListener("click", () => selectGameArea("text"));
   $("game-hotkey").addEventListener("change", (e) => setGameTrigger({ hotkey: e.target.value }));
   $("game-continuous").addEventListener("change", (e) => setGameTrigger({ continuous: e.target.checked }));
+  $("game-audio").addEventListener("change", (e) => setGameTrigger({ record_audio: e.target.checked }));
   $("game-source-name").addEventListener("change", setGameSourceName);
   $("game-start").addEventListener("click", toggleGame);
   $("game-page").addEventListener("click", () => window.open("/game/", "miningcat-game"));

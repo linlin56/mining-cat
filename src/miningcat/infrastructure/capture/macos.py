@@ -111,6 +111,18 @@ class MacOSCapture(CaptureBackend):
         with self._objc.autorelease_pool():
             return self._grab_screencapturekit()
 
+    # The sound of the window's app (see macos_audio.py).
+    def audio_recorder(self):
+        from miningcat.infrastructure.capture.macos_audio import MacOSAudioRecorder
+
+        if self._window is None:
+            raise CaptureError("No window selected.")
+        content, sck_window = self._find_sck_window()
+        application = sck_window.owningApplication()
+        if application is None or not content.displays():
+            raise CaptureError(f"The app of '{self._window.label}' can't be recorded.")
+        return MacOSAudioRecorder(self._SCK, content.displays()[0], application)
+
     # helpers
 
     def _ensure_permission(self) -> None:
@@ -132,7 +144,7 @@ class MacOSCapture(CaptureBackend):
         bounds = self._window_bounds()
         cache_key = (self._window.id, bounds["Width"], bounds["Height"])
         if cache_key != self._sck_cache_key:
-            sck_window = self._find_sck_window()
+            _content, sck_window = self._find_sck_window()
             content_filter = SCK.SCContentFilter.alloc().initWithDesktopIndependentWindow_(sck_window)
             scale = content_filter.pointPixelScale() or 1.0
             config = SCK.SCStreamConfiguration.alloc().init()
@@ -171,7 +183,7 @@ class MacOSCapture(CaptureBackend):
         match = next((w for w in content.windows() if w.windowID() == self._window.id), None)
         if match is None:
             raise CaptureError(f"Window '{self._window.label}' is not capturable: is it open (and not minimized)?")
-        return match
+        return content, match
 
     @staticmethod
     def _wait(results: queue.Queue):

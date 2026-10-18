@@ -34,9 +34,9 @@ def _result(text="你好"):
     return CaptureResult(text=text, screenshot=Image.new("RGB", (40, 20), "red"), ms=12), ""
 
 
-def _run(session, check, auto=False, interval=0.01, language=Language.MANDARIN_TW, hotkey=None):
+def _run(session, check, auto=False, interval=0.01, language=Language.MANDARIN_TW, hotkey=None, audio=None):
     async def main():
-        app = server.create_app(session, language, auto=auto, interval=interval, hotkey=hotkey, port=7010)
+        app = server.create_app(session, language, auto=auto, interval=interval, hotkey=hotkey, port=7010, audio=audio)
         async with TestClient(TestServer(app)) as client:
             await check(client, app)
     asyncio.run(main())
@@ -51,6 +51,69 @@ def test_encode_screenshot_downscales_to_webp_data_url():
     assert url.startswith("data:image/webp;base64,")
     image = Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1])))
     assert max(image.size) == 1600
+
+
+# Stands in for CaptureAudio: each new capture cuts the previous one's clip.
+class FakeAudio:
+    def __init__(self):
+        self.added = []
+        self.cuts = []
+
+    def add(self, capture_id, at, appeared):
+        previous = [self.cut(c) for c, _, _ in self.added]
+        self.added.append((capture_id, at, appeared))
+        return previous[-1:]
+
+    def due(self):
+        return []
+
+    def cut(self, capture_id):
+        if capture_id not in [c for c, _, _ in self.added]:
+            return None
+        self.cuts.append(capture_id)
+        return {"id": capture_id, "duration": 20.0, "start": 15.0, "end": 17.0}
+
+    def wav(self, capture_id, start, end):
+        return b"RIFF" + f"{capture_id} {start} {end}".encode() if self.cut(capture_id) else None
+
+
+def test_capture_ids_and_their_line_audio():
+    audio = FakeAudio()
+    session = FakeSession(_result("一"), _result("二"))
+
+    async def check(client, app):
+        ws = await client.ws_connect("/ws")
+        await client.post("/capture")
+        first = await ws.receive_json()
+        assert first["audio"] is True
+        assert audio.added == [(first["id"], 0.0, False)]
+        await client.post("/capture")
+        second = await ws.receive_json()
+        assert second["id"] != first["id"]
+        # the second capture ends the first one's line: its clip is told, and kept for the tabs opened later
+        assert await ws.receive_json() == {"type": "audio", "id": first["id"], "duration": 20.0, "start": 15.0, "end": 17.0}
+        assert app[server.HUB_KEY].history[0]["audio"]["end"] == 17.0
+
+        response = await client.post(f"/audio/{second['id']}")
+        assert (await response.json())["id"] == second["id"]
+        response = await client.get(f"/audio/{second['id']}.wav?start=1.5&end=3")
+        assert response.content_type == "audio/wav"
+        assert await response.read() == f"RIFF{second['id']} 1.5 3.0".encode()
+        assert (await client.post("/audio/unknown")).status == 404
+        assert (await client.get("/audio/unknown.wav?start=0&end=1")).status == 404
+        assert (await client.get(f"/audio/{second['id']}.wav")).status == 400
+        await ws.close()
+    _run(session, check, audio=audio)
+
+
+def test_without_sound_captures_have_no_audio():
+    async def check(client, _app):
+        ws = await client.ws_connect("/ws")
+        await client.post("/capture")
+        assert (await ws.receive_json())["audio"] is False
+        assert (await client.post("/audio/1")).status == 404
+        await ws.close()
+    _run(FakeSession(_result()), check)
 
 
 def test_build_payload():

@@ -50,6 +50,11 @@ class CaptureBackend:
     def grab_frame(self) -> Image.Image:
         raise NotImplementedError
 
+    # A recorder of the selected window's sound (see capture/audio.py), not started yet. None when the backend can't
+    # record it.
+    def audio_recorder(self):
+        return None
+
     def close(self) -> None:
         pass
 

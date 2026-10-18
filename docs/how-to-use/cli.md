@@ -178,6 +178,7 @@ Serves the page on <http://127.0.0.1:6677/> and opens it in the browser. Capture
 | `--continuous`       |               | Capture whenever the text changes, instead of with the capture key                  |
 | `--interval`         | `0.5`         | Seconds between two looks at the text area, in continuous mode                      |
 | `--keep-line-breaks` |               | Keep the text's line breaks instead of joining the lines of the dialog box          |
+| `--no-audio`         |               | Don't record the window's sound (macOS), for the lines' audio on the cards          |
 | `--no-browser`       |               | Don't open the page in the browser                                                  |
 
 ## Language ids

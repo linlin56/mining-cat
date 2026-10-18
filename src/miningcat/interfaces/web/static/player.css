@@ -64,7 +64,8 @@
   font-size: .7rem; font-weight: 600; line-height: 18px;
   color: var(--bs-success-text-emphasis); background: var(--bs-success-bg-subtle);
 }
-.cues.i1-only .cue:not(.i1) { display: none; }
+/* !important: the lines are .d-flex, whose display is !important too */
+.cues.i1-only .cue:not(.i1) { display: none !important; }
 
 body.no-list .cue-panel { display: none; }
 body.fullscreen .mc-watch-bar, body.fullscreen .cue-panel { display: none; }

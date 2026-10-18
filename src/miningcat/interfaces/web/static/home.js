@@ -34,6 +34,17 @@ function renderHub(current) {
     : `Not available for ${current.name} yet.`;
   study = current;
   loadReviews();
+  loadInbox();
+}
+
+// The words sent from the e-reader, waiting for a card.
+async function loadInbox() {
+  let counts;
+  try { ({ counts } = await api("/api/inbox")); } catch { return; }
+  const n = counts[study.id] || 0;
+  $("inbox-count").textContent = n;
+  $("inbox-count").title = `${n} word${n === 1 ? "" : "s"} waiting`;
+  $("inbox-count").hidden = !n;
 }
 
 // ---------------------------------------------------------------- Anki reviews
@@ -202,5 +213,5 @@ async function init() {
 document.addEventListener("DOMContentLoaded", init);
 // Back from Anki: the reviews made meanwhile show up.
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && !$("hub").hidden) loadReviews();
+  if (document.visibilityState === "visible" && !$("hub").hidden) { loadReviews(); loadInbox(); }
 });

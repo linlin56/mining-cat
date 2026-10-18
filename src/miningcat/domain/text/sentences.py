@@ -14,6 +14,16 @@ def sentence_spans(text: str) -> list[tuple[int, int]]:
     return spans
 
 
+def sentence_around(before: str, word: str, after: str) -> str:
+    """The sentence (or sentences) holding `word`, from the text around it: what an e-reader gives of a word looked up."""
+    text = before + word + after
+    start, end = len(before), len(before) + max(len(word), 1)
+    spans = [(a, b) for a, b in sentence_spans(text) if a < end and b > start]
+    if not spans:
+        return word.strip()
+    return text[spans[0][0]:spans[-1][1]]
+
+
 def _add_span(spans: list, text: str, start: int, end: int) -> None:
     piece = text[start:end]
     stripped = piece.strip()

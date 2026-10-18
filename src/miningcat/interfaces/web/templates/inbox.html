@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}MiningCat · E-reader{% endblock %}
+{% block styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='mining.css') }}">
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='mining.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='inbox.js') }}" defer></script>
+{% endblock %}
+{% block body_attrs %}data-study='{{ study|tojson }}'{% endblock %}
+{% block body %}
+  <header class="navbar sticky-top bg-body-tertiary border-bottom px-3 gap-2">
+    <a class="navbar-brand d-flex align-items-center gap-2 fw-bold me-0" href="/">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="" width="26" height="26"> E-reader
+    </a>
+    <span class="small text-body-secondary" id="count" role="status"></span>
+    <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+      <select class="form-select form-select-sm w-auto" id="language" title="Characters" aria-label="Characters" hidden></select>
+      <button type="button" class="btn btn-link link-body-emphasis btn-sm" data-mc-theme-toggle title="Night mode" aria-label="Night mode">
+        <i class="bi bi-moon-stars" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh" title="Show the words sent since the page was opened">
+        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh
+      </button>
+    </div>
+  </header>
+  <main class="container pt-3 mc-feed">
+    <p class="small text-body-secondary">
+      The words looked up on your e-reader, with their sentence. Click a word to look it up and make its card:
+      once the card is made, the sentence leaves the list.
+    </p>
+    <div id="items"></div>
+    <div class="text-center text-body-secondary py-5" id="empty" hidden>
+      <i class="bi bi-inbox fs-1" aria-hidden="true"></i>
+      <p class="mt-2 mb-0">No word waiting. Send words from KOReader with the MiningCat plugin.</p>
+    </div>
+  </main>
+{% endblock %}

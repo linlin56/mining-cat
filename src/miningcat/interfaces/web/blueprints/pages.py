@@ -26,6 +26,12 @@ def clipboard_page():
     return render_template("clipboard.html")
 
 
+# E-reader: the words sent from KOReader with their sentence, read like the Clipboard (static/inbox.js).
+@bp.get("/inbox/")
+def inbox_page():
+    return render_template("inbox.html")
+
+
 @bp.get("/settings/")
 def settings_page():
     return render_template("settings.html")

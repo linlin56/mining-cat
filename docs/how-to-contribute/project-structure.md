@@ -28,6 +28,8 @@ flowchart TB
 - `python -m miningcat <command>`: the CLI (`interfaces/cli/`). Each subcommand is a `Command` object.
 - `python -m miningcat.interfaces.web`: the web GUI, a Flask server on `127.0.0.1` that opens the browser.
 - The `Makefile` runs both from the project root (`make gui`, `make epub`...), with `PYTHONPATH=src`.
+- `koreader/miningcat.koplugin/`: the KOReader plugin (Lua), outside the package. It sends the words looked up on an
+  e-reader to `POST /api/inbox`, through the door `interfaces/web/lan.py` opens on the local network.
 
 The web GUI runs each converter step in its own process (`python -m miningcat audio`, `epub`, `align`...), so that
 the heavy libraries (Whisper, OCR) stay out of the server and the step's output becomes the job's log.

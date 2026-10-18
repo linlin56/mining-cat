@@ -4,7 +4,7 @@ import webbrowser
 
 from flask import Flask
 
-from miningcat.application import study_language, user_preferences
+from miningcat.application import ereader_link, study_language, user_preferences
 from miningcat.infrastructure.system.discord_presence import DiscordPresence
 from miningcat.interfaces.web import discord_status, errors, security, uploads
 from miningcat.interfaces.web.blueprints import (
@@ -17,6 +17,7 @@ from miningcat.interfaces.web.blueprints import (
     converter_results,
     dictionaries,
     game,
+    inbox,
     pages,
     preferences,
     profile,
@@ -25,10 +26,11 @@ from miningcat.interfaces.web.blueprints import (
     words,
 )
 from miningcat.interfaces.web.jobs import AppState
+from miningcat.interfaces.web.lan import LanListener
 
 BLUEPRINTS = [
     pages.bp, preferences.bp, profile.bp, converter.bp, converter_files.bp, converter_results.bp, words.bp, dictionaries.bp,
-    cards.bp, sentence_tools.bp, books.bp, book_audio.bp, comics.bp, videos.bp, game.bp,
+    cards.bp, sentence_tools.bp, books.bp, book_audio.bp, comics.bp, videos.bp, game.bp, inbox.bp,
 ]
 
 
@@ -37,6 +39,7 @@ def create_app(state: AppState | None = None) -> Flask:
     app.json.ensure_ascii = False
     app.json.sort_keys = False
     app.extensions["miningcat"] = state or AppState()
+    app.extensions["miningcat"].lan = LanListener(app)
     for blueprint in BLUEPRINTS:
         app.register_blueprint(blueprint)
     app.before_request(security.guard)
@@ -66,6 +69,10 @@ def main(port: int = 5050, open_browser: bool = True, page: str = "") -> None:
     app = create_app(AppState(discord=discord_status.DiscordStatus(presence)))
     url = f"http://127.0.0.1:{port}/{page}"
     print(f"MiningCat is running at {url}  (press Ctrl+C to stop)")
+    lan = app.extensions["miningcat"].lan
+    lan.apply(ereader_link.get_config())
+    if lan.error:
+        print(f"E-reader access off: {lan.error}")
     if open_browser:
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
     try:
@@ -75,4 +82,5 @@ def main(port: int = 5050, open_browser: bool = True, page: str = "") -> None:
         capture = app.extensions["miningcat"].game_capture
         if capture is not None:
             capture.stop()
+        lan.stop()
         presence.stop()

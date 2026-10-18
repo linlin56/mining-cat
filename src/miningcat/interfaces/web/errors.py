@@ -2,6 +2,8 @@
 from flask import Flask, jsonify
 
 from miningcat.application.converter.errors import ConverterError
+from miningcat.application.ereader_link import EreaderLinkError
+from miningcat.application.inbox import InboxError
 from miningcat.application.mining.sentence_tts import TtsError
 from miningcat.domain.cards.errors import AnkiError, AnkiUnavailable
 from miningcat.domain.dictionary.errors import DictionaryError
@@ -33,6 +35,8 @@ TITLES: dict[type[Exception], str] = {
     CaptureError: "Screen capture",
     TranslateError: "Translation",
     TtsError: "Text-to-speech",
+    InboxError: "E-reader",
+    EreaderLinkError: "E-reader",
 }
 
 

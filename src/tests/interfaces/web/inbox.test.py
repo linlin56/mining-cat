@@ -76,3 +76,19 @@ def test_the_page_needs_a_language(client):
 def test_the_e_reader_can_send_the_text_around_the_word(client):
     item = receive(client, word="猫", before="前の文だ。吾輩は", after="である。次の文。", language="ja").get_json()["item"]
     assert item["sentence"] == "吾輩は猫である。"
+
+
+def test_a_book_s_language_without_a_dictionary_is_taken_for_a_wrong_one(client, tmp_path):
+    """Many books tell a converter's default (en): the word goes to the language studied, unless the user has a
+    dictionary of the book's language."""
+    import json
+    import zipfile
+    from miningcat.application.mining import dictionaries
+    study_language.set_current("zh")
+    assert receive(client, word="說話", sentence="他說話。", language="en").get_json()["item"]["language"] == "zh"
+    path = tmp_path / "ja.zip"
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("index.json", json.dumps({"title": "JA", "revision": "1", "format": 3}))
+        z.writestr("term_bank_1.json", json.dumps([["猫", "ねこ", "n", "", 0, ["cat"], 1, ""]], ensure_ascii=False))
+    dictionaries.import_dictionary(path)
+    assert receive(client, word="猫", sentence="猫だ。", language="ja").get_json()["item"]["language"] == "ja"

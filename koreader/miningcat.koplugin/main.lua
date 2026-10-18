@@ -27,6 +27,9 @@ local CONTEXT_WORDS = 80
 -- popup waits for it.
 local TIMEOUT = 5
 local LOOKUP_TIMEOUT = 3
+-- After MiningCat couldn't be reached (another Wi-Fi than the computer's...), lookups go without it for that long,
+-- rather than each waiting LOOKUP_TIMEOUT. A new Wi-Fi connection or new settings try again at once.
+local UNREACHABLE_PAUSE = 60
 -- The text after the word sent with a lookup, for the words longer than the selection (CJK: a word is a character).
 local LOOKUP_CONTEXT_WORDS = 10
 
@@ -119,12 +122,21 @@ function MiningCat:lookupResults(word)
     if not NetworkMgr:isConnected() then
         return nil, _("The Wi-Fi is off: MiningCat's dictionaries can't be reached.")
     end
-    local result, err = self:request("POST", "/api/inbox/lookup", {
+    if self.unreachable and os.time() < self.unreachable.until_time then
+        return nil, self.unreachable.error
+    end
+    local result, err, code = self:request("POST", "/api/inbox/lookup", {
         word = word,
         after = self:textAfter(word),
         language = (self.ui.doc_props or {}).language,
     }, LOOKUP_TIMEOUT)
-    if not result then return nil, err end
+    if not result then
+        if code == nil then  -- no answer at all
+            self.unreachable = { until_time = os.time() + UNREACHABLE_PAUSE, error = err }
+        end
+        return nil, err
+    end
+    self.unreachable = nil
     local results = {}
     for _i, entry in ipairs(result.entries or {}) do
         local status = statusHtml(entry)
@@ -343,6 +355,7 @@ end
 
 -- Back on the Wi-Fi: the words waiting go.
 function MiningCat:onNetworkConnected()
+    self.unreachable = nil
     if #self.queue == 0 or trim(self.settings.url) == "" then return end
     UIManager:scheduleIn(2, function()
         if #self.queue == 0 then return end
@@ -373,6 +386,7 @@ function MiningCat:editSetting(key, title, hint, description, touchmenu_instance
                 is_enter_default = true,
                 callback = function()
                     self.settings[key] = trim(dialog:getInputText())
+                    self.unreachable = nil
                     G_reader_settings:saveSetting("miningcat", self.settings)
                     UIManager:close(dialog)
                     if touchmenu_instance then touchmenu_instance:updateItems() end

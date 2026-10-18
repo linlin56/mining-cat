@@ -3,7 +3,7 @@ them like a text of the Clipboard and makes a card in the card creator."""
 import time
 
 from miningcat.application import study_language
-from miningcat.application.mining import frequency, lookup as dictionary_lookup, words
+from miningcat.application.mining import dictionaries, frequency, lookup as dictionary_lookup, words
 from miningcat.domain.dictionary.glossary_html import glossary_html
 from miningcat.domain.languages import LANGUAGES, language_key
 from miningcat.domain.text.sentences import sentence_around
@@ -30,11 +30,12 @@ def _text(values: dict, key: str) -> str:
 
 
 def _language(tag) -> str:
-    """The book's language (ja, zh-TW, zh_CN...), or the language studied when the book has none MiningCat knows."""
-    language = language_key(str(tag or "").replace("_", "-"))
-    if language in LANGUAGES:
-        return language
-    language = study_language.current()
+    """The book's language (ja, zh-TW, zh_CN...) when the user has a dictionary of it, else the language studied. Many
+    books tell a wrong language (en, a converter's default): a language without a dictionary isn't the one studied."""
+    book = language_key(str(tag or "").replace("_", "-"))
+    if book in LANGUAGES and any(d["language"] == book and d["enabled"] for d in dictionaries.list_dictionaries()):
+        return book
+    language = study_language.current() or (book if book in LANGUAGES else None)
     if language is None:
         raise InboxError("The book has no language MiningCat knows, and no language is studied yet.")
     return language

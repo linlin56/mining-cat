@@ -12,10 +12,10 @@
 // (e.g. in the video). getImage(node) -> {data, name} (or a promise of it): an image for the card, from
 // the text node that was looked up (e.g. the screenshot of a video game capture). blockSentence: the sentence
 // is the whole block that was clicked (a subtitle), not the sentence around the word. onLookup(): a word was
-// looked up. Elements marked data-mc-ignore aren't looked up (e.g. a translation under a subtitle).
+// looked up. Elements marked data-mc-ignore aren't looked up nor coloured (e.g. a translation under a subtitle).
 // expandSentence(node, sentence) -> sentence: the sentence of a lookup made longer (e.g. the subtitle lines selected
 // around the clicked one), {text, before, word, after}. getTranslation(node) -> string or null: the sentence's
-// translation (e.g. the second subtitles), null to translate it offline. onCard(card): a card was made.
+// translation (e.g. the second subtitles), null to translate it offline. onCard(card, node): a card was made, from the text node looked up.
 "use strict";
 
 (() => {
@@ -202,7 +202,7 @@
     const nodes = [], starts = [];
     let text = "", lastBlock = null;
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode(n) { return n.parentElement.closest("rt, rp") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; },
+      acceptNode(n) { return n.parentElement.closest("rt, rp, [data-mc-ignore]") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; },
     });
     while (walker.nextNode()) {
       const node = walker.currentNode;
@@ -1647,7 +1647,7 @@
         modal.hide();
         updateColour(card.expression, "learning");
         if (options.onStatusChange) options.onStatusChange(card.expression, "learning");
-        if (options.onCard) options.onCard(card);
+        if (options.onCard) options.onCard(card, ctx && ctx.node);
         if (card.status === "sent") toast("Added to Anki ✓", "success");
         else if (card.status === "failed") toast(`Anki refused the card: ${card.error}`, "error");
         else if (card.error && !/reachable/.test(card.error)) toast(`Saved, not sent yet: ${card.error}`, "info");

@@ -63,6 +63,7 @@ function showTab() {
   if (name === "anki") refreshAnki();
   if (name === "translation") renderTranslation();
   if (name === "voice") { renderLocalVoice(); renderElevenLabs(); }
+  if (name === "ereader") loadEreader();
 }
 
 // ---------------------------------------------------------------- dictionaries
@@ -871,6 +872,44 @@ async function exportCards() {
   } catch (err) { showError(err); }
 }
 
+// ---------------------------------------------------------------- e-reader (KOReader plugin)
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); MiningCatUI.toast("Copied", "success"); } catch (err) { showError(err); }
+}
+
+const copyButton = (text) => el("button", { type: "button", class: "btn btn-sm btn-outline-secondary", onclick: () => copyText(text) }, icon("copy"), " Copy");
+
+function renderEreader(c) {
+  $("ereader-enabled").checked = c.enabled;
+  $("ereader-port").value = c.port;
+  $("ereader-firewall").hidden = !c.listening;
+  const state = $("ereader-state");
+  state.className = `small m-0 ${c.error ? "text-danger" : c.listening ? "text-success" : "text-body-secondary"}`;
+  state.textContent = c.error ? c.error
+    : c.listening ? `On: the e-reader can send words to port ${c.port}.`
+    : "Off: the e-reader can't reach MiningCat.";
+  $("ereader-addresses").replaceChildren(...(c.addresses.length
+    ? c.addresses.map((address) => el("div", { class: "d-flex flex-wrap align-items-center gap-2" },
+      el("code", { class: "fs-5 user-select-all", text: address }), copyButton(address)))
+    : [el("p", { class: EMPTY, text: "This computer isn't on a local network." })]));
+  $("ereader-token").textContent = c.token;
+  $("ereader-token-copy").onclick = () => copyText(c.token);
+}
+
+async function loadEreader() {
+  try { renderEreader(await api("/api/ereader/config")); } catch (err) { showError(err); }
+}
+
+async function saveEreader(values) {
+  try { renderEreader(await api("/api/ereader/config", values)); } catch (err) { showError(err); loadEreader(); }
+}
+
+async function renewEreaderToken() {
+  if (!await confirmBox("New token", "The e-reader can't send words with the old token anymore: you'll enter the new one in KOReader.", "New token")) return;
+  try { renderEreader(await api("/api/ereader/token", {})); } catch (err) { showError(err); }
+}
+
 // ---------------------------------------------------------------- user preferences: Discord (the colours: theme.js)
 function markDiscord(choice) {
   for (const button of document.querySelectorAll("[data-mc-discord-choice]")) {
@@ -938,6 +977,9 @@ async function init() {
       } catch (err) { showError(err); }
     });
     $("cards-export").addEventListener("click", exportCards);
+    $("ereader-enabled").addEventListener("change", () => saveEreader({ enabled: $("ereader-enabled").checked }));
+    $("ereader-port-save").addEventListener("click", () => saveEreader({ port: $("ereader-port").value }));
+    $("ereader-token-new").addEventListener("click", renewEreaderToken);
     window.addEventListener("hashchange", showTab);
     showTab();
     updateBadge();

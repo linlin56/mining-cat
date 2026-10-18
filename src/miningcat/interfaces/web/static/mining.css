@@ -94,3 +94,6 @@ a[data-query] { text-decoration-style: dotted; }
 }
 .mc-wave-handle:hover::after, .mc-wave-handle:focus-visible::after { transform: scaleX(1.25); }
 .mc-wave-handle:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: 1px; border-radius: 3px; }
+
+/* The word looked up on the e-reader, in its sentence (inbox.js) */
+.mc-inbox-word { text-decoration: underline 2px var(--bs-primary); text-underline-offset: .3em; }

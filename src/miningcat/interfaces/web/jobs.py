@@ -8,6 +8,7 @@ from miningcat.application.converter.jobs import Job, run_job
 from miningcat.application.game_ocr.capture_process import GameCaptureProcess
 from miningcat.interfaces.web.discord_status import DiscordStatus
 from miningcat.interfaces.web.event_bus import EventBus
+from miningcat.interfaces.web.lan import LanListener
 
 
 @dataclass
@@ -35,6 +36,8 @@ class AppState:
     game_frame: dict = field(default_factory=lambda: {"data": None, "version": 0})
     # The user's Discord status, while the server runs (see discord_status.py)
     discord: DiscordStatus | None = None
+    # The e-reader's door (see lan.py), made with the app
+    lan: LanListener | None = None
     _lock: threading.Lock = field(default_factory=threading.Lock)
     _job: JobSnapshot = field(default_factory=JobSnapshot)
 

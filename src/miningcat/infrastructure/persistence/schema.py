@@ -122,6 +122,21 @@ CREATE TABLE IF NOT EXISTS cards (
 );
 CREATE INDEX IF NOT EXISTS cards_status ON cards(status);
 
+-- Words sent from an e-reader (the KOReader plugin), with their sentence: they wait until the user makes a card of
+-- them in the card creator. `uid`: the plugin's id of the word, so that a word sent again isn't added twice.
+CREATE TABLE IF NOT EXISTS inbox (
+    id       INTEGER PRIMARY KEY,
+    uid      TEXT UNIQUE,
+    language TEXT NOT NULL,
+    word     TEXT NOT NULL,
+    sentence TEXT NOT NULL,
+    book     TEXT NOT NULL DEFAULT '',
+    location TEXT NOT NULL DEFAULT '',   -- where in the book: a page, a chapter...
+    sent     REAL NOT NULL,              -- when the word was looked up on the e-reader
+    received REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS inbox_language ON inbox(language);
+
 CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL

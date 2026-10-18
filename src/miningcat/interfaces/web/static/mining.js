@@ -866,7 +866,7 @@
         el("div", { class: "d-flex align-items-start gap-2" }, headword(entry, language), listen, add),
         meta.childNodes.length ? meta : null,
         ...notes,
-        entry.free ? null : statusControl(entry, language),
+        statusControl(entry, language),
         defs,
         chars));
     }

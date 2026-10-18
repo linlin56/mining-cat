@@ -39,6 +39,11 @@ def test_passes_convert_and_continuous_without_key():
     assert "--hotkey" not in args
 
 
+def test_without_recording_the_sound():
+    assert "--no-audio" in _start(record_audio=False)[0]
+    assert "--no-audio" not in _start()[0]
+
+
 def test_without_its_own_page():
     assert "--no-browser" in _start(open_browser=False)[0]
     assert "--no-browser" not in _start()[0]

@@ -12,6 +12,7 @@ class BackendInfo:
     platforms: tuple[str, ...]  # sys.platform values
     module: str
     class_name: str
+    records_audio: bool = False  # its audio_recorder() records the window's sound, for the cards
 
 
 BACKENDS: tuple[BackendInfo, ...] = (
@@ -28,6 +29,7 @@ BACKENDS: tuple[BackendInfo, ...] = (
         platforms=("darwin",),
         module="miningcat.infrastructure.capture.macos",
         class_name="MacOSCapture",
+        records_audio=True,
     ),
     BackendInfo(
         id="windows",

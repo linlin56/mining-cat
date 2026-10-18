@@ -81,6 +81,21 @@ def setup(window_query: str | None = None, areas_only: bool = False, webcam: boo
     print("Done. Now run: python -m miningcat game serve")
 
 
+# The recorder of the window's sound, started. None when the source can't record it, or when it fails (the capture
+# goes on without the sound: it's explained in the log).
+def start_recorder(backend: CaptureBackend):
+    try:
+        recorder = backend.audio_recorder()
+        if recorder is None:
+            return None
+        recorder.start()
+    except Exception as exc:
+        print(f"Sound:     not recorded ({exc})", flush=True)
+        return None
+    print("Sound:     recorded, for the lines' audio on the cards", flush=True)
+    return recorder
+
+
 def serve(
     language: Language,
     convert_target: str | None = None,
@@ -90,7 +105,9 @@ def serve(
     interval: float | None = None,
     join: bool = True,
     open_browser: bool = True,
+    record_audio: bool = True,
 ) -> None:
+    from miningcat.application.game_ocr.capture_audio import CaptureAudio
     from miningcat.application.game_ocr.session import GameOcrSession, open_saved_window
     from miningcat.infrastructure.hotkeys import HotkeyError, create_hotkey
     from miningcat.interfaces.game_page import server
@@ -102,6 +119,7 @@ def serve(
     interval = interval or server.DEFAULT_INTERVAL_S
 
     backend = open_saved_window(settings)
+    recorder = None
     try:
         print(f"Source:    {settings.window_label}")
         print(f"Language:  {language.profile.label}")
@@ -114,12 +132,16 @@ def serve(
                 key = create_hotkey(hotkey)
             except HotkeyError as exc:
                 print(f"[capture key] {exc}", flush=True)
-        app = server.create_app(session, language, auto=auto, interval=interval, hotkey=key, port=port)
+        recorder = start_recorder(backend) if record_audio else None
+        audio = CaptureAudio(recorder.ring) if recorder is not None else None
+        app = server.create_app(session, language, auto=auto, interval=interval, hotkey=key, port=port, audio=audio)
         print(f"Mode:      {'continuous, every ' + str(interval) + ' s' if auto else 'capture key ' + (hotkey or 'off')}")
         print(f"Page:      {server.page_url(port)}")
         print(f"Capture:   curl -X POST {server.page_url(port)}capture", flush=True)
         server.run(app, port=port, open_browser=open_browser)
     finally:
+        if recorder is not None:
+            recorder.close()
         backend.close()
 
 
@@ -137,6 +159,7 @@ def main(args) -> None:
                 interval=args.interval,
                 join=not args.keep_line_breaks,
                 open_browser=not args.no_browser,
+                record_audio=not args.no_audio,
             )
     except CaptureError as exc:
         sys.exit(f"Error: {exc}")

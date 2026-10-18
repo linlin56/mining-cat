@@ -167,26 +167,71 @@ def test_serve_wires_session_and_server_then_closes_backend():
     assert language is Language.MANDARIN_TW
     assert session_cls.call_args[1] == {"convert_target": "s", "join": False}
     create_app.assert_called_once_with(
-        session_cls.return_value, Language.MANDARIN_TW, auto=True, interval=1.5, hotkey=None, port=7002,
+        session_cls.return_value, Language.MANDARIN_TW, auto=True, interval=1.5, hotkey=None, port=7002, audio=None,
     )
     run.assert_called_once_with(create_app.return_value, port=7002, open_browser=False)
     assert backend.closed
 
 
+class FakeRecorder:
+    def __init__(self, fail=False):
+        self.ring, self.fail = object(), fail
+        self.started = self.closed = False
+
+    def start(self):
+        if self.fail:
+            raise CaptureError("no permission")
+        self.started = True
+
+    def close(self):
+        self.closed = True
+
+
+def _serve_with_recorder(recorder, record_audio=True):
+    GameOcrSettings(backend="macos", backend_state={"id": 2}, window_label="Sample Quest", text_region=(0, 0.5, 1, 0.5)).save()
+    backend = FakeBackend()
+    backend.audio_recorder = lambda: recorder
+    with patch("miningcat.application.game_ocr.session.open_saved_window", return_value=backend), \
+         patch("miningcat.application.game_ocr.session.GameOcrSession"), \
+         patch("miningcat.interfaces.game_page.server.create_app") as create_app, \
+         patch("miningcat.interfaces.game_page.server.run"):
+        cli.serve(Language.JAPANESE, open_browser=False, record_audio=record_audio)
+    return create_app.call_args[1]["audio"]
+
+
+def test_serve_records_the_window_sound_until_it_stops():
+    recorder = FakeRecorder()
+    audio = _serve_with_recorder(recorder)
+    assert audio is not None and audio._ring is recorder.ring
+    assert recorder.started and recorder.closed
+
+
+def test_serve_goes_on_without_the_sound_when_it_cant_be_recorded(capsys):
+    assert _serve_with_recorder(FakeRecorder(fail=True)) is None
+    assert "Sound:     not recorded (no permission)" in capsys.readouterr().out
+
+
+def test_serve_without_recording_the_sound():
+    recorder = FakeRecorder()
+    assert _serve_with_recorder(recorder, record_audio=False) is None
+    assert not recorder.started
+
+
 # main
 def _args(**overrides):
     values = dict(game_command="serve", language="japanese", convert_to=None, port=None, interval=None,
-                  continuous=False, hotkey="F9", keep_line_breaks=False, no_browser=False, window=None, areas_only=False, webcam=False)
+                  continuous=False, hotkey="F9", keep_line_breaks=False, no_browser=False, window=None, areas_only=False, webcam=False,
+                  no_audio=False)
     values.update(overrides)
     return argparse.Namespace(**values)
 
 
 def test_main_dispatches_serve_options():
     with patch.object(cli, "serve") as serve:
-        cli.main(_args(continuous=True, hotkey="F2", keep_line_breaks=True, no_browser=True, port=7003))
+        cli.main(_args(continuous=True, hotkey="F2", keep_line_breaks=True, no_browser=True, port=7003, no_audio=True))
     serve.assert_called_once_with(
         language=Language.JAPANESE, convert_target=None, port=7003, auto=True, hotkey="F2", interval=None,
-        join=False, open_browser=False,
+        join=False, open_browser=False, record_audio=False,
     )
 
 

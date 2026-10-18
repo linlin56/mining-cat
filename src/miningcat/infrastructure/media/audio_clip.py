@@ -19,11 +19,20 @@ def cut_mp3(source: Path, start: float, end: float, audio_stream: int = 0,
     end = float(end) + after
     if end <= start:
         raise AudioError("Invalid time span.")
+    return _ffmpeg(["-ss", f"{start:.3f}", "-to", f"{end:.3f}", "-i", str(source), "-map", f"0:a:{audio_stream}", "-vn",
+                    "-ac", "1", *_CODECS[fmt], "pipe:1"])
+
+
+def encode(wav: bytes, fmt: str = "mp3") -> bytes:
+    """A WAV recording as MP3 (or as the waveform's WAV), mono."""
+    return _ffmpeg(["-f", "wav", "-i", "pipe:0", "-vn", "-ac", "1", *_CODECS[fmt], "pipe:1"], wav)
+
+
+def _ffmpeg(args: list[str], data: bytes | None = None) -> bytes:
     try:
         result = subprocess.run(
-            ["ffmpeg", "-hide_banner", "-loglevel", "error", "-ss", f"{start:.3f}", "-to", f"{end:.3f}",
-             "-i", str(source), "-map", f"0:a:{audio_stream}", "-vn", "-ac", "1", *_CODECS[fmt], "pipe:1"],
-            capture_output=True, check=True, timeout=60,
+            ["ffmpeg", "-hide_banner", "-loglevel", "error", *args],
+            input=data, capture_output=True, check=True, timeout=60,
         )
     except FileNotFoundError:
         raise AudioError("ffmpeg isn't installed: it's needed to cut the sentence's audio.")

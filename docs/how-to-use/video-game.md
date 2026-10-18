@@ -2,7 +2,7 @@
 
 Select **Video game / Screen share** as the **Source** at the top of the GUI to mine sentences from anything displayed in a window: a video game, a visual novel, a video call, a website... or from a **webcam / capture card**: a console or another computer plugged into an HDMI capture box.
 
-MiningCat watches a window (or a camera), reads its text with OCR, and pushes the **screenshot + text** to a web page. Open that page next to your game, click a word to look it up in your [dictionaries](mining.md), and make an Anki card: the screenshot goes on the card. Yomitan or any other browser extension works on the page too.
+MiningCat watches a window (or a camera), reads its text with OCR, and pushes the **screenshot + text** to a web page. Open that page next to your game, click a word to look it up in your [dictionaries](mining.md), and make an Anki card: the screenshot goes on the card, and on macOS the **voice of the line** too (see [The line's audio](#the-lines-audio)). Yomitan or any other browser extension works on the page too.
 
 Nothing is recorded in `output/`: everything lives in the page, while the capture runs.
 
@@ -80,6 +80,7 @@ The camera is remembered by its name, so it's found again even if you plug other
     - With a **capture card**, the capture is the console's whole screen: keep it as is.
 5. Click **Select text area (for OCR)…** and draw a box around the game's dialog box, where the text appears. It's pre-selected on the whole screenshot area, and **Reset to bottom third** is a good start for most games. Only this part is read by OCR, which makes it faster and avoids reading menus or the HUD.
 6. Pick the **Capture key** (`F9` by default), or check **Continuous capture** (see [below](#capture-key-or-continuous-capture)).
+    - On macOS, with a window, **Record the sound of the window** (checked by default) gives the cards the [line's audio](#the-lines-audio).
     - Optionally, fill in **Source name** (e.g. the game and its console): the card creator's **Source** field starts with it, instead of `Video game`. It can be changed while capturing.
 7. Click **Start**. The page opens in a new tab of your browser (or click **Open page**).
 8. Play, and press the capture key on each line you want to mine! Click **Stop** when you're done.
@@ -126,6 +127,21 @@ From the terminal (`game serve`), the capture has its own simpler page at <http:
 
 Both pages keep the history while the capture runs: reloading, or opening another tab, replays the last 20 captures.
 
+## The line's audio
+
+On **macOS**, when you capture a **window**, MiningCat also records its sound: **+ Card** then gives the card the voice of the line, like in the [video player](player.md#watching-and-mining). Only the game's sound is recorded, not your music, a video call or MiningCat itself. It uses the same **Screen & System Audio Recording** permission as the capture, so there's nothing more to allow.
+
+The sound is kept in memory only, for the lines of the last 20 captures: nothing is written to disk until you make a card.
+
+In the card creator, **Sentence audio** shows the waveform of the line, with some seconds around it. MiningCat finds the voice from the loudness:
+
+- with **continuous capture**, the line starts when its text appears: the voice starting then is picked, until the next line;
+- with the **capture key**, you press it during the line or after it: the voice going on, or the last one before the key, is picked.
+
+With loud music behind the voice, or no voice at all, it picks the 4 seconds after the text appeared (or before the key was pressed). Adjust the span on the waveform anyway: drag its edges, **More context** for more around it.
+
+Uncheck **Record the sound of the window** (or use `--no-audio` in the terminal) if you don't want it. On Windows, Linux, and with a webcam or capture card, the sound isn't recorded yet.
+
 ## OCR
 
 OCR is the same as for [burned-in subtitles](video.md#burned-in-subtitles-ocr): Apple Vision on macOS, EasyOCR elsewhere, in the selected language.
@@ -164,4 +180,5 @@ See the [CLI reference](cli.md#game) for all options.
 - **"MiningCat needs the Camera permission"** (macOS, webcam / capture card): see [Webcam or capture card](#webcam-or-capture-card).
 - **"Camera not found"**, **"Could not open"**, **"didn't send any image in time"** (webcam / capture card): check that it's plugged in and that no other app (OBS, the capture card's app, a video call...) is using it. If you renamed or replaced the device, click **Select camera…** again.
 - **The capture card image is black or "no signal"**: check that the console is on and the HDMI cable connected. Some consoles (PlayStation) turn on HDCP, which capture cards can't record: turn it off in the console's settings.
+- **No audio on the cards** (macOS): check that **Record the sound of the window** is checked, and look at the log: `Sound: not recorded (…)` says why. The sound of a capture is kept until 20 newer captures: an older capture's card gets no audio.
 - **"Address already in use"**: another capture is already running (maybe from a terminal). Stop it first. From the terminal, you can also use another port with `--port`.

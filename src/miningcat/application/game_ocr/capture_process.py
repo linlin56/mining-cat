@@ -12,13 +12,14 @@ class GameCaptureProcess:
     `on_exit(returncode)` is called once it has ended, whatever the reason."""
 
     def __init__(self, language: Language, convert_target: str | None, continuous: bool, hotkey: str,
-                 open_browser: bool = True):
+                 open_browser: bool = True, record_audio: bool = True):
         self.command = (
             CliCommand("game", "serve").option("--language", language.id)
             .flag("--no-browser", not open_browser)
             .option("--convert-to", convert_target)
             .flag("--continuous", continuous)
             .option("--hotkey", None if continuous else hotkey)
+            .flag("--no-audio", not record_audio)
             .build()
         )
         self.proc: subprocess.Popen | None = None

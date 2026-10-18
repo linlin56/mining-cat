@@ -110,14 +110,14 @@ def test_os_without_window_capture_still_offers_webcams(client, monkeypatch):
     monkeypatch.setattr(capture, "backend_info", lambda platform=None: None)
     data = client.get("/api/game/state").get_json()
     assert data["supported"] is True
-    assert data["sources"] == [{"id": "webcam", "label": "Webcam / capture card", "webcam": True}]
+    assert data["sources"] == [{"id": "webcam", "label": "Webcam / capture card", "webcam": True, "records_audio": False}]
 
 
 def test_state_lists_windows_then_webcams(client, backend):
     data = client.get("/api/game/state").get_json()
     assert data["sources"] == [
-        {"id": "fake", "label": "Window - Fake OS", "webcam": False},
-        {"id": "webcam", "label": "Webcam / capture card", "webcam": True},
+        {"id": "fake", "label": "Window - Fake OS", "webcam": False, "records_audio": False},
+        {"id": "webcam", "label": "Webcam / capture card", "webcam": True, "records_audio": False},
     ]
 
 
@@ -236,6 +236,35 @@ def test_trigger_is_remembered(client, backend):
     assert GameOcrSettings.load().hotkey == "F2"
 
 
+def test_recording_the_sound_is_remembered(client, backend):
+    assert GameOcrSettings.load().record_audio is True
+    data = post(client, "/api/game/trigger", {"record_audio": False}).get_json()
+    assert data["settings"]["record_audio"] is False
+    assert GameOcrSettings.load().record_audio is False
+
+
+def test_sources_tell_whether_they_record_the_sound(client, monkeypatch):
+    monkeypatch.setattr(capture, "sources", lambda platform=None: [
+        BackendInfo(id="mac", label="macOS", platforms=("fake",), module="", class_name="", records_audio=True),
+        capture.WEBCAM])
+    sources = client.get("/api/game/state").get_json()["sources"]
+    assert [s["records_audio"] for s in sources] == [True, False]
+
+
+def test_line_audio_is_asked_to_the_running_capture(client, state, monkeypatch):
+    calls = []
+    monkeypatch.setattr(game.line_audio, "info", lambda url, capture_id: calls.append((url, capture_id)) or {"id": capture_id})
+    monkeypatch.setattr(game.line_audio, "clip", lambda url, capture_id, start, end, fmt: calls.append((capture_id, start, end, fmt)) or b"MP3")
+    assert post(client, "/api/game/audio/1-2/info").status_code == 409  # the capture isn't running
+    state.game_capture = object()
+    assert post(client, "/api/game/audio/1-2/info").get_json() == {"id": "1-2"}
+    data = post(client, "/api/game/audio/1-2", {"start": 1, "end": 2.5}).get_json()
+    assert data == {"data": "data:audio/mpeg;base64,TVAz", "name": "sentence.mp3"}
+    assert post(client, "/api/game/audio/1-2", {"start": 1, "end": 2.5, "format": "wav"}).get_json()["name"] == "sentence.wav"
+    assert calls == [("http://127.0.0.1:6677/", "1-2"), ("1-2", 1, 2.5, "mp3"), ("1-2", 1, 2.5, "wav")]
+    state.game_capture = None
+
+
 def test_source_name_is_remembered_even_while_capturing(client, backend, state):
     state.game_capture = object()
     data = post(client, "/api/game/source-name", {"source_name": "  Sample Quest - Console  "}).get_json()
@@ -257,7 +286,7 @@ class FakeCapture:
 
     created = []
 
-    def __init__(self, language, convert_target, continuous, hotkey, open_browser=True):
+    def __init__(self, language, convert_target, continuous, hotkey, open_browser=True, record_audio=True):
         self.args = dict(language=language, convert_target=convert_target, continuous=continuous, hotkey=hotkey,
                          open_browser=open_browser)
         self.stopped = False

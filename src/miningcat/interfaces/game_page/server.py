@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import io
+import itertools
 import time
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor
@@ -9,6 +10,7 @@ from pathlib import Path
 from aiohttp import WSMsgType, web
 from PIL import Image
 
+from miningcat.application.game_ocr.capture_audio import CaptureAudio
 from miningcat.application.game_ocr.session import CaptureResult, GameOcrSession
 from miningcat.domain.languages import Language
 from miningcat.infrastructure.capture import CaptureError
@@ -28,6 +30,8 @@ _HISTORY_REPLAY = 20
 _SCREENSHOT_MAX_DIM = 1600
 # After a capture error (window closed, permission revoked...), wait longer before retrying, to avoid flooding the log.
 _ERROR_BACKOFF_S = 3.0
+# How often the clips of the lines that are over are cut (see CaptureAudio.due()).
+_AUDIO_CUT_INTERVAL_S = 1.0
 
 
 def encode_screenshot(image: Image.Image) -> str:
@@ -38,9 +42,12 @@ def encode_screenshot(image: Image.Image) -> str:
     return "data:image/webp;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
-def build_payload(result: CaptureResult) -> dict:
+# `audio`: the capture's line is being recorded; its clip is told later by an "audio" message (see Hub.audio()).
+def build_payload(result: CaptureResult, capture_id: str = "", audio: bool = False) -> dict:
     return {
         "type": "capture",
+        "id": capture_id,
+        "audio": audio,
         "text": result.text,
         "image": encode_screenshot(result.screenshot),
         "ts": time.strftime("%H:%M:%S"),
@@ -56,6 +63,13 @@ class Hub:
     async def broadcast(self, payload: dict) -> None:
         self.history = (self.history + [payload])[-_HISTORY_MAX:]
         await self._send_all(payload)
+
+    # The clip of a capture's line, once cut: kept in the capture's payload too, for the tabs opened later.
+    async def audio(self, info: dict) -> None:
+        for payload in self.history:
+            if payload.get("id") == info["id"]:
+                payload["audio"] = info
+        await self._send_all({"type": "audio", **info})
 
     async def clear(self) -> None:
         self.history = []
@@ -80,6 +94,9 @@ AUTO_KEY = web.AppKey("auto", bool)
 HOTKEY_KEY = web.AppKey("hotkey", object)  # Hotkey | None
 PORT_KEY = web.AppKey("port", int)
 INTERVAL_KEY = web.AppKey("interval", float)
+AUDIO_KEY = web.AppKey("audio", object)  # CaptureAudio | None
+# The captures' ids: unique across runs too, as a page left open keeps the captures of the previous run.
+IDS_KEY = web.AppKey("ids", object)
 
 
 # Captures in the single-thread executor (backends and OCR engines aren't thread-safe), then pushes the result to every tab.
@@ -89,8 +106,13 @@ async def capture_and_broadcast(app: web.Application, force: bool) -> tuple[dict
     result, reason = await loop.run_in_executor(app[EXECUTOR_KEY], session.capture, force)
     if result is None:
         return None, reason
-    payload = build_payload(result)
+    audio: CaptureAudio | None = app[AUDIO_KEY]
+    payload = build_payload(result, next(app[IDS_KEY]), audio is not None)
     await app[HUB_KEY].broadcast(payload)
+    if audio is not None:
+        for info in audio.add(payload["id"], result.at, result.appeared):
+            if info is not None:
+                await app[HUB_KEY].audio(info)
     print(f"[capture] {payload['ms']} ms - {result.text[:60]}", flush=True)
     return payload, ""
 
@@ -111,6 +133,26 @@ async def _auto_capture_loop(app: web.Application) -> None:
                 last_error = str(exc)
             delay = max(interval, _ERROR_BACKOFF_S)
         await asyncio.sleep(delay)
+
+
+async def _audio_cut_loop(app: web.Application) -> None:
+    audio: CaptureAudio = app[AUDIO_KEY]
+    while True:
+        await asyncio.sleep(_AUDIO_CUT_INTERVAL_S)
+        for capture_id in audio.due():
+            info = audio.cut(capture_id)
+            if info is not None:
+                await app[HUB_KEY].audio(info)
+
+
+async def _audio_cut_ctx(app: web.Application):
+    task = asyncio.create_task(_audio_cut_loop(app))
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
 
 
 async def _auto_capture_ctx(app: web.Application):
@@ -172,6 +214,30 @@ async def handle_clear(request: web.Request) -> web.Response:
     return web.json_response({"ok": True})
 
 
+# The clip of a capture's line, cut now if its line isn't over yet (a word of it was looked up: a card is coming).
+# Asked for by MiningCat's server (blueprints/game.py), not by the page.
+async def handle_audio_info(request: web.Request) -> web.Response:
+    audio: CaptureAudio | None = request.app[AUDIO_KEY]
+    info = audio.cut(request.match_info["id"]) if audio is not None else None
+    if info is None:
+        return web.json_response({"error": "This capture has no sound (any more)."}, status=404)
+    await request.app[HUB_KEY].audio(info)
+    return web.json_response(info)
+
+
+# A span of a capture's clip as WAV: ?start=&end= in seconds from the clip's start.
+async def handle_audio(request: web.Request) -> web.Response:
+    audio: CaptureAudio | None = request.app[AUDIO_KEY]
+    try:
+        start, end = float(request.query["start"]), float(request.query["end"])
+    except (KeyError, ValueError):
+        return web.json_response({"error": "start and end are needed, in seconds."}, status=400)
+    data = audio.wav(request.match_info["id"], start, end) if audio is not None else None
+    if data is None:
+        return web.json_response({"error": "This capture has no sound (any more)."}, status=404)
+    return web.Response(body=data, content_type="audio/wav")
+
+
 async def handle_ws(request: web.Request) -> web.WebSocketResponse:
     hub: Hub = request.app[HUB_KEY]
     ws = web.WebSocketResponse(max_msg_size=32 * 1024 * 1024)
@@ -209,6 +275,7 @@ def create_app(
     interval: float = DEFAULT_INTERVAL_S,
     hotkey: Hotkey | None = None,
     port: int = DEFAULT_PORT,
+    audio: CaptureAudio | None = None,
 ) -> web.Application:
     app = web.Application()
     app[SESSION_KEY] = session
@@ -219,12 +286,19 @@ def create_app(
     app[INTERVAL_KEY] = interval
     app[HOTKEY_KEY] = hotkey
     app[PORT_KEY] = port
+    app[AUDIO_KEY] = audio
+    run = int(time.time())
+    app[IDS_KEY] = (f"{run}-{n}" for n in itertools.count(1))
     app.router.add_get("/", handle_index)
     app.router.add_get("/page.css", handle_style)
     app.router.add_static("/static/", WEB_STATIC_DIR)
     app.router.add_get("/ws", handle_ws)
     app.router.add_post("/capture", handle_capture)
     app.router.add_post("/clear", handle_clear)
+    app.router.add_post("/audio/{id}", handle_audio_info)
+    app.router.add_get("/audio/{id}.wav", handle_audio)
+    if audio is not None:
+        app.cleanup_ctx.append(_audio_cut_ctx)
     if auto:
         app.cleanup_ctx.append(_auto_capture_ctx)
     if hotkey is not None:

@@ -52,27 +52,40 @@ def join_lines(text: str, language: Language) -> str:
 # Decides when the text area is worth an OCR pass, in automatic mode.
 # Games often draw text progressively (typewriter effect): reading mid-animation would push half sentences,
 # so the area must first stay the same between two polls, and differ from the last area that was read.
+# `changed_at`: when the area read last began to change (`clock` time), i.e. when its text appeared: its voice starts then.
 class ChangeDetector:
-    def __init__(self, similar: Callable[[Image.Image, Image.Image], bool] = frames_are_similar):
+    def __init__(self, similar: Callable[[Image.Image, Image.Image], bool] = frames_are_similar,
+                 clock: Callable[[], float] = time.monotonic):
         self._similar = similar
+        self._clock = clock
         self._last_seen: Image.Image | None = None
         self._last_read: Image.Image | None = None
+        self._changing_since: float | None = None
+        self.changed_at: float | None = None
 
     def should_read(self, crop: Image.Image) -> bool:
         previous, self._last_seen = self._last_seen, crop
         if previous is None or not self._similar(crop, previous):
+            if self._changing_since is None:
+                self._changing_since = self._clock()
             return False  # first poll, or still changing: wait until it settles
+        changed_at, self._changing_since = self._changing_since, None
         if self._last_read is not None and self._similar(crop, self._last_read):
             return False  # settled, but already read
         self._last_read = crop
+        self.changed_at = changed_at if changed_at is not None else self._clock()
         return True
 
 
+# `at`: when the line was said, on the clock of the recorded sound (time.monotonic): when its text appeared (`appeared`,
+# continuous capture), or when the capture was asked for (the capture key, during or after the line).
 @dataclass
 class CaptureResult:
     text: str
     screenshot: Image.Image
     ms: int
+    at: float = 0.0
+    appeared: bool = False
 
 
 class GameOcrSession:
@@ -122,6 +135,7 @@ class GameOcrSession:
     # `force` (manual trigger) skips the change detection. Returns (result, "") or (None, reason it was skipped).
     def capture(self, force: bool = False) -> tuple[CaptureResult | None, str]:
         start = time.perf_counter()
+        asked_at = time.monotonic()
         screenshot, text_crop = self.grab()
         if not force and not self._detector.should_read(text_crop):
             return None, "text area unchanged"
@@ -132,7 +146,10 @@ class GameOcrSession:
             return None, "same text as the previous capture"
         self._last_reading = reading
         text = self._format(reading)
-        return CaptureResult(text=text, screenshot=screenshot, ms=round((time.perf_counter() - start) * 1000)), ""
+        ms = round((time.perf_counter() - start) * 1000)
+        if force:
+            return CaptureResult(text=text, screenshot=screenshot, ms=ms, at=asked_at), ""
+        return CaptureResult(text=text, screenshot=screenshot, ms=ms, at=self._detector.changed_at, appeared=True), ""
 
     # Called when the page's history is cleared, so the current line can be captured again.
     def forget_last_text(self) -> None:

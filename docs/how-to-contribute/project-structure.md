@@ -51,6 +51,7 @@ src/miningcat/
 │   ├── sentence_readings/    # Mandarin readings chosen from the context, for cards
 │   ├── words/ cards/         # word statuses and forms, card fields
 │   ├── ocr/                  # regions, frame and text similarity, segments from OCR readings, comic page layout
+│   ├── audio/                # where the voice is in a recording (a game's line, for its card)
 │   ├── audiobook/ ebook/ frequency_lists/ library/
 ├── infrastructure/
 │   ├── persistence/          # Database, SettingsStore, repositories (words, cards, dictionaries), DictionaryQueries
@@ -185,6 +186,11 @@ the markup with Bootstrap's components and utility classes (`card`, `btn`, `form
    grabs a frame and crops the screenshot area and the text area (`application/game_ocr/session.py`);
 3. reads the text area with `OcrEngine` (in continuous mode, only once it changed and settled);
 4. pushes the screenshot + text to the page through a websocket (`interfaces/game_page/server.py`).
+
+When the backend can record the window's sound (`CaptureBackend.audio_recorder()`, macOS only for now), its recorder
+keeps the last two minutes in memory (`infrastructure/capture/audio.py`). Each capture's clip is cut from it once its line
+is over, with the line's span found by `domain/audio/voice.py` (`application/game_ocr/capture_audio.py`), and the card
+creator gets it through MiningCat's server (`/api/game/audio/...`, `application/game_ocr/line_audio.py`).
 
 See [Add a capture backend](add-capture-backend.md) to support another OS.
 

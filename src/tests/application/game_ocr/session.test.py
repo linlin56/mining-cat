@@ -101,6 +101,18 @@ def test_change_detector_skips_while_text_is_still_drawing():
     assert detector.should_read(_solid("gray")) is True     # settled on new text
 
 
+def test_change_detector_tells_when_the_text_it_reads_appeared():
+    times = iter([10.0, 11.0, 12.0, 13.0, 14.0])
+    detector = ChangeDetector(clock=lambda: next(times))
+    detector.should_read(_solid("white"))                    # 10: first poll
+    assert detector.should_read(_solid("white")) is True
+    assert detector.changed_at == 10.0
+    assert detector.should_read(_solid("black")) is False    # 11: the new text starts being drawn
+    assert detector.should_read(_solid("gray")) is False     # still drawing
+    assert detector.should_read(_solid("gray")) is True
+    assert detector.changed_at == 11.0
+
+
 # GameOcrSession.read
 def test_read_keeps_every_line_and_joins_them():
     engine = FakeEngine("第一行\n第二行")

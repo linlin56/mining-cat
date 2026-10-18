@@ -13,6 +13,7 @@
       <li class="nav-item"><a class="nav-link" href="#dictionaries" role="tab" data-tab="dictionaries"><i class="bi bi-journal-text" aria-hidden="true"></i> Dictionaries</a></li>
       <li class="nav-item"><a class="nav-link" href="#languages" role="tab" data-tab="languages"><i class="bi bi-alphabet" aria-hidden="true"></i> Words</a></li>
       <li class="nav-item"><a class="nav-link" href="#anki" role="tab" data-tab="anki"><i class="bi bi-stack" aria-hidden="true"></i> Anki</a></li>
+      <li class="nav-item"><a class="nav-link" href="#ereader" role="tab" data-tab="ereader"><i class="bi bi-tablet" aria-hidden="true"></i> E-reader</a></li>
       <li class="nav-item"><a class="nav-link" href="#translation" role="tab" data-tab="translation"><i class="bi bi-translate" aria-hidden="true"></i> Translation</a></li>
       <li class="nav-item"><a class="nav-link" href="#voice" role="tab" data-tab="voice"><i class="bi bi-megaphone" aria-hidden="true"></i> Voice</a></li>
       <li class="nav-item"><a class="nav-link" href="#cards" role="tab" data-tab="cards"><i class="bi bi-card-text" aria-hidden="true"></i> Cards
@@ -226,6 +227,53 @@
     </section>
 
     <!-- ================= Voice ================= -->
+    <!-- ================= E-reader ================= -->
+    <section id="tab-ereader" class="tab-panel vstack gap-3" hidden>
+      <div class="card">
+        <h2 class="card-header h6">Words sent from KOReader</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">With the MiningCat plugin of <strong class="text-body">KOReader</strong>,
+            a word looked up on your e-reader is sent here with its sentence, to the <a href="/inbox/">E-reader</a> page.
+            The e-reader and this computer must be on the same Wi-Fi. MiningCat then also answers on another port to
+            the devices of your network, only to receive words, and only with the token below.</p>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="ereader-enabled">
+            <label class="form-check-label" for="ereader-enabled">Let the e-reader send words</label>
+          </div>
+          <div class="row g-2 align-items-end">
+            <div class="col-auto">
+              <label class="form-label" for="ereader-port">Port</label>
+              <input type="number" class="form-control" id="ereader-port" min="1024" max="65535" style="width: 8rem">
+            </div>
+            <div class="col-auto">
+              <button type="button" class="btn btn-outline-secondary" id="ereader-port-save">Change the port</button>
+            </div>
+          </div>
+          <p class="small m-0" id="ereader-state" role="status"></p>
+          <p class="small text-body-secondary m-0" id="ereader-firewall" hidden>The first time, macOS may ask whether
+            Python can accept incoming connections: allow it, or the e-reader can't reach MiningCat.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="card-header h6">In KOReader</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">In the plugin's settings (Search › Settings › MiningCat), enter:</p>
+          <div>
+            <p class="form-label mb-1">Address</p>
+            <div class="vstack gap-1" id="ereader-addresses"></div>
+          </div>
+          <div>
+            <p class="form-label mb-1">Token</p>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <code class="fs-5 user-select-all" id="ereader-token"></code>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="ereader-token-copy"><i class="bi bi-copy" aria-hidden="true"></i> Copy</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="ereader-token-new"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> New token</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="tab-voice" class="tab-panel vstack gap-3" hidden>
       <div class="card">
         <h2 class="card-header h6">Text-to-speech</h2>

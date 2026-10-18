@@ -12,7 +12,7 @@
   <div class="collapse navbar-collapse gap-3" id="navbar-links">
     <ul class="navbar-nav ms-auto align-items-md-center">
       {% if study %}<li class="nav-item me-md-2">{% include "_study.html" %}</li>{% endif %}
-      {% for href, label in [("/converter/", "Converter"), ("/reader/", "Reader"), ("/clipboard/", "Clipboard"), ("/player/", "Player"), ("/settings/", "Settings")] %}
+      {% for href, label in [("/converter/", "Converter"), ("/reader/", "Reader"), ("/clipboard/", "Clipboard"), ("/inbox/", "E-reader"), ("/player/", "Player"), ("/settings/", "Settings")] %}
       <li class="nav-item">
         <a class="nav-link{{ ' active' if label == active }}" href="{{ href }}"{{ ' aria-current="page"'|safe if label == active }}>{{ label }}</a>
       </li>

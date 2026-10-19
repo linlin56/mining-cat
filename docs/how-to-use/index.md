@@ -132,7 +132,35 @@ to and the decks synced with its words, in **Settings › Anki**. Your other dec
 
 ![The home page, once the language is chosen: the screens, then today's Anki reviews, the streak and the heatmap](../assets/screenshots/home-hub.png)
 
-The **Settings** have a tab per topic: **Dictionaries** (import a dictionary or a frequency list), **Words**, **Anki**, **Translation**, **Cards** (the cards waiting for Anki) and **User preferences**: the theme (light, dark, or your system's), the highlight colours (with palettes for colour blindness), the colour of the heatmap of reviews (orange, green, blue, purple, pink, or a rainbow along the year) and the Discord status. The moon button in the header of every page also switches between light and dark.
+### Vocabulary goals
+
+Set a goal in **Settings › User preferences › Vocabulary goals**: "I want to know 5000 words by June 1st". Until you
+do, the home page invites you to, under the heatmap. Then it shows, for the goal with the nearest date (set several for
+milestones along the way):
+
+- the date you'll get there **at your current pace** (the words that became known in the last 30 days), and the pace
+  the goal takes;
+- the **new cards a day** to see in Anki to get there, next to your decks' limit of new cards a day (raise it in Anki
+  when it's lower);
+- the **cards to mine a day**, once the new cards already waiting in Anki (and the cards made in MiningCat but not sent
+  yet) are counted, and how many days they last at your decks' limit;
+- a chart of your known words over time, with the line at your current pace and the line your goal takes, and a chart
+  of the words known each week.
+
+A new card isn't known the day you first see it: it takes weeks before its interval reaches the known interval of
+**Settings › Anki** (21 days by default), and some cards never get there. MiningCat measures both on your own Anki
+cards (with usual values until you've reviewed enough of them), so the new cards a day are to see before the end of
+that delay: the shaded days before the goal's date in the chart are too late. The history of your known words comes
+from your Anki reviews (the day a card reached the known interval), from the words you marked known yourself, and from
+the number of known words MiningCat records each day it syncs with Anki or shows the goal.
+
+A goal is **reached** on the first day you know enough words, before its date: it gets a filled point on the chart, on
+that day, and the home page congratulates you for two weeks. A goal whose date passes first is **missed**: it gets a
+hollow point on its date, above the number of words you knew that day, and the home page tells you when you'll get
+there at your current pace. Either way, the goal stays in the list of **Settings › User preferences**, as the history
+of your goals (delete it there), and the nearest goal still to come takes over.
+
+The **Settings** have a tab per topic: **Dictionaries** (import a dictionary or a frequency list), **Words**, **Anki**, **Translation**, **Cards** (the cards waiting for Anki) and **User preferences**: the theme (light, dark, or your system's), the highlight colours (with palettes for colour blindness), the colour of the heatmap of reviews (orange, green, blue, purple, pink, or a rainbow along the year), the vocabulary goals and the Discord status. The moon button in the header of every page also switches between light and dark.
 
 ![Settings › User preferences: theme, highlight colours and Discord status](../assets/screenshots/settings-preferences.png)
 

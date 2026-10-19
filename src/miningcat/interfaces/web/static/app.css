@@ -79,3 +79,11 @@ textarea.mc-clip-editor { min-height: calc(100vh - 8rem); }
 /* Recommended captures (i+1): every word known but one new word */
 .mc-capture.i1 { box-shadow: inset 3px 0 var(--bs-success); padding-left: 0.75rem; }
 .mc-capture.i1 .mc-capture-meta::after { content: " · i+1"; color: var(--bs-success-text-emphasis); font-weight: 600; }
+
+/* The vocabulary goal on the home page (home.js): its bar, its charts and their tooltip. */
+.mc-goal-bar { background-color: var(--mc-heatmap); }
+.mc-chart-tip {
+  position: absolute; top: 0; pointer-events: none; z-index: 2; white-space: nowrap;
+  padding: .25rem .5rem; border-radius: var(--bs-border-radius); font-size: .8rem;
+  background: var(--bs-body-bg); color: var(--bs-body-color); border: 1px solid var(--bs-border-color); box-shadow: var(--bs-box-shadow-sm);
+}

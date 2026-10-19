@@ -524,6 +524,23 @@
         </div>
       </div>
       <div class="card">
+        <h2 class="card-header h6">Vocabulary goals</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">How many words you want to know, and by when, in the language you
+            study. The home page then shows, under the heatmap, when you'll get there at your current pace and how many
+            cards to mine a day, from your known words and your Anki decks (Settings › Anki). Set several goals for
+            milestones along the way: the nearest one counts. Reached and missed goals stay here and on the chart.</p>
+          <form class="d-flex flex-wrap align-items-center gap-2" id="goal-form">
+            <label for="goal-words">I want to know</label>
+            <input type="number" class="form-control w-auto" id="goal-words" min="1" max="1000000" step="1" required placeholder="5000" style="max-width: 9rem">
+            <label for="goal-by">words by</label>
+            <input type="date" class="form-control w-auto" id="goal-by" required>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add the goal</button>
+          </form>
+          <ul class="list-group" id="goal-list"></ul>
+        </div>
+      </div>
+      <div class="card">
         <h2 class="card-header h6">Discord</h2>
         <div class="card-body vstack gap-3">
           <p class="small text-body-secondary m-0">While MiningCat runs, your Discord profile shows what you do (reading

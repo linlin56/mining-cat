@@ -1,4 +1,5 @@
 import time
+from datetime import date
 
 from miningcat.application.mining import preferences
 from miningcat.domain.languages import CHINESE_LANGUAGES, LANGUAGES
@@ -93,3 +94,9 @@ def apply_anki_state(language: str, expression: str, reading: str, note_id: int 
         return word["status"]
     set_status(language, expression, reading, status, source="anki", anki_note_id=note_id, anki_interval=interval)
     return status
+
+
+def record_known(language: str, day: date) -> int:
+    """Records the number of known words of the language on that (Anki) day, for the history of the vocabulary goal."""
+    with database.session() as conn:
+        return WordRepository(conn).record_known(language, day.isoformat())

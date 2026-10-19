@@ -22,31 +22,108 @@ def language_decks(language: str) -> list[str]:
     return [deck for deck in dict.fromkeys(decks) if deck]
 
 
+class CardHistory:
+    """A card's first review and the steps of its interval: (review id, interval in days) each time it got longer than
+    ever, enough to tell when it reached any interval (a word is known from Settings › Anki's interval on)."""
+    __slots__ = ("first", "steps")
+
+    def __init__(self, first: int):
+        self.first = first
+        self.steps: list[tuple[int, int]] = []
+
+    def add(self, review_id: int, interval: int) -> None:
+        self.first = min(self.first, review_id)
+        if interval > (self.steps[-1][1] if self.steps else 0):
+            self.steps.append((review_id, interval))
+
+    def copy(self) -> "CardHistory":
+        history = CardHistory(self.first)
+        history.steps = list(self.steps)
+        return history
+
+    def reached(self, interval: int) -> int | None:
+        """The id (time in ms) of the review that gave the card that interval, or None."""
+        return next((review_id for review_id, days in self.steps if days >= interval), None)
+
+
 class ReviewDays:
-    """The number of reviews of each Anki day, per deck (subdecks apart: AnkiConnect's cardReviews reads one deck).
-    Kept while MiningCat runs: a deck's review log is read once, then from its last review on."""
+    """The number of reviews of each Anki day, and the history of each card, per deck (subdecks apart: AnkiConnect's
+    cardReviews reads one deck). Kept while MiningCat runs: a deck's review log is read once, then from its last
+    review on."""
 
     def __init__(self):
         self._lock = threading.Lock()
-        self._decks: dict[str, tuple[int, Counter]] = {}  # deck -> (id of its last review read, reviews per day)
+        # deck -> (id of its last review read, reviews per day, {card id: its history})
+        self._decks: dict[str, tuple[int, Counter, dict[int, CardHistory]]] = {}
+
+    def _read(self, client: AnkiConnect, deck: str) -> tuple[Counter, dict[int, CardHistory]]:
+        last_id, days, cards = self._decks.get(deck, (0, Counter(), {}))
+        days = Counter(days)
+        # [review id (ms), card id, usn, button, interval, last interval, factor, duration, type]. An interval < 0 is
+        # in seconds: a learning step.
+        for row in client.invoke("cardReviews", timeout=HISTORY_TIMEOUT, deck=deck, startID=last_id):
+            last_id = max(last_id, row[0])
+            if row[8] in reviews.REVIEW_TYPES:
+                days[reviews.anki_day(datetime.fromtimestamp(row[0] / 1000))] += 1
+                cards.setdefault(row[1], CardHistory(row[0])).add(row[0], max(0, int(row[4])))
+        self._decks[deck] = (last_id, days, cards)
+        return days, cards
 
     def of(self, client: AnkiConnect, decks: list[str]) -> Counter:
         total = Counter()
         with self._lock:
             for deck in decks:
-                last_id, days = self._decks.get(deck, (0, Counter()))
-                days = Counter(days)
-                # [review id (ms), card id, usn, button, interval, last interval, factor, duration, type]
-                for row in client.invoke("cardReviews", timeout=HISTORY_TIMEOUT, deck=deck, startID=last_id):
-                    last_id = max(last_id, row[0])
-                    if row[8] in reviews.REVIEW_TYPES:
-                        days[reviews.anki_day(datetime.fromtimestamp(row[0] / 1000))] += 1
-                self._decks[deck] = (last_id, days)
-                total.update(days)
+                total.update(self._read(client, deck)[0])
         return total
+
+    def cards(self, client: AnkiConnect, decks: list[str]) -> dict[int, CardHistory]:
+        """The history of the cards reviewed in the decks: copies, the cache's own ones changing with the next reads."""
+        result: dict[int, CardHistory] = {}
+        with self._lock:
+            for deck in decks:
+                result.update({card: history.copy() for card, history in self._read(client, deck)[1].items()})
+        return result
 
 
 review_days = ReviewDays()
+
+# AnkiConnect's cardsInfo, that many cards at a time.
+CARDS_PER_REQUEST = 1000
+
+
+class CardNotes:
+    """The note of each card (it never changes), kept while MiningCat runs: thousands of cards are read once, most
+    of them by the sync."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._notes: dict[int, int | None] = {}
+
+    def remember(self, card: int, note: int) -> None:
+        """A card's note, read elsewhere (the sync reads the cards of the synced decks)."""
+        with self._lock:
+            self._notes[card] = note
+
+    def of(self, client: AnkiConnect, cards: list[int]) -> dict[int, int | None]:
+        with self._lock:
+            unknown = [card for card in cards if card not in self._notes]
+            for info in client.in_batches("cardsInfo", "cards", unknown, CARDS_PER_REQUEST):
+                if info.get("cardId"):
+                    self._notes[info["cardId"]] = info.get("note")
+            for card in unknown:
+                self._notes.setdefault(card, None)  # deleted since
+            return {card: self._notes[card] for card in cards}
+
+
+card_notes = CardNotes()
+
+
+def existing_decks(client: AnkiConnect, linked: list[str]) -> tuple[list[str], list[str]]:
+    """(the linked decks and their subdecks, each read apart by cardReviews; the top ones, whose counts include their
+    subdecks'), among the decks of Anki."""
+    existing = client.invoke("deckNames", timeout=3)
+    decks = [name for name in existing if any(reviews.in_deck(name, deck) for deck in linked)]
+    return decks, reviews.top_decks([deck for deck in linked if deck in existing])
 
 
 def summary(language: str, now: datetime | None = None) -> dict:
@@ -58,10 +135,7 @@ def summary(language: str, now: datetime | None = None) -> dict:
         return {"linked": False}
     client = anki()
     try:
-        existing = client.invoke("deckNames", timeout=3)
-        # The decks and their subdecks, each read apart; their due counts, from the top ones (with their subdecks').
-        decks = [name for name in existing if any(reviews.in_deck(name, deck) for deck in linked)]
-        top = reviews.top_decks([deck for deck in linked if deck in existing])
+        decks, top = existing_decks(client, linked)
         stats = client.invoke("getDeckStats", decks=top).values() if top else []
         by_day = review_days.of(client, decks)
     except AnkiError as exc:

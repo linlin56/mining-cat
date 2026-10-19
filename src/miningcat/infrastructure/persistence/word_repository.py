@@ -108,3 +108,29 @@ class WordRepository:
         return self._conn.execute(
             "SELECT language, expression, reading, anki_note_id FROM words WHERE source = 'card' AND anki_note_id IS NOT NULL"
         ).fetchall()
+
+    def anki_linked_words(self) -> list[dict]:
+        """The words whose status comes from an Anki note (not the ones set by hand)."""
+        return [as_dict(r) for r in self._conn.execute(
+            "SELECT id, language, expression, reading, status, anki_note_id FROM words"
+            " WHERE source != 'manual' AND anki_note_id IS NOT NULL")]
+
+    def known_words(self, language: str) -> list[dict]:
+        """The known words of a language, with what tells when they became known (source, Anki note, dates)."""
+        return [_word(r) for r in self._conn.execute(
+            "SELECT id, source, anki_note_id, created, updated FROM words WHERE language = ? AND status = 'known'",
+            (language,))]
+
+    def record_known(self, language: str, day: str) -> int:
+        """Records the number of known words of a language on a day (ISO date), replacing that day's. Returns it."""
+        known = self._conn.execute(
+            "SELECT COUNT(*) FROM words WHERE language = ? AND status = 'known'", (language,)).fetchone()[0]
+        self._conn.execute(
+            "INSERT INTO known_history(language, day, known) VALUES (?, ?, ?)"
+            " ON CONFLICT(language, day) DO UPDATE SET known = excluded.known", (language, day, known))
+        return known
+
+    def known_history(self, language: str) -> dict[str, int]:
+        """{ISO date: known words} of the days recorded."""
+        return {r["day"]: r["known"] for r in self._conn.execute(
+            "SELECT day, known FROM known_history WHERE language = ? ORDER BY day", (language,))}

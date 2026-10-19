@@ -79,6 +79,11 @@
         </div>
       </nav>
 
+      <div class="card mt-4" id="reviews-loading" hidden>
+        <div class="card-body d-flex align-items-center gap-2 small text-body-secondary">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> <span role="status">Loading your Anki reviews…</span>
+        </div>
+      </div>
       <!-- Anki, under the screens: today's reviews in the language's decks, the streak, the heatmap of a year -->
       <section class="card mt-4" id="reviews" aria-labelledby="reviews-message" hidden>
         <div class="card-body vstack gap-3">
@@ -100,6 +105,58 @@
           </div>
         </div>
       </section>
+
+      <div class="card mt-4" id="goal-loading" hidden>
+        <div class="card-body d-flex align-items-center gap-2 small text-body-secondary">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> <span role="status">Loading your vocabulary goal…</span>
+        </div>
+      </div>
+      <!-- Without a vocabulary goal: what it would show -->
+      <section class="card mt-4" id="goal-intro" aria-labelledby="goal-intro-title" hidden>
+        <div class="card-body d-flex flex-wrap flex-md-nowrap align-items-center gap-3">
+          <i class="bi bi-flag fs-2 text-primary-emphasis" aria-hidden="true"></i>
+          <div class="flex-grow-1" style="min-width: 15rem">
+            <h3 class="h6 fw-semibold mb-1" id="goal-intro-title">Do you want to set a vocabulary goal?</h3>
+            <p class="small text-body-secondary m-0">Say how many words you want to know, and by when, in Settings ›
+              User preferences. You'll see here when you'll get there at your current pace, how many new cards a day it
+              takes, how many cards to mine a day, and charts of your progress.</p>
+          </div>
+          <a class="btn btn-primary text-nowrap flex-shrink-0" href="/settings/#preferences"><i class="bi bi-flag" aria-hidden="true"></i> Set a goal</a>
+        </div>
+      </section>
+
+      <!-- The vocabulary goals (Settings › User preferences), under the heatmap: the nearest one, when at the current
+           pace and what to do; the goals reached and missed on the chart -->
+      <section class="card mt-4" id="goal" aria-labelledby="goal-title" hidden>
+        <div class="card-body vstack gap-3">
+          <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2">
+            <h3 class="h6 fw-semibold m-0" id="goal-title"></h3>
+            <span class="d-flex align-items-baseline gap-3">
+              <span class="small text-body-secondary" id="goal-updating" hidden>
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> <span role="status">Updating…</span>
+              </span>
+              <a class="small" href="/settings/#preferences">Your goals</a>
+            </span>
+          </div>
+          <div class="alert d-flex align-items-start gap-2 small m-0" role="status" id="goal-banner" hidden></div>
+          <div class="vstack gap-3" id="goal-current">
+            <div class="progress" role="progressbar" id="goal-progress" aria-label="Words known" aria-valuemin="0" aria-valuemax="100" style="height: .5rem">
+              <div class="progress-bar mc-goal-bar"></div>
+            </div>
+            <div class="row row-cols-1 row-cols-md-3 g-3" id="goal-stats"></div>
+          </div>
+          <div class="vstack gap-2">
+            <h4 class="small fw-semibold text-body-secondary m-0">Known words</h4>
+            <div class="position-relative" id="goal-chart"></div>
+            <p class="small text-body-secondary m-0 d-flex flex-wrap gap-3" id="goal-legend"></p>
+          </div>
+          <div class="vstack gap-2">
+            <h4 class="small fw-semibold text-body-secondary m-0">Words known each week</h4>
+            <div class="position-relative" id="goal-weeks"></div>
+          </div>
+          <p class="small text-body-secondary m-0" id="goal-note"></p>
+        </div>
+      </section>
     </section>
 
     <!-- Language choice -->
@@ -109,5 +166,30 @@
       <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-2" id="languages"></div>
     </section>
   </div>
+  </div>
+
+  <!-- After a sync: the words whose Anki note was deleted lost their status; the user says which ones they know -->
+  <div class="modal" id="deleted-modal" tabindex="-1" aria-labelledby="deleted-title">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="deleted-title">Cards deleted in Anki</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body vstack gap-3">
+          <p class="m-0">You deleted these cards in Anki since the last sync, so their words lost their status. Check
+            the ones you know: they'll be marked known. The others will have no status.</p>
+          <label class="form-check m-0">
+            <input class="form-check-input" type="checkbox" id="deleted-all">
+            <span class="form-check-label">Select all</span>
+          </label>
+          <div class="list-group" id="deleted-list"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Ask me later</button>
+          <button type="button" class="btn btn-primary" id="deleted-save">Done</button>
+        </div>
+      </div>
+    </div>
   </div>
 {% endblock %}

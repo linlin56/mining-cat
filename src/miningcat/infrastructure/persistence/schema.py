@@ -137,6 +137,15 @@ CREATE TABLE IF NOT EXISTS inbox (
 );
 CREATE INDEX IF NOT EXISTS inbox_language ON inbox(language);
 
+-- The number of known words of a language at the end of a day (an Anki day), recorded when MiningCat syncs with Anki
+-- or shows the vocabulary goal: the exact history of the words known, which `words` doesn't keep.
+CREATE TABLE IF NOT EXISTS known_history (
+    language TEXT NOT NULL,
+    day      TEXT NOT NULL,           -- ISO date
+    known    INTEGER NOT NULL,
+    PRIMARY KEY (language, day)
+);
+
 CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL

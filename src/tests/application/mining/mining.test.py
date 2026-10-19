@@ -1379,3 +1379,56 @@ def test_zhuyin_readings(client, zh_dict, fake_anki):
 def test_script_settings_only_for_studied_languages(client, zh_dict):
     languages = {l["id"]: l for l in client.get("/api/mining/languages").get_json()["languages"]}
     assert languages["zh"]["studied"] and not languages["yue"]["studied"] and not languages["nan"]["studied"]
+
+
+def test_auto_sync_leaves_the_waiting_cards(fake_anki):
+    setup_chinese_notes()
+    url = anki.get_config()["url"]
+    anki.save_config({"url": "http://127.0.0.1:9"})
+    anki.create_card("zh", {"word": "散步", "definition": "walk"}, {})
+    anki.save_config({"url": url})
+    report = anki.auto_sync()
+    assert report["cards"] is None and anki.list_cards("pending")[0]["expression"] == "散步"
+    assert anki.auto_sync() == {"skipped": True}  # just made
+
+
+def test_words_of_deleted_notes_lose_their_status(fake_anki):
+    anki.save_config({"sync": {"zh": [{"deck": "Mining::Chinese", "field": "Hanzi"}]}})
+    kept = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "我們"}, interval=40)
+    deleted = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "天氣"}, interval=40)
+    by_hand = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "散步"}, interval=3)
+    anki.sync()
+    words.set_status("zh", "散步", "", "known")  # by hand: Anki doesn't change it
+    del fake_anki.notes[deleted], fake_anki.notes[by_hand]
+    assert anki.sync()["deleted"] == 1
+    assert words.status_of("zh", "天氣")["status"] == "new"
+    assert words.status_of("zh", "散步")["status"] == "known" and words.status_of("zh", "我們")["status"] == "known"
+    waiting = anki.deleted_words("zh")
+    assert [w["expression"] for w in waiting] == ["天氣"] and anki.deleted_words("ja") == []
+    # a word deleted while the question is asked waits for the next one
+    words.set_status("zh", "我們", "", "learning", source="anki", anki_note_id=kept)
+    del fake_anki.notes[kept]
+    anki.sync()
+    anki.settle_deleted_words("zh", [waiting[0]["id"]], [waiting[0]["id"]])
+    assert words.status_of("zh", "天氣") == {"status": "known", "source": "manual"}
+    assert [w["expression"] for w in anki.deleted_words("zh")] == ["我們"]
+
+
+def test_every_note_deleted(fake_anki):
+    anki.save_config({"sync": {"zh": [{"deck": "Mining::Chinese", "field": "Hanzi"}]}})
+    fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "我們"}, interval=40)
+    anki.sync()
+    fake_anki.notes.clear()
+    assert anki.sync()["deleted"] == 1 and words.status_of("zh", "我們")["status"] == "new"
+
+
+def test_nothing_is_forgotten_in_another_profile(fake_anki):
+    anki.save_config({"sync": {"zh": [{"deck": "Mining::Chinese", "field": "Hanzi"}]}})
+    fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "我們"}, interval=40)
+    anki.sync()
+    fake_anki.notes.clear()
+    fake_anki.profile = "Someone else"
+    assert anki.sync()["deleted"] == 0 and words.status_of("zh", "我們")["status"] == "known"
+    # an AnkiConnect that can't tell the profile: nothing forgotten when Anki has none of the notes
+    fake_anki.profile = None
+    assert anki.sync()["deleted"] == 0 and words.status_of("zh", "我們")["status"] == "known"

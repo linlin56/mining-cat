@@ -928,12 +928,64 @@ async function loadDiscord() {
   }
 }
 
+// ---------------------------------------------------------------- user preferences: the vocabulary goals (the home page)
+const goalDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { dateStyle: "long" });
+
+function goalOutcome(goal) {
+  if (goal.status === "reached") {
+    const early = Math.round((Date.parse(goal.by) - Date.parse(goal.reached_on)) / 86_400_000);
+    return ["trophy", "text-success", `Reached on ${goalDate(goal.reached_on)}${early > 0 ? `, ${early} day${early > 1 ? "s" : ""} early` : ""}`];
+  }
+  if (goal.status === "missed") return ["x-circle", "text-body-secondary", `Missed: ${goal.missed_known.toLocaleString()} words known that day`];
+  return ["flag", "text-primary-emphasis", "In progress"];
+}
+
+function renderGoals(goals) {
+  const list = $("goal-list");
+  if (!goals.length) {
+    list.replaceChildren(el("li", { class: "list-group-item small text-body-secondary", text: `No goal for ${langName(STUDY)} yet.` }));
+    return;
+  }
+  // the goals in progress first, then the past ones, the latest first
+  const ordered = [...goals.filter((g) => g.status === "active"), ...goals.filter((g) => g.status !== "active").reverse()];
+  list.replaceChildren(...ordered.map((goal) => {
+    const [icon, color, outcome] = goalOutcome(goal);
+    const remove = el("button", { type: "button", class: "btn btn-sm btn-outline-secondary", title: "Delete the goal", "aria-label": "Delete the goal" },
+      el("i", { class: "bi bi-trash", "aria-hidden": "true" }));
+    remove.addEventListener("click", async () => {
+      if (!(await confirmBox("Delete the goal", `Delete the goal of ${goal.words.toLocaleString()} words by ${goalDate(goal.by)}?`, "Delete"))) return;
+      try { renderGoals((await api(`/api/goals/${goal.id}/delete`, { language: STUDY })).goals); } catch (err) { showError(err); }
+    });
+    const i = el("i", { class: `bi bi-${icon} ${color} fs-5`, "aria-hidden": "true" });
+    const text = el("div", { class: "flex-grow-1" },
+      el("strong", { class: "d-block", text: `${goal.words.toLocaleString()} words by ${goalDate(goal.by)}` }),
+      el("span", { class: "small text-body-secondary", text: outcome }));
+    return el("li", { class: "list-group-item d-flex align-items-center gap-3" }, i, text, remove);
+  }));
+}
+
+async function loadGoals() {
+  // tomorrow, in local time (the server compares with the local day)
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  $("goal-by").min = [tomorrow.getFullYear(), tomorrow.getMonth() + 1, tomorrow.getDate()].map((n) => String(n).padStart(2, "0")).join("-");
+  $("goal-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      renderGoals((await api("/api/goals", { language: STUDY, words: $("goal-words").value, by: $("goal-by").value })).goals);
+      $("goal-form").reset();
+    } catch (err) { showError(err); }
+  });
+  renderGoals((await api(`/api/goals?language=${encodeURIComponent(STUDY)}`)).goals);
+}
+
 // ---------------------------------------------------------------- init
 
 async function init() {
   try {
     loadDiscord().catch(showError);
     await loadLanguages();
+    if (STUDY) loadGoals().catch(showError);
     await loadDictionaries();
     $("dict-pick").addEventListener("click", () => $("dict-file").click());
     $("dict-file").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; importDictionary(f); });

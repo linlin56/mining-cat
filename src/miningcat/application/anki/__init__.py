@@ -14,13 +14,13 @@ from miningcat.application.anki.deck import create_deck
 from miningcat.application.anki.connection import deck_fields, model_fields, status
 from miningcat.application.anki.note_fields import derived_fields, note_fields
 from miningcat.application.anki.note_type import install_note_type
-from miningcat.application.anki.sync import sync
+from miningcat.application.anki.sync import auto_sync, deleted_words, settle_deleted_words, sync
 from miningcat.domain.cards.errors import AnkiError, AnkiUnavailable
 from miningcat.domain.cards.fields import CARD_FIELDS, MEDIA_FIELDS, guess_field_templates
 
 __all__ = [
-    "AnkiError", "AnkiUnavailable", "CARD_FIELDS", "DEFAULT_TAG", "MEDIA_FIELDS", "card_media_dir", "create_card",
+    "AnkiError", "AnkiUnavailable", "auto_sync", "CARD_FIELDS", "DEFAULT_TAG", "MEDIA_FIELDS", "card_media_dir", "create_card",
     "create_deck", "deck_fields", "delete_card", "derived_fields", "export_apkg", "get_card", "get_config", "guess_field_templates",
     "install_note_type", "list_cards", "model_fields", "note_fields", "save_config", "send_card", "send_pending",
-    "status", "store_media", "sync",
+    "deleted_words", "settle_deleted_words", "status", "store_media", "sync",
 ]

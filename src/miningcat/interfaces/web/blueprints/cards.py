@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, request, send_file
 
 from miningcat.application import anki
-from miningcat.application.anki import reviews
+from miningcat.application.anki import goals, reviews
 from miningcat.interfaces.web.errors import UserError
 from miningcat.interfaces.web.jobs import current_state
 from miningcat.interfaces.web.requests import json_body, study_language
@@ -26,6 +26,34 @@ def api_anki_reviews():
     elif discord is not None and not summary["linked"]:
         discord.streak_changed(0)
     return jsonify(summary)
+
+
+# The vocabulary goals of a language (Settings › User preferences), and what it takes to reach them (the home page).
+@bp.get("/api/goals")
+def api_goals():
+    return jsonify(goals=goals.get_goals(study_language(request.args.get("language"))))
+
+
+@bp.post("/api/goals")
+def api_add_goal():
+    body = json_body()
+    language = study_language(body.get("language"))
+    goal = goals.add_goal(language, body.get("words"), body.get("by"))
+    return jsonify(goal=goal, goals=goals.get_goals(language))
+
+
+@bp.post("/api/goals/<int:goal_id>/delete")
+def api_delete_goal(goal_id: int):
+    language = study_language(json_body().get("language"))
+    goals.delete_goal(language, goal_id)
+    return jsonify(goals=goals.get_goals(language))
+
+
+# ?cached=1: the last plan made, at once (the home page shows it, then asks for a new one)
+@bp.get("/api/goals/plan")
+def api_goal_plan():
+    language = study_language(request.args.get("language"))
+    return jsonify(goals.cached_summary(language) if request.args.get("cached") else goals.summary(language))
 
 
 @bp.get("/api/anki/config")
@@ -67,6 +95,27 @@ def api_anki_note_type():
 @bp.post("/api/anki/sync")
 def api_anki_sync():
     return jsonify(anki.sync())
+
+
+# The home page's sync: the word statuses only, the waiting cards stay waiting. {"skipped": true} when one was just made.
+@bp.post("/api/anki/auto-sync")
+def api_anki_auto_sync():
+    return jsonify(anki.auto_sync())
+
+
+# The words whose Anki note was deleted: the user says which ones they know.
+@bp.get("/api/anki/deleted-words")
+def api_deleted_words():
+    return jsonify(words=anki.deleted_words(study_language(request.args.get("language"))))
+
+
+@bp.post("/api/anki/deleted-words")
+def api_settle_deleted_words():
+    body = json_body()
+    language = study_language(body.get("language"))
+    ids = lambda key: [str(i) for i in body.get(key) or []]
+    anki.settle_deleted_words(language, ids("shown"), ids("known"))
+    return jsonify(words=anki.deleted_words(language))
 
 
 @bp.post("/api/cards")

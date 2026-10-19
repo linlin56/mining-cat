@@ -17,10 +17,12 @@ class FakeAnki:
         self.cards: dict[int, dict] = {}
         self.media: dict[str, dict] = {}
         self.next_id = 1_700_000_000_000
-        # The review log: [(review id = time in ms, deck, review type)], and the decks' due counts
+        # The review log: [(review id = time in ms, deck, review type[, card id, interval])], and the decks' due counts
         # ({deck: {"new_count", "learn_count", "review_count"}}, the decks not listed having none).
-        self.revlog: list[tuple[int, str, int]] = []
+        self.revlog: list[tuple] = []
         self.deck_stats: dict[str, dict] = {}
+        self.new_per_day: dict[str, int] = {}  # the decks' limit of new cards a day (20 when not listed)
+        self.profile: str | None = "User 1"  # None: an AnkiConnect too old to tell it
         self.review_reads: list[tuple[str, int]] = []  # the cardReviews calls: (deck, startID)
 
     def _id(self) -> int:
@@ -39,6 +41,10 @@ class FakeAnki:
         with self.lock:
             if action == "version":
                 return 6
+            if action == "getActiveProfile":
+                if self.profile is None:
+                    raise ValueError("unsupported action")
+                return self.profile
             if action == "deckNames":
                 return list(self.decks)
             if action == "modelNames":
@@ -93,6 +99,8 @@ class FakeAnki:
                                        "fields": note["fields"], "cards": [card_id], "tags": note.get("tags", [])}
                 self.cards[card_id] = {"note": note_id, "interval": 0, "queue": 0, "deck": note["deckName"]}
                 return note_id
+            if action == "findNotes" and params["query"].startswith("nid:"):
+                return [int(n) for n in params["query"][4:].split(",") if int(n) in self.notes]
             if action == "findNotes":
                 match = re.search(r'deck:([^"]+)', params["query"])
                 deck = match.group(1) if match else None
@@ -104,6 +112,11 @@ class FakeAnki:
                      "cards": self.notes[nid]["cards"]}
                     for nid in params["notes"] if nid in self.notes
                 ]
+            if action == "findCards" and "is:new" in params["query"]:
+                deck = re.search(r'deck:([^"]+)', params["query"]).group(1)
+                own = '-"deck:' in params["query"]  # without its subdecks
+                return [cid for cid, c in self.cards.items()
+                        if c["queue"] == 0 and (c["deck"] == deck or (not own and c["deck"].startswith(deck + "::")))]
             if action == "findCards":
                 ids = {int(x) for x in re.findall(r"\d+", params["query"])}
                 return [cid for cid, c in self.cards.items() if c["note"] in ids]
@@ -113,8 +126,11 @@ class FakeAnki:
                         for cid in params["cards"] if cid in self.cards]
             if action == "cardReviews":  # the reviews of the deck itself, not of its subdecks
                 self.review_reads.append((params["deck"], params["startID"]))
-                return [[rid, 1, -1, 3, 10, 5, 2500, 6000, kind] for rid, deck, kind in self.revlog
+                rows = [(*row, 1, 10)[:5] for row in self.revlog]
+                return [[rid, card, -1, 3, interval, 5, 2500, 6000, kind] for rid, deck, kind, card, interval in rows
                         if deck == params["deck"] and rid > params["startID"]]
+            if action == "getDeckConfig":
+                return {"name": "Default", "new": {"perDay": self.new_per_day.get(params["deck"], 20)}}
             if action == "getDeckStats":
                 empty = {"new_count": 0, "learn_count": 0, "review_count": 0}
                 return {str(self.decks[name]): {"deck_id": self.decks[name], "name": name, **empty, **self.deck_stats.get(name, {})}

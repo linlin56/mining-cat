@@ -1,0 +1,192 @@
+"""The vocabulary goals of a language (Settings › User preferences: "I want to know N words by a date") and where the
+user stands, for the home page: the history of their known words and of their goals, reached or missed, their pace,
+and what it takes to reach the nearest goal.
+
+The history comes from two places: the days recorded in the database (known_history, exact), and before them the day
+each known word became known, read from the Anki review log (the day one of its cards reached the known interval) or,
+for the words marked known by hand, from the database."""
+from datetime import date, datetime, timedelta
+
+from miningcat.application.anki.config import anki, get_config
+from miningcat.application.anki.reviews import card_notes, existing_decks, language_decks, review_days
+from miningcat.application.mining import words
+from miningcat.domain.cards import reviews
+from miningcat.domain.cards.errors import AnkiError
+from miningcat.domain.languages import LANGUAGES
+from miningcat.domain.words import goals
+from miningcat.domain.words.status import WordError
+from miningcat.infrastructure.anki.ankiconnect import AnkiConnect
+from miningcat.infrastructure.persistence.card_repository import CardRepository
+from miningcat.infrastructure.persistence.database import database
+from miningcat.infrastructure.persistence.settings_store import settings
+from miningcat.infrastructure.persistence.word_repository import WordRepository
+
+# {language: [{id, words, by (ISO date), created (ISO date), reached_on (ISO date) or missed_known (words known on
+# its date) once settled}]}
+_SETTING = "vocabulary_goals"
+MAX_WORDS = 1_000_000
+# The last plan made for each language ({language: summary()}): the home page shows it at once, then the new one.
+_PLANS = "goal_plans"
+
+
+def _all_goals() -> dict[str, list[dict]]:
+    saved = settings.get(_SETTING, {}) or {}
+    return {language: goals_ for language, goals_ in saved.items() if isinstance(goals_, list)}
+
+
+def get_goals(language: str) -> list[dict]:
+    """The goals of a language, by date, each with its status (active, reached, missed)."""
+    return sorted(({**goal, "status": goals.status(goal)} for goal in _all_goals().get(language, [])),
+                  key=lambda goal: (goal["by"], goal["words"]))
+
+
+def _save_goals(language: str, language_goals: list[dict]) -> None:
+    all_goals = _all_goals()
+    all_goals[language] = [{key: value for key, value in goal.items() if key != "status"} for goal in language_goals]
+    settings.set(_SETTING, all_goals)
+
+
+def add_goal(language: str, words_goal, by, today: date | None = None) -> dict:
+    """A new goal: more words than known now, by a day after today."""
+    if language not in LANGUAGES:
+        raise WordError(f"Unknown language: {language}")
+    try:
+        count, day = int(words_goal), date.fromisoformat(str(by))
+    except (TypeError, ValueError):
+        raise WordError("A goal is a number of words and a date.")
+    if not 0 < count <= MAX_WORDS:
+        raise WordError(f"A goal is between 1 and {MAX_WORDS:,} words.")
+    today = today or reviews.anki_day(datetime.now())
+    if day <= today:
+        raise WordError("The goal's date has to be after today.")
+    known = words.counts().get(language, {}).get("known", 0)
+    if count <= known:
+        raise WordError(f"You already know {known:,} words: aim for more.")
+    language_goals = _all_goals().get(language, [])
+    goal = {"id": max((g["id"] for g in language_goals), default=0) + 1, "words": count, "by": day.isoformat(),
+            "created": today.isoformat()}
+    _save_goals(language, [*language_goals, goal])
+    return {**goal, "status": goals.ACTIVE}
+
+
+def delete_goal(language: str, goal_id: int) -> None:
+    _save_goals(language, [goal for goal in _all_goals().get(language, []) if goal["id"] != goal_id])
+
+
+
+
+def _day(review_id: int) -> date:
+    return reviews.anki_day(datetime.fromtimestamp(review_id / 1000))
+
+
+def _anki_state(client: AnkiConnect, language: str, known_interval: int) -> dict:
+    """What Anki tells of the language's decks: when each card was first seen and became known, the note each known
+    card belongs to, the new cards waiting and the decks' limit of new cards a day."""
+    decks, top = existing_decks(client, language_decks(language))
+    history = review_days.cards(client, decks)
+    first_seen = {card: _day(h.first) for card, h in history.items()}
+    matured = {card: _day(reached) for card, h in history.items() if (reached := h.reached(known_interval)) is not None}
+    notes = card_notes.of(client, list(matured))
+    note_known: dict[int, date] = {}
+    for card, day in matured.items():
+        note = notes.get(card)
+        if note is not None:
+            note_known[note] = min(day, note_known.get(note, day))
+    backlog = new_per_day = 0
+    for deck in top:
+        waiting, limit = _new_cards(client, deck, [d for d in decks if reviews.in_deck(d, deck)])
+        backlog += waiting
+        new_per_day += limit
+    return {"decks": top, "first_seen": first_seen, "matured": matured, "note_known": note_known,
+            "backlog": backlog, "new_per_day": new_per_day}
+
+
+def _new_cards(client: AnkiConnect, top: str, decks: list[str]) -> tuple[int, int]:
+    """(new cards waiting, new cards a day) of a deck and its subdecks (`decks`, itself included), studied from it:
+    its own limit caps them all, and only the decks holding new cards count, each up to its own limit."""
+    limits: dict[str, int] = {}
+    waiting = top_limit = 0
+    for deck in decks:
+        own = len(client.invoke("findCards", query=f'"deck:{deck}" -"deck:{deck}::*" is:new -is:suspended'))
+        limit = int((client.invoke("getDeckConfig", deck=deck) or {}).get("new", {}).get("perDay") or 0)
+        waiting += own
+        if deck == top or own:
+            limits[deck] = limit if own else 0
+        if deck == top:
+            top_limit = limit
+    holding = sum(limits.values())
+    return waiting, min(top_limit, holding) if holding else top_limit
+
+
+def _known_day(word: dict, note_known: dict[int, date], lag: int) -> date:
+    """The day a known word became known: from its Anki cards, else the day it was marked known (by hand), else for a
+    word synced from Anki whose reviews aren't in the decks read, `lag` days after its note was made."""
+    if word["anki_note_id"] in note_known:
+        return note_known[word["anki_note_id"]]
+    updated = reviews.anki_day(datetime.fromtimestamp(word["updated"]))
+    if word["source"] == "manual":
+        return updated
+    return min(updated, reviews.anki_day(datetime.fromtimestamp(word["added"])) + timedelta(days=lag))
+
+
+def cached_summary(language: str) -> dict:
+    """The last summary made for the language, while its goals haven't changed since; else a new one."""
+    last = (settings.get(_PLANS, {}) or {}).get(language)
+    if last and last.get("goals") == get_goals(language):
+        return last
+    return summary(language)
+
+
+def summary(language: str, now: datetime | None = None) -> dict:
+    """{goals: []} without any goal. Else {goals (each with its status, settled from the history: reached or missed),
+    current: the active goal the plan is for, or None, today, anki: {linked, connected, error?, decks?}, plan (see
+    domain/words/goals.py, dates as ISO; None without a current goal), history: [[ISO date, known words]] of every day}."""
+    language_goals = _all_goals().get(language, [])
+    if not language_goals:
+        return {"goals": []}
+    today = reviews.anki_day(now or datetime.now())
+    words.record_known(language, today)
+    with database.session() as conn:
+        repository = WordRepository(conn)
+        known_words = repository.known_words(language)
+        snapshots = {date.fromisoformat(day): known for day, known in repository.known_history(language).items()}
+        counts = repository.counts().get(language, {})
+        pending = CardRepository(conn).count("pending", language)
+
+    config = get_config()
+    state, status = None, {"linked": bool(language_decks(language)), "connected": False}
+    if status["linked"]:
+        try:
+            state = _anki_state(anki(), language, config["known_interval"])
+            status.update(connected=True, decks=state["decks"])
+        except AnkiError as exc:
+            status["error"] = str(exc)
+    lag, success, sample = goals.maturity(state["first_seen"], state["matured"], today) if state else (goals.DEFAULT_LAG, goals.DEFAULT_SUCCESS, 0)
+
+    note_known = state["note_known"] if state else {}
+    curve = goals.known_curve([_known_day(w, note_known, lag) for w in known_words], snapshots, today)
+    # A goal is settled for good: not from guessed days, when Anki should tell them but doesn't answer.
+    settled = language_goals
+    if state is not None or not status["linked"]:
+        settled = [goals.settle(goal, curve, today) for goal in language_goals]
+        if settled != language_goals:
+            _save_goals(language, settled)
+    goal = goals.current(settled)
+    plan = None
+    if goal is not None:
+        pipeline = goals.Pipeline(
+            known=counts.get("known", 0), learning=counts.get("learning", 0),
+            backlog=state["backlog"] + pending if state else None, new_per_day=state["new_per_day"] if state else None,
+            lag=lag, success=success)
+        plan = goals.plan(goals.Goal(goal["words"], date.fromisoformat(goal["by"])), pipeline, goals.pace(curve, today), today)
+        plan["measured"] = sample >= goals.MIN_SAMPLE  # lag and success from the user's cards, not the usual values
+        plan = {key: value.isoformat() if isinstance(value, date) else value for key, value in plan.items()}
+    result = {
+        "goals": get_goals(language), "current": goal and {**goal, "status": goals.ACTIVE}, "today": today.isoformat(),
+        "anki": status, "plan": plan, "pace": round(goals.pace(curve, today), 2),
+        "history": [[day.isoformat(), known] for day, known in curve.items()],
+    }
+    plans = settings.get(_PLANS, {}) or {}
+    plans[language] = result
+    settings.set(_PLANS, plans)
+    return result

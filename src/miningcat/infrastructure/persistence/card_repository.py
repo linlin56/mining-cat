@@ -44,6 +44,10 @@ class CardRepository:
         params.append(limit)
         return [_card(r) for r in self._conn.execute(query, params).fetchall()]
 
+    def count(self, status: str, language: str) -> int:
+        return self._conn.execute(
+            "SELECT COUNT(*) FROM cards WHERE status = ? AND language = ?", (status, language)).fetchone()[0]
+
     def update(self, card_id: int, **values) -> None:
         values["updated"] = time.time()
         assignments = ", ".join(f"{key} = ?" for key in values)

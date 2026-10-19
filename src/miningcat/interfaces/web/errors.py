@@ -7,7 +7,7 @@ from miningcat.application.inbox import InboxError
 from miningcat.application.mining.sentence_tts import TtsError
 from miningcat.domain.cards.errors import AnkiError, AnkiUnavailable
 from miningcat.domain.dictionary.errors import DictionaryError
-from miningcat.domain.library.errors import AudioError, BookError, ComicError, VideoError
+from miningcat.domain.library.errors import AudioError, BookError, ComicError, FolderError, VideoError
 from miningcat.domain.words.status import WordError
 from miningcat.infrastructure.capture import CaptureError
 from miningcat.infrastructure.translation.errors import TranslateError
@@ -28,6 +28,7 @@ TITLES: dict[type[Exception], str] = {
     BookError: "Reader",
     AudioError: "Audio",
     ComicError: "Comics",
+    FolderError: "Folders",
     VideoError: "Player",
     DictionaryError: "Dictionary",
     WordError: "Words",

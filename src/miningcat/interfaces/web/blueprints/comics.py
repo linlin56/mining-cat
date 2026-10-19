@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, render_template, request, send_file
 
 from miningcat.application import study_language as studied
-from miningcat.application.library import comics
+from miningcat.application.library import comics, folders
 from miningcat.domain.languages import language_key
 from miningcat.interfaces.web.requests import json_body
 
@@ -17,10 +17,10 @@ def comic_page(comic_id: str):
 def api_comics():
     study = studied.current()
     shown = [c for c in comics.list_comics() if not study or language_key(c["language"]) in (study, "")]
-    return jsonify(comics=shown, extensions=list(comics.ARCHIVE_EXTENSIONS))
+    return jsonify(comics=shown, extensions=list(comics.ARCHIVE_EXTENSIONS), images=list(comics.IMAGE_EXTENSIONS))
 
 
-# The archive is the request's body (a comic can be large): written to disk as it arrives.
+# The archive (or picture) is the request's body (a comic can be large): written to disk as it arrives.
 @bp.post("/api/comics")
 def api_import_comic():
     study = studied.current()
@@ -53,7 +53,18 @@ def api_comic_thumb(comic_id: str):
 @bp.post("/api/comics/<comic_id>/delete")
 def api_delete_comic(comic_id: str):
     comics.delete_comic(comic_id)
+    folders.forget("comic", comic_id)
     return jsonify(deleted=True)
+
+
+# Drags a picture onto a picture (or an album): it becomes the album's last page.
+@bp.post("/api/comics/<comic_id>/append")
+def api_append_image(comic_id: str):
+    image_id = str(json_body().get("image") or "")
+    meta = comics.append_image(comic_id, image_id)
+    folders.forget("comic", image_id)
+    folders.replace("comic", comic_id, meta["id"])
+    return jsonify(comic=meta)
 
 
 @bp.post("/api/comics/<comic_id>/progress")

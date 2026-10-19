@@ -107,8 +107,10 @@ def test_import_sorts_pages_naturally_and_skips_other_files(library, tmp_path):
     with Image.open(folder / "pages" / "0002.jpg") as img:
         assert abs(img.getpixel((30, 45))[0] - 20) < 8
     assert (folder / "thumb.jpg").is_file()
+    assert meta["new"]
     # the same archive again: the same comic
-    assert comics.import_file(archive)["id"] == meta["id"]
+    again = comics.import_file(archive)
+    assert again["id"] == meta["id"] and not again["new"]
 
 
 def test_import_never_writes_outside_the_comic(library, tmp_path):
@@ -119,6 +121,30 @@ def test_import_never_writes_outside_the_comic(library, tmp_path):
     meta = comics.import_file(archive)
     assert len(meta["pages"]) == 1  # the absolute path lands inside; the one going up is skipped
     assert not (tmp_path / "escaped.png").exists() and not (library / "escaped.png").exists()
+
+
+def test_import_a_single_image_as_a_comic_of_one_page(library, tmp_path):
+    picture = tmp_path / "Sign.webp"
+    picture.write_bytes(page_bytes("blue", fmt="WEBP"))
+    meta = comics.import_file(picture, title="Sign")
+    assert meta["image"] and meta["pages"] == [{"file": "0001.webp", "width": 60, "height": 90}]
+    assert picture.exists()  # copied, not moved
+    assert (comics.comics_dir() / meta["id"] / "thumb.jpg").is_file()
+    assert comics.list_comics()[0]["image"]
+
+
+def test_import_converts_images_browsers_dont_show(library, tmp_path):
+    picture = tmp_path / "scan.bmp"
+    picture.write_bytes(page_bytes("blue", fmt="BMP"))
+    assert comics.import_file(picture)["pages"][0]["file"] == "0001.png"
+
+
+def test_import_rejects_a_damaged_image(library, tmp_path):
+    picture = tmp_path / "broken.png"
+    picture.write_bytes(b"not a picture")
+    with pytest.raises(comics.ComicError, match="isn't an image"):
+        comics.import_file(picture)
+    assert not any(comics.comics_dir().glob("*/meta.json"))
 
 
 def test_import_rejects_archives_without_pages(library, tmp_path):
@@ -198,6 +224,15 @@ def test_api_import_read_and_text(client, tmp_path, monkeypatch):
 
     assert client.post(f"/reader/api/comics/{comic_id}/delete", json={}, headers=HEADERS).json["deleted"]
     assert client.get("/reader/api/comics").json["comics"] == []
+
+
+def test_api_import_an_image(client, tmp_path):
+    res = client.post("/reader/api/comics?name=sign.jpg", data=page_bytes("red", fmt="JPEG"), headers=HEADERS)
+    assert res.status_code == 200, res.json
+    listing = client.get("/reader/api/comics").json
+    assert "png" in listing["images"] and "png" not in listing["extensions"]
+    assert listing["comics"][0]["image"] and listing["comics"][0]["pages"] == 1
+    assert client.post("/reader/api/comics?name=notes.txt", data=b"hello", headers=HEADERS).status_code == 400
 
 
 def test_api_rejects_unknown_formats_and_ids(client):

@@ -514,6 +514,11 @@ function wire() {
 }
 
 async function init() {
+  // back to the folder of the library the comic is in
+  api("/reader/api/folders").then(({ items }) => {
+    const folder = items[`comic:${COMIC_ID}`];
+    if (folder) $("back").href = `/reader/?folder=${folder}`;
+  }).catch(() => {});
   try { C.theme = (await api("/reader/api/settings")).theme; } catch { /* the system's theme */ }
   applyTheme();
   wireSettings();

@@ -55,6 +55,7 @@ def _render(book_dir: Path, book_id: str) -> dict:
 
 
 def import_book(filename: str, data: bytes) -> dict:
+    """Imports a book; the meta returned says whether it's `new` (False: it was already in the library)."""
     ext = Path(filename).suffix.lower().lstrip(".")
     if ext not in BOOK_EXTENSIONS:
         raise BookError(f"Unsupported format: .{ext or '?'} (supported: {', '.join(BOOK_EXTENSIONS)})")
@@ -62,12 +63,12 @@ def import_book(filename: str, data: bytes) -> dict:
     book_dir = book_folder(book_id)
     with _lock:
         if (book_dir / "meta.json").exists():
-            return get_meta(book_id)
+            return {**get_meta(book_id), "new": False}
         book_dir.mkdir(parents=True, exist_ok=True)
         (book_dir / f"source.{ext}").write_bytes(data)
         write_json(book_dir / "meta.json", {"filename": Path(filename).name, "added": time.time()})
         try:
-            return _render(book_dir, book_id)
+            return {**_render(book_dir, book_id), "new": True}
         except Exception:
             shutil.rmtree(book_dir, ignore_errors=True)
             raise

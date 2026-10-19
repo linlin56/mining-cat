@@ -124,6 +124,10 @@ class ProjectPaths:
         return self.library / "reader_settings.json"
 
     @property
+    def reader_folders(self) -> Path:
+        return self.library / "reader_folders.json"
+
+    @property
     def comic_settings(self) -> Path:
         return self.library / "comic_settings.json"
 

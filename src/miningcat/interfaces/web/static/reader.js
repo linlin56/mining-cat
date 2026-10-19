@@ -28,6 +28,12 @@ const R = {
   saveTimer: null,
   token: 0,
   audio: null,              // {tracks, names} when the book has the audio of a MiningCat conversion
+  folder: null,             // the folder of the library shown (null: the library itself)
+  folders: {},              // the folders of the library, {id: {name}}
+  imageExtensions: [],      // the pictures imported as comics of one page
+  places: {},               // the folder of each book and comic sorted, {"book:<id>": folder id}
+  items: {},                // the books and comics of the library, {"book:<id>": book}
+  dragging: null,           // what is dragged in the library: {key, image}
 };
 
 // ---------------------------------------------------------------- API
@@ -75,22 +81,251 @@ async function showLibrary() {
   R.book = null;
   applyTheme();
   if (window.MiningCatMining) MiningCatMining.clearColours();
-  document.title = "MiningCat Reader";
   $("reading").hidden = true;
   $("library").hidden = false;
-  const [{ books, extensions }, comics] = await Promise.all([api("/reader/api/books"), api("/reader/api/comics")]);
-  R.comicExtensions = comics.extensions;
-  $("lib-formats").textContent = `Supported formats: ${extensions.map((e) => e.toUpperCase()).join(", ")}; `
-    + `comics and manga: ${comics.extensions.map((e) => e.toUpperCase()).join(", ")} (their text is read by OCR). `
+  const [{ books, extensions }, comics, folders] = await Promise.all(
+    [api("/reader/api/books"), api("/reader/api/comics"), api("/reader/api/folders")]);
+  R.folders = folders.folders;
+  R.places = folders.items;
+  R.folder = new URLSearchParams(location.search).get("folder");
+  if (R.folder && !R.folders[R.folder]) {
+    R.folder = null;
+    history.replaceState({}, "", "/reader/");
+  }
+  // pictures are imported as comics of one page
+  R.comicExtensions = [...comics.extensions, ...comics.images];
+  R.imageExtensions = comics.images;
+  const upper = (list) => list.map((e) => e.toUpperCase()).join(", ");
+  $("lib-formats").textContent = `Supported formats: ${upper(extensions)}; `
+    + `comics and manga: ${upper(comics.extensions)}; images: ${upper(comics.images)} (their text is read by OCR). `
     + "Books are stored in the project's library/ folder.";
-  $("book-input").accept = [...extensions, ...comics.extensions].map((e) => `.${e}`).join(",");
-  // books and comics together, the last opened first
-  const items = [...books, ...comics.comics.map((c) => ({ ...c, comic: true }))]
+  $("book-input").accept = [...extensions, ...R.comicExtensions].map((e) => `.${e}`).join(",");
+  // books and comics together, the last opened first; the folders first, by name
+  const items = [...books.map((b) => ({ ...b, kind: "book" })), ...comics.comics.map((c) => ({ ...c, kind: "comic" }))]
     .sort((a, b) => (b.opened || 0) - (a.opened || 0) || (b.added || 0) - (a.added || 0));
-  const grid = $("book-grid");
-  grid.replaceChildren(...items.map((b) => (b.comic ? comicCard(b) : bookCard(b))));
-  $("lib-empty").hidden = items.length > 0;
-  loadComprehension(books);
+  R.items = Object.fromEntries(items.map((item) => [itemKey(item), item]));
+  const here = items.filter((item) => (R.places[itemKey(item)] || null) === R.folder);
+  // what each folder holds: its books and comics, and its folders
+  const counts = {};
+  for (const item of items) { const f = R.places[itemKey(item)]; if (f) counts[f] = (counts[f] || 0) + 1; }
+  for (const f of Object.values(R.folders)) if (f.parent) counts[f.parent] = (counts[f.parent] || 0) + 1;
+  const folderCards = subfolders(R.folder).map(([id, f]) => folderCard(id, f, counts[id] || 0));
+  $("book-grid").replaceChildren(...folderCards, ...here.map((item) => (item.kind === "comic" ? comicCard(item) : bookCard(item))));
+  document.title = R.folder ? `${R.folders[R.folder].name} · MiningCat Reader` : "MiningCat Reader";
+  $("folder-bar").hidden = !R.folder;
+  if (R.folder) renderPath();
+  $("lib-empty").hidden = Boolean(R.folder) || items.length > 0 || folderCards.length > 0;
+  $("folder-empty").hidden = !R.folder || here.length > 0 || folderCards.length > 0;
+  loadComprehension(here.filter((item) => item.kind === "book"));
+}
+
+// ---------------------------------------------------------------- folders
+
+// "book:<id>", "comic:<id>" or "folder:<id>"
+const itemKey = (item) => `${item.kind}:${item.id}`;
+const DRAG_TYPE = "application/x-miningcat-item";
+
+function libraryUrl(folder) {
+  return folder ? `/reader/?folder=${folder}` : "/reader/";
+}
+
+function goToLibrary(folder) {
+  history.pushState({}, "", libraryUrl(folder));
+  route();
+}
+
+// The folders of a folder (null: of the library), by name.
+function subfolders(parent) {
+  return Object.entries(R.folders)
+    .filter(([, f]) => (f.parent || null) === parent)
+    .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+}
+
+// All the folders, each followed by its own: [{id, name, depth}].
+function folderTree(parent = null, depth = 0) {
+  return subfolders(parent).flatMap(([id, f]) => [{ id, name: f.name, depth }, ...folderTree(id, depth + 1)]);
+}
+
+// Whether the folder `folder` is `ancestor` or one of its folders, at any depth (null: the library, in none).
+function isInside(folder, ancestor) {
+  for (let id = folder, steps = 0; id && steps < 1000; id = R.folders[id]?.parent, steps++) {
+    if (id === ancestor) return true;
+  }
+  return false;
+}
+
+// Where a book, a comic or a folder is (null: in the library).
+function placeOf(key) {
+  return key.startsWith("folder:") ? R.folders[key.slice(7)]?.parent || null : R.places[key] || null;
+}
+
+// Library › Folder › Folder: the folders above can be opened, and take the books dropped on them.
+function renderPath() {
+  const path = [];
+  for (let id = R.folder; id && !path.includes(id); id = R.folders[id]?.parent) path.unshift(id);
+  const crumb = (id, name, current) => {
+    const li = node("li", `breadcrumb-item text-truncate${current ? " active fw-semibold text-body" : ""}`);
+    if (current) {
+      li.setAttribute("aria-current", "page");
+      li.innerHTML = '<i class="bi bi-folder2-open text-primary-emphasis me-1" aria-hidden="true"></i>';
+      li.append(name);
+      return li;
+    }
+    const a = node("a", "mc-folder-target rounded px-1", name);
+    a.href = libraryUrl(id);
+    a.dataset.folder = id || "";
+    a.title = "Drop a book here to move it there";
+    a.addEventListener("click", (e) => { e.preventDefault(); goToLibrary(id); });
+    li.append(a);
+    return li;
+  };
+  $("folder-path").replaceChildren(crumb(null, "Library", false), ...path.map((id, i) => crumb(id, R.folders[id].name, i === path.length - 1)));
+}
+
+// Puts books, comics and folders ("book:<id>"…) in a folder, or back in the library (folder null).
+async function moveItems(keys, folder) {
+  const items = keys.map((key) => { const [kind, id] = key.split(":"); return { kind, id }; });
+  try { await api("/reader/api/folders/move", { items, folder }); } catch (err) { showError(err); }
+  showLibrary();
+}
+
+// Where a book or a folder goes, without dragging it (touch screens, keyboard): the library or a folder, as a tree.
+function chooseFolder(key, title) {
+  const modal = $("move-modal");
+  const moving = key.startsWith("folder:") ? key.slice(7) : null;
+  const current = placeOf(key);
+  const entry = (id, name, depth, icon) => {
+    const button = node("button", "list-group-item list-group-item-action d-flex align-items-center gap-2");
+    button.type = "button";
+    button.style.paddingLeft = `${1 + depth * 1.25}rem`;
+    button.innerHTML = `<i class="bi ${icon} text-primary-emphasis" aria-hidden="true"></i>`;
+    button.append(node("span", "text-truncate flex-grow-1", name));
+    if (id === current) button.append(node("span", "small text-body-secondary", "here"));
+    // a folder never goes into itself, nor into one of its folders
+    button.disabled = id === current || Boolean(moving && isInside(id, moving));
+    button.addEventListener("click", () => { MiningCatUI.hideModal(modal); moveItems([key], id); });
+    return button;
+  };
+  $("move-what").textContent = `Where should “${title}” go?`;
+  $("move-list").replaceChildren(entry(null, "Library", 0, "bi-book"),
+    ...folderTree().map((f) => entry(f.id, f.name, f.depth + 1, "bi-folder2")));
+  MiningCatUI.showModal(modal);
+}
+
+// Whether what is dragged can be dropped on `target`: a book into another folder, a folder into another folder (never
+// into itself or its own folders), a picture onto another picture or an album.
+function accepts(target, drag) {
+  if (!target || !drag) return false;
+  if (target.dataset.folder !== undefined) {
+    const folder = target.dataset.folder || null;
+    if (folder === placeOf(drag.key)) return false;
+    return !drag.key.startsWith("folder:") || !isInside(folder, drag.key.slice(7));
+  }
+  return drag.image && target.dataset.merge !== drag.key;
+}
+
+// A picture dropped onto a picture (or an album) becomes its next page.
+async function addToAlbum(imageKey, albumKey) {
+  const image = R.items[imageKey], album = R.items[albumKey];
+  const ok = await showDialog("Make an album",
+    `Add “${image.title}” to “${album.title}”, as its page ${album.pages + 1}? It leaves the library: it's a page of “${album.title}” now.`,
+    [{ label: "Cancel", value: false }, { label: "Add", value: true, primary: true }]);
+  if (!ok) return;
+  try { await api(`/reader/api/comics/${album.id}/append`, { image: image.id }); } catch (err) { showError(err); }
+  showLibrary();
+}
+
+// The name of a new folder, or of a folder renamed: resolves to it, or null when cancelled.
+function askFolderName(title, value, action) {
+  return new Promise((resolve) => {
+    const modal = $("folder-modal");
+    let name = null;
+    $("folder-modal-title").textContent = title;
+    $("folder-save").textContent = action;
+    $("folder-input").value = value;
+    $("folder-form").onsubmit = (e) => {
+      e.preventDefault();
+      name = $("folder-input").value.trim();
+      if (name) MiningCatUI.hideModal(modal);
+    };
+    modal.addEventListener("shown.bs.modal", () => $("folder-input").select(), { once: true });
+    modal.addEventListener("hidden.bs.modal", () => resolve(name), { once: true });
+    MiningCatUI.showModal(modal);
+  });
+}
+
+// A new folder, in the folder shown.
+async function newFolder() {
+  const name = await askFolderName("New folder", "", "Create");
+  if (!name) return;
+  try { await api("/reader/api/folders", { name, parent: R.folder }); } catch (err) { showError(err); }
+  showLibrary();
+}
+
+async function renameFolder() {
+  const id = R.folder;
+  const name = await askFolderName("Rename folder", R.folders[id].name, "Rename");
+  if (!name) return;
+  try { await api(`/reader/api/folders/${id}`, { name }); } catch (err) { showError(err); }
+  showLibrary();
+}
+
+async function deleteFolder() {
+  const id = R.folder;
+  const parent = R.folders[id].parent || null;
+  const where = parent ? `goes up into “${R.folders[parent].name}”` : "goes back to the library";
+  const ok = await showDialog("Delete folder", `Delete the folder “${R.folders[id].name}”? What it holds (books and folders) ${where}.`,
+    [{ label: "Cancel", value: false }, { label: "Delete", value: true, primary: true }]);
+  if (!ok) return;
+  try { await api(`/reader/api/folders/${id}/delete`, {}); } catch (err) { showError(err); }
+  goToLibrary(parent);
+}
+
+// Makes a card of the library draggable: into a folder, or (a picture) onto another picture.
+function draggable(a, key, image = false) {
+  a.draggable = true;
+  a.addEventListener("dragstart", (e) => {
+    e.dataTransfer.setData(DRAG_TYPE, key);
+    e.dataTransfer.effectAllowed = "move";
+    R.dragging = { key, image };
+    a.classList.add("mc-dragging");
+  });
+  a.addEventListener("dragend", () => { a.classList.remove("mc-dragging"); R.dragging = null; });
+}
+
+// The round button on a cover that moves it, without dragging it.
+function moveButton(key, title) {
+  const move = node("button", "btn btn-sm btn-dark rounded-circle position-absolute top-0 start-0 m-1 mc-delete");
+  move.type = "button";
+  move.innerHTML = '<i class="bi bi-folder-symlink" aria-hidden="true"></i>';
+  move.title = "Move to a folder";
+  move.setAttribute("aria-label", `Move ${title} to a folder`);
+  move.addEventListener("click", (e) => { e.preventDefault(); chooseFolder(key, title); });
+  return move;
+}
+
+// A folder: opened on click, books and folders dropped on it go in; dragged itself into another folder.
+function folderCard(id, folder, count) {
+  const a = node("a", "mc-cover mc-folder-target d-block position-relative rounded text-reset text-decoration-none");
+  a.href = libraryUrl(id);
+  a.dataset.folder = id;
+  draggable(a, `folder:${id}`);
+  const box = node("div", "ratio rounded overflow-hidden shadow-sm bg-body-tertiary mb-2");
+  box.style.setProperty("--bs-aspect-ratio", "150%");
+  const icon = node("div", "d-flex align-items-center justify-content-center text-primary-emphasis mc-folder-cover");
+  icon.innerHTML = '<i class="bi bi-folder2" aria-hidden="true"></i>';
+  box.append(icon);
+  const name = node("div", "fw-semibold small text-truncate", folder.name);
+  name.title = folder.name;
+  a.append(box, name, node("div", "small text-body-secondary", count === 1 ? "1 item" : `${count} items`), moveButton(`folder:${id}`, folder.name));
+  a.addEventListener("click", (e) => {
+    if (e.target.closest(".mc-delete")) return;
+    e.preventDefault();
+    goToLibrary(id);
+  });
+  const col = node("div", "col");
+  col.append(a);
+  return col;
 }
 
 function node(tag, className, text) {
@@ -102,15 +337,23 @@ function node(tag, className, text) {
 
 // A book or a comic in the library (a column of the grid): its cover, title, reading progress and remove button.
 // cover: the image's URL, else the title is written on a colour. book: the book's id, for its comprehension.
-function libraryCard({ href, cover, title, language, about, percent, book, remove }) {
+// item: {kind, id, title}, dragged into the folders.
+function libraryCard({ href, cover, title, language, about, percent, book, remove, item }) {
   const a = node("a", "mc-cover d-block position-relative text-reset text-decoration-none");
   a.href = href;
+  draggable(a, itemKey(item), Boolean(item.image));
+  // a picture dropped on a picture or an album becomes its next page
+  if (item.image || item.album) {
+    a.classList.add("mc-merge-target");
+    a.dataset.merge = itemKey(item);
+  }
   const box = node("div", "ratio rounded overflow-hidden shadow-sm bg-body-tertiary mb-2");
   box.style.setProperty("--bs-aspect-ratio", "150%");
   if (cover) {
     const img = node("img", "object-fit-cover");
     img.src = cover;
     img.alt = "";
+    img.draggable = false;  // the whole card is dragged, not its picture
     img.loading = "lazy";
     box.append(img);
   } else {
@@ -137,6 +380,7 @@ function libraryCard({ href, cover, title, language, about, percent, book, remov
   del.setAttribute("aria-label", `Remove ${title} from the library`);
   del.addEventListener("click", (e) => { e.preventDefault(); remove(); });
   a.append(box, name, meta, bar, del);
+  if (R.folder || Object.keys(R.folders).length) a.append(moveButton(itemKey(item), title));
   if (book) {
     const comp = node("div", "small text-body-secondary");
     comp.dataset.book = book;
@@ -149,7 +393,7 @@ function libraryCard({ href, cover, title, language, about, percent, book, remov
 
 function bookCard(b) {
   const col = libraryCard({
-    href: `/reader/${b.id}`, cover: b.cover, title: b.title, language: b.language, percent: b.percent, book: b.id,
+    href: `/reader/${b.id}`, cover: b.cover, title: b.title, language: b.language, percent: b.percent, book: b.id, item: b,
     about: [b.author, b.format.toUpperCase()].filter(Boolean).join(" · "),
     remove: async () => {
       const ok = await showDialog("Remove book", `Remove “${b.title}” and its reading progress from the library?`,
@@ -168,13 +412,15 @@ function bookCard(b) {
   return col;
 }
 
-// A comic or manga: opened in its own page (static/comic.js).
+// A comic or manga (or an image, a comic of one page): opened in its own page (static/comic.js).
 function comicCard(c) {
   return libraryCard({
     href: `/reader/comic/${c.id}`, cover: `/reader/api/comics/${c.id}/thumb?v=${c.added}`, title: c.title,
-    language: c.language, percent: c.percent, about: `${c.pages} pages · Comic`,
+    language: c.language, percent: c.percent, about: c.image ? "Image" : `${c.pages} pages · ${c.album ? "Album" : "Comic"}`, item: c,
     remove: async () => {
-      const ok = await showDialog("Remove comic", `Remove “${c.title}”, the text read on its pages and its reading progress from the library?`,
+      const ok = await showDialog(c.image ? "Remove image" : "Remove comic", c.image
+        ? `Remove “${c.title}” and the text read on it from the library?`
+        : `Remove “${c.title}”, the text read on its pages and its reading progress from the library?`,
         [{ label: "Cancel", value: false }, { label: "Remove", value: true, primary: true }]);
       if (!ok) return;
       try { await api(`/reader/api/comics/${c.id}/delete`, {}); showLibrary(); } catch (err) { showError(err); }
@@ -201,7 +447,7 @@ async function loadComprehension(books) {
   }
 }
 
-// Comics are sent one by one, as the request's body: an archive can be hundreds of MB.
+// Comics (and images) are sent one by one, as the request's body: an archive can be hundreds of MB.
 async function addComic(file, status) {
   status.textContent = `Importing ${file.name}…`;
   const res = await fetch(`/reader/api/comics?name=${encodeURIComponent(file.name)}`, {
@@ -209,35 +455,56 @@ async function addComic(file, status) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`${file.name}: ${data.error || `import failed (${res.status})`}`);
+  return data.comic;
 }
 
-async function addBooks(fileList) {
+// The files imported go into `folder` (null: the library).
+async function addBooks(fileList, folder = R.folder) {
   if (!fileList.length) return;
   const status = $("lib-status");
   const isComic = (f) => (R.comicExtensions || []).includes(f.name.split(".").pop().toLowerCase());
+  const added = [], known = [];
   const comicErrors = [];
   for (const file of fileList.filter(isComic)) {
-    try { await addComic(file, status); } catch (err) { comicErrors.push(err.message); }
+    try {
+      const comic = await addComic(file, status);
+      if (comic.new) added.push(`comic:${comic.id}`); else known.push(comic.title);
+    } catch (err) { comicErrors.push(err.message); }
   }
   if (comicErrors.length) showDialog("Some files could not be imported", comicErrors.join("\n"));
   fileList = fileList.filter((f) => !isComic(f));
-  if (!fileList.length) { status.textContent = ""; showLibrary(); return; }
-  const form = new FormData();
-  for (const f of fileList) form.append("files", f, f.name);
-  status.textContent = `Importing ${fileList.length} file${fileList.length > 1 ? "s" : ""}…`;
-  try {
-    const res = await fetch("/reader/api/books", { method: "POST", headers: { "X-MiningCat": "1" }, body: form });
-    const data = await res.json();
-    if (data.errors && data.errors.length) showDialog("Some files could not be imported", data.errors.join("\n"));
-    if (data.elsewhere && data.elsewhere.length) {
-      showDialog("Books of another language", `These books were imported into the library of another language: choose it on the home page to read them.\n\n${data.elsewhere.join("\n")}`);
+  if (fileList.length) {
+    const form = new FormData();
+    for (const f of fileList) form.append("files", f, f.name);
+    status.textContent = `Importing ${fileList.length} file${fileList.length > 1 ? "s" : ""}…`;
+    try {
+      const res = await fetch("/reader/api/books", { method: "POST", headers: { "X-MiningCat": "1" }, body: form });
+      const data = await res.json();
+      for (const b of data.added || []) { if (b.new) added.push(`book:${b.id}`); else known.push(b.title); }
+      if (data.errors && data.errors.length) showDialog("Some files could not be imported", data.errors.join("\n"));
+      if (data.elsewhere && data.elsewhere.length) {
+        showDialog("Books of another language", `These books were imported into the library of another language: choose it on the home page to read them.\n\n${data.elsewhere.join("\n")}`);
+      }
+    } catch (err) {
+      showError(err);
     }
-  } catch (err) {
-    showError(err);
-  } finally {
-    status.textContent = "";
-    showLibrary();
   }
+  status.textContent = "";
+  // a book imported again stays where it is (in its folder)
+  if (folder && known.length) MiningCatUI.toast(`Already in your library: ${known.join(", ")}`);
+  if (folder && added.length) await moveItems(added, folder);
+  else showLibrary();
+}
+
+// A picture pasted (a screenshot, an image copied in the browser) gets a name of its own: browsers call them all
+// "image.png".
+function pastedFile(file, index) {
+  if (!file.type.startsWith("image/") || !/^(image\.\w+)?$/i.test(file.name)) return file;
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}.${pad(d.getMinutes())}.${pad(d.getSeconds())}`;
+  const ext = file.type === "image/jpeg" ? "jpg" : file.type.slice(6).replace(/\+.*/, "");
+  return new File([file], `Pasted image ${stamp}${index ? ` (${index + 1})` : ""}.${ext}`, { type: file.type });
 }
 
 // ---------------------------------------------------------------- opening a book
@@ -247,8 +514,9 @@ async function openBook(bookId) {
   $("reading").hidden = false;
   $("loading").hidden = false;
   const token = ++R.token;
-  const data = await api(`/reader/api/books/${bookId}`);
+  const [data, folders] = await Promise.all([api(`/reader/api/books/${bookId}`), api("/reader/api/folders").catch(() => null)]);
   if (token !== R.token) return;
+  if (folders) R.places = folders.items;
   R.book = data.book;
   applyTheme();
   R.audio = null;
@@ -784,8 +1052,7 @@ function wireReading() {
   $("back").addEventListener("click", (e) => {
     e.preventDefault();
     saveNow();
-    history.pushState({}, "", "/reader/");
-    route();
+    goToLibrary((R.book && R.places[`book:${R.book.id}`]) || null);  // back to the folder the book is in
   });
 
   // Internal links (notes, cross references) jump inside the book.
@@ -861,19 +1128,71 @@ function wireLibrary() {
   });
   const drop = $("lib-drop");
   const over = ["border-primary", "bg-primary-subtle"];
-  drop.addEventListener("dragover", (e) => {
-    if (!e.dataTransfer.types.includes("Files")) return;
-    e.preventDefault();
-    drop.classList.add(...over);
-  });
-  drop.addEventListener("dragleave", () => drop.classList.remove(...over));
-  drop.addEventListener("drop", (e) => {
-    e.preventDefault();
-    drop.classList.remove(...over);
-    addBooks([...e.dataTransfer.files]);
-  });
+  // files from outside the page only: a cover dragged in the library carries its picture as a file (Chrome), which
+  // would be imported again
+  const outsideFiles = (e) => e.dataTransfer.types.includes("Files") && !R.dragging && !e.dataTransfer.types.includes(DRAG_TYPE);
   window.addEventListener("dragover", (e) => e.preventDefault());
   window.addEventListener("drop", (e) => e.preventDefault());
+
+  // A book or a folder dragged onto a folder goes in it (onto "Library", out of its folders); a picture dragged onto a
+  // picture makes an album.
+  const targetOf = (e) => e.target.closest?.(".mc-folder-target, .mc-merge-target");
+  const clearTargets = (except) => {
+    for (const t of document.querySelectorAll(".mc-drop-over")) if (t !== except) t.classList.remove("mc-drop-over");
+  };
+  // Files from outside go into the folder they're dropped on (a folder of the path too), else into the folder shown.
+  const folderOf = (e) => e.target.closest?.(".mc-folder-target");
+  document.addEventListener("dragover", (e) => {
+    if (outsideFiles(e)) {
+      const target = folderOf(e);
+      clearTargets(target);
+      target?.classList.add("mc-drop-over");
+      drop.classList.toggle(over[0], !target && drop.contains(e.target));
+      drop.classList.toggle(over[1], !target && drop.contains(e.target));
+      return;
+    }
+    const target = accepts(targetOf(e), R.dragging) ? targetOf(e) : null;
+    clearTargets(target);
+    if (!target) return;
+    e.dataTransfer.dropEffect = "move";
+    target.classList.add("mc-drop-over");
+  });
+  document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) { clearTargets(null); drop.classList.remove(...over); } });
+  document.addEventListener("dragend", () => clearTargets(null));
+  document.addEventListener("drop", (e) => {
+    clearTargets(null);
+    drop.classList.remove(...over);
+    if (outsideFiles(e)) {
+      const target = folderOf(e);
+      if (target) addBooks([...e.dataTransfer.files], target.dataset.folder || null);
+      else if (drop.contains(e.target)) addBooks([...e.dataTransfer.files]);
+      return;
+    }
+    const target = targetOf(e), drag = R.dragging;
+    R.dragging = null;
+    if (!accepts(target, drag)) return;
+    if (target.dataset.folder !== undefined) moveItems([drag.key], target.dataset.folder || null);
+    else addToAlbum(drag.key, target.dataset.merge);
+  });
+
+  $("new-folder").addEventListener("click", newFolder);
+  $("folder-rename").addEventListener("click", renameFolder);
+  $("folder-delete").addEventListener("click", deleteFolder);
+
+  // Ctrl+V (⌘V): the images (or files) of the clipboard are imported, no need to save them first.
+  document.addEventListener("paste", (e) => {
+    if ($("library").hidden || isEditing(e.target) || MiningCatUI.isModalOpen()) return;
+    const files = [...(e.clipboardData?.files || [])].map(pastedFile);
+    if (!files.length) return;
+    e.preventDefault();
+    const imported = (f) => !f.type.startsWith("image/") || R.imageExtensions.includes(f.name.split(".").pop().toLowerCase());
+    const refused = files.filter((f) => !imported(f));
+    if (refused.length) {
+      showDialog("Some pictures could not be imported", `${refused.map((f) => f.type).join(", ")}: not a supported image format `
+        + `(supported: ${R.imageExtensions.join(", ")}).`);
+    }
+    addBooks(files.filter(imported));
+  });
 }
 
 // ---------------------------------------------------------------- routing

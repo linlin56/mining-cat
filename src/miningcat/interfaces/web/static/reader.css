@@ -21,6 +21,18 @@
 .mc-cover:hover .mc-delete, .mc-delete:focus-visible { opacity: 1; }
 @media (hover: none) { .mc-delete { opacity: .8; } }
 
+/* ---------- library folders ---------- */
+
+/* A folder of the library: its cover, and where books are dropped (reader.js) */
+.mc-folder-cover { font-size: 4rem; }
+.mc-folder-target.mc-drop-over { outline: 3px solid var(--bs-primary); outline-offset: 2px; background-color: var(--bs-primary-bg-subtle); }
+.mc-folder-target.mc-drop-over .ratio { background-color: var(--bs-primary-bg-subtle) !important; }
+/* The book dragged */
+.mc-dragging { opacity: .4; }
+/* A picture dropped on a picture: an album */
+.mc-merge-target.mc-drop-over { outline: 3px dashed var(--bs-success); outline-offset: 4px; border-radius: var(--bs-border-radius); }
+#folder-path .breadcrumb-item { min-width: 0; }
+
 /* ---------- the page ---------- */
 
 .stage { position: relative; flex: 1; min-height: 0; display: flex; }

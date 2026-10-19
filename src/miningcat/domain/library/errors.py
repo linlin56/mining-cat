@@ -10,6 +10,10 @@ class ComicError(LibraryError):
     pass
 
 
+class FolderError(LibraryError):
+    """A folder of the reader's library."""
+
+
 class VideoError(LibraryError):
     pass
 

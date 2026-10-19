@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, render_template, request, send_file
 
 from miningcat.application import study_language as studied
-from miningcat.application.library import books
+from miningcat.application.library import books, folders
 from miningcat.application.mining import comprehension
 from miningcat.domain.languages import LANGUAGES, language_key, same_family
 from miningcat.interfaces.web.requests import json_body
@@ -43,7 +43,7 @@ def api_import():
                 books.save_prefs(meta["id"], {"language": studied.default_tag(study)})
             elif study and language != study:
                 elsewhere.append(f"{meta['title']} ({LANGUAGES.get(language, language)})")
-            added.append({"id": meta["id"], "title": meta["title"]})
+            added.append({"id": meta["id"], "title": meta["title"], "new": meta["new"]})
         except books.BookError as exc:
             errors.append(f"{name}: {exc}")
         except Exception as exc:  # a broken file must not break the whole upload
@@ -93,6 +93,7 @@ def api_comprehension(book_id: str):
 @bp.post("/api/books/<book_id>/delete")
 def api_delete(book_id: str):
     books.delete_book(book_id)
+    folders.forget("book", book_id)
     return jsonify(deleted=True)
 
 

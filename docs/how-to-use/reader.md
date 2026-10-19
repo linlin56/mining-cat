@@ -22,9 +22,17 @@ Click **Add books** or drop files on the page. Supported formats:
 
 Books are copied into the `library/` folder of the project, with their reading progress. Removing a book from the library deletes this copy, not your original file.
 
+## Folders
+
+Sort books, comics and images into folders, and folders into folders: **New folder** creates one in the folder you're in. Drag a cover (or a folder) onto a folder to put it in; to take it out, drag it onto a folder of the path above the books (**Library** / …). On a touch screen, use the folder button on the cover instead. What you import (or paste) while a folder is open goes into it. Deleting a folder doesn't delete what it holds: it goes up one level. Folders belong to the language you study.
+
 ## Comics and manga
 
 The library also takes comics and manga: drop their archive (or use **+ Add books**) (`.cbz`, `.zip`, and `.cbr`, `.cb7`, `.cbt` when your system's `bsdtar` reads them, as on macOS). A folder of images? Zip it first.
+
+A single image (`.png`, `.jpg`, `.webp`, `.gif`, `.bmp`, `.tiff`, `.avif`, `.jxl`) is taken too: a screenshot, a photo of a sign or a page. It opens like a comic of one page, its text read by OCR. No need to save a picture first: copy it (or take a screenshot to the clipboard) and paste it in the library with **Ctrl+V** (**⌘V**).
+
+Drag an image onto another image to put them together: the image dragged becomes the next page of an album, which you read like a comic. Drag more images onto the album to add pages.
 
 The text of each page is read by OCR the first time the page is shown (and the next pages while you read), then kept. On macOS it's Apple Live Text, which reads vertical text; elsewhere EasyOCR, horizontal text only. The lines read are grouped into speech bubbles and drawn over the page, where they were read.
 

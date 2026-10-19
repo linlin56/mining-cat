@@ -18,6 +18,7 @@ from miningcat.interfaces.web.blueprints import (
     dictionaries,
     game,
     inbox,
+    library_folders,
     pages,
     preferences,
     profile,
@@ -30,7 +31,7 @@ from miningcat.interfaces.web.lan import LanListener
 
 BLUEPRINTS = [
     pages.bp, preferences.bp, profile.bp, converter.bp, converter_files.bp, converter_results.bp, words.bp, dictionaries.bp,
-    cards.bp, sentence_tools.bp, books.bp, book_audio.bp, comics.bp, videos.bp, game.bp, inbox.bp,
+    cards.bp, sentence_tools.bp, books.bp, book_audio.bp, comics.bp, library_folders.bp, videos.bp, game.bp, inbox.bp,
 ]
 
 

@@ -131,15 +131,58 @@ def plan(goal: Goal, pipeline: Pipeline, current_pace: float, today: date) -> di
             result["backlog_days"] = math.floor(p.backlog / p.new_per_day)
     # A new card seen less than `lag` days before the goal's date won't be known by then.
     window = days_left - p.lag
-    if cards and window <= 0:
+    if not cards:
+        # the learning words are enough: no new card to see or mine
+        result["new_per_day"] = 0
+        result["mine_per_day"] = 0 if p.backlog is not None else None
+        return result
+    if window <= 0:
         result["too_late"] = True
         return result
-    if window > 0:
-        result["new_per_day"] = math.ceil(cards / window)
-        if p.backlog is not None:
-            result["mine_per_day"] = math.ceil(max(0, cards - p.backlog) / window)
-        result["raise_limit"] = bool(p.new_per_day is not None and result["new_per_day"] > p.new_per_day)
+    result["new_per_day"] = math.ceil(cards / window)
+    if p.backlog is not None:
+        result["mine_per_day"] = math.ceil(max(0, cards - p.backlog) / window)
+    result["raise_limit"] = bool(p.new_per_day is not None and result["new_per_day"] > p.new_per_day)
     return result
+
+
+def combine(plans: list[dict]) -> dict:
+    """What it takes to reach all the active goals (`plans`, one per goal, by date): each count a day is the highest
+    of the goals' (a count kept every day from today that reaches one goal reaches those that need less a day), with
+    the goal it's for (its index in `plans`). Each count is None when no goal tells it: reached, too late, or without
+    Anki. The goals
+    too late for new cards to be known by their date (`too_late`, indexes) aren't in the counts of cards, but are in
+    the pace of known words: words marked known by hand can still get there."""
+    def highest(key: str, cards: bool) -> tuple[float | None, int | None]:
+        known = [(plan[key], index) for index, plan in enumerate(plans)
+                 if plan[key] is not None and not (cards and plan["too_late"])]
+        return max(known) if known else (None, None)  # the farthest goal on a tie: the one that takes it longest
+
+    new_per_day, new_for = highest("new_per_day", cards=True)
+    mine_per_day, mine_for = highest("mine_per_day", cards=True)
+    needed_pace, pace_for = highest("needed_pace", cards=False)
+    deck = plans[0]["deck_new_per_day"] if plans else None  # the same for every goal
+    return {"new_per_day": new_per_day, "new_for": new_for, "mine_per_day": mine_per_day, "mine_for": mine_for,
+            "needed_pace": needed_pace, "pace_for": pace_for,
+            "too_late": [index for index, plan in enumerate(plans) if plan["too_late"]],
+            "raise_limit": bool(deck is not None and new_per_day is not None and new_per_day > deck)}
+
+
+def needed_steps(known: int, goals: list[Goal], today: date) -> list[tuple[date, int, int | None]]:
+    """The pace it takes to reach all the goals (by date), as points (day, words, index of the goal in `goals`) from
+    today's known words: the steepest goal from today, then the steepest one from there, and so on. The goals under it
+    are reached on the way. Its first slope is the highest needed pace of the goals (combine())."""
+    steps: list[tuple[date, int, int | None]] = [(today, known, None)]
+    rest = [(goal.by, goal.words, index) for index, goal in enumerate(goals) if goal.by > today and goal.words > known]
+    while rest:
+        day, words = steps[-1][:2]
+        slope = lambda step: (step[1] - words) / (step[0] - day).days
+        step = max(rest, key=lambda step: (slope(step), step[0]))  # the farthest goal on a tie
+        if slope(step) <= 0:
+            break
+        steps.append(step)
+        rest = [later for later in rest if later[0] > step[0]]
+    return steps
 
 
 # The statuses of a goal. Once reached or missed, a goal stays so: it's kept as the history of the user's goals.
@@ -168,7 +211,7 @@ def settle(goal: dict, curve: dict[date, int], today: date) -> dict:
     return goal
 
 
-def current(goals: list[dict]) -> dict | None:
-    """The goal the plan is made for: the active one with the nearest date."""
-    active = [goal for goal in goals if status(goal) == ACTIVE]
-    return min(active, key=lambda goal: (goal["by"], goal["words"])) if active else None
+def active(goals: list[dict]) -> list[dict]:
+    """The goals still to come, the nearest first."""
+    return sorted((goal for goal in goals if status(goal) == ACTIVE), key=lambda goal: (goal["by"], goal["words"]))
+

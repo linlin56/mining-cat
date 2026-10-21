@@ -144,8 +144,12 @@ milestones along the way):
   when it's lower);
 - the **cards to mine a day**, once the new cards already waiting in Anki (and the cards made in MiningCat but not sent
   yet) are counted, and how many days they last at your decks' limit;
-- a chart of your known words over time, with the line at your current pace and the line your goal takes, and a chart
-  of the words known each week.
+- a chart of your known words over time, with the line at your current pace and the line your goals take (to the
+  nearest goal, then from one goal to the next), and a chart of the words known each week.
+
+With several goals to come, the new cards and the cards to mine a day are the ones that reach them all: those of the
+most demanding goal, named under the count. Enough cards for the nearest goal don't make them 0 while the next goals
+need more.
 
 A new card isn't known the day you first see it: it takes weeks before its interval reaches the known interval of
 **Settings › Anki** (21 days by default), and some cards never get there. MiningCat measures both on your own Anki

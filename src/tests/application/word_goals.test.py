@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 
@@ -71,14 +72,14 @@ def test_reached_and_missed_goals_are_kept():
     by_words = {g["words"]: g for g in summary["goals"]}
     assert by_words[2]["status"] == "reached" and by_words[2]["reached_on"] == "2026-10-19"
     assert by_words[50]["status"] == "missed" and by_words[50]["missed_known"] == 0
-    assert summary["current"]["words"] == 100 and summary["plan"]["remaining"] == 98
+    assert summary["plans"][0]["goal"]["words"] == 100 and summary["plans"][0]["remaining"] == 98
     assert goals.get_goals("ja")[0]["status"] == "missed"  # saved
 
 
 def test_only_past_goals():
     goals.add_goal("ja", 1, "2026-10-01", NOW.date() - timedelta(days=60))
     summary = goals.summary("ja", NOW)
-    assert summary["current"] is None and summary["plan"] is None and summary["goals"][0]["status"] == "missed"
+    assert summary["plans"] == [] and summary["needs"] is None and summary["goals"][0]["status"] == "missed"
 
 
 def test_without_anki():
@@ -88,7 +89,7 @@ def test_without_anki():
     summary = goals.summary("ja", NOW)
     assert summary["anki"] == {"linked": False, "connected": False}
     assert summary["history"][-1] == ["2026-10-19", 1]
-    plan = summary["plan"]
+    plan = summary["plans"][0]
     assert plan["remaining"] == 9 and plan["mine_per_day"] is None and plan["backlog"] is None
 
 
@@ -99,7 +100,9 @@ def test_anki_closed():
     assert summary["anki"]["linked"] is True and summary["anki"]["connected"] is False and summary["anki"]["error"]
 
 
-def test_with_anki(fake_anki):
+def test_with_anki(fake_anki, monkeypatch):
+    # the words changed at NOW, the test's today: not on the day the test runs
+    monkeypatch.setattr(words, "time", SimpleNamespace(time=NOW.timestamp))
     goals.add_goal("zh", 100, "2027-04-01", NOW.date() - timedelta(days=60))
     known_note, known_card = add_note(fake_anki, "我們", 40)
     learning_note, learning_card = add_note(fake_anki, "天氣", 3)
@@ -118,17 +121,35 @@ def test_with_anki(fake_anki):
     assert summary["anki"] == {"linked": True, "connected": True, "decks": ["Mining::Chinese"]}
     history = dict(summary["history"])
     assert min(history) == "2026-09-19" and history["2026-09-19"] == 1 and history["2026-10-19"] == 2
-    plan = summary["plan"]
+    plan = summary["plans"][0]
     assert (plan["backlog"], plan["deck_new_per_day"], plan["remaining"]) == (2, 15, 98)
     assert plan["lag"] == 35 and plan["mine_per_day"] > 0  # too few cards: the usual lag
     assert plan["pace"] == round(1 / 30, 2)
+
+
+def test_a_plan_for_each_goal(fake_anki):
+    goals.add_goal("zh", 2, "2026-12-15", NOW.date())
+    goals.add_goal("zh", 500, "2027-03-01", NOW.date())
+    add_note(fake_anki, "我們", 3)
+    add_note(fake_anki, "天氣", 3)
+    add_note(fake_anki, "朋友", 0, new=True)
+    anki.sync()
+    summary = goals.summary("zh", NOW)
+    assert [plan["goal"]["words"] for plan in summary["plans"]] == [2, 500]
+    assert summary["plans"][0]["remaining"] == 2
+    # nothing to mine for the nearest goal, but for the next one
+    assert summary["plans"][0]["mine_per_day"] == 0
+    assert summary["needs"]["mine_per_day"] == summary["plans"][1]["mine_per_day"] > 0
+    assert summary["needs"]["mine_for"] == 1
+    first, second = goals.get_goals("zh")
+    assert summary["steps"][0] == ["2026-10-19", 0, None] and summary["steps"][-1] == ["2027-03-01", 500, second["id"]]
 
 
 def test_goals_are_not_settled_while_anki_is_closed():
     anki.save_config({"url": "http://127.0.0.1:9", "notes": {"zh": {"deck": "Mining::Chinese"}}})
     goals.add_goal("zh", 10, "2026-10-01", NOW.date() - timedelta(days=60))
     summary = goals.summary("zh", NOW)
-    assert summary["goals"][0]["status"] == "active" and summary["current"]["words"] == 10
+    assert summary["goals"][0]["status"] == "active" and summary["plans"][0]["goal"]["words"] == 10
 
 
 def test_new_cards_a_day_of_subdecks(fake_anki):
@@ -138,11 +159,11 @@ def test_new_cards_a_day_of_subdecks(fake_anki):
         note = fake_anki.add_existing(deck, "Basic", {"Hanzi": "了"})
         fake_anki.cards[fake_anki.notes[note]["cards"][0]]["queue"] = 0
     fake_anki.new_per_day.update({"Mining::Chinese": 50, "Mining::Chinese::Grammar": 15})
-    plan = goals.summary("zh", NOW)["plan"]
+    plan = goals.summary("zh", NOW)["plans"][0]
     # only the subdeck holds new cards: its limit, not the top deck's
     assert (plan["backlog"], plan["deck_new_per_day"]) == (2, 15)
     fake_anki.new_per_day["Mining::Chinese"] = 10
-    assert goals.summary("zh", NOW)["plan"]["deck_new_per_day"] == 10  # the top deck's limit caps them
+    assert goals.summary("zh", NOW)["plans"][0]["deck_new_per_day"] == 10  # the top deck's limit caps them
 
 
 def test_the_last_plan_is_kept(fake_anki):

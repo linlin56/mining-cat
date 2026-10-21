@@ -22,7 +22,7 @@ def test_goal_api(client):
     goal = res.get_json()["goal"]
     assert (goal["words"], goal["by"], goal["status"]) == (2000, "2099-06-01", "active")
     plan = client.get("/api/goals/plan?language=ja").get_json()
-    assert plan["current"]["id"] == goal["id"] and plan["plan"]["remaining"] == 2000
+    assert plan["plans"][0]["goal"]["id"] == goal["id"] and plan["plans"][0]["remaining"] == 2000
     assert client.post("/api/goals", json={"language": "ja", "words": "lots", "by": "2099-06-01"}, headers=HEADERS).status_code == 400
     res = client.post(f"/api/goals/{goal['id']}/delete", json={"language": "ja"}, headers=HEADERS)
     assert res.get_json() == {"goals": []}

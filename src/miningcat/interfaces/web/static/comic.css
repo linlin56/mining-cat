@@ -42,6 +42,14 @@ body.fullscreen .comic-stage { background: #000 !important; }
   color: #111; background: #fff; box-shadow: 0 0 0 4px #fff, 0 0 0 5px rgba(0, 0, 0, .25), 0 2px 12px 4px rgba(0, 0, 0, .18);
   z-index: 1;
 }
+.cb.flash { z-index: 2; }
+.cb.flash .cs.lit { color: #111; background: #fff; box-shadow: 0 0 0 3px #fff; }
+/* only the sentence under the mouse (or looked up) is shown, not the whole block (until one is: the whole block) */
+.mode-hover .cb:hover:not(.active):has(.cs.lit), .mode-boxes .cb:hover:not(.active):has(.cs.lit),
+.mode-hover .cb.active:has(.cs.lit), .mode-boxes .cb.active:has(.cs.lit) { color: transparent; background: none; box-shadow: none; }
+.mode-hover .cb:is(:hover, .active) .cs.lit, .mode-boxes .cb:is(:hover, .active) .cs.lit {
+  color: #111; background: #fff; box-shadow: 0 0 0 3px #fff;
+}
 .mode-boxes .cb:not(:hover):not(.active) { box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), .75); }
 
 .mode-hover .cb:not(:hover):not(.active) .cl::highlight(mc-new),
@@ -51,4 +59,8 @@ body.fullscreen .comic-stage { background: #000 !important; }
 .mode-boxes .cb:not(:hover):not(.active) .cl::highlight(mc-new),
 .mode-boxes .cb:not(:hover):not(.active) .cl::highlight(mc-new-alt),
 .mode-boxes .cb:not(:hover):not(.active) .cl::highlight(mc-learning),
-.mode-boxes .cb:not(:hover):not(.active) .cl::highlight(mc-learning-alt) { background-color: transparent; }
+.mode-boxes .cb:not(:hover):not(.active) .cl::highlight(mc-learning-alt),
+:is(.mode-hover, .mode-boxes) .cb:has(.cs.lit) .cs:not(.lit)::highlight(mc-new),
+:is(.mode-hover, .mode-boxes) .cb:has(.cs.lit) .cs:not(.lit)::highlight(mc-new-alt),
+:is(.mode-hover, .mode-boxes) .cb:has(.cs.lit) .cs:not(.lit)::highlight(mc-learning),
+:is(.mode-hover, .mode-boxes) .cb:has(.cs.lit) .cs:not(.lit)::highlight(mc-learning-alt) { background-color: transparent; }

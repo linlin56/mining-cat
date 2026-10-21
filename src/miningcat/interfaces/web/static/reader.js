@@ -116,7 +116,7 @@ async function showLibrary() {
   if (R.folder) renderPath();
   $("lib-empty").hidden = Boolean(R.folder) || items.length > 0 || folderCards.length > 0;
   $("folder-empty").hidden = !R.folder || here.length > 0 || folderCards.length > 0;
-  loadComprehension(here.filter((item) => item.kind === "book"));
+  loadComprehension(here.filter((item) => item.kind === "book" || item.kind === "comic"));
 }
 
 // ---------------------------------------------------------------- folders
@@ -336,9 +336,9 @@ function node(tag, className, text) {
 }
 
 // A book or a comic in the library (a column of the grid): its cover, title, reading progress and remove button.
-// cover: the image's URL, else the title is written on a colour. book: the book's id, for its comprehension.
+// cover: the image's URL, else the title is written on a colour. comprehension: shown under it (see loadComprehension).
 // item: {kind, id, title}, dragged into the folders.
-function libraryCard({ href, cover, title, language, about, percent, book, remove, item }) {
+function libraryCard({ href, cover, title, language, about, percent, comprehension, remove, item }) {
   const a = node("a", "mc-cover d-block position-relative text-reset text-decoration-none");
   a.href = href;
   draggable(a, itemKey(item), Boolean(item.image));
@@ -381,9 +381,9 @@ function libraryCard({ href, cover, title, language, about, percent, book, remov
   del.addEventListener("click", (e) => { e.preventDefault(); remove(); });
   a.append(box, name, meta, bar, del);
   if (R.folder || Object.keys(R.folders).length) a.append(moveButton(itemKey(item), title));
-  if (book) {
+  if (comprehension) {
     const comp = node("div", "small text-body-secondary");
-    comp.dataset.book = book;
+    comp.dataset.comprehension = itemKey(item);
     a.append(comp);
   }
   const col = node("div", "col");
@@ -393,7 +393,7 @@ function libraryCard({ href, cover, title, language, about, percent, book, remov
 
 function bookCard(b) {
   const col = libraryCard({
-    href: `/reader/${b.id}`, cover: b.cover, title: b.title, language: b.language, percent: b.percent, book: b.id, item: b,
+    href: `/reader/${b.id}`, cover: b.cover, title: b.title, language: b.language, percent: b.percent, comprehension: true, item: b,
     about: [b.author, b.format.toUpperCase()].filter(Boolean).join(" · "),
     remove: async () => {
       const ok = await showDialog("Remove book", `Remove “${b.title}” and its reading progress from the library?`,
@@ -412,13 +412,14 @@ function bookCard(b) {
   return col;
 }
 
-// A comic or manga (or an image, a comic of one page): opened in its own page (static/comic.js).
+// A comic or manga (or an image, a comic of one page; a PDF, a document): opened in its own page (static/comic.js).
 function comicCard(c) {
+  const kind = c.album ? "Album" : c.pdf ? "Document" : "Comic";
   return libraryCard({
     href: `/reader/comic/${c.id}`, cover: `/reader/api/comics/${c.id}/thumb?v=${c.added}`, title: c.title,
-    language: c.language, percent: c.percent, about: c.image ? "Image" : `${c.pages} pages · ${c.album ? "Album" : "Comic"}`, item: c,
+    language: c.language, percent: c.percent, comprehension: true, about: c.image ? "Image" : `${c.pages} pages · ${kind}`, item: c,
     remove: async () => {
-      const ok = await showDialog(c.image ? "Remove image" : "Remove comic", c.image
+      const ok = await showDialog(c.image ? "Remove image" : `Remove ${kind.toLowerCase()}`, c.image
         ? `Remove “${c.title}” and the text read on it from the library?`
         : `Remove “${c.title}”, the text read on its pages and its reading progress from the library?`,
         [{ label: "Cancel", value: false }, { label: "Remove", value: true, primary: true }]);
@@ -428,21 +429,34 @@ function comicCard(c) {
   });
 }
 
-// Each book's comprehension, one book after the other (a book never analysed takes a moment).
+// Each book's (and comic's) comprehension, one after the other (a book never analysed takes a moment). A comic's
+// needs the text of all its pages: while they're read by OCR in the background, it stays "…" (until the library is
+// shown again).
 let comprehensionToken = 0;
-async function loadComprehension(books) {
+async function loadComprehension(items) {
   const token = ++comprehensionToken;
-  for (const b of books) {
+  for (const item of items) {
     if (token !== comprehensionToken) return;
-    const box = document.querySelector(`[data-book="${b.id}"]`);
+    const box = document.querySelector(`[data-comprehension="${itemKey(item)}"]`);
     if (!box) continue;
     box.textContent = "…";
     try {
-      const { comprehension: c } = await api(`/reader/api/books/${b.id}/comprehension`);
+      const url = item.kind === "comic" ? `/reader/api/comics/${item.id}/comprehension` : `/reader/api/books/${item.id}/comprehension`;
+      const { comprehension: c, read, pages, error, failed } = await api(url);
+      if (error) {  // the pages without text can't be read by OCR
+        box.textContent = "";
+        box.title = error;
+        continue;
+      }
+      if (!c && read < pages) {
+        box.title = `Reading the text of the pages (${read} of ${pages})…`;
+        continue;
+      }
       box.textContent = c && c.total ? `${percentText(c.percent)}${c.recommended ? ` · ${c.recommended} i+1` : ""}` : "";
       if (c && c.total) box.title = `${c.known} known, ${c.learning} learning and ${c.new} new running words (${c.unique_new} different new words). `
         + `${c.i1} of ${c.sentences} sentences have only one new word`
-        + (c.frequency ? `, ${c.recommended} of them a frequent one (up to #${c.frequency.limit.toLocaleString()}).` : ".");
+        + (c.frequency ? `, ${c.recommended} of them a frequent one (up to #${c.frequency.limit.toLocaleString()}).` : ".")
+        + (failed ? ` ${failed} page${failed === 1 ? "" : "s"} couldn't be read by OCR (open ${failed === 1 ? "it" : "them"} to try again).` : "");
     } catch { box.textContent = ""; }
   }
 }

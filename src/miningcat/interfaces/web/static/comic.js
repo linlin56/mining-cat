@@ -1,8 +1,8 @@
 "use strict";
 
 // MiningCat comics & manga: the pages of a comic, with the text read on them by OCR (application/library/comics/) drawn over each
-// speech bubble, mokuro-style. Clicking a word looks it up (mining.js): the bubble is the card's sentence, the page its
-// picture.
+// speech bubble, mokuro-style. Clicking a word looks it up (mining.js): the sentence around it is the card's sentence, the page
+// its picture.
 
 const $ = (id) => document.getElementById(id);
 
@@ -250,8 +250,8 @@ async function showText(n, token, again = false) {
   }
 }
 
-// Each block (speech bubble) is a <div>, so that a lookup takes the whole bubble as its sentence (mining.js), and
-// each of its lines a <span> where it was read. In languages written with spaces, a hidden space separates the lines.
+// Each block (speech bubble, paragraph) is a <div>, so that a lookup finds its sentence in it (mining.js), and
+// each of its lines a <span> where it was read, cut into its pieces of sentences. In languages written with spaces, a hidden space separates the lines.
 function renderBlocks(box, blocks) {
   const layer = box.querySelector(".ocr-layer");
   const spaced = !NO_SPACE.test(effectiveLanguage());
@@ -260,13 +260,17 @@ function renderBlocks(box, blocks) {
     const [bx, by, bw, bh] = block.box;
     const div = document.createElement("div");
     div.className = `cb${block.vertical ? " vertical" : ""}`;
+    const sep = spaced ? " " : "";
+    const sentences = sentenceOfChars(block.lines.map((l) => l.text).join(sep));
+    let offset = 0;
     div.lang = effectiveLanguage();
     Object.assign(div.style, { left: pct(bx), top: pct(by), width: pct(bw), height: pct(bh) });
     block.lines.forEach((line, i) => {
       const [lx, ly, lw, lh] = line.box;
       const span = document.createElement("span");
       span.className = "cl";
-      span.textContent = line.text;
+      appendSentencePieces(span, line.text, sentences, offset);
+      offset += line.text.length + sep.length;
       span.dataset.box = JSON.stringify([(lx - bx) / bw, (ly - by) / bh, lw / bw, lh / bh]);
       Object.assign(span.style, {
         left: pct((lx - bx) / bw), top: pct((ly - by) / bh), width: pct(lw / bw), height: pct(lh / bh),
@@ -319,10 +323,75 @@ function syncTextMode() {
   $("spread").classList.add(`mode-${mode}`);
 }
 
+// Colours the words of the pages shown by status, unless turned off in the settings. Their statuses are read anyway:
+// they give the pages' comprehension and their recommended sentences.
 function colourText() {
   if (!window.MiningCatMining) return;
-  if (C.settings.colors === "off") MiningCatMining.clearColours("comic");
-  else MiningCatMining.colourWords($("spread"), effectiveLanguage(), "comic");
+  MiningCatMining.colourWords($("spread"), effectiveLanguage(), "comic", { paint: C.settings.colors !== "off" });
+}
+
+// ---------------------------------------------------------------- comprehension & recommended sentences
+
+const percentText = (p) => (p === null || p === undefined ? "" : `${p >= 99.95 ? 100 : p.toFixed(1)}% known`);
+
+// Recomputed whenever the words of the pages shown or their statuses change (a card made, a word marked known...).
+function showComprehension(key) {
+  if (key !== "comic") return;
+  const a = MiningCatMining.analyse("comic");
+  const recommended = a ? a.units.filter((u) => u.recommended) : [];
+  C.recommended = recommended;
+  $("comp-info").textContent = a && a.total ? `${percentText(a.percent)}${recommended.length ? ` · ${recommended.length} i+1` : ""}` : "";
+  paintRecommended();
+  const rarer = a ? a.units.filter((u) => u.i1 && !u.recommended).length : 0;
+  $("i1-summary").textContent = !a || !a.total
+    ? "No dictionary words on these pages (import a dictionary in Settings)."
+    : `${percentText(a.percent)} · ${a.learning} learning · ${a.new} new words on these pages · ${recommended.length} recommended sentence${recommended.length === 1 ? "" : "s"}.`
+      + (a.frequency ? ` Only words up to #${a.frequency.limit.toLocaleString()} of “${a.frequency.title}” (you know ${a.frequency.known.toLocaleString()} of its words)`
+        + `${rarer ? `: ${rarer} other sentence${rarer === 1 ? " teaches a rarer word" : "s teach rarer words"}` : ""}.`
+        : " Import a frequency list in Settings to only get the frequent words.");
+  $("i1-list").replaceChildren(...recommended.map((u) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "list-group-item list-group-item-action px-2";
+    button.lang = effectiveLanguage();
+    const before = document.createRange();
+    before.setStart(u.range.startContainer, u.range.startOffset);
+    before.setEnd(u.targetRange.startContainer, u.targetRange.startOffset);
+    const after = document.createRange();
+    after.setStart(u.targetRange.endContainer, u.targetRange.endOffset);
+    after.setEnd(u.range.endContainer, u.range.endOffset);
+    const word = document.createElement("strong");
+    word.className = "text-primary-emphasis";
+    word.textContent = u.targetRange.toString();
+    button.append(before.toString().trimStart(), word, after.toString().trimEnd());
+    button.addEventListener("click", () => {
+      togglePanel(false, "i1-panel");
+      const piece = (u.range.startContainer.parentElement || u.range.startContainer).closest(".cs");
+      if (piece) lightSentence(piece);
+      flashRange(u.range);
+    });
+    return button;
+  }));
+}
+
+function paintRecommended() {
+  if (!window.CSS || !CSS.highlights || !window.Highlight) return;
+  const ranges = C.settings.i1 !== false && C.recommended ? C.recommended.map((u) => u.range) : [];
+  CSS.highlights.set("mc-i1", new Highlight(...ranges));
+}
+
+// The sentence shown for a moment, as if hovered: the text of the pages is otherwise hidden.
+function flashRange(range) {
+  if (!window.CSS || !CSS.highlights || !window.Highlight) return;
+  const block = (range.startContainer.parentElement || range.startContainer).closest(".cb");
+  if (block) block.classList.add("flash");
+  CSS.highlights.set("mc-i1-focus", new Highlight(range));
+  clearTimeout(C.flashTimer);
+  C.flashTimer = setTimeout(() => {
+    CSS.highlights.delete("mc-i1-focus");
+    if (block) block.classList.remove("flash");
+    if (block && !block.matches(":hover") && block !== lookedUp) unlight(block);
+  }, 1800);
 }
 
 async function readAgain() {
@@ -336,10 +405,52 @@ async function readAgain() {
 
 // ---------------------------------------------------------------- mining
 
+// As mining.js cuts the card's sentence: after 。！？!?… (and a "." before a space), with the closing quotes that follow.
+// The sentence of each character of a block's text (its lines, with a space between them in languages written with
+// spaces, as mining.js reads the block), cut as the card's sentence is (sentenceSpans of mining.js).
+function sentenceOfChars(text) {
+  const spans = window.MiningCatMining ? MiningCatMining.sentenceSpans(text) : [[0, text.length]];
+  const of = new Array(text.length).fill(0);
+  let k = 0;
+  for (let i = 0; i < text.length; i++) {
+    while (k < spans.length - 1 && i >= spans[k + 1][0]) k++;
+    of[i] = k;
+  }
+  return of;
+}
+
+// The text of a line, as a <span class="cs"> per piece of sentence (data-s: the sentence's number in the block, a
+// sentence going on from a line to the next). `offset`: where the line starts in the block's text.
+function appendSentencePieces(span, text, sentences, offset) {
+  let start = 0;
+  for (let i = 1; i <= text.length; i++) {
+    if (i < text.length && sentences[offset + i] === sentences[offset + start]) continue;
+    const part = document.createElement("span");
+    part.className = "cs";
+    part.dataset.s = sentences[offset + start];
+    part.textContent = text.slice(start, i);
+    span.append(part);
+    start = i;
+  }
+}
+
+function unlight(block) {
+  for (const part of block.querySelectorAll(".cs.lit")) part.classList.remove("lit");
+}
+
+// Lights the sentence of the piece under the mouse, in all the lines it spans.
+function lightSentence(piece) {
+  const block = piece.closest(".cb");
+  for (const part of block.querySelectorAll(".cs")) part.classList.toggle("lit", part.dataset.s === piece.dataset.s);
+}
+
 let lookedUp = null;  // the bubble looked up: it stays shown while its popup is open
 
 function markLookedUp(block) {
-  if (lookedUp && lookedUp !== block) lookedUp.classList.remove("active");
+  if (lookedUp && lookedUp !== block) {
+    lookedUp.classList.remove("active");
+    if (!lookedUp.matches(":hover")) unlight(lookedUp);
+  }
   lookedUp = block;
   if (block) block.classList.add("active");
 }
@@ -382,6 +493,7 @@ function syncSettingsForm() {
   }
   $("set-first-single").checked = s.first_single;
   $("set-colors").value = s.colors;
+  $("set-i1").checked = s.i1 !== false;
 }
 
 function syncComicSettings() {
@@ -415,13 +527,19 @@ function cycleText() {
   osd(TEXT_LABELS[mode]);
 }
 
-// The settings panel (a Bootstrap offcanvas)
-function togglePanel(force) {
-  const panel = bootstrap.Offcanvas.getOrCreateInstance($("settings-panel"));
-  if (force === undefined) panel.toggle();
-  else if (force) panel.show();
-  else panel.hide();
+// The side panels (Bootstrap offcanvases): the settings, or the recommended sentences; one at a time.
+function togglePanel(force, id = "settings-panel") {
+  const open = force !== undefined ? force : !$(id).classList.contains("show");
+  for (const panel of document.querySelectorAll(".offcanvas.show")) {
+    if (panel.id !== id) bootstrap.Offcanvas.getOrCreateInstance(panel).hide();
+  }
+  const panel = bootstrap.Offcanvas.getOrCreateInstance($(id));
+  if (open) panel.show(); else panel.hide();
 }
+
+const closePanels = () => {
+  for (const panel of document.querySelectorAll(".offcanvas.show")) bootstrap.Offcanvas.getOrCreateInstance(panel).hide();
+};
 
 function toggleFullscreen() {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
@@ -430,6 +548,7 @@ function toggleFullscreen() {
 
 function wireSettings() {
   $("settings-btn").addEventListener("click", () => togglePanel());
+  $("i1-btn").addEventListener("click", () => togglePanel(undefined, "i1-panel"));
   $("text-btn").addEventListener("click", cycleText);
   $("fullscreen-btn").addEventListener("click", toggleFullscreen);
   for (const b of $("set-spread").children) {
@@ -440,6 +559,7 @@ function wireSettings() {
   }
   $("set-first-single").addEventListener("change", async (e) => { await saveSettings({ first_single: e.target.checked }); relayout(); });
   $("set-colors").addEventListener("change", async (e) => { await saveSettings({ colors: e.target.value }); colourText(); });
+  $("set-i1").addEventListener("change", async (e) => { await saveSettings({ i1: e.target.checked }); paintRecommended(); });
   // another script, or another reading order: the pages are read (or their blocks ordered) again
   $("set-language").addEventListener("change", async (e) => { await savePrefs({ language: e.target.value }); C.texts.clear(); render(); });
   $("set-direction").addEventListener("change", async (e) => { await savePrefs({ direction: e.target.value }); C.texts.clear(); render(); });
@@ -462,7 +582,8 @@ function onKey(e) {
     Home: () => go(0), End: () => go(C.views.length - 1),
     t: cycleText, T: cycleText,
     f: toggleFullscreen, F: toggleFullscreen,
-    Escape: () => togglePanel(false),
+    r: () => togglePanel(undefined, "i1-panel"), R: () => togglePanel(undefined, "i1-panel"),
+    Escape: closePanels,
   };
   const action = actions[e.key];
   if (!action) return;
@@ -477,9 +598,27 @@ function wire() {
   $("page-slider").addEventListener("change", (e) => go(viewOf(Number(e.target.value))));
   // a click on the page outside the text turns it, on the side clicked (not when it closes a popup)
   let popupWasOpen = false;
+  // the sentence under the mouse is lit; leaving its block puts it out (the sentence looked up stays lit while its
+  // popup is open)
+  let hovered = null;
+  const popupOpen = () => Boolean(window.MiningCatMining && MiningCatMining.isOpen());
+  $("spread").addEventListener("pointermove", (e) => {
+    const block = e.target.closest(".cb");
+    if (hovered && hovered !== block && !(hovered === lookedUp && popupOpen())) unlight(hovered);
+    hovered = block;
+    const piece = e.target.closest(".cb .cs");
+    if (!piece || block === lookedUp && popupOpen()) return;
+    lightSentence(piece);
+  });
+  $("spread").addEventListener("pointerleave", () => {
+    if (hovered && !(hovered === lookedUp && popupOpen())) unlight(hovered);
+    hovered = null;
+  });
   $("spread").addEventListener("pointerdown", (e) => {
     popupWasOpen = Boolean(window.MiningCatMining && MiningCatMining.isOpen());
     const block = e.target.closest(".cb");
+    const piece = e.target.closest(".cb .cs");
+    if (piece) lightSentence(piece);  // a touch screen has no hover
     if (block) markLookedUp(block);
   });
   $("spread").addEventListener("click", (e) => {
@@ -544,10 +683,10 @@ async function init() {
       getSource,
       getMode: () => "click",
       isVertical: () => Boolean(lookedUp && lookedUp.classList.contains("vertical")),
-      blockSentence: true,
       hasAudio: () => false,
       getImage,
     });
+    MiningCatMining.onAnalysis(showComprehension);
   }
   relayout();
 }

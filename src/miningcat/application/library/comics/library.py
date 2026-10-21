@@ -1,5 +1,5 @@
-"""The comics and manga of the reader's library: archives unpacked into pages once (library/comics/<id>).
-A single picture is imported the same way, as a comic of one page; pictures put together make an album."""
+"""The comics and manga of the reader's library: archives unpacked into pages once (library/comics/<id>), PDFs (scans)
+rendered into pages. A single picture is imported the same way, as a comic of one page; pictures put together make an album."""
 import os
 import re
 import secrets
@@ -16,8 +16,9 @@ from miningcat.domain.library.errors import ComicError
 from miningcat.infrastructure.files.archives import ArchiveError, untar, unzip
 from miningcat.infrastructure.files.json_files import read_json, write_json
 from miningcat.infrastructure.media.images import CONVERTED_EXTENSIONS, add_page, make_thumbnail
+from miningcat.infrastructure.media.pdf_pages import render_pages
 
-ARCHIVE_EXTENSIONS = ("cbz", "zip", "cbr", "rar", "cb7", "7z", "cbt", "tar")
+ARCHIVE_EXTENSIONS = ("cbz", "zip", "cbr", "rar", "cb7", "7z", "cbt", "tar", "pdf")
 _ZIP_EXTENSIONS = ("cbz", "zip")
 # Pages the browser shows as they are; other images are converted to PNG on import.
 PAGE_EXTENSIONS = ("jpg", "jpeg", "png", "webp", "gif")
@@ -121,7 +122,12 @@ def _add_image(image: Path, target: Path, owned: bool) -> list[dict]:
 
 
 def _unpack(archive: Path, target: Path) -> list[dict]:
-    """Pages of the archive, in reading order (names sorted naturally: page2 before page10), as {file, width, height}."""
+    """Pages of the archive (or PDF), in reading order (names sorted naturally: page2 before page10), as {file, width, height}."""
+    if archive.suffix.lower() == ".pdf":
+        try:
+            return render_pages(archive, target, target.parent / "text")
+        except ArchiveError as exc:
+            raise ComicError(str(exc))
     comics_dir().mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=comics_dir()) as tmp:
         tmp = Path(tmp)
@@ -192,7 +198,8 @@ def list_comics() -> list[dict]:
         progress = read_json(folder / "progress.json", {})
         comics.append({
             "id": meta["id"], "title": meta["title"], "pages": len(meta["pages"]), "image": meta.get("image", False),
-            "album": meta.get("album", False), "added": meta.get("added", 0), "opened": progress.get("updated", 0),
+            "album": meta.get("album", False), "pdf": meta.get("filename", "").lower().endswith(".pdf"),
+            "added": meta.get("added", 0), "opened": progress.get("updated", 0),
             "percent": progress.get("percent", 0),
             "language": read_json(folder / "prefs.json", {}).get("language") or "",
         })

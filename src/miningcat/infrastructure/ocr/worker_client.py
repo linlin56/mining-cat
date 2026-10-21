@@ -12,6 +12,10 @@ class OcrWorkerError(RuntimeError):
     pass
 
 
+class OcrPageError(OcrWorkerError):
+    """The OCR works, but couldn't read this image (the next one may be fine)."""
+
+
 class OcrWorker:
     """The OCR process (see worker.py), started on the first page read and kept for the next ones.
     One page at a time: it's restarted for another language, or when it died."""
@@ -36,7 +40,7 @@ class OcrWorker:
                         raise OcrWorkerError("The text recognition stopped unexpectedly.")
                     continue
                 if "error" in answer:
-                    raise OcrWorkerError(f"The text of this page couldn't be read: {answer['error']}")
+                    raise OcrPageError(f"The text of this page couldn't be read: {answer['error']}")
                 return answer
         raise OcrWorkerError("The text recognition stopped unexpectedly.")
 

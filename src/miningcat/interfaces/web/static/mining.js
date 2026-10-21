@@ -23,8 +23,9 @@
   const SCAN_CHARS = 40;
   const SELECTION_CHARS = 100;  // the longest selection looked up (with Shift)
   const CJK = /^(ja|zh|yue|nan)/;
-  const SENTENCE_END = /[。！？!?…\n]|[.](?=\s|$)/;
-  const CLOSERS = /[」』）)】〉》”’"'\s]/;
+  // A sentence ends at a line break, or at final punctuation followed by its closing quotes or brackets (a period
+  // only before a space or the end: 3.5 isn't one), as in domain/text/sentences.py.
+  const SENTENCE_BREAK = /(?:[。！？!?…]+|\.+(?=\s|$))[」』）)】〉》”’"']*|\n/g;
 
   let options = null;
   let popup = null;
@@ -111,16 +112,36 @@
     return { text, chars };
   }
 
+  // [start, end] of each sentence of a text, surrounding spaces excluded (sentence_spans() of domain/text/sentences.py).
+  function sentenceSpans(text) {
+    const spans = [];
+    const add = (from, to) => {
+      const piece = text.slice(from, to);
+      const stripped = piece.trim();
+      if (!stripped) return;
+      const start = from + piece.length - piece.trimStart().length;
+      spans.push([start, start + stripped.length]);
+    };
+    let from = 0;
+    for (const m of text.matchAll(SENTENCE_BREAK)) {
+      add(from, m.index + m[0].length);
+      from = m.index + m[0].length;
+    }
+    add(from, text.length);
+    return spans;
+  }
+
   function sentenceAround(text, start, length) {
     if (options.blockSentence) {
       const before = text.slice(0, start), word = text.slice(start, start + length), after = text.slice(start + length);
       return { text: text.trim(), before: before.replace(/^\s+/, ""), word, after: after.trimEnd() };
     }
-    let from = start;
-    while (from > 0 && !SENTENCE_END.test(text[from - 1])) from--;
-    let to = start + length;
-    while (to < text.length && !SENTENCE_END.test(text[to])) to++;
-    while (to < text.length && (SENTENCE_END.test(text[to]) || CLOSERS.test(text[to])) && text[to] !== "\n") to++;
+    const all = sentenceSpans(text);
+    let spans = all.filter(([a, b]) => a < start + Math.max(length, 1) && b > start);
+    // the word starts between two sentences (on a space): the sentence after it
+    if (!spans.length && all.length) spans = [all.find(([a]) => a >= start) || all[all.length - 1]];
+    const from = spans.length ? Math.min(spans[0][0], start) : start;
+    const to = spans.length ? Math.max(spans[spans.length - 1][1], start + length) : start + length;
     const before = text.slice(from, start), word = text.slice(start, start + length), after = text.slice(start + length, to);
     const trim = (s) => s.replace(/^\s+/, "");
     return { text: trim(before + word + after).trim(), before: trim(before), word, after: after.trimEnd() };
@@ -1819,6 +1840,6 @@
 
   window.MiningCatMining = {
     attach, hide: hidePopup, isOpen: () => Boolean(popup && !popup.hidden), renderGlossary, api,
-    colourWords, clearColours, updateColour, analyse, onAnalysis, cardParts,
+    colourWords, clearColours, updateColour, analyse, onAnalysis, cardParts, sentenceSpans,
   };
 })();

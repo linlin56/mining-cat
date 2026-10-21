@@ -30,13 +30,15 @@ Sort books, comics and images into folders, and folders into folders: **New fold
 
 The library also takes comics and manga: drop their archive (or use **+ Add books**) (`.cbz`, `.zip`, and `.cbr`, `.cb7`, `.cbt` when your system's `bsdtar` reads them, as on macOS). A folder of images? Zip it first.
 
+A PDF is taken too, as a document read like a comic: each page is turned into a picture, at the resolution of its scans. A scanned book or manga has its text read by OCR; a PDF with selectable text (exported from a word processor or LaTeX) gives its own text, exact and ready at once, its formulas and layout kept on the page. **Read these pages again** reads such a page by OCR anyway.
+
 A single image (`.png`, `.jpg`, `.webp`, `.gif`, `.bmp`, `.tiff`, `.avif`, `.jxl`) is taken too: a screenshot, a photo of a sign or a page. It opens like a comic of one page, its text read by OCR. No need to save a picture first: copy it (or take a screenshot to the clipboard) and paste it in the library with **Ctrl+V** (**⌘V**).
 
 Drag an image onto another image to put them together: the image dragged becomes the next page of an album, which you read like a comic. Drag more images onto the album to add pages.
 
 The text of each page is read by OCR the first time the page is shown (and the next pages while you read), then kept. On macOS it's Apple Live Text, which reads vertical text; elsewhere EasyOCR, horizontal text only. The lines read are grouped into speech bubbles and drawn over the page, where they were read.
 
-- **Click a word** to look it up. The whole bubble is the card's sentence, and the page its picture (sentence audio: the voice of the card creator).
+- **Click a word** to look it up. The sentence around it (cut at 。！？ and . ! ?) is the card's sentence, the one lit when the mouse is over it, and the page its picture (sentence audio: the voice of the card creator).
 - **Text** (`T`, or 文): shown on hover (default), outlined, or always shown.
 - **Pages**: one, two (side by side), or automatic (two when the window is wide); the cover can stand alone so that facing pages match the printed book. A double page scanned as one image always stands alone.
 - **Reading direction**: right to left for Japanese and Chinese, left to right otherwise; change it per comic in **Aa**.

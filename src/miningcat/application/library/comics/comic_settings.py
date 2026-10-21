@@ -7,6 +7,7 @@ DEFAULT_SETTINGS = {
     "first_single": True, # in two-page spreads, the cover stands alone (so that the spreads match the printed book)
     "text": "hover",      # OCR text over the page: "hover" (shown under the cursor), "always", or "boxes" (outlined)
     "colors": "status",   # words coloured by status when the text is shown, or "off"
+    "i1": True,           # recommended (i+1) sentences underlined
 }
 
 _CHOICES = {"spread": ("auto", "single", "double"), "text": ("hover", "always", "boxes"), "colors": ("status", "off")}

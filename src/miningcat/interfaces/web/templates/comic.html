@@ -16,6 +16,7 @@
     <header class="d-flex align-items-center gap-1 px-2 border-bottom small mc-bar">
       <a href="/reader/" class="btn btn-link link-body-emphasis" id="back" title="Library" aria-label="Back to library"><i class="bi bi-arrow-left" aria-hidden="true"></i></a>
       <div class="flex-grow-1 overflow-hidden"><span class="d-block fw-semibold text-truncate" id="comic-title"></span></div>
+      <button type="button" class="btn btn-link link-body-emphasis fw-bold text-decoration-none" id="i1-btn" title="Recommended sentences (R)" aria-label="Recommended sentences">i+1</button>
       <button type="button" class="btn btn-link link-body-emphasis" id="text-btn" title="Text over the pages (T)" aria-label="Text over the pages"><i class="bi bi-chat-square-text" aria-hidden="true"></i></button>
       <button type="button" class="btn btn-link link-body-emphasis" id="fullscreen-btn" title="Fullscreen (F)" aria-label="Fullscreen"><i class="bi bi-fullscreen" aria-hidden="true"></i></button>
       <button type="button" class="btn btn-link link-body-emphasis" id="settings-btn" title="Settings" aria-label="Settings"><i class="bi bi-sliders" aria-hidden="true"></i></button>
@@ -29,9 +30,25 @@
     </div>
 
     <footer class="d-flex align-items-center gap-3 px-3 border-top small text-body-secondary mc-bar mc-bar-bottom">
+      <span class="text-nowrap" id="comp-info" title="Words of these pages you know (from your cards and word statuses)"></span>
       <input type="range" class="form-range flex-grow-1" id="page-slider" min="1" max="1" step="1" aria-label="Page">
       <span class="text-nowrap font-monospace" id="page-count"></span>
     </footer>
+
+    <!-- Recommended sentences (i+1) -->
+    <aside class="offcanvas offcanvas-start" tabindex="-1" id="i1-panel" aria-labelledby="i1-title"
+      data-bs-backdrop="false" data-bs-scroll="true" data-bs-keyboard="false">
+      <div class="offcanvas-header">
+        <h2 class="offcanvas-title h5" id="i1-title">Recommended sentences</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body pt-0">
+        <p class="small text-body-secondary">Sentences of these pages where you know every word but one new word, a frequent one: the
+          best ones to make a card with (i+1). Click one to see where it is, then click its word.</p>
+        <p class="small text-body-secondary" id="i1-summary"></p>
+        <div class="list-group list-group-flush" id="i1-list"></div>
+      </div>
+    </aside>
 
     <aside class="offcanvas offcanvas-end" tabindex="-1" id="settings-panel" aria-labelledby="settings-title"
       data-bs-backdrop="false" data-bs-scroll="true" data-bs-keyboard="false">
@@ -87,13 +104,17 @@
             <option value="off">Off</option>
           </select>
         </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="set-i1">
+          <label class="form-check-label" for="set-i1">Underline recommended sentences (i+1)</label>
+        </div>
         <p class="small text-body-secondary">Dictionaries, Anki and the script you learn are set in <a href="/settings/" target="_blank">Settings</a>.</p>
 
         <p class="small text-body-secondary mt-4 mb-0">
           ← →: turn the page (in the reading direction) · Space: next page · Home / End: first / last page ·
-          T: text on hover / outlined / always · F: fullscreen.<br>
-          The text of each page is read when it's first shown (OCR). Click a word to look it up: the speech bubble is the
-          card's sentence, and the page its picture.
+          T: text on hover / outlined / always · R: recommended sentences · F: fullscreen.<br>
+          The text of each page is read when it's first shown (OCR), and the other pages in the background. Click a word
+          to look it up: the sentence around it is the card's sentence, and the page its picture.
         </p>
       </div>
     </aside>

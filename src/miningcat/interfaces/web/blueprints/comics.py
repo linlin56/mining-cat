@@ -3,6 +3,7 @@ from flask import Blueprint, jsonify, render_template, request, send_file
 
 from miningcat.application import study_language as studied
 from miningcat.application.library import comics, folders
+from miningcat.application.mining import comprehension
 from miningcat.domain.languages import language_key
 from miningcat.interfaces.web.requests import json_body
 
@@ -43,6 +44,25 @@ def api_comic_page(comic_id: str, number: int):
 def api_comic_text(comic_id: str, number: int):
     language = comics.get_prefs(comic_id).get("language") or studied.default_tag(studied.current())
     return jsonify(comics.page_text(comic_id, number, language, again=request.args.get("again") == "1"))
+
+
+# Share of the comic's words the user knows, and its recommended (i+1) sentences (see application/mining/comprehension.py),
+# once every page has its text: until then, the others are read by OCR in the background, and it's None (`read` of
+# `pages` tells how far it is). `error`: why they can't be read. `failed`: pages the OCR couldn't read (tried again
+# once), counted without text.
+@bp.get("/api/comics/<comic_id>/comprehension")
+def api_comic_comprehension(comic_id: str):
+    pages = len(comics.get_meta(comic_id)["pages"])
+    language = comics.get_prefs(comic_id).get("language") or studied.default_tag(studied.current())
+    read, failed, version = comics.text_state(comic_id, language)
+    if read < pages or failed:
+        reading = comics.read_all_pages(comic_id, language, retry_failed=read == pages)
+        error = comics.ocr_unavailable(comic_id, language)
+        if reading or (error and read < pages):
+            return jsonify(comprehension=None, read=read - failed, pages=pages, error=None if reading else error)
+    path = comics.comic_folder(comic_id) / "comprehension.json"
+    result = comprehension.cached(path, language_key(language), version, lambda: comics.page_texts(comic_id, language))
+    return jsonify(comprehension=result, read=read, pages=pages, failed=failed)
 
 
 @bp.get("/api/comics/<comic_id>/thumb")

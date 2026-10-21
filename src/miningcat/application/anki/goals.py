@@ -27,6 +27,8 @@ _SETTING = "vocabulary_goals"
 MAX_WORDS = 1_000_000
 # The last plan made for each language ({language: summary()}): the home page shows it at once, then the new one.
 _PLANS = "goal_plans"
+# The shape of a summary: a cached one of another version is made again (the home page reads this one).
+SUMMARY_VERSION = 3
 
 
 def _all_goals() -> dict[str, list[dict]]:
@@ -132,24 +134,35 @@ def _known_day(word: dict, note_known: dict[int, date], lag: int) -> date:
 def cached_summary(language: str) -> dict:
     """The last summary made for the language, while its goals haven't changed since; else a new one."""
     last = (settings.get(_PLANS, {}) or {}).get(language)
-    if last and last.get("goals") == get_goals(language):
+    if last and last.get("version") == SUMMARY_VERSION and last.get("goals") == get_goals(language):
         return last
     return summary(language)
 
 
+def _plan_json(goal: dict, plan: dict, measured: bool) -> dict:
+    """A goal's plan for the home page: with the goal, dates as ISO, and whether lag and success were measured on the
+    user's cards (else the usual values)."""
+    return {"goal": goal, **{key: value.isoformat() if isinstance(value, date) else value for key, value in plan.items()},
+            "measured": measured}
+
+
 def summary(language: str, now: datetime | None = None) -> dict:
     """{goals: []} without any goal. Else {goals (each with its status, settled from the history: reached or missed),
-    current: the active goal the plan is for, or None, today, anki: {linked, connected, error?, decks?}, plan (see
-    domain/words/goals.py, dates as ISO; None without a current goal), history: [[ISO date, known words]] of every day}."""
+    version (SUMMARY_VERSION), today, anki: {linked, connected, error?, decks?}, pace (known words a day), plans: one
+    per active goal, the nearest first ({goal, ...plan}, see domain/words/goals.py, dates as ISO; the first is the
+    current goal's),
+    needs: what it takes to reach them all (goals.combine(), None without an active goal), steps: the pace it takes to
+    reach them all ([[ISO date, words, goal id or None for today]], goals.needed_steps()), history: [[ISO date, known
+    words]] of every day}."""
     language_goals = _all_goals().get(language, [])
     if not language_goals:
         return {"goals": []}
     today = reviews.anki_day(now or datetime.now())
-    words.record_known(language, today)
+    known = words.record_known(language, today)  # the curve's today too
     with database.session() as conn:
         repository = WordRepository(conn)
         known_words = repository.known_words(language)
-        snapshots = {date.fromisoformat(day): known for day, known in repository.known_history(language).items()}
+        snapshots = {date.fromisoformat(day): n for day, n in repository.known_history(language).items()}
         counts = repository.counts().get(language, {})
         pending = CardRepository(conn).count("pending", language)
 
@@ -171,22 +184,27 @@ def summary(language: str, now: datetime | None = None) -> dict:
         settled = [goals.settle(goal, curve, today) for goal in language_goals]
         if settled != language_goals:
             _save_goals(language, settled)
-    goal = goals.current(settled)
-    plan = None
-    if goal is not None:
+    active = [{**g, "status": goals.ACTIVE} for g in goals.active(settled)]
+    current_pace = goals.pace(curve, today)
+    plans, needs, steps = [], None, []
+    if active:
         pipeline = goals.Pipeline(
-            known=counts.get("known", 0), learning=counts.get("learning", 0),
+            known=known, learning=counts.get("learning", 0),
             backlog=state["backlog"] + pending if state else None, new_per_day=state["new_per_day"] if state else None,
             lag=lag, success=success)
-        plan = goals.plan(goals.Goal(goal["words"], date.fromisoformat(goal["by"])), pipeline, goals.pace(curve, today), today)
-        plan["measured"] = sample >= goals.MIN_SAMPLE  # lag and success from the user's cards, not the usual values
-        plan = {key: value.isoformat() if isinstance(value, date) else value for key, value in plan.items()}
+        targets = [goals.Goal(g["words"], date.fromisoformat(g["by"])) for g in active]
+        plans = [goals.plan(target, pipeline, current_pace, today) for target in targets]
+        needs = goals.combine(plans)
+        steps = [[day.isoformat(), words, None if index is None else active[index]["id"]]
+                 for day, words, index in goals.needed_steps(known, targets, today)]
+    measured = sample >= goals.MIN_SAMPLE
     result = {
-        "goals": get_goals(language), "current": goal and {**goal, "status": goals.ACTIVE}, "today": today.isoformat(),
-        "anki": status, "plan": plan, "pace": round(goals.pace(curve, today), 2),
-        "history": [[day.isoformat(), known] for day, known in curve.items()],
+        "version": SUMMARY_VERSION, "goals": get_goals(language), "today": today.isoformat(),
+        "anki": status, "pace": round(current_pace, 2),
+        "plans": [_plan_json(g, plan, measured) for g, plan in zip(active, plans)],
+        "needs": needs, "steps": steps, "history": [[day.isoformat(), n] for day, n in curve.items()],
     }
-    plans = settings.get(_PLANS, {}) or {}
-    plans[language] = result
-    settings.set(_PLANS, plans)
+    cache = settings.get(_PLANS, {}) or {}
+    cache[language] = result
+    settings.set(_PLANS, cache)
     return result

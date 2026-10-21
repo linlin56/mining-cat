@@ -239,23 +239,37 @@ function tooltip(box) {
 
 const LINE = "var(--mc-heatmap)", NEEDED = "var(--bs-secondary-color)", GRID = "var(--bs-border-color)", INK = "var(--bs-secondary-color)";
 
-// The known words of each day, then at the current pace (dashed) and the pace it takes (grey) to the nearest goal.
-// The last `lag` days before it are shaded: a card first seen then won't be known in time. The other goals are
-// points: filled when reached (on the day), hollow when missed (on their date, above the words known then) or to come.
+const currentGoal = (g) => (g.plans && g.plans.length ? g.plans[0].goal : null);  // the nearest goal to come
+
+// The known words of each day, then at the current pace (dashed) and the pace it takes (grey) to reach all the goals to
+// come. The last `lag` days before the nearest one are shaded: a card first seen then won't be known in time. The
+// other goals, and the nearest one when it's under the grey line, are points: filled when reached (on the day), hollow
+// when missed (on their date, above the words known then) or to come.
 function goalChart(box, g) {
   const W = 640, H = 220, L = 46, R = 12, T = 10, B = 22;
   const history = g.history.map(([day, n]) => [dayMs(day), n]);
-  const today = dayMs(g.today), c = g.current, p = g.plan, by = c ? dayMs(c.by) : null;
+  const today = dayMs(g.today), c = currentGoal(g), p = g.plans[0], by = c ? dayMs(c.by) : null;
   const known = history[history.length - 1][1];
   const start = Math.max(history[0][0], today - 730 * DAY_MS);
   const active = g.goals.filter((goal) => goal.status === "active");
   const end = Math.max(today + 14 * DAY_MS, ...active.map((goal) => dayMs(goal.by)));
   const shown = history.filter(([t]) => t >= start);
   const projected = (t) => known + g.pace * (t - today) / DAY_MS;
-  const neededAt = (t) => (c && by > today ? known + (c.words - known) * Math.min(1, (t - today) / (by - today)) : null);
-  const projectionEnd = p && p.eta ? Math.min(end, dayMs(p.eta)) : end;
+  // the pace it takes to reach all the goals to come (made by the server: its first slope is needs.needed_pace)
+  const steps = g.steps.map(([day, n, id]) => [dayMs(day), n, id]);
+  const onLine = new Set(steps.slice(1).map(([, , id]) => id));
+  const neededAt = (t) => {
+    if (steps.length > 1 && t === steps[0][0]) return steps[0][1];
+    const i = steps.findIndex(([s]) => s >= t);
+    if (i <= 0) return null;
+    const [[t0, n0], [t1, n1]] = [steps[i - 1], steps[i]];
+    return n0 + (n1 - n0) * (t - t0) / (t1 - t0);
+  };
+  // up to the last goal reached at this pace (none too far: to the chart's end)
+  const ahead = g.plans.filter((plan) => !plan.reached);
+  const projectionEnd = ahead.length && ahead.every((plan) => plan.eta) ? Math.min(end, Math.max(...ahead.map((plan) => dayMs(plan.eta)))) : end;
   // where each other goal is drawn
-  const markers = g.goals.filter((goal) => !c || goal.id !== c.id).map((goal) => {
+  const markers = g.goals.filter((goal) => !c || goal.id !== c.id || !onLine.has(c.id)).map((goal) => {
     if (goal.status === "reached") {
       const early = Math.round((dayMs(goal.by) - dayMs(goal.reached_on)) / DAY_MS);
       return { goal, t: dayMs(goal.reached_on), text: `Goal reached on ${longDate(goal.reached_on)}: ${plural(goal.words, "word")}${early > 0 ? `, ${plural(early, "day")} early` : ""}` };
@@ -289,8 +303,8 @@ function goalChart(box, g) {
     // the goal
     root.append(svg("line", { x1: L, x2: W - R, y1: y(c.words), y2: y(c.words), stroke: INK, "stroke-width": 1, "stroke-dasharray": "2 3" }),
       svg("text", { x: L + 4, y: y(c.words) - 4, style: `fill: ${INK}; font-size: 10px` }, `Goal: ${fmt(c.words)}`));
-    root.append(svg("line", { x1: x(today), y1: y(known), x2: x(by), y2: y(c.words), stroke: NEEDED, "stroke-width": 2, "stroke-linecap": "round" }),
-      svg("circle", { cx: x(by), cy: y(c.words), r: 4, fill: NEEDED, stroke: "var(--bs-body-bg)", "stroke-width": 2 }));
+    root.append(svg("polyline", { points: steps.map(([t, n]) => `${x(t).toFixed(1)},${y(n).toFixed(1)}`).join(" "), fill: "none", stroke: NEEDED, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }),
+      ...(onLine.has(c.id) ? [svg("circle", { cx: x(by), cy: y(c.words), r: 4, fill: NEEDED, stroke: "var(--bs-body-bg)", "stroke-width": 2 })] : []));
     if (g.pace > 0) {
       root.append(svg("line", { x1: x(today), y1: y(known), x2: x(projectionEnd), y2: y(projected(projectionEnd)), stroke: LINE, "stroke-width": 2, "stroke-dasharray": "5 4", "stroke-linecap": "round" }));
     }
@@ -315,7 +329,7 @@ function goalChart(box, g) {
     group.append(svg("circle", { cx, cy, r: 11, fill: "transparent" }));  // a bigger target for the pointer
     return [group, m];
   });
-
+  const shownStatuses = new Set(markers.map((m) => m.goal.status));
   // hover: the day under the pointer
   const cursor = svg("line", { y1: T, y2: H - B, stroke: INK, "stroke-width": 1, visibility: "hidden" });
   const dot = svg("circle", { r: 4, fill: LINE, stroke: "var(--bs-body-bg)", "stroke-width": 2, visibility: "hidden" });
@@ -338,7 +352,8 @@ function goalChart(box, g) {
       dot.setAttribute("cx", x(point[0]));
     } else {
       n = c && g.pace > 0 ? Math.min(projected(day), projected(projectionEnd)) : known;
-      text = c ? `${longDate(isoDay(day))} · current pace: ${fmt(n)}${by > today && day <= by ? ` · needed: ${fmt(neededAt(day))}` : ""}`
+      const needed = neededAt(day);
+      text = c ? `${longDate(isoDay(day))} · current pace: ${fmt(n)}${needed !== null ? ` · needed: ${fmt(needed)}` : ""}`
         : `${longDate(isoDay(day))} · no goal in progress`;
       dot.setAttribute("cx", x(day));
     }
@@ -350,6 +365,7 @@ function goalChart(box, g) {
     tip(text, Number(dot.getAttribute("cx")) / W);
   });
   hit.addEventListener("pointerleave", () => { cursor.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); tip(null); });
+  return shownStatuses;  // of the goals drawn as points, for the legend
 }
 
 // The words that became known each week (Monday to Sunday) of the last 26, and the pace the goal takes.
@@ -364,7 +380,7 @@ function weeksChart(box, g) {
     const first = monday - i * 7 * DAY_MS, last = Math.min(first + 6 * DAY_MS, today);
     weeks.push([first, Math.max(0, valueAt(last) - valueAt(first - DAY_MS))]);
   }
-  const needed = g.plan && g.plan.needed_pace ? g.plan.needed_pace * 7 : 0;
+  const needed = g.needs && g.needs.needed_pace ? g.needs.needed_pace * 7 : 0;
   const top = Math.max(needed, ...weeks.map(([, n]) => n), 1) * 1.1;
   const step = niceStep(top, 3);
   const yMax = Math.ceil(top / step) * step;
@@ -423,22 +439,49 @@ function legendMarker(style, text) {
   return item;
 }
 
+// With several goals to come, the counts a day are the ones that reach them all: the most demanding goal's. The goals
+// too late for new cards aren't in them: said, not hidden behind "enough".
 function goalStats(g) {
-  const p = g.plan, a = g.anki, c = g.current;
-  const paceText = `${p.pace.toLocaleString()} words a day over the last 30 days${p.needed_pace !== null ? ` · ${p.needed_pace.toLocaleString()} needed` : ""}`;
-  const eta = statTile("At your current pace", p.eta ? longDate(p.eta) : "Not yet", p.eta ? paceText : `No word became known in the last 30 days. ${paceText}`);
-  let cards;
-  if (p.too_late) cards = statTile("New cards a day", "Too late", `A card takes about ${plural(p.lag, "day")} to be known: new cards won't be by ${longDate(c.by)}.`);
+  const [p] = g.plans, a = g.anki, n = g.needs, several = g.plans.length > 1;
+  const goalName = (plan) => `${plural(plan.goal.words, "word")} by ${longDate(plan.goal.by)}`;
+  const forGoal = (i) => (several ? ` For your goal of ${goalName(g.plans[i])}.` : "");
+  const late = n.too_late.map((i) => g.plans[i]);
+  const enough = late.length ? "your other goals" : several ? "all your goals" : "your goal";
+  // when at the current pace: the nearest goal not reached yet (a reached one stays active while Anki is closed)
+  const next = g.plans.find((plan) => !plan.reached);
+  const later = g.plans.filter((plan) => plan !== next).map((plan) => ` ${fmt(plan.goal.words)} words: ${plan.eta ? `around ${longDate(plan.eta)}` : plan.reached ? "already known" : "not yet"}.`).join("");
+  const paceText = `${p.pace.toLocaleString()} words a day over the last 30 days${n.needed_pace !== null ? ` · ${n.needed_pace.toLocaleString()} needed${several ? ` for ${goalName(g.plans[n.pace_for])}` : ""}` : ""}.${later}`;
+  let eta;
+  if (!next) eta = statTile("At your current pace", "Reached", `You already know enough words for ${several ? "all your goals" : "your goal"}. ${paceText}`);
   else {
-    const deck = p.deck_new_per_day !== null
-      ? `Your decks: ${p.deck_new_per_day} a day${p.raise_limit ? ": raise it in Anki" : ""}.${p.deck_eta ? ` As they are, around ${longDate(p.deck_eta)}.` : ""}`
-      : "To show it, " + (a.linked ? "open Anki." : "link your decks in Settings › Anki.");
-    cards = statTile("New cards a day", p.new_per_day !== null ? fmt(p.new_per_day) : "–", `To see in Anki until ${longDate(isoDay(dayMs(c.by) - p.lag * DAY_MS))}. ${deck}`);
+    const which = next !== p ? `${goalName(next)}: ` : "";
+    const why = next.eta ? "" : p.pace > 0 ? "More than a century at this pace. " : "No word became known in the last 30 days. ";
+    eta = statTile("At your current pace", next.eta ? longDate(next.eta) : "Not yet", which + why + paceText);
   }
-  const mine = p.mine_per_day === null
-    ? statTile("Cards to mine a day", "–", a.linked ? "Open Anki (with AnkiConnect) to count the new cards waiting." : "Link your decks in Settings › Anki to count the new cards waiting.")
-    : statTile("Cards to mine a day", fmt(p.mine_per_day),
-      `${plural(p.backlog, "new card")} waiting${p.backlog_days !== null ? `: ${plural(p.backlog_days, "day")} at your decks' limit` : ""}.`);
+  const lateDates = late.map((plan) => longDate(plan.goal.by)).join(", ");
+  const tooLate = late.length ? `A card takes about ${plural(p.lag, "day")} to be known: new cards won't be by ${lateDates}.` : "";
+  let cards;
+  if (n.new_per_day === null) {
+    cards = statTile("New cards a day", late.length ? "Too late" : "–", tooLate || `You already know enough words for ${enough}.`);
+  } else {
+    const plan = g.plans[n.new_for];
+    const deck = p.deck_new_per_day !== null
+      ? ` Your decks: ${p.deck_new_per_day} a day${n.raise_limit ? ": raise it in Anki" : ""}.${plan.deck_eta ? ` As they are, around ${longDate(plan.deck_eta)}.` : ""}`
+      : " To show it, " + (a.linked ? "open Anki." : "link your decks in Settings › Anki.");
+    const until = n.new_per_day === 0 ? `Your cards in learning are enough for ${enough}.`
+      : `To see in Anki until ${longDate(isoDay(dayMs(plan.goal.by) - p.lag * DAY_MS))}.${forGoal(n.new_for)}`;
+    cards = statTile("New cards a day", fmt(n.new_per_day), until + (tooLate && ` ${tooLate}`) + deck);
+  }
+  let mine;
+  if (p.backlog === null) {
+    mine = statTile("Cards to mine a day", "–", a.linked ? "Open Anki (with AnkiConnect) to count the new cards waiting." : "Link your decks in Settings › Anki to count the new cards waiting.");
+  } else {
+    const waiting = `${plural(p.backlog, "new card")} waiting${p.backlog_days !== null ? `: ${plural(p.backlog_days, "day")} at your decks' limit` : ""}.`;
+    const lateFor = late.length ? ` Too late for new cards by ${lateDates}.` : "";
+    const why = n.mine_per_day === null ? lateFor || " You already know enough words."
+      : (n.mine_per_day === 0 ? ` Enough for ${enough}.` : forGoal(n.mine_for)) + lateFor;
+    mine = statTile("Cards to mine a day", n.mine_per_day === null ? "–" : fmt(n.mine_per_day), waiting + why);
+  }
   return [eta, cards, mine];
 }
 
@@ -446,7 +489,7 @@ function goalStats(g) {
 const RECENT_DAYS = 14;
 
 function goalBanner(g, known) {
-  const today = dayMs(g.today), c = g.current;
+  const today = dayMs(g.today), c = currentGoal(g);
   const settledOn = (goal) => dayMs(goal.status === "reached" ? goal.reached_on : goal.by);
   const recent = g.goals.filter((goal) => goal.status !== "active" && today - settledOn(goal) <= RECENT_DAYS * DAY_MS)
     .sort((a, b) => settledOn(b) - settledOn(a))[0];
@@ -480,7 +523,7 @@ async function loadGoal(cached = false) {
   if (!study || study.id !== language) return;  // another language chosen meanwhile
   $("goal-intro").hidden = g.goals.length > 0;
   if (!g.goals.length) { $("goal").hidden = true; return; }
-  const c = g.current, p = g.plan;
+  const c = currentGoal(g), p = g.plans[0];
   const known = g.history[g.history.length - 1][1];
   const banner = goalBanner(g, known);
   $("goal-banner").hidden = !banner;
@@ -504,12 +547,11 @@ async function loadGoal(cached = false) {
     $("goal-title").textContent = `Your ${study.name} words: ${fmt(known)} known`;
   }
   $("goal").hidden = false;  // drawn once visible: the tooltips need the box's width
-  goalChart($("goal-chart"), g);
+  const shownStatuses = goalChart($("goal-chart"), g);
   $("goal-weeks").replaceChildren();
   weeksChart($("goal-weeks"), g);
   const legend = [legendItem(LINE, false, "Known words")];
-  if (c) legend.push(legendItem(LINE, true, "At your current pace"), legendItem(NEEDED, false, "The pace your goal takes"));
-  const shownStatuses = new Set(g.goals.filter((goal) => !c || goal.id !== c.id).map((goal) => goal.status));
+  if (c) legend.push(legendItem(LINE, true, "At your current pace"), legendItem(NEEDED, false, g.plans.length > 1 ? "The pace your goals take" : "The pace your goal takes"));
   if (shownStatuses.has("reached")) legend.push(legendMarker({ fill: LINE }, "Goal reached"));
   if (shownStatuses.has("missed")) legend.push(legendMarker({ fill: "var(--bs-body-bg)", stroke: INK }, "Goal missed"));
   if (shownStatuses.has("active")) legend.push(legendMarker({ fill: "var(--bs-body-bg)", stroke: LINE }, "Next goal"));

@@ -75,9 +75,60 @@ def test_plan_too_late():
     assert plan["mine_per_day"] is None and plan["backlog_days"] is None  # without Anki
 
 
+def test_plan_with_enough_learning_words_close_to_the_date():
+    pipeline = Pipeline(known=900, learning=200, backlog=0, lag=35, success=1.0)
+    plan = goals.plan(Goal(1000, TODAY + timedelta(days=20)), pipeline, 5.0, TODAY)
+    # too close for new cards, but none is needed: not "too late", nor "nothing to tell"
+    assert not plan["reached"] and not plan["too_late"] and plan["new_per_day"] == 0 and plan["mine_per_day"] == 0
+
+
 def test_plan_reached():
     plan = goals.plan(Goal(500, TODAY + timedelta(days=20)), Pipeline(known=600, learning=0), 5.0, TODAY)
     assert plan["reached"] is True and plan["remaining"] == 0 and plan["cards_needed"] is None
+
+
+def test_combine_takes_the_most_demanding_goal():
+    pipeline = Pipeline(known=100, learning=500, backlog=50, new_per_day=20, lag=30, success=1.0)
+    near = goals.plan(Goal(400, TODAY + timedelta(days=40)), pipeline, 5.0, TODAY)
+    far = goals.plan(Goal(3100, TODAY + timedelta(days=130)), pipeline, 5.0, TODAY)
+    # the learning words are enough for the nearest goal, not for the farthest one
+    assert near["new_per_day"] == 0 and near["mine_per_day"] == 0
+    needs = goals.combine([near, far])
+    assert needs["new_per_day"] == far["new_per_day"] == 25 and needs["new_for"] == 1
+    assert needs["mine_per_day"] == far["mine_per_day"] == 25 and needs["mine_for"] == 1
+    assert needs["needed_pace"] == far["needed_pace"] and needs["pace_for"] == 1 and needs["raise_limit"] is True
+
+
+def test_combine_without_counts():
+    pipeline = Pipeline(known=100, learning=0, lag=30)
+    needs = goals.combine([goals.plan(Goal(500, TODAY + timedelta(days=20)), pipeline, 5.0, TODAY)])  # too late
+    assert needs["new_per_day"] is None and needs["new_for"] is None and needs["mine_per_day"] is None
+    assert needs["too_late"] == [0] and needs["needed_pace"] == 20  # 400 words in 20 days
+
+
+def test_combine_leaves_out_the_goals_too_late():
+    pipeline = Pipeline(known=100, learning=0, backlog=1000, new_per_day=20, lag=30, success=1.0)
+    near = goals.plan(Goal(150, TODAY + timedelta(days=10)), pipeline, 5.0, TODAY)
+    far = goals.plan(Goal(500, TODAY + timedelta(days=100)), pipeline, 5.0, TODAY)
+    needs = goals.combine([near, far])
+    # enough cards waiting for the far goal, but none can be known in time for the near one: not "enough for all"
+    assert needs["mine_per_day"] == 0 and needs["mine_for"] == 1 and needs["too_late"] == [0]
+    # known words can still get there (marked known by hand): the near goal's pace, higher, counts
+    assert needs["needed_pace"] == near["needed_pace"] == 5 and needs["pace_for"] == 0
+
+
+def test_needed_steps():
+    in_days = lambda days: TODAY + timedelta(days=days)
+    # the near goal is under the line to the far one: reached on the way
+    targets = [Goal(400, in_days(40)), Goal(3100, in_days(130))]
+    steps = goals.needed_steps(100, targets, TODAY)
+    assert steps == [(TODAY, 100, None), (in_days(130), 3100, 1)]
+    # its first slope is the pace combine() tells
+    plans = [goals.plan(target, Pipeline(known=100, learning=0), 5.0, TODAY) for target in targets]
+    assert goals.combine(plans)["needed_pace"] == round(3000 / 130, 2)
+    # a steep near goal: to it, then on to the far one; a goal already known isn't on it
+    steps = goals.needed_steps(100, [Goal(90, in_days(10)), Goal(1000, in_days(20)), Goal(1500, in_days(130))], TODAY)
+    assert [index for _, _, index in steps] == [None, 1, 2]
 
 
 def goal(words: int, by: date, created: date = days_ago(60), **settled) -> dict:
@@ -107,8 +158,8 @@ def test_settle_active():
     assert goals.status(goals.settle(goal(90, TODAY + timedelta(days=5), created=TODAY), {**curve, TODAY: 85}, TODAY)) == goals.ACTIVE
 
 
-def test_current_goal():
+def test_active_goals():
     goals_ = [goal(500, TODAY + timedelta(days=90)), goal(300, TODAY + timedelta(days=30)),
               goal(200, days_ago(3), reached_on=days_ago(5).isoformat())]
-    assert goals.current(goals_)["words"] == 300
-    assert goals.current(goals_[2:]) is None
+    assert goals.active(goals_[2:]) == []
+    assert [g["words"] for g in goals.active(goals_)] == [300, 500]

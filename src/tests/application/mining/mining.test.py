@@ -23,23 +23,13 @@ from miningcat.infrastructure import http
 from miningcat.infrastructure.persistence.database import Database
 from miningcat.infrastructure.persistence.settings_store import settings
 
-from shared import FakeNllb, FakeOpenCc, FakeQwen
+from shared import FakeNllb, FakeQwen
 
 pytest.importorskip("flask")
 
 import fake_ankiconnect
 
 HEADERS = {"X-MiningCat": "1"}
-
-# A tiny two-script table so that the tests don't depend on OpenCC.
-T2S = dict(zip("說話們國時", "说话们国时"))
-S2T = {v: k for k, v in T2S.items()}
-
-
-@pytest.fixture(autouse=True)
-def fake_opencc(monkeypatch):
-    monkeypatch.setattr(chinese_script, "chinese_scripts", ChineseScripts(FakeOpenCc(T2S)))
-
 
 def make_dictionary(path, title, terms, meta=None, tags=None, index_extra=None, images=None):
     with zipfile.ZipFile(path, "w") as z:
@@ -139,7 +129,9 @@ def test_chinese_scripts_with_opencc():
 
 
 def test_script_detection_without_tables():
-    scripts = ChineseScripts(FakeOpenCc(T2S, tables=(set(), set())))
+    converter = OpenCcConverter()
+    converter._tables = (set(), set())  # as when OpenCC has no character tables
+    scripts = ChineseScripts(converter)
     assert scripts.script("說話") == "traditional"
     assert scripts.script("说话") == "simplified"
     assert scripts.script("我") == "both"

@@ -3,11 +3,7 @@ import zipfile
 
 import pytest
 
-from miningcat.application.mining import comprehension, dictionaries, frequency, preferences, segmentation, words
-from miningcat.domain.text import chinese_script
-from miningcat.domain.text.chinese_script import ChineseScripts
-
-from shared import FakeOpenCc
+from miningcat.application.mining import comprehension, dictionaries, frequency, next_words, preferences, segmentation, words
 
 HEADERS = {"X-MiningCat": "1"}
 
@@ -137,8 +133,7 @@ def test_no_list_chosen(tmp_path):
     assert frequency.frontier("en") is None and frequency.Ranker("en").frequent("cat")
 
 
-def test_chinese_ranks_ignore_the_script(tmp_path, monkeypatch):
-    monkeypatch.setattr(chinese_script, "chinese_scripts", ChineseScripts(FakeOpenCc({"說": "说"})))
+def test_chinese_ranks_ignore_the_script(tmp_path):
     path = tmp_path / "zh.json"
     path.write_text(json.dumps(["的", "说"], ensure_ascii=False), encoding="utf-8")
     dictionaries.import_dictionary(path, "zh", filename="zh.json")
@@ -146,8 +141,7 @@ def test_chinese_ranks_ignore_the_script(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("learnt, word", [("traditional", "說"), ("simplified", "说"), ("both", "說")])
-def test_a_simplified_and_a_traditional_list_combined(tmp_path, monkeypatch, learnt, word):
-    monkeypatch.setattr(chinese_script, "chinese_scripts", ChineseScripts(FakeOpenCc({"說": "说", "話": "话"})))
+def test_a_simplified_and_a_traditional_list_combined(tmp_path, learnt, word):
     preferences.set_chinese_script_preference("zh", learnt)
     ids = []
     for name, items in (("Simplified.json", ["说", "的", "话"]), ("Traditional.json", ["說", "的", "話"])):
@@ -159,6 +153,35 @@ def test_a_simplified_and_a_traditional_list_combined(tmp_path, monkeypatch, lea
     # 说 / 說 is one word (#1 in both lists), in the script learnt
     assert ranker.frontier["words"] == 3 and word in ranker.table
     assert [ranker.rank(w) for w in ("說", "说", "的", "話", "话")] == [1, 1, 2, 3, 3]
+
+
+def test_next_words_are_the_most_frequent_without_a_status(tmp_path):
+    assert next_words.next_words("en") == {"frontier": None, "words": []}
+    json_list(tmp_path, ["the", "Cat", "Fish", "fish", "eats", "dog"])
+    known("the")
+    known("cat", status="ignored")  # saved lowercase: Cat is the same word
+    known("eats", status="learning")
+    result = next_words.next_words("en", 5)
+    # Fish is looked up and saved as the dictionary's fish (once)
+    assert [(w["rank"], w["expression"], w["meaning"]) for w in result["words"]] == [(3, "fish", "fish"), (6, "dog", "dog")]
+    assert [w["expression"] for w in next_words.next_words("en", 1)["words"]] == ["fish"]
+    known("fish")
+    assert [w["expression"] for w in next_words.next_words("en")["words"]] == ["dog"]
+
+
+def test_next_chinese_words_in_the_script_learnt(tmp_path):
+    preferences.set_chinese_script_preference("zh", "traditional")
+    path = tmp_path / "zh.zip"
+    with zipfile.ZipFile(path, "w") as z:  # a Simplified dictionary
+        z.writestr("index.json", json.dumps({"title": "Simplified", "revision": "1", "format": 3}))
+        z.writestr("term_bank_1.json", json.dumps([["说", "shuō", "", "", 0, ["to speak"], 0, ""]], ensure_ascii=False))
+    dictionaries.import_dictionary(path, "zh")
+    path = tmp_path / "zh.json"
+    path.write_text(json.dumps(["话", "说"], ensure_ascii=False), encoding="utf-8")
+    dictionaries.import_dictionary(path, "zh", filename="zh.json")
+    words.set_status("zh", "話", "", "known")  # known in Traditional: 话 of the list is the same word
+    result = next_words.next_words("zh")
+    assert [(w["expression"], w["meaning"]) for w in result["words"]] == [("說", "to speak")]
 
 
 def test_lookup_and_settings_api(tmp_path, monkeypatch):
@@ -178,6 +201,7 @@ def test_lookup_and_settings_api(tmp_path, monkeypatch):
     assert client.post("/api/frequency/list", json={"language": "en", "ids": [999]}, headers=HEADERS).status_code == 400
     chosen = client.post("/api/frequency/list", json={"language": "en", "ids": []}, headers=HEADERS).get_json()
     assert chosen["frontier"] is None
+    assert client.get("/api/frequency/next?language=en&count=many").status_code == 400
 
     # a JSON list goes through the same import as dictionaries
     client.post("/api/profile", json={"language": "en"}, headers=HEADERS)

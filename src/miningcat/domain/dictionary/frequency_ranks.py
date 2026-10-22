@@ -21,7 +21,8 @@ def _value(data) -> float | None:
     return data if isinstance(data, (int, float)) and not isinstance(data, bool) else None
 
 
-def _variants(language: str, words: tuple[str, ...]) -> list[str]:
+def spellings(language: str, *words: str) -> list[str]:
+    """The words, and for Chinese their spelling in the other script too (说 / 說)."""
     found = [w for w in dict.fromkeys(words) if w]
     if language in CHINESE_LANGUAGES:
         # a list in one script still ranks the words of the other (説 / 说)
@@ -34,7 +35,7 @@ def rank_in(table: dict[str, int], language: str, *words: str) -> int | None:
     direct = [table[w] for w in words if w in table]
     if direct:
         return min(direct)
-    found = [table[w] for w in _variants(language, words) if w in table]
+    found = [table[w] for w in spellings(language, *words) if w in table]
     return min(found) if found else None
 
 
@@ -69,11 +70,12 @@ def _respelled(table: dict[str, int], spell) -> dict[str, int]:
 def combine(tables: list[dict[str, int]], spell=None) -> dict[str, int]:
     """One list of several: a word ranks by its best rank in any of them, then by its average rank (a list without
     the word counting as its end), and the ranks are renumbered 1, 2, 3... so that the lists share one scale.
-    `spell` writes the words of every list in one script first (a Simplified and a Traditional list: 说 is 說)."""
-    if len(tables) == 1:
-        return tables[0]
+    `spell` writes the words of every list in one script first, a single list too (a Simplified and a Traditional
+    list: 说 is 說)."""
     if spell:
         tables = [_respelled(table, spell) for table in tables]
+    if len(tables) == 1:
+        return tables[0]
     words = {w for table in tables for w in table}
 
     def key(word: str):

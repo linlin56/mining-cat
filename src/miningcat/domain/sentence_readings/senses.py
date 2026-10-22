@@ -42,11 +42,20 @@ def senses(glossary) -> list[str]:
 
 
 
-def reading_weight(glossary: str) -> int:
-    """How likely a dictionary entry's reading is for the word said alone: its number of senses that aren't
-    a surname, a variant, a literary or dialect use..."""
+def senses_of(glossary: str) -> list[str]:
+    """senses() of a glossary as stored (JSON), none when it can't be read."""
     try:
-        found = senses(json.loads(glossary))
+        return senses(json.loads(glossary))
     except ValueError:
-        found = []
+        return []
+
+
+def weight(found: list[str]) -> int:
+    """How likely the reading of an entry with these senses is for the word said alone: its number of senses that
+    aren't a surname, a variant, a literary or dialect use..."""
     return sum(1 for s in found if not _MINOR_SENSE.match(s))
+
+
+def reading_weight(glossary: str) -> int:
+    """weight() of a glossary as stored (JSON)."""
+    return weight(senses_of(glossary))

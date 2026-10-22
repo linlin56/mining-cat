@@ -35,3 +35,9 @@ def inbox_page():
 @bp.get("/settings/")
 def settings_page():
     return render_template("settings.html")
+
+
+# The next words to learn: the most frequent words of the frequency lists not studied yet (static/next_words.js).
+@bp.get("/settings/next-words/")
+def next_words_page():
+    return render_template("next_words.html")

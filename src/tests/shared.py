@@ -233,25 +233,6 @@ skip_if_no_srt_yue_hk = pytest.mark.skipif(
 )
 
 
-class FakeOpenCc:
-    """OpenCC replaced by a small character table, so that tests don't depend on it (see ChineseScripts)."""
-
-    def __init__(self, t2s: dict[str, str], tables: tuple[set[str], set[str]] | None = None):
-        self.t2s = t2s
-        self.s2t = {v: k for k, v in t2s.items()}
-        self._tables = tables if tables is not None else (set(self.s2t), set(self.t2s))
-
-    def convert(self, text: str, config: str) -> str:
-        table = self.t2s if config.endswith("2s") else self.s2t
-        return "".join(table.get(c, c) for c in text)
-
-    def converter(self, config: str):
-        return type("Converter", (), {"convert": staticmethod(lambda text: self.convert(text, config))})()
-
-    def tables(self) -> tuple[set[str], set[str]]:
-        return self._tables
-
-
 def redirect_path(monkeypatch, name: str, path) -> None:
     """Points one folder of ProjectPaths (paths.srt, paths.temp...) to a folder of the test."""
     from miningcat.config.paths import ProjectPaths

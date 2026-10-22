@@ -23,12 +23,14 @@ class _FrequencyCache:
         self.ranks: dict[int, tuple[tuple, dict[str, int]]] = {}    # dict id -> (key, {expression: rank})
         self.combined: dict[str, tuple[tuple, dict[str, int]]] = {}  # language -> (key, ranks of its lists combined)
         self.known: dict[str, tuple[tuple, int]] = {}               # language -> (key, words of the lists known)
+        self.ordered: dict[str, tuple[dict, list[str]]] = {}        # language -> (table, its words by rank)
 
     def clear(self) -> None:
         with self.lock:
             self.ranks.clear()
             self.combined.clear()
             self.known.clear()
+            self.ordered.clear()
 
 
 _cache = _FrequencyCache()
@@ -107,6 +109,19 @@ def combined_ranks(language: str, refs: list[dict]) -> dict[str, int]:
     result = combine([ranks(ref["id"], ref["imported"]) for ref in refs], spell)
     with _cache.lock:
         _cache.combined[language] = (key, result)
+        _cache.ordered.pop(language, None)  # sorted from the previous table
+    return result
+
+
+def ordered(language: str, table: dict[str, int]) -> list[str]:
+    """The words of a table of combined_ranks, the most frequent first (sorted once per table)."""
+    with _cache.lock:
+        cached = _cache.ordered.get(language)
+        if cached and cached[0] is table:
+            return cached[1]
+    result = sorted(table, key=lambda word: (table[word], word))
+    with _cache.lock:
+        _cache.ordered[language] = (table, result)
     return result
 
 

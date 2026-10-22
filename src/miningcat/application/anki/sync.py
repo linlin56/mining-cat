@@ -10,6 +10,7 @@ from miningcat.application.mining import words
 from miningcat.domain.cards.field_text import plain_field_text
 from miningcat.domain.cards.errors import AnkiError
 from miningcat.domain.cards.reviews import anki_day
+from miningcat.domain.text.readings import normalize_reading
 from miningcat.infrastructure.anki.ankiconnect import AnkiConnect
 from miningcat.infrastructure.persistence.database import database
 from miningcat.infrastructure.persistence.settings_store import settings
@@ -72,8 +73,11 @@ class AnkiSync:
         return intervals
 
     def _sync_decks(self, language: str, sources: list[dict]) -> dict:
-        """The words of the notes of some decks: {deck, field holding the word, field holding its reading}."""
+        """The words of the notes of some decks: {deck, field holding the word, field holding its reading}. A word with
+        several notes takes the longest interval of them all (whatever their order); it is counted once."""
         updated = {"learning": 0, "known": 0, "kept": 0, "notes": 0}
+        # {(expression, reading): (note id, interval)}: the note of each word with the longest interval
+        longest: dict[tuple[str, str], tuple[int, int]] = {}
         for source in sources:
             note_ids = self.client.invoke("findNotes", query=f'"deck:{source["deck"]}"')
             for start in range(0, len(note_ids), NOTES_PER_REQUEST):
@@ -86,9 +90,12 @@ class AnkiSync:
                         continue
                     reading = plain_field_text(fields.get(source["reading_field"], {}).get("value", "")) if source["reading_field"] else ""
                     updated["notes"] += 1
-                    status = words.apply_anki_state(
-                        language, expression, reading, note["noteId"], intervals.get(note["noteId"], 0), self.known_interval)
-                    updated[status if status in ("learning", "known") else "kept"] += 1
+                    key, interval = (expression, normalize_reading(reading, language)), intervals.get(note["noteId"], 0)
+                    if key not in longest or interval > longest[key][1]:
+                        longest[key] = (note["noteId"], interval)
+        for (expression, reading), (note_id, interval) in longest.items():
+            status = words.apply_anki_state(language, expression, reading, note_id, interval, self.known_interval)
+            updated[status if status in ("learning", "known") else "kept"] += 1
         return updated
 
     def _sync_sent_cards(self) -> None:

@@ -1666,10 +1666,13 @@
           media,
         });
         modal.hide();
-        updateColour(card.expression, "learning");
-        if (options.onStatusChange) options.onStatusChange(card.expression, "learning");
+        // a word's other card leaves it as it was (known, say)
+        const wordStatus = card.word_status || "learning";
+        updateColour(card.expression, wordStatus);
+        if (options.onStatusChange) options.onStatusChange(card.expression, wordStatus);
         if (options.onCard) options.onCard(card, ctx && ctx.node);
-        if (card.status === "sent") toast("Added to Anki ✓", "success");
+        if (card.status === "sent" && card.duplicate) toast(`Added to Anki ✓ You already had a card for ${card.expression}.`, "warning");
+        else if (card.status === "sent") toast("Added to Anki ✓", "success");
         else if (card.status === "failed") toast(`Anki refused the card: ${card.error}`, "error");
         else if (card.error && !/reachable/.test(card.error)) toast(`Saved, not sent yet: ${card.error}`, "info");
         else toast(sendNow ? "Anki isn't reachable: the card will be sent at the next sync." : "Saved: the card will be sent at the next sync.", "info");

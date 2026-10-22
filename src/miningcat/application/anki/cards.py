@@ -11,6 +11,7 @@ from miningcat.domain.cards.fields import CARD_FIELDS, MEDIA_FIELDS
 from miningcat.domain.languages import LANGUAGES
 from miningcat.infrastructure.persistence.card_repository import CardRepository
 from miningcat.infrastructure.persistence.database import database
+from miningcat.infrastructure.persistence.word_repository import WordRepository
 
 
 def create_card(language: str, fields: dict, media_input: dict, tags: str = "", send: bool = True,
@@ -28,11 +29,21 @@ def create_card(language: str, fields: dict, media_input: dict, tags: str = "", 
     media = {k: v for k, v in media.items() if v}
     with database.session() as conn:
         card_id = CardRepository(conn).add(language, expression, reading, clean, media, tags.strip())
-    words.set_status(language, expression, reading, "learning", source="card")
+    _mark_learning(language, expression, reading)
     card = get_card(card_id)
     if send:
         card = send_card(card_id)
-    return card
+    return {**card, "word_status": words.status_of(language, expression, reading)["status"]}
+
+
+def _mark_learning(language: str, expression: str, reading: str, note_id: int | None = None) -> None:
+    """Marks a card's word as learning (linked to its note once sent), unless it is known or already linked to another
+    Anki note: a word's other card (another meaning, another example) leaves its status to its first one."""
+    with database.session() as conn:
+        word = WordRepository(conn).find(language, expression, reading)
+    if word and (word["status"] == "known" or word["anki_note_id"]):
+        return
+    words.set_status(language, expression, reading, "learning", source="card", anki_note_id=note_id)
 
 
 def get_card(card_id: int) -> dict:
@@ -67,19 +78,24 @@ def _search_text(text: str) -> str:
 
 
 def _word_in_deck(client, setup: dict, expression: str) -> bool:
-    """Whether the deck has a note of this word, in the note field holding the word (True when there's none)."""
+    """Whether the deck has a note of this word, in the note field holding the word (False when there's none, or when
+    Anki can't tell: it's only for a warning)."""
     field = next((name for name, template in setup["fields"].items() if re.search(r"\{word(_readings)?\}", template)), None)
     if field is None:
-        return True
-    note_ids = client.invoke("findNotes", query=f'"deck:{_search_text(setup["deck"])}" "{_search_text(field)}:*{_search_text(expression)}*"')
-    for note in client.in_batches("notesInfo", "notes", note_ids, 500):
-        if plain_field_text(note["fields"].get(field, {}).get("value", "")) == expression:
-            return True
-    return False
+        return False
+    try:
+        note_ids = client.invoke("findNotes", query=f'"deck:{_search_text(setup["deck"])}" "{_search_text(field)}:*{_search_text(expression)}*"')
+        notes = client.in_batches("notesInfo", "notes", note_ids, 500)
+    except AnkiUnavailable:
+        raise
+    except AnkiError:
+        return False
+    return any(plain_field_text(note["fields"].get(field, {}).get("value", "")) == expression for note in notes)
 
 
 def send_card(card_id: int) -> dict:
-    """Sends one card to Anki. If Anki is closed the card stays pending; if Anki refuses it, it fails."""
+    """Sends one card to Anki. If Anki is closed the card stays pending; if Anki refuses it, it fails. A word can have
+    several cards (meanings, examples): the card is sent anyway, with duplicate=True when the deck had one already."""
     card = get_card(card_id)
     if card["status"] == "sent":
         return card
@@ -90,6 +106,7 @@ def send_card(card_id: int) -> dict:
         return get_card(card_id)
     try:
         client = anki()
+        duplicate = _word_in_deck(client, setup, card["expression"])
         for media in card["media"].values():
             client.invoke("storeMediaFile", **anki_payload(media))
         note = {
@@ -97,17 +114,9 @@ def send_card(card_id: int) -> dict:
             "modelName": setup["model"],
             "fields": note_fields(setup, card["fields"], card["media"], card["language"]),
             "tags": [t for t in re.split(r"[\s,]+", f"{setup.get('tags', '')} {card['tags']}") if t],
-            "options": {"allowDuplicate": False, "duplicateScope": "deck"},
+            "options": {"allowDuplicate": True},
         }
-        try:
-            note_id = client.invoke("addNote", note=note)
-        except AnkiError as exc:
-            if "duplicate" not in str(exc) or _word_in_deck(client, setup, card["expression"]):
-                raise
-            # Anki only compares the first field: in note types starting with the sentence (Migaku's), another
-            # word's card with the same sentence isn't a duplicate of this one.
-            note["options"]["allowDuplicate"] = True
-            note_id = client.invoke("addNote", note=note)
+        note_id = client.invoke("addNote", note=note)
     except (AnkiUnavailable, MediaUnavailable) as exc:
         set_card(card_id, status="pending", error=str(exc))
         return get_card(card_id)
@@ -115,9 +124,8 @@ def send_card(card_id: int) -> dict:
         set_card(card_id, status="failed", error=str(exc))
         return get_card(card_id)
     set_card(card_id, status="sent", error=None, anki_note_id=note_id)
-    words.set_status(card["language"], card["expression"], card["reading"], "learning",
-                     source="card", anki_note_id=note_id)
-    return get_card(card_id)
+    _mark_learning(card["language"], card["expression"], card["reading"], note_id)
+    return {**get_card(card_id), "duplicate": duplicate}
 
 
 def send_pending(language: str | None = None) -> dict:

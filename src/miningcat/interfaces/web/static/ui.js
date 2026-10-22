@@ -56,8 +56,8 @@ window.MiningCatUI = (() => {
   const hideModal = (element) => bootstrap.Modal.getOrCreateInstance(element).hide();
   const isModalOpen = () => Boolean(document.querySelector(".modal.show"));
 
-  // kind: "info", "success" or "error"
-  const TOAST_COLOURS = { info: "text-bg-dark", success: "text-bg-success", error: "text-bg-danger" };
+  // kind: "info", "success", "warning" or "error"
+  const TOAST_COLOURS = { info: "text-bg-dark", success: "text-bg-success", warning: "text-bg-warning", error: "text-bg-danger" };
   let toastBox = null;
 
   function toast(message, kind = "info") {
@@ -74,6 +74,7 @@ window.MiningCatUI = (() => {
     }
     toastBox.className = `toast align-items-center border-0 ${TOAST_COLOURS[kind] || TOAST_COLOURS.info}`;
     toastBox.querySelector(".toast-body").textContent = message;
+    toastBox.querySelector(".btn-close").classList.toggle("btn-close-white", kind !== "warning");  // dark text on yellow
     // shown again from the start (and for the whole delay) when a toast is already up
     bootstrap.Toast.getOrCreateInstance(toastBox, { delay: 3500 }).show();
   }

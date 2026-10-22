@@ -20,8 +20,10 @@ from miningcat.domain.text.chinese_script import ChineseScripts, OpenCcConverter
 from miningcat.domain.text.readings import reading_match
 from miningcat.domain.text.variants import text_variants
 from miningcat.infrastructure import http
-from miningcat.infrastructure.persistence.database import Database
+from miningcat.infrastructure.anki.ankiconnect import AnkiConnect
+from miningcat.infrastructure.persistence.database import Database, database
 from miningcat.infrastructure.persistence.settings_store import settings
+from miningcat.infrastructure.persistence.word_repository import WordRepository
 
 from shared import FakeNllb, FakeQwen
 
@@ -500,16 +502,44 @@ def test_same_sentence_of_another_word_isnt_a_duplicate(fake_anki):
                                        "fields": {"Sentence": "{sentence}", "Target Word": "{word}"}}}})
     sentence = "感冒一定愛配溫開水"
     assert anki.create_card("zh", {"word": "開水", "sentence": sentence}, {})["status"] == "sent"
-    assert anki.create_card("zh", {"word": "配", "sentence": sentence}, {})["status"] == "sent"
+    other = anki.create_card("zh", {"word": "配", "sentence": sentence}, {})
+    assert other["status"] == "sent" and not other["duplicate"]
     again = anki.create_card("zh", {"word": "配", "sentence": sentence}, {})
-    assert again["status"] == "failed" and "duplicate" in again["error"]
+    assert again["status"] == "sent" and again["duplicate"]
 
 
-def test_duplicate_is_refused(fake_anki):
+def test_duplicate_is_sent_with_a_warning(fake_anki):
+    # a word can have several cards: other meanings, other examples
     setup_chinese_notes()
-    anki.create_card("zh", {"word": "公園", "definition": "park"}, {})
+    first = anki.create_card("zh", {"word": "公園", "definition": "park"}, {})
     second = anki.create_card("zh", {"word": "公園", "definition": "park"}, {})
-    assert second["status"] == "failed" and "duplicate" in second["error"]
+    assert not first["duplicate"]
+    assert second["status"] == "sent" and second["duplicate"]
+    assert first["anki_note_id"] != second["anki_note_id"]
+
+
+def test_another_card_of_a_known_word_leaves_it_known(fake_anki):
+    setup_chinese_notes()
+    anki.save_config({"sync": {"zh": [{"deck": "Mining::Chinese", "field": "Hanzi"}]}})
+    first = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "公園"}, interval=250)
+    anki.sync()
+    card = anki.create_card("zh", {"word": "公園", "definition": "public garden"}, {})
+    assert card["status"] == "sent" and card["word_status"] == "known"
+    with database.session() as conn:
+        assert WordRepository(conn).find("zh", "公園")["anki_note_id"] == first  # still its first note
+
+
+def test_duplicate_check_failing_doesnt_stop_the_card(fake_anki, monkeypatch):
+    setup_chinese_notes()
+    invoke = AnkiConnect.invoke
+
+    def failing_search(self, action, **params):
+        if action == "findNotes":
+            raise anki.AnkiError("bad search")
+        return invoke(self, action, **params)
+    monkeypatch.setattr(AnkiConnect, "invoke", failing_search)
+    card = anki.create_card("zh", {"word": "公園"}, {})
+    assert card["status"] == "sent" and not card["duplicate"]
 
 
 def test_card_waits_while_anki_is_closed(fake_anki):
@@ -549,6 +579,17 @@ def test_sync_sends_pending_cards_and_reads_statuses(fake_anki):
             c["interval"] = 25
     anki.sync()
     assert words.status_of("zh", "散步")["status"] == "known"
+
+
+def test_sync_word_with_several_notes_takes_the_longest_interval(fake_anki):
+    anki.save_config({"sync": {"zh": [{"deck": "Mining::Chinese", "field": "Hanzi"}]}})
+    fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "少"}, interval=250)
+    fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "少"}, interval=5)
+    fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "那"}, interval=30)
+    fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "那"}, interval=40)
+    report = anki.sync()["languages"]["zh"]
+    assert words.status_of("zh", "少")["status"] == "known"  # not the last note's status
+    assert report == {"notes": 4, "known": 2, "learning": 0, "kept": 0}  # words, as the home page counts them
 
 
 def test_plain_field_values():

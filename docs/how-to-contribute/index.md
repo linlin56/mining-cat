@@ -35,7 +35,7 @@ A few rules:
 
 - **No network in tests.** Mock `yt_dlp.YoutubeDL`, edge-tts, etc. Never point a test at a real URL.
 - **Keep mock files small and open.** Test books, texts and subtitles live in `src/tests/mock/`: a few sentences each, written by us, never copyrighted content. Document any new mock in `src/tests/mock/README.md`.
-- Shared mock paths and `skipif` markers are declared in `src/tests/shared.py`, with test helpers (`redirect_path()`, `FakeOpenCc`).
+- Shared mock paths and `skipif` markers are declared in `src/tests/shared.py`, with test helpers (`redirect_path()`).
 - **Never touch the user's files.** `conftest.py` points every folder of `paths` (sources/, output/, library/ and its database) to a temporary folder in every test: use `paths.srt`, `paths.ebook`... rather than building paths yourself.
 - **The layers are checked**: `architecture.test.py` fails when a module imports a layer above its own (see [Project structure](project-structure.md)).
 

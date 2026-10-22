@@ -5,7 +5,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request, send_file
 
 from miningcat.application import study_language as studied
-from miningcat.application.mining import dictionaries, frequency, lookup, words
+from miningcat.application.mining import dictionaries, frequency, lookup, next_words, words
 from miningcat.domain.languages import LANGUAGES, same_family
 from miningcat.domain.text.readings import reading_match
 from miningcat.interfaces.web.errors import UserError
@@ -40,6 +40,17 @@ def api_frequency_lists():
     chosen = [ref["id"] for ref in frequency.references(language)]
     return jsonify(lists=frequency.lists(language), chosen=chosen, frontier=frequency.frontier(language),
                    limit_base=frequency.LIMIT_BASE, limit_per_known_word=frequency.LIMIT_PER_KNOWN_WORD)
+
+
+@bp.get("/api/frequency/next")
+def api_next_words():
+    """The most frequent words of the language's frequency lists that the user doesn't have yet."""
+    language = study_language(request.args.get("language"))
+    try:
+        count = int(request.args.get("count") or next_words.DEFAULT_COUNT)
+    except ValueError:
+        raise UserError("Next words", "The number of words must be a number.")
+    return jsonify(next_words.next_words(language, count))
 
 
 @bp.post("/api/frequency/list")

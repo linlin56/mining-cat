@@ -149,6 +149,7 @@ async function loadFrequency() {
       ...(enable ? [enable] : []), remove);
   }) : [el("p", { class: EMPTY, text: "No frequency list yet." })]));
   const several = frontier && frontier.dictionaries.length > 1;
+  $("freq-next").hidden = !frontier;
   $("freq-frontier").textContent = frontier
     ? `You know ${frontier.known.toLocaleString()} of the ${frontier.words.toLocaleString()} words of ${several ? "these lists" : "this list"}: `
       + "sentences are recommended "

@@ -103,6 +103,16 @@ class WordRepository:
         return [r[0] for r in self._conn.execute(
             "SELECT DISTINCT expression FROM words WHERE language = ? AND status = 'known'", (language,))]
 
+    def tracked_signature(self, language: str) -> tuple:
+        """Changes whenever a word of the language is given a status, loses it or changes it."""
+        return tuple(self._conn.execute(
+            "SELECT COUNT(*), MAX(updated) FROM words WHERE language = ?", (language,)).fetchone())
+
+    def tracked_expressions(self, language: str) -> list[str]:
+        """The words of a language that have a status (learning, known or ignored)."""
+        return [r[0] for r in self._conn.execute(
+            "SELECT DISTINCT expression FROM words WHERE language = ?", (language,))]
+
     def sent_card_words(self) -> list[sqlite3.Row]:
         """Words of the cards sent to Anki from MiningCat (they have the id of their note)."""
         return self._conn.execute(

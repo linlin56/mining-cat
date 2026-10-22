@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import navbar with context %}
+{% block title %}Next words · MiningCat{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='next_words.js') }}" defer></script>
+{% endblock %}
+{% block body_attrs %}data-study="{{ study.id if study else "" }}"{% endblock %}
+{% block body %}
+  <div class="container pb-4">
+    {{ navbar("Settings") }}
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <a class="btn btn-sm btn-outline-secondary" href="/settings/#dictionaries"><i class="bi bi-arrow-left" aria-hidden="true"></i> Frequency lists</a>
+      <h1 class="h4 m-0">Next {{ study.name if study else "" }} words</h1>
+    </div>
+    <p class="text-body-secondary small mb-3">The most frequent words of your frequency lists that you don't have yet: not learning, known nor
+      ignored. Mark one known or ignore it and the next word takes its place.</p>
+    <p class="text-body-secondary small mb-3" id="next-summary"></p>
+
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col" class="text-end">#</th>
+              <th scope="col" class="text-end">Rank</th>
+              <th scope="col">Word</th>
+              <th scope="col">Reading</th>
+              <th scope="col" class="w-50">Meaning</th>
+              <th scope="col" class="text-end"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="next-words"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

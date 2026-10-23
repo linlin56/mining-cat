@@ -455,7 +455,7 @@ async function loadComprehension(items) {
       box.textContent = c && c.total ? `${percentText(c.percent)}${c.recommended ? ` · ${c.recommended} i+1` : ""}` : "";
       if (c && c.total) box.title = `${c.known} known, ${c.learning} learning and ${c.new} new running words (${c.unique_new} different new words). `
         + `${c.i1} of ${c.sentences} sentences have only one new word`
-        + (c.frequency ? `, ${c.recommended} of them a frequent one (up to #${c.frequency.limit.toLocaleString()}).` : ".")
+        + (c.frequency ? `, ${c.recommended} of them a frequent one (up to #${c.frequency.limit.toLocaleString(UI_LOCALE)}).` : ".")
         + (failed ? ` ${failed} page${failed === 1 ? "" : "s"} couldn't be read by OCR (open ${failed === 1 ? "it" : "them"} to try again).` : "");
     } catch { box.textContent = ""; }
   }
@@ -658,7 +658,7 @@ function showComprehension(key) {
   $("i1-summary").textContent = !a || !a.total
     ? "No dictionary words in this chapter (import a dictionary in Settings)."
     : `${percentText(a.percent)} · ${a.learning} learning · ${a.new} new words in this chapter · ${recommended.length} recommended sentence${recommended.length === 1 ? "" : "s"}.`
-      + (a.frequency ? ` Only words up to #${a.frequency.limit.toLocaleString()} of “${a.frequency.title}” (you know ${a.frequency.known.toLocaleString()} of its words)`
+      + (a.frequency ? ` Only words up to #${a.frequency.limit.toLocaleString(UI_LOCALE)} of “${a.frequency.title}” (you know ${a.frequency.known.toLocaleString(UI_LOCALE)} of its words)`
         + `${rarer ? `: ${rarer} other sentence${rarer === 1 ? " teaches a rarer word" : "s teach rarer words"}` : ""}.`
         : " Import a frequency list in Settings to only get the frequent words.");
   $("i1-list").replaceChildren(...recommended.map((u) => {

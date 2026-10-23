@@ -82,6 +82,8 @@ textarea.mc-clip-editor { min-height: calc(100vh - 8rem); }
 
 /* The vocabulary goal on the home page (home.js): its bar, its charts and their tooltip. */
 .mc-goal-bar { background-color: var(--mc-heatmap); }
+/* its counts: the figures they come from, folded by default */
+.mc-goal-folded dl { display: none; }
 .mc-chart-tip {
   position: absolute; top: 0; pointer-events: none; z-index: 2; white-space: nowrap;
   padding: .25rem .5rem; border-radius: var(--bs-border-radius); font-size: .8rem;

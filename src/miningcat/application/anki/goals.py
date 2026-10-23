@@ -28,7 +28,7 @@ MAX_WORDS = 1_000_000
 # The last plan made for each language ({language: summary()}): the home page shows it at once, then the new one.
 _PLANS = "goal_plans"
 # The shape of a summary: a cached one of another version is made again (the home page reads this one).
-SUMMARY_VERSION = 3
+SUMMARY_VERSION = 5
 
 
 def _all_goals() -> dict[str, list[dict]]:
@@ -81,26 +81,33 @@ def _day(review_id: int) -> date:
     return reviews.anki_day(datetime.fromtimestamp(review_id / 1000))
 
 
-def _anki_state(client: AnkiConnect, language: str, known_interval: int) -> dict:
-    """What Anki tells of the language's decks: when each card was first seen and became known, the note each known
-    card belongs to, the new cards waiting and the decks' limit of new cards a day."""
+def _anki_state(client: AnkiConnect, language: str, known_interval: int, today: date) -> dict:
+    """What Anki tells of the language's decks: when each card was first seen and became known, the day each note was
+    first seen and became known, the new cards waiting, the decks' limit of new cards a day and the new cards seen a
+    day of late."""
     decks, top = existing_decks(client, language_decks(language))
     history = review_days.cards(client, decks)
     first_seen = {card: _day(h.first) for card, h in history.items()}
     matured = {card: _day(reached) for card, h in history.items() if (reached := h.reached(known_interval)) is not None}
-    notes = card_notes.of(client, list(matured))
-    note_known: dict[int, date] = {}
-    for card, day in matured.items():
-        note = notes.get(card)
-        if note is not None:
-            note_known[note] = min(day, note_known.get(note, day))
+    notes = card_notes.of(client, list(first_seen))
+
+    def by_note(days: dict[int, date]) -> dict[int, date]:
+        earliest: dict[int, date] = {}
+        for card, day in days.items():
+            note = notes.get(card)
+            if note is not None:
+                earliest[note] = min(day, earliest.get(note, day))
+        return earliest
+
+    since = today - timedelta(days=goals.PACE_DAYS)
     backlog = new_per_day = 0
     for deck in top:
         waiting, limit = _new_cards(client, deck, [d for d in decks if reviews.in_deck(d, deck)])
         backlog += waiting
         new_per_day += limit
-    return {"decks": top, "first_seen": first_seen, "matured": matured, "note_known": note_known,
-            "backlog": backlog, "new_per_day": new_per_day}
+    return {"decks": top, "first_seen": first_seen, "matured": matured, "note_known": by_note(matured),
+            "note_first": by_note(first_seen), "backlog": backlog, "new_per_day": new_per_day,
+            "seen_per_day": sum(day > since for day in first_seen.values()) / goals.PACE_DAYS}
 
 
 def _new_cards(client: AnkiConnect, top: str, decks: list[str]) -> tuple[int, int]:
@@ -153,7 +160,10 @@ def summary(language: str, now: datetime | None = None) -> dict:
     current goal's),
     needs: what it takes to reach them all (goals.combine(), None without an active goal), steps: the pace it takes to
     reach them all ([[ISO date, words, goal id or None for today]], goals.needed_steps()), history: [[ISO date, known
-    words]] of every day}."""
+    words]] of every day, forecast: [[ISO date, known words]] of every day from today to the last goal's date (at least
+    two weeks) with the words in learning and the decks' limit of new cards a day (goals.forecast(), None without
+    Anki), maturity: the share of new cards known at once, within a week, a month, in the end (None when not measured
+    on the user's cards)}."""
     language_goals = _all_goals().get(language, [])
     if not language_goals:
         return {"goals": []}
@@ -164,13 +174,14 @@ def summary(language: str, now: datetime | None = None) -> dict:
         known_words = repository.known_words(language)
         snapshots = {date.fromisoformat(day): n for day, n in repository.known_history(language).items()}
         counts = repository.counts().get(language, {})
+        learning_notes = repository.learning_notes(language)
         pending = CardRepository(conn).count("pending", language)
 
     config = get_config()
     state, status = None, {"linked": bool(language_decks(language)), "connected": False}
     if status["linked"]:
         try:
-            state = _anki_state(anki(), language, config["known_interval"])
+            state = _anki_state(anki(), language, config["known_interval"], today)
             status.update(connected=True, decks=state["decks"])
         except AnkiError as exc:
             status["error"] = str(exc)
@@ -186,23 +197,38 @@ def summary(language: str, now: datetime | None = None) -> dict:
             _save_goals(language, settled)
     active = [{**g, "status": goals.ACTIVE} for g in goals.active(settled)]
     current_pace = goals.pace(curve, today)
-    plans, needs, steps = [], None, []
+    plans, needs, steps, forecast, maturity = [], None, [], None, None
     if active:
+        # With Anki, the words in learning are the ones whose cards were seen: the others are new cards, in the
+        # backlog.
+        learning_ages, within = None, None
+        if state:
+            learning_ages = tuple((today - state["note_first"][note]).days
+                                  for note in learning_notes if note in state["note_first"])
+            within = goals.known_within(state["first_seen"], state["matured"], today)
+            if within:
+                share = lambda days: round(within[min(days, len(within) - 1)], 2)
+                maturity = {"at_once": share(0), "week": share(7), "month": share(30), "final": share(len(within))}
         pipeline = goals.Pipeline(
             known=known, learning=counts.get("learning", 0),
             backlog=state["backlog"] + pending if state else None, new_per_day=state["new_per_day"] if state else None,
+            learning_ages=learning_ages, known_within=within, seen_per_day=state["seen_per_day"] if state else None,
             lag=lag, success=success)
         targets = [goals.Goal(g["words"], date.fromisoformat(g["by"])) for g in active]
         plans = [goals.plan(target, pipeline, current_pace, today) for target in targets]
         needs = goals.combine(plans)
         steps = [[day.isoformat(), words, None if index is None else active[index]["id"]]
                  for day, words, index in goals.needed_steps(known, targets, today)]
+        days = max(14, *((target.by - today).days for target in targets))
+        points = goals.forecast(pipeline, today, days)
+        forecast = None if points is None else [[day.isoformat(), round(words)] for day, words in points]
     measured = sample >= goals.MIN_SAMPLE
     result = {
         "version": SUMMARY_VERSION, "goals": get_goals(language), "today": today.isoformat(),
         "anki": status, "pace": round(current_pace, 2),
         "plans": [_plan_json(g, plan, measured) for g, plan in zip(active, plans)],
         "needs": needs, "steps": steps, "history": [[day.isoformat(), n] for day, n in curve.items()],
+        "forecast": forecast, "maturity": maturity,
     }
     cache = settings.get(_PLANS, {}) or {}
     cache[language] = result

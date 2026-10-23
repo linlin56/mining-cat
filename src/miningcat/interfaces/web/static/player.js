@@ -172,7 +172,7 @@ async function loadComprehension(list) {
     box.textContent = c && c.total ? `${percentText(c.percent)}${c.recommended ? ` · ${c.recommended} i+1` : ""}` : "";
     if (c && c.total) box.title = `${c.known} known, ${c.learning} learning and ${c.new} new words (${c.unique_new} different new words). `
       + `${c.i1} of ${c.sentences} subtitle lines have only one new word`
-      + (c.frequency ? `, ${c.recommended} of them a frequent one (up to #${c.frequency.limit.toLocaleString()}).` : ".");
+      + (c.frequency ? `, ${c.recommended} of them a frequent one (up to #${c.frequency.limit.toLocaleString(UI_LOCALE)}).` : ".");
   }
 }
 
@@ -559,7 +559,7 @@ function showComprehension(key) {
     const i1 = a.units.filter((u) => u.i1).length;
     $("comp-summary").title = `${a.known} known, ${a.learning} learning and ${a.new} new words in these subtitles. `
       + `${i1} lines have only one new word`
-      + (a.frequency ? `, ${P.recommended.length} of them a frequent one (up to #${a.frequency.limit.toLocaleString()} of “${a.frequency.title}”).` : ".");
+      + (a.frequency ? `, ${P.recommended.length} of them a frequent one (up to #${a.frequency.limit.toLocaleString(UI_LOCALE)} of “${a.frequency.title}”).` : ".");
   }
 }
 

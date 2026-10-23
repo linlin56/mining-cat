@@ -33,7 +33,7 @@ function language() {
 
 function showCount() {
   const n = $("editor").value.length;
-  $("count").textContent = n ? `${n.toLocaleString()} character${n > 1 ? "s" : ""}` : "";
+  $("count").textContent = n ? `${n.toLocaleString(UI_LOCALE)} character${n > 1 ? "s" : ""}` : "";
 }
 
 // Paragraphs of the text, those longer than a chunk cut between sentences.

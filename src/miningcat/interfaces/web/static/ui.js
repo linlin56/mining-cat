@@ -1,6 +1,9 @@
 // What the pages share on top of Bootstrap: a message dialog (a modal) and toasts.
 "use strict";
 
+// The language of the interface: its dates and numbers are written in it, whatever the browser's language.
+const UI_LOCALE = "en";
+
 window.MiningCatUI = (() => {
   let modal = null;
   let queue = Promise.resolve();

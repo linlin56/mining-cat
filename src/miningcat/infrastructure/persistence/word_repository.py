@@ -131,6 +131,11 @@ class WordRepository:
             "SELECT id, source, anki_note_id, created, updated FROM words WHERE language = ? AND status = 'known'",
             (language,))]
 
+    def learning_notes(self, language: str) -> list[int | None]:
+        """The Anki note of each word in learning of a language (None for one without)."""
+        return [r[0] for r in self._conn.execute(
+            "SELECT anki_note_id FROM words WHERE language = ? AND status = 'learning'", (language,))]
+
     def record_known(self, language: str, day: str) -> int:
         """Records the number of known words of a language on a day (ISO date), replacing that day's. Returns it."""
         known = self._conn.execute(

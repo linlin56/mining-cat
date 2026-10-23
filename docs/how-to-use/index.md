@@ -136,27 +136,39 @@ to and the decks synced with its words, in **Settings › Anki**. Your other dec
 
 Set a goal in **Settings › User preferences › Vocabulary goals**: "I want to know 5000 words by June 1st". Until you
 do, the home page invites you to, under the heatmap. Then it shows, for the goal with the nearest date (set several for
-milestones along the way):
+milestones along the way), three counts. The figures they come from are folded under them: **Show details** unfolds
+the three at once (your browser remembers it).
 
-- the date you'll get there **at your current pace** (the words that became known in the last 30 days), and the pace
-  the goal takes;
-- the **new cards a day** to see in Anki to get there, next to your decks' limit of new cards a day (raise it in Anki
-  when it's lower);
+- the **forecast**: the day you'll get there if you see your decks' limit of new cards a day, from the words you have
+  in learning and the new cards to come. Its details: the forecast of your other goals, the words that became known
+  a day over the last 30 days and the day you'd get there at that pace, and the words to know a day the goal takes.
+  Without Anki, the date at your current pace;
+- the **new cards a day** to see in Anki from tomorrow on, next to your decks' limit (raise it in Anki when it's
+  lower) and the new cards you actually saw a day over the last 30 days. Its details: the count of each goal, and the
+  words in learning that should be known by the goal's date, and later;
 - the **cards to mine a day**, once the new cards already waiting in Anki (and the cards made in MiningCat but not sent
-  yet) are counted, and how many days they last at your decks' limit;
-- a chart of your known words over time, with the line at your current pace and the line your goals take (to the
-  nearest goal, then from one goal to the next), and a chart of the words known each week.
+  yet) are counted, and how many days they last at your decks' limit. Its details: the count of each goal;
+- a chart of your known words over time, with the forecast (dashed) and the line your goals take (to the nearest goal,
+  then from one goal to the next), and a chart of the words known each week.
+
+![The vocabulary goal on the home page, its details unfolded: the forecast, the new cards and the cards to mine a day, the chart of known words and of the words known each week](../assets/screenshots/home-goal.png)
 
 With several goals to come, the new cards and the cards to mine a day are the ones that reach them all: those of the
 most demanding goal, named under the count. Enough cards for the nearest goal don't make them 0 while the next goals
-need more.
+need more. A goal counts **known words**, not cards: a word is known once its card's interval reaches the known
+interval of **Settings › Anki** (21 days by default), so the new cards and the cards still in learning of your decks
+aren't known words yet.
 
-A new card isn't known the day you first see it: it takes weeks before its interval reaches the known interval of
-**Settings › Anki** (21 days by default), and some cards never get there. MiningCat measures both on your own Anki
-cards (with usual values until you've reviewed enough of them), so the new cards a day are to see before the end of
-that delay: the shaded days before the goal's date in the chart are too late. The history of your known words comes
-from your Anki reviews (the day a card reached the known interval), from the words you marked known yourself, and from
-the number of known words MiningCat records each day it syncs with Anki or shows the goal.
+A new card isn't always known weeks after you first see it: a word you already knew, answered Easy, is known at once;
+most take weeks, some never get there. MiningCat measures it on your Anki cards of the last year: the share of new
+cards known within each number of days (a card not known yet only tells that it takes it longer than its age, so the
+recent cards don't skew it), told under the charts. The forecast and the counts use it for the new cards to come, and
+for each word in learning, from how long ago you first saw it: one seen long ago and still not known is a hard one,
+with less of a chance. Until you've reviewed enough cards (or without Anki), they count with usual values: a delay
+before a card is known, and the share of cards that get there; the shaded days before the goal's date in the chart are
+then too late for new cards. The history of your known words comes from your Anki reviews (the day a card reached the
+known interval), from the words you marked known yourself, and from the number of known words MiningCat records each
+day it syncs with Anki or shows the goal. Marking known the words you already know counts them at once.
 
 A goal is **reached** on the first day you know enough words, before its date: it gets a filled point on the chart, on
 that day, and the home page congratulates you for two weeks. A goal whose date passes first is **missed**: it gets a

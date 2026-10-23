@@ -125,14 +125,30 @@ def test_with_anki(fake_anki, monkeypatch):
     assert (plan["backlog"], plan["deck_new_per_day"], plan["remaining"]) == (2, 15, 98)
     assert plan["lag"] == 35 and plan["mine_per_day"] > 0  # too few cards: the usual lag
     assert plan["pace"] == round(1 / 30, 2)
+    # the words of the new cards are in learning, but only the one seen counts (the others are in the backlog)
+    assert (plan["learning"], plan["learning_later"]) == (1, 0) and plan["seen_per_day"] == round(1 / 30, 1)
+
+
+def test_learning_words_seen_too_late_for_a_goal(fake_anki):
+    # 30 words seen 2 days ago: about 35 days to be known (the usual lag), after the near goal's date
+    for i in range(30):
+        _, card = add_note(fake_anki, f"字{i}", 2)
+        fake_anki.revlog.append((review_id(2), "Mining::Chinese", 0, card, 2))
+    goals.add_goal("zh", 25, "2026-11-01", NOW.date())
+    goals.add_goal("zh", 25, "2027-03-01", NOW.date())
+    anki.sync()
+    near, far = goals.summary("zh", NOW)["plans"]
+    # 85% of them, the usual share, in the end
+    assert (near["learning"], near["learning_later"], near["too_late"]) == (0, 26, True)
+    assert far["learning"] == 26 and far["new_per_day"] == 0
 
 
 def test_a_plan_for_each_goal(fake_anki):
     goals.add_goal("zh", 2, "2026-12-15", NOW.date())
     goals.add_goal("zh", 500, "2027-03-01", NOW.date())
-    add_note(fake_anki, "我們", 3)
-    add_note(fake_anki, "天氣", 3)
+    cards = [add_note(fake_anki, word, 3)[1] for word in ("我們", "天氣")]
     add_note(fake_anki, "朋友", 0, new=True)
+    fake_anki.revlog = [(review_id(10), "Mining::Chinese", 1, card, 3) for card in cards]
     anki.sync()
     summary = goals.summary("zh", NOW)
     assert [plan["goal"]["words"] for plan in summary["plans"]] == [2, 500]

@@ -33,7 +33,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "assets" / "screenshots"
-GROUPS = ["home", "reader", "card", "player", "settings", "converter", "taigi"]
+# "goal" last: its Anki deck adds words that the other screenshots don't show
+GROUPS = ["home", "reader", "card", "player", "settings", "converter", "taigi", "goal"]
 
 # ------------------------------------------------------------------ demo data
 
@@ -198,8 +199,41 @@ def demo_reviews() -> list[list]:
     return rows
 
 
+def demo_deck() -> dict:
+    """The vocabulary goal's Anki deck (Mining::Chinese): six months of new cards, more of them a day lately, each with
+    its reviews as cardReviews gives them; some known at once (answered Easy), most after weeks, some never; and new
+    cards waiting. {notes: {note id: (word, card id)}, cards: {card id: (note id, interval, new)}, reviews: [...]}."""
+    rng = random.Random(11)
+    today = datetime.date.today()
+    noon = lambda day: int(datetime.datetime.combine(day, datetime.time(12)).timestamp() * 1000)
+    notes, cards, reviews = {}, {}, []
+
+    def add(note, interval, new=False):
+        word = chr(0x4E00 + len(notes) // 200) + chr(0x4E00 + 400 + len(notes) % 200)
+        notes[note] = (word, note + 500)
+        cards[note + 500] = (note, interval, new)
+        return note + 500
+
+    for back in range(180, -1, -1):
+        day = today - datetime.timedelta(days=back)
+        for i in range(8 + (180 - back) // 15):
+            card = add(noon(day) + i * 1000, 0)
+            luck = rng.random()
+            delay = 0 if luck < 0.22 else None if luck > 0.92 else max(3, min(120, round(rng.lognormvariate(2.9, 0.6))))
+            reviews.append([noon(day) + i * 1000, card, -1, 4 if delay == 0 else 3, 25 if delay == 0 else 1, 0, 2500, 6000, 0])
+            if delay and back - delay >= 0:
+                later = noon(today - datetime.timedelta(days=back - delay)) + i * 1000
+                reviews.append([later, card, -1, 3, 25, 10, 2500, 6000, 1])
+            known = delay is not None and back - delay >= 0
+            cards[card] = (cards[card][0], 30 if known else rng.randint(1, 15), False)
+    for i in range(300):  # waiting: made today, never seen
+        add(noon(today) + 100_000 + i * 1000, 0, new=True)
+    return {"notes": notes, "cards": cards, "reviews": sorted(reviews)}
+
+
 class FakeAnki(BaseHTTPRequestHandler):
-    """AnkiConnect with a few decks and note types; notes are not kept."""
+    """AnkiConnect with a few decks and note types; notes are not kept. Once DECK is set (the goal's screenshot), it
+    holds the notes of Mining::Chinese, their cards and their reviews."""
 
     MODELS = {"Chinese sentence mining": ["Hanzi", "Zhuyin", "Meaning", "Sentence", "Picture", "Sentence Audio"],
               "Basic": ["Front", "Back"]}
@@ -207,11 +241,44 @@ class FakeAnki(BaseHTTPRequestHandler):
                "modelNames": sorted(MODELS), "findNotes": [], "findCards": [], "notesInfo": [], "cardsInfo": [],
                "requestPermission": {"permission": "granted"}}
     REVIEWS = demo_reviews()
+    DECK = None
+
+    def deck(self, action, params):
+        """The answer of the goal's deck, or None for the usual one."""
+        deck = self.DECK
+        if action == "cardReviews":
+            return [row for row in deck["reviews"] if row[0] > params["startID"]] if params.get("deck") == "Mining::Chinese" else []
+        if action == "findNotes":
+            query = params.get("query", "")
+            if query.startswith("nid:"):
+                return [int(n) for n in query[4:].split(",") if int(n) in deck["notes"]]
+            return list(deck["notes"]) if "Mining::Chinese" in query else []
+        if action == "findCards":
+            query = params.get("query", "")
+            if "is:new" in query:
+                return [card for card, (_, _, new) in deck["cards"].items() if new] if "Mining::Chinese" in query else []
+            if query.startswith("nid:"):
+                return [deck["notes"][int(n)][1] for n in query[4:].split(",") if int(n) in deck["notes"]]
+            return []
+        if action == "notesInfo":
+            return [{"noteId": n, "fields": {"Hanzi": {"value": deck["notes"][n][0], "order": 0}}, "cards": [deck["notes"][n][1]]}
+                    for n in params.get("notes", []) if n in deck["notes"]]
+        if action == "cardsInfo":
+            return [{"cardId": c, "note": deck["cards"][c][0], "interval": deck["cards"][c][1], "queue": 0 if deck["cards"][c][2] else 2}
+                    for c in params.get("cards", []) if c in deck["cards"]]
+        if action == "getDeckConfig":
+            return {"new": {"perDay": 20}}
+        if action == "getActiveProfile":
+            return "User 1"
+        return None
 
     def do_POST(self):
         request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         action, params = request.get("action"), request.get("params") or {}
-        if action == "modelFieldNames":
+        answer = self.deck(action, params) if self.DECK else None
+        if answer is not None:
+            result = answer
+        elif action == "modelFieldNames":
             result = self.MODELS.get(params.get("modelName"), [])
         elif action == "getDeckStats":  # the home page: some reviews left today
             result = {str(i): {"deck_id": i, "name": name, "new_count": 0, "learn_count": 0,
@@ -342,6 +409,18 @@ class Demo:
         self.call("/api/anki/config", {"notes": {"zh": {"deck": "Mining::Chinese", "model": "Chinese sentence mining",
                                                          "fields": guess, "tags": "mining-cat"}}})
 
+    def goal(self):
+        """Mandarin's Anki deck synced with its words, and two goals: a near one, a bit high for the current pace, and
+        a far one."""
+        FakeAnki.DECK = demo_deck()
+        self.call("/api/anki/config", {"sync": {"zh": [{"deck": "Mining::Chinese", "field": "Hanzi", "reading_field": ""}]}})
+        self.call("/api/anki/sync", {})
+        known = self.call("/api/mining/languages")["counts"]["zh"]["known"]
+        today = datetime.date.today()
+        for more, days in ((500, 35), (2000, 150)):
+            self.call("/api/goals", {"language": "zh", "words": round((known + more) / 100) * 100,
+                                     "by": (today + datetime.timedelta(days=days)).isoformat()})
+
     def ensure_card(self):
         """The card waiting for Anki, when the card creator didn't make it (--only)."""
         if not self.call("/api/cards?language=zh")["cards"]:
@@ -376,9 +455,14 @@ class Shooter:
         self.page.wait_for_load_state("networkidle")
         self.page.wait_for_timeout(wait)
 
-    def shot(self, name, full=False):
+    def shot(self, name, full=False, down_to=None):
+        """The page (`full`: all of it), or from its top down to an element (`down_to`, a selector) and a margin."""
         self.page.wait_for_timeout(400)
-        self.page.screenshot(path=str(OUT / f"{name}.png"), full_page=full)
+        clip = None
+        if down_to:
+            box = self.page.locator(down_to).bounding_box()
+            clip = {"x": 0, "y": 0, "width": self.page.viewport_size["width"], "height": box["y"] + box["height"] + 16}
+        self.page.screenshot(path=str(OUT / f"{name}.png"), full_page=full or bool(clip), clip=clip)
         print(f"  {name}.png")
 
     def click_text(self, root, text, nth=0, wait=1500):
@@ -390,7 +474,18 @@ class Shooter:
 
     def home(self):
         self.go("/")
-        self.shot("home-hub")
+        self.shot("home-hub", down_to="#reviews")  # the goal has its own screenshot
+
+    def goal(self):
+        """The vocabulary goal, on the home page, its counts unfolded."""
+        self.demo.goal()
+        self.go("/", wait=1500)
+        self.page.wait_for_selector("#goal-stats .col", timeout=60_000)
+        self.page.wait_for_selector("#goal-updating", state="hidden", timeout=60_000)  # the new plan, not the cached one
+        self.page.click("#goal-details")
+        self.page.wait_for_timeout(600)
+        self.page.locator("#goal").screenshot(path=str(OUT / "home-goal.png"))
+        print("  home-goal.png")
 
     def reader(self):
         self.go("/reader/")

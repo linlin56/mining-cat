@@ -110,7 +110,7 @@ async function selectCsv(fileList) {
   CSV.file = file.name;
   CSV.header = rows[0].map((c) => c.trim());
   CSV.rows = rows.slice(1);
-  $("csv-label").textContent = `${file.name} — ${CSV.rows.length.toLocaleString()} row${CSV.rows.length > 1 ? "s" : ""}`;
+  $("csv-label").textContent = `${file.name} — ${CSV.rows.length.toLocaleString(UI_LOCALE)} row${CSV.rows.length > 1 ? "s" : ""}`;
   setSelected($("csv-label"), true);
   $("csv-source").value = file.name.replace(/\.(csv|tsv|txt)$/i, "");
 

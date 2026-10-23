@@ -39,7 +39,7 @@ function el(tag, attrs = {}, ...children) {
 }
 
 function when(seconds) {
-  return new Date(seconds * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  return new Date(seconds * 1000).toLocaleString(UI_LOCALE, { dateStyle: "medium", timeStyle: "short" });
 }
 
 function source(item) {

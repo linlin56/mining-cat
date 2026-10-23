@@ -1,5 +1,7 @@
 from datetime import date, timedelta
 
+from pytest import approx
+
 from miningcat.domain.words import goals
 from miningcat.domain.words.goals import Goal, Pipeline
 
@@ -80,6 +82,43 @@ def test_plan_with_enough_learning_words_close_to_the_date():
     plan = goals.plan(Goal(1000, TODAY + timedelta(days=20)), pipeline, 5.0, TODAY)
     # too close for new cards, but none is needed: not "too late", nor "nothing to tell"
     assert not plan["reached"] and not plan["too_late"] and plan["new_per_day"] == 0 and plan["mine_per_day"] == 0
+
+
+def test_known_within():
+    # 100 cards first seen 100 days ago: 20 known at once, 40 after 10 days, 20 after 30 days, 20 never
+    first_seen = {card: days_ago(100) for card in range(100)}
+    matured = {card: days_ago(100) for card in range(20)}
+    matured.update({card: days_ago(90) for card in range(20, 60)})
+    matured.update({card: days_ago(70) for card in range(60, 80)})
+    shares = goals.known_within(first_seen, matured, TODAY)
+    assert [shares[k] for k in (0, 9, 10, 30, -1)] == approx([0.2, 0.2, 0.6, 0.8, 0.8])
+    # 100 more cards seen 5 days ago, none known yet: none known at once (10% of all the cards), and for the rest, they
+    # only tell that it takes more than 5 days: 0.1 + 0.9 x (1 - 0.5 x 0.5), not the 80 cards known of 200 (40%)
+    first_seen.update({card: days_ago(5) for card in range(100, 200)})
+    shares = goals.known_within(first_seen, matured, TODAY)
+    assert shares[0] == approx(0.1) and shares[30] == approx(0.775)
+    assert goals.known_within({1: days_ago(10)}, {1: days_ago(5)}, TODAY) is None  # too few cards
+
+
+def test_plan_counts_the_learning_words_known_by_the_date():
+    in_days = lambda days: TODAY + timedelta(days=days)
+    # half of the new cards known within 10 days, all of them within 20
+    within = (0.0,) * 10 + (0.5,) * 10 + (1.0,)
+    pipeline = Pipeline(known=1000, learning=300, backlog=0, new_per_day=10, lag=10, success=1.0,
+                        learning_ages=(0,) * 100 + (15,) * 100 + (100,) * 100, known_within=within, seen_per_day=12.0)
+    plan = goals.plan(Goal(1200, in_days(10)), pipeline, 5.0, TODAY)
+    # in 10 days: the ones seen today get to 10 days (half of them), the ones seen 15 days ago to 25 (the ones not known
+    # yet, all of them); the ones seen 100 days ago and not known yet never will be (all the others were by then)
+    assert (plan["learning"], plan["learning_later"]) == (150, 50) and plan["seen_per_day"] == 12
+    assert plan["too_late"] is True  # a new card seen from tomorrow on can't be known within 9 days
+    plan = goals.plan(Goal(1400, in_days(30)), pipeline, 5.0, TODAY)
+    # 200 words in learning; 200 more from new cards: a new card a day for 30 days gives 10 x 0 + 10 x 0.5 + 10 x 1 = 15
+    # words, over 20 days (the last 10 days' cards can't be known in time)
+    assert plan["learning"] == 200 and plan["cards_needed"] == 267 and plan["new_per_day"] == 14
+    # with the decks as they are (10 new cards a day): 400 words on day 35
+    assert plan["deck_eta"] == in_days(35)
+    points = goals.forecast(pipeline, TODAY, 30)
+    assert points[0] == (TODAY, 1000) and points[30][1] == 1000 + 200 + 10 * 15
 
 
 def test_plan_reached():

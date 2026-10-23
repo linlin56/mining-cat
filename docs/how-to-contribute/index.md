@@ -87,7 +87,7 @@ The screenshots in `docs/assets/screenshots/` are taken by `tools/screenshots.py
 ```bash
 pip install playwright           # uses your installed Chrome, no browser download
 make screenshots                 # every screenshot
-make screenshots ONLY=reader     # only the reader's: home, reader, card, player, settings, converter or taigi
+make screenshots ONLY=reader     # only the reader's: home, reader, card, player, settings, converter, taigi or goal
 make screenshots FREQ=TOCFL      # with a frequency list: a file, or the title of one of your library/
 ```
 

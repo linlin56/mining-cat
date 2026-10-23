@@ -128,7 +128,7 @@ test:
 coverage:
 	$(PYTHON) -m pytest --cov=src/miningcat --cov-report=xml --cov-report=term-missing
 
-# The docs' screenshots, on demo data. ONLY: one screen (home, reader, card, player, settings, converter, taigi).
+# The docs' screenshots, on demo data. ONLY: one screen (home, reader, card, player, settings, converter, taigi, goal).
 # FREQ: a frequency list for the popup and the card creator, a file or the title of a list of library/.
 screenshots:
 	$(PYTHON) tools/screenshots.py $(if $(ONLY),--only $(ONLY)) $(if $(FREQ),--frequency "$(FREQ)")

@@ -93,9 +93,9 @@ async function loadDictionaries() {
         const others = dictionaries.filter((x) => !ids.includes(x.id)).map((x) => x.id);  // other languages, frequency lists
         try { await api("/api/dict/reorder", { ids: [...ids, ...others] }); loadDictionaries(); loadFrequency(); } catch (err) { showError(err); }
       };
-      const counts = [d.term_count ? `${d.term_count.toLocaleString()} terms` : null,
-        d.kanji_count ? `${d.kanji_count.toLocaleString()} characters` : null,
-        d.meta_count ? `${d.meta_count.toLocaleString()} frequency/pitch entries` : null].filter(Boolean).join(" · ");
+      const counts = [d.term_count ? `${d.term_count.toLocaleString(UI_LOCALE)} terms` : null,
+        d.kanji_count ? `${d.kanji_count.toLocaleString(UI_LOCALE)} characters` : null,
+        d.meta_count ? `${d.meta_count.toLocaleString(UI_LOCALE)} frequency/pitch entries` : null].filter(Boolean).join(" · ");
       return el("div", { class: "list-group-item d-flex flex-wrap align-items-center gap-2" },
         enabled,
         el("div", { class: `flex-grow-1 fw-semibold${d.enabled ? "" : " text-body-secondary text-decoration-line-through"}` },
@@ -145,15 +145,15 @@ async function loadFrequency() {
     return el("div", { class: "d-flex align-items-center gap-2" },
       el("div", { class: "form-check m-0" }, check,
         el("label", { class: "form-check-label", for: id }, l.enabled ? l.title : `${l.title} (disabled)`,
-          l.meta_count ? el("small", { class: "text-body-secondary ms-2", text: `${l.meta_count.toLocaleString()} entries` }) : "")),
+          l.meta_count ? el("small", { class: "text-body-secondary ms-2", text: `${l.meta_count.toLocaleString(UI_LOCALE)} entries` }) : "")),
       ...(enable ? [enable] : []), remove);
   }) : [el("p", { class: EMPTY, text: "No frequency list yet." })]));
   const several = frontier && frontier.dictionaries.length > 1;
   $("freq-next").hidden = !frontier;
   $("freq-frontier").textContent = frontier
-    ? `You know ${frontier.known.toLocaleString()} of the ${frontier.words.toLocaleString()} words of ${several ? "these lists" : "this list"}: `
+    ? `You know ${frontier.known.toLocaleString(UI_LOCALE)} of the ${frontier.words.toLocaleString(UI_LOCALE)} words of ${several ? "these lists" : "this list"}: `
       + "sentences are recommended "
-      + `for words up to #${frontier.limit.toLocaleString()} (${base.toLocaleString()} + ${perWord} per word you know).`
+      + `for words up to #${frontier.limit.toLocaleString(UI_LOCALE)} (${base.toLocaleString(UI_LOCALE)} + ${perWord} per word you know).`
     : "No frequency list used: every sentence with one new word is recommended, frequent or not.";
 }
 
@@ -181,7 +181,7 @@ async function importDictionary(file, kind = "dict") {
       if (job.error) throw Object.assign(new Error(job.error), { title: "Import failed" });
       const d = job.dictionary;
       const [count, unit] = d.term_count ? [d.term_count, "terms"] : d.kanji_count ? [d.kanji_count, "characters"] : [d.meta_count, "frequencies"];
-      $(`${kind}-progress-text`).textContent = `“${data.title}” imported: ${count.toLocaleString()} ${unit}.`;
+      $(`${kind}-progress-text`).textContent = `“${data.title}” imported: ${count.toLocaleString(UI_LOCALE)} ${unit}.`;
       if (kind === "freq" && d.meta_count) {
         // a frequency list imported here is added to the lists used
         const { chosen } = await api(`/api/frequency/lists?language=${STUDY}`);
@@ -247,7 +247,7 @@ async function loadWords() {
       el("td", { text: w.reading }),
       el("td", {}, el("span", { class: `badge rounded-pill ${STATUS_BADGES[w.status] || STATUS_BADGES.new}`, text: w.status })),
       el("td", { text: { manual: "you", card: "card", anki: "Anki" }[w.source] || w.source }),
-      el("td", { class: "text-body-secondary", title: new Date(w.added * 1000).toLocaleString(), text: new Date(w.added * 1000).toLocaleDateString() }),
+      el("td", { class: "text-body-secondary", title: new Date(w.added * 1000).toLocaleString(UI_LOCALE), text: new Date(w.added * 1000).toLocaleDateString(UI_LOCALE) }),
       el("td", { class: "text-end" }, el("button", {
         class: "btn btn-sm btn-link link-secondary", type: "button", title: "Forget this word", "aria-label": `Forget ${w.expression}`,
         onclick: async () => {
@@ -456,8 +456,8 @@ async function renderElevenLabsAccount(el11) {
     const listed = [["", latest ? `Latest (now ${latest.name})` : "Latest"], ...models.map((m) => [m.id, label(m)])];
     if (el11.model && !models.some((m) => m.id === el11.model)) listed.splice(1, 0, [el11.model, el11.model]);
     options($("el-model"), listed, el11.model);
-    const left = credits.limit != null ? `${(credits.limit - credits.used).toLocaleString()} of ${credits.limit.toLocaleString()} credits left` : "";
-    const reset = credits.reset ? `, until ${new Date(credits.reset * 1000).toLocaleDateString()}` : "";
+    const left = credits.limit != null ? `${(credits.limit - credits.used).toLocaleString(UI_LOCALE)} of ${credits.limit.toLocaleString(UI_LOCALE)} credits left` : "";
+    const reset = credits.reset ? `, until ${new Date(credits.reset * 1000).toLocaleDateString(UI_LOCALE)}` : "";
     state.textContent = `${voice} ${left}${reset}.`;
     state.className = "small text-body-secondary m-0";
   } catch (err) {
@@ -930,14 +930,14 @@ async function loadDiscord() {
 }
 
 // ---------------------------------------------------------------- user preferences: the vocabulary goals (the home page)
-const goalDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { dateStyle: "long" });
+const goalDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(UI_LOCALE, { dateStyle: "long" });
 
 function goalOutcome(goal) {
   if (goal.status === "reached") {
     const early = Math.round((Date.parse(goal.by) - Date.parse(goal.reached_on)) / 86_400_000);
     return ["trophy", "text-success", `Reached on ${goalDate(goal.reached_on)}${early > 0 ? `, ${early} day${early > 1 ? "s" : ""} early` : ""}`];
   }
-  if (goal.status === "missed") return ["x-circle", "text-body-secondary", `Missed: ${goal.missed_known.toLocaleString()} words known that day`];
+  if (goal.status === "missed") return ["x-circle", "text-body-secondary", `Missed: ${goal.missed_known.toLocaleString(UI_LOCALE)} words known that day`];
   return ["flag", "text-primary-emphasis", "In progress"];
 }
 
@@ -954,12 +954,12 @@ function renderGoals(goals) {
     const remove = el("button", { type: "button", class: "btn btn-sm btn-outline-secondary", title: "Delete the goal", "aria-label": "Delete the goal" },
       el("i", { class: "bi bi-trash", "aria-hidden": "true" }));
     remove.addEventListener("click", async () => {
-      if (!(await confirmBox("Delete the goal", `Delete the goal of ${goal.words.toLocaleString()} words by ${goalDate(goal.by)}?`, "Delete"))) return;
+      if (!(await confirmBox("Delete the goal", `Delete the goal of ${goal.words.toLocaleString(UI_LOCALE)} words by ${goalDate(goal.by)}?`, "Delete"))) return;
       try { renderGoals((await api(`/api/goals/${goal.id}/delete`, { language: STUDY })).goals); } catch (err) { showError(err); }
     });
     const i = el("i", { class: `bi bi-${icon} ${color} fs-5`, "aria-hidden": "true" });
     const text = el("div", { class: "flex-grow-1" },
-      el("strong", { class: "d-block", text: `${goal.words.toLocaleString()} words by ${goalDate(goal.by)}` }),
+      el("strong", { class: "d-block", text: `${goal.words.toLocaleString(UI_LOCALE)} words by ${goalDate(goal.by)}` }),
       el("span", { class: "small text-body-secondary", text: outcome }));
     return el("li", { class: "list-group-item d-flex align-items-center gap-3" }, i, text, remove);
   }));

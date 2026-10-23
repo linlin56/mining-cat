@@ -118,16 +118,16 @@
           <div class="flex-grow-1" style="min-width: 15rem">
             <h3 class="h6 fw-semibold mb-1" id="goal-intro-title">Do you want to set a vocabulary goal?</h3>
             <p class="small text-body-secondary m-0">Say how many words you want to know, and by when, in Settings ›
-              User preferences. You'll see here when you'll get there at your current pace, how many new cards a day it
-              takes, how many cards to mine a day, and charts of your progress.</p>
+              User preferences. You'll see here when you'll get there, how many new cards a day it takes, how many
+              cards to mine a day, and charts of your progress.</p>
           </div>
           <a class="btn btn-primary text-nowrap flex-shrink-0" href="/settings/#preferences"><i class="bi bi-flag" aria-hidden="true"></i> Set a goal</a>
         </div>
       </section>
 
-      <!-- The vocabulary goals (Settings › User preferences), under the heatmap: the nearest one to come and when at
-           the current pace, what to do a day to reach all the goals to come (the most demanding one's); the goals on
-           the chart -->
+      <!-- The vocabulary goals (Settings › User preferences), under the heatmap: the nearest one to come and when
+           (the forecast), what to do a day to reach all the goals to come (the most demanding one's), with their
+           details folded; the goals on the chart -->
       <section class="card mt-4" id="goal" aria-labelledby="goal-title" hidden>
         <div class="card-body vstack gap-3">
           <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2">
@@ -144,7 +144,10 @@
             <div class="progress" role="progressbar" id="goal-progress" aria-label="Words known" aria-valuemin="0" aria-valuemax="100" style="height: .5rem">
               <div class="progress-bar mc-goal-bar"></div>
             </div>
-            <div class="row row-cols-1 row-cols-md-3 g-3" id="goal-stats"></div>
+            <div class="row row-cols-1 row-cols-md-3 g-3 mc-goal-folded" id="goal-stats"></div>
+            <button type="button" class="btn btn-link btn-sm p-0 align-self-start d-inline-flex align-items-center gap-1" id="goal-details" aria-controls="goal-stats" aria-expanded="false">
+              <i class="bi bi-chevron-down" aria-hidden="true"></i><span>Show details</span>
+            </button>
           </div>
           <div class="vstack gap-2">
             <h4 class="small fw-semibold text-body-secondary m-0">Known words</h4>

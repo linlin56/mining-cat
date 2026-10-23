@@ -55,7 +55,7 @@ function row(word, i) {
   };
   return el("tr", {},
     el("td", { class: "text-end text-body-secondary", text: String(i + 1) }),
-    el("td", { class: "text-end font-monospace small", text: `#${word.rank.toLocaleString()}` }),
+    el("td", { class: "text-end font-monospace small", text: `#${word.rank.toLocaleString(UI_LOCALE)}` }),
     el("td", { class: "fs-5", lang: STUDY, text: word.expression }),
     el("td", { class: "text-nowrap", text: word.reading || "—" }),
     el("td", { class: "small", text: word.meaning || "—" }),
@@ -84,8 +84,8 @@ async function load() {
     return;
   }
   const several = frontier.dictionaries.length > 1;
-  $("next-summary").textContent = `${several ? "Lists" : "List"}: ${frontier.title} · you know ${frontier.known.toLocaleString()} `
-    + `of its ${frontier.words.toLocaleString()} words.`;
+  $("next-summary").textContent = `${several ? "Lists" : "List"}: ${frontier.title} · you know ${frontier.known.toLocaleString(UI_LOCALE)} `
+    + `of its ${frontier.words.toLocaleString(UI_LOCALE)} words.`;
   body.replaceChildren(...(words.length ? words.map(row) : [message("You have every word of these lists.")]));
 }
 

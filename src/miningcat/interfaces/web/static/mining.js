@@ -803,9 +803,9 @@
     if (!entry.frequency_rank) return { text: "Not in your frequency list", frequent: false, title: `Not in “${list.title}”: a rare word` };
     const frequent = entry.frequency_rank <= list.limit;
     return {
-      text: `#${entry.frequency_rank.toLocaleString()}`, frequent,
-      title: `Rank in “${list.title}” (1 = most frequent). You know ${list.known.toLocaleString()} of their words: `
-        + `sentences are recommended for words up to #${list.limit.toLocaleString()}`
+      text: `#${entry.frequency_rank.toLocaleString(UI_LOCALE)}`, frequent,
+      title: `Rank in “${list.title}” (1 = most frequent). You know ${list.known.toLocaleString(UI_LOCALE)} of their words: `
+        + `sentences are recommended for words up to #${list.limit.toLocaleString(UI_LOCALE)}`
         + (frequent ? ", like this one." : ", this one is further down the list."),
     };
   }

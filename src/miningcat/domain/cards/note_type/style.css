@@ -113,6 +113,22 @@
 .mc-front .mc-word:hover .mc-hint, .mc-front .mc-word.mc-shown .mc-hint { visibility: visible; }
 .mc-front .mc-word:not(:hover):not(.mc-shown) ruby { color: inherit; }
 
+/* the button copying the sentence, without its readings */
+.mc-copy {
+  margin-left: .3em;
+  padding: .15em;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--mc-muted);
+  font-size: .6em;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.mc-copy:hover { color: var(--mc-accent); background: var(--mc-page); }
+.mc-copy svg { display: block; }
+
 /* Anki's replay buttons */
 .mc-card .replay-button svg { width: 32px; height: 32px; }
 .mc-card .replay-button svg circle { fill: var(--mc-accent); }

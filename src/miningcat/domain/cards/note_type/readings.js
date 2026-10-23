@@ -246,4 +246,65 @@
     word.appendChild(hint);
     word.addEventListener("click", () => word.classList.toggle("mc-shown"));
   });
+
+  // ------------------------------------------------------------ copy
+
+  const COPY_ICON = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/>' +
+    '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  const DONE_ICON = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  // The words of a sentence as written, without their readings.
+  function plainText(elem) {
+    const copy = elem.cloneNode(true);
+    copy.querySelectorAll("rt, rp, .mc-hint, .mc-copy").forEach((node) => node.remove());
+    return copy.textContent.replace(/\s+/g, " ").trim();
+  }
+
+  // A copy of the selection first, while the click lets it: Anki desktop never answers navigator.clipboard's
+  // permission request, its promise never settles.
+  function copyText(text) {
+    if (copyWithSelection(text)) return Promise.resolve();
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return Promise.reject(new Error("no clipboard"));
+  }
+
+  function copyWithSelection(text) {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    try { return document.execCommand("copy"); } catch (e) { return false; } finally { area.remove(); }
+  }
+
+  // A button copying the text of `elem`, put by `place`. On the back only: the front is to be read.
+  function addCopyButton(elem, place) {
+    if (elem.dataset.mcCopy) return;  // Anki may run the script again on the same card
+    elem.dataset.mcCopy = "1";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "mc-copy";
+    button.title = "Copy";
+    button.innerHTML = COPY_ICON;
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      button.blur();  // else Space or Enter, to show the answer, would press it again
+      copyText(plainText(elem)).then(() => {
+        button.innerHTML = DONE_ICON;
+        setTimeout(() => { button.innerHTML = COPY_ICON; }, 1200);
+      });
+    });
+    place(button);
+  }
+
+  document.querySelectorAll(".mc-back .mc-sentence").forEach((sentence) => {
+    addCopyButton(sentence, (button) => sentence.appendChild(button));
+  });
+  document.querySelectorAll(".mc-back .mc-word-field").forEach((word) => {
+    addCopyButton(word, (button) => word.after(button));
+  });
 })();

@@ -32,6 +32,10 @@
     </div>
 
     <footer class="d-flex align-items-center gap-3 px-3 border-top small text-body-secondary mc-bar mc-bar-bottom">
+      <span class="d-flex align-items-center gap-2 text-nowrap" id="bubble-selection" hidden>
+        <span id="bubble-selection-text"></span>
+        <button type="button" class="btn btn-sm btn-outline-secondary py-0" id="bubble-selection-clear" title="Clear the selection (Esc)">Clear</button>
+      </span>
       <span class="text-nowrap" id="comp-info" title="Words of these pages you know (from your cards and word statuses)"></span>
       <input type="range" class="form-range flex-grow-1" id="page-slider" min="1" max="1" step="1" aria-label="Page">
       <span class="text-nowrap font-monospace" id="page-count"></span>

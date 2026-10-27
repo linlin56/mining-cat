@@ -5,7 +5,11 @@
   position: relative; flex: 1; min-height: 0; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
 }
-.spread { display: flex; align-items: center; justify-content: center; }
+/* The pages zoomed in scroll in it; centred by their margins, not by the flexbox, so that none of them is cut */
+.comic-scroll { position: absolute; inset: 0; overflow: hidden; display: flex; touch-action: pan-x pan-y; }
+.comic-scroll.zoomed { overflow: auto; cursor: grab; }
+.comic-scroll.panning { cursor: grabbing; }
+.spread { display: flex; align-items: center; justify-content: center; margin: auto; padding: 4px; }
 .spread.rtl { flex-direction: row-reverse; }
 
 /* The sides of the stage turn the pages */

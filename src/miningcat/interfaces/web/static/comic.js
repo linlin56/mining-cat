@@ -15,6 +15,9 @@ const SAVE_DELAY_MS = 800;
 const PREFETCH_VIEWS = 2;
 const TEXT_MODES = ["hover", "boxes", "always"];
 const TEXT_LABELS = { hover: "Text shown on hover", boxes: "Text outlined", always: "Text always shown" };
+const ZOOM_MAX = 5;
+const ZOOM_STEP = 1.25;
+const DRAG_THRESHOLD_PX = 4;
 
 const C = {
   comic: null, prefs: {}, settings: null,
@@ -23,6 +26,7 @@ const C = {
   texts: new Map(),   // page number -> Promise of its text blocks
   queue: Promise.resolve(),  // one OCR request at a time: the pages shown come before the ones prefetched
   saveTimer: null, osdTimer: null, wheelUntil: 0,
+  zoom: 1,            // 1: the pages fit the stage
   token: 0,
 };
 
@@ -118,6 +122,7 @@ function render() {
     return box;
   }));
   sizePages();
+  scrollToStart();
   syncTextMode();
   updateBar();
   scheduleSave();
@@ -128,13 +133,14 @@ function render() {
   prefetch();
 }
 
-// The pages fill the stage, side by side, at the same height.
+// The pages fill the stage, side by side, at the same height (times the zoom).
 function sizePages() {
   const boxes = [...$("spread").children];
   if (!boxes.length) return;
   const stage = $("stage");
   const ratios = boxes.map((b) => { const p = pageInfo(Number(b.dataset.page)); return p.width / p.height; });
-  const height = Math.max(50, Math.min(stage.clientHeight - 8, (stage.clientWidth - 8) / ratios.reduce((a, b) => a + b, 0)));
+  const fit = Math.max(50, Math.min(stage.clientHeight - 8, (stage.clientWidth - 8) / ratios.reduce((a, b) => a + b, 0)));
+  const height = fit * C.zoom;
   boxes.forEach((box, i) => {
     box.style.height = `${Math.floor(height)}px`;
     box.style.width = `${Math.floor(height * ratios[i])}px`;
@@ -182,6 +188,103 @@ function saveProgress() {
     headers: { "Content-Type": "application/json", "X-MiningCat": "1" },
     body: JSON.stringify({ page: C.view === C.views.length - 1 ? pages[pages.length - 1] : pages[0] }),
   }).catch(() => {});
+}
+
+// ---------------------------------------------------------------- zoom
+
+const zoomed = () => C.zoom > 1;
+
+// Zooms to `level`, the point (clientX, clientY) of the pages staying where it is (by default: the middle of the stage).
+function setZoom(level, clientX, clientY) {
+  const zoom = Math.max(1, Math.min(ZOOM_MAX, level));
+  if (Math.abs(zoom - C.zoom) < 0.001) return;
+  const scroller = $("scroller"), spread = $("spread");
+  if (clientX === undefined) {
+    const r = scroller.getBoundingClientRect();
+    clientX = r.left + r.width / 2;
+    clientY = r.top + r.height / 2;
+  }
+  const before = spread.getBoundingClientRect();
+  const fx = (clientX - before.left) / before.width, fy = (clientY - before.top) / before.height;
+  C.zoom = zoom;
+  scroller.classList.toggle("zoomed", zoomed());
+  $("zoom-out-btn").disabled = !zoomed();
+  $("zoom-in-btn").disabled = C.zoom >= ZOOM_MAX;
+  sizePages();
+  const after = spread.getBoundingClientRect();
+  scroller.scrollLeft += after.left + fx * after.width - clientX;
+  scroller.scrollTop += after.top + fy * after.height - clientY;
+}
+
+function zoomBy(factor, clientX, clientY) {
+  setZoom(C.zoom * factor, clientX, clientY);
+  osd(zoomed() ? `${Math.round(C.zoom * 100)}%` : "Fit to screen");
+}
+
+// A page turned zoomed in is shown from its top, on the side it's read from.
+function scrollToStart() {
+  const scroller = $("scroller");
+  scroller.scrollTop = 0;
+  scroller.scrollLeft = rightToLeft() ? scroller.scrollWidth : 0;
+}
+
+// Pinching (a trackpad: Ctrl + wheel in most browsers, gesture events in Safari; a touch screen: two fingers), Ctrl or
+// ⌘ + wheel, and a page zoomed in dragged with the mouse (a finger scrolls it).
+function wireZoom() {
+  const scroller = $("scroller");
+  $("zoom-in-btn").addEventListener("click", () => zoomBy(ZOOM_STEP));
+  $("zoom-out-btn").addEventListener("click", () => zoomBy(1 / ZOOM_STEP));
+  $("stage").addEventListener("wheel", (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();  // not the browser's zoom
+      setZoom(C.zoom * Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.01)), e.clientX, e.clientY);
+      return;
+    }
+    if (zoomed() || Math.abs(e.deltaY) < 20 || Date.now() < C.wheelUntil) return;  // zoomed in, the wheel scrolls
+    C.wheelUntil = Date.now() + 350;
+    if (e.deltaY > 0) next(); else previous();
+  }, { passive: false });
+
+  let pinch = null;
+  const spanOf = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const middleOf = (t) => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
+  scroller.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) pinch = { span: spanOf(e.touches), zoom: C.zoom };
+  }, { passive: true });
+  scroller.addEventListener("touchmove", (e) => {
+    if (!pinch || e.touches.length !== 2) return;
+    e.preventDefault();
+    setZoom(pinch.zoom * spanOf(e.touches) / pinch.span, ...middleOf(e.touches));
+  }, { passive: false });
+  scroller.addEventListener("touchend", (e) => { if (e.touches.length < 2) pinch = null; });
+  scroller.addEventListener("touchcancel", () => { pinch = null; });
+  // Safari (macOS trackpad): its own gesture events; on a touch screen the touches above are used
+  let gestureZoom = 1;
+  document.addEventListener("gesturestart", (e) => { e.preventDefault(); gestureZoom = C.zoom; });
+  document.addEventListener("gesturechange", (e) => {
+    e.preventDefault();
+    if (!pinch) setZoom(gestureZoom * e.scale, e.clientX, e.clientY);
+  });
+
+  let drag = null;
+  scroller.addEventListener("pointerdown", (e) => {
+    if (!zoomed() || e.pointerType !== "mouse" || e.button !== 0 || e.target.closest(".cb, .page-status")) return;
+    drag = { x: e.clientX, y: e.clientY, left: scroller.scrollLeft, top: scroller.scrollTop, moved: false };
+  });
+  window.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+    drag.moved = true;
+    scroller.classList.add("panning");
+    scroller.scrollLeft = drag.left - dx;
+    scroller.scrollTop = drag.top - dy;
+  });
+  window.addEventListener("pointerup", () => {
+    if (drag && drag.moved) C.dragged = true;  // the click that ends a drag doesn't turn the page
+    drag = null;
+    scroller.classList.remove("panning");
+  });
 }
 
 // ---------------------------------------------------------------- text read on the pages
@@ -573,7 +676,14 @@ function isEditing(target) {
 }
 
 function onKey(e) {
-  if (e.ctrlKey || e.metaKey || e.altKey || isEditing(e.target)) return;
+  if (isEditing(e.target)) return;
+  // Ctrl or ⌘ and + - 0 zoom the pages, not the browser (which would only make the bars bigger: the pages fit the stage)
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && ["+", "=", "-", "0"].includes(e.key)) {
+    e.preventDefault();
+    zoomBy(e.key === "-" ? 1 / ZOOM_STEP : e.key === "0" ? 0 : ZOOM_STEP);
+    return;
+  }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (window.MiningCatMining && MiningCatMining.isOpen()) return;  // the popup's own keys (mining.js)
   const actions = {
     ArrowLeft: turnLeft, ArrowRight: turnRight,
@@ -582,6 +692,7 @@ function onKey(e) {
     Home: () => go(0), End: () => go(C.views.length - 1),
     t: cycleText, T: cycleText,
     f: toggleFullscreen, F: toggleFullscreen,
+    "+": () => zoomBy(ZOOM_STEP), "=": () => zoomBy(ZOOM_STEP), "-": () => zoomBy(1 / ZOOM_STEP), 0: () => zoomBy(0),
     r: () => togglePanel(undefined, "i1-panel"), R: () => togglePanel(undefined, "i1-panel"),
     Escape: closePanels,
   };
@@ -621,8 +732,11 @@ function wire() {
     if (piece) lightSentence(piece);  // a touch screen has no hover
     if (block) markLookedUp(block);
   });
+  // zoomed in, a click doesn't turn the page (the sides of the stage and the keys do)
   $("spread").addEventListener("click", (e) => {
-    if (e.target.closest(".cb, .page-status") || popupWasOpen) return;
+    const dragged = C.dragged;
+    C.dragged = false;
+    if (e.target.closest(".cb, .page-status") || popupWasOpen || dragged || zoomed()) return;
     const rect = $("spread").getBoundingClientRect();
     if (e.clientX < rect.left + rect.width / 2) turnLeft(); else turnRight();
   });
@@ -631,11 +745,7 @@ function wire() {
       if (!window.MiningCatMining || !MiningCatMining.isOpen()) markLookedUp(null);
     }, 0);
   });
-  $("stage").addEventListener("wheel", (e) => {
-    if (Math.abs(e.deltaY) < 20 || Date.now() < C.wheelUntil) return;
-    C.wheelUntil = Date.now() + 350;
-    if (e.deltaY > 0) next(); else previous();
-  }, { passive: true });
+  wireZoom();
   document.addEventListener("keydown", onKey);
   document.addEventListener("fullscreenchange", () => {
     document.body.classList.toggle("fullscreen", Boolean(document.fullscreenElement));

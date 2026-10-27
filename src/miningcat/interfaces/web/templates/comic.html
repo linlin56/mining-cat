@@ -17,6 +17,8 @@
       <a href="/reader/" class="btn btn-link link-body-emphasis" id="back" title="Library" aria-label="Back to library"><i class="bi bi-arrow-left" aria-hidden="true"></i></a>
       <div class="flex-grow-1 overflow-hidden"><span class="d-block fw-semibold text-truncate" id="comic-title"></span></div>
       <button type="button" class="btn btn-link link-body-emphasis fw-bold text-decoration-none" id="i1-btn" title="Recommended sentences (R)" aria-label="Recommended sentences">i+1</button>
+      <button type="button" class="btn btn-link link-body-emphasis" id="zoom-out-btn" title="Zoom out (−)" aria-label="Zoom out" disabled><i class="bi bi-zoom-out" aria-hidden="true"></i></button>
+      <button type="button" class="btn btn-link link-body-emphasis" id="zoom-in-btn" title="Zoom in (+)" aria-label="Zoom in"><i class="bi bi-zoom-in" aria-hidden="true"></i></button>
       <button type="button" class="btn btn-link link-body-emphasis" id="text-btn" title="Text over the pages (T)" aria-label="Text over the pages"><i class="bi bi-chat-square-text" aria-hidden="true"></i></button>
       <button type="button" class="btn btn-link link-body-emphasis" id="fullscreen-btn" title="Fullscreen (F)" aria-label="Fullscreen"><i class="bi bi-fullscreen" aria-hidden="true"></i></button>
       <button type="button" class="btn btn-link link-body-emphasis" id="settings-btn" title="Settings" aria-label="Settings"><i class="bi bi-sliders" aria-hidden="true"></i></button>
@@ -24,7 +26,7 @@
 
     <div class="comic-stage bg-body-tertiary" id="stage">
       <button type="button" class="turn turn-left" id="turn-left" aria-label="Turn the page" data-mc-ignore></button>
-      <div class="spread" id="spread"></div>
+      <div class="comic-scroll" id="scroller"><div class="spread" id="spread"></div></div>
       <button type="button" class="turn turn-right" id="turn-right" aria-label="Turn the page" data-mc-ignore></button>
       <div class="position-absolute top-0 end-0 m-3 badge text-bg-dark fs-6 fw-normal pe-none fade z-3" id="osd" aria-live="polite"></div>
     </div>
@@ -112,7 +114,8 @@
 
         <p class="small text-body-secondary mt-4 mb-0">
           ← →: turn the page (in the reading direction) · Space: next page · Home / End: first / last page ·
-          T: text on hover / outlined / always · R: recommended sentences · F: fullscreen.<br>
+          T: text on hover / outlined / always · R: recommended sentences · F: fullscreen ·
+          + / − / 0: zoom in / out / fit (or pinch, ⌘ or Ctrl + wheel; drag to move a page zoomed in).<br>
           The text of each page is read when it's first shown (OCR), and the other pages in the background. Click a word
           to look it up: the sentence around it is the card's sentence, and the page its picture.
         </p>

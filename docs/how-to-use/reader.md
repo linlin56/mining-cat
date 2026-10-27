@@ -47,7 +47,9 @@ The text of each page is read by OCR the first time the page is shown (and the n
 
 Keys: `←` `→` turn the page in the reading direction, `Space` / `Shift+Space` next / previous, `Home` `End`, `F` fullscreen. Clicking the page outside the text, or scrolling, turns it too.
 
-Limits: no PDF yet, and the OCR reads text over busy backgrounds or sound effects poorly.
+**Zoom**: pinch (trackpad or touch screen), `Ctrl`/`⌘` + the wheel, `+` `-` (or the 🔍 buttons), `0` to fit the screen again. Zoomed in, the wheel scrolls the page and dragging moves it; turning the page shows the next one from its top, zoom kept.
+
+Limits: the OCR reads text over busy backgrounds or sound effects poorly.
 
 ## Reading
 

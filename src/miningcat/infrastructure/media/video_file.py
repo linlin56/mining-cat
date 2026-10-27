@@ -19,9 +19,11 @@ def extract_audio(video_file: Path, output_dir: Path, audio_track: int | None = 
     if audio_path.exists():
         print(f"Audio already extracted, reusing: {audio_path}")
         return audio_path
-    output_kwargs = dict(acodec="libmp3lame", audio_bitrate=AUDIO_BITRATE, vn=None)
-    if audio_track is not None:
-        output_kwargs["map"] = f"0:a:{audio_track}"
+    track = audio_track if audio_track is not None else 0
+    output_kwargs = dict(acodec="libmp3lame", audio_bitrate=AUDIO_BITRATE, vn=None, map=f"0:a:{track}")
+    delay_ms = round(audio_delay(video_file, track) * 1000)
+    if delay_ms > 0:
+        output_kwargs["af"] = f"adelay={delay_ms}:all=1"
     (
         ffmpeg
         .input(str(video_file))
@@ -30,6 +32,22 @@ def extract_audio(video_file: Path, output_dir: Path, audio_track: int | None = 
         .run(quiet=True)
     )
     return audio_path
+
+
+# Seconds between the start of the video and the start of one of its audio tracks. A dub is often muxed with a delay
+# (e.g. an mkv whose Mandarin track starts at 4.96s): the extracted mp3 would start that much early, and so would
+# every subtitle transcribed from it, unless the delay is put back as silence.
+def audio_delay(video_file: Path, audio_track: int) -> float:
+    try:
+        probe = ffmpeg.probe(str(video_file))
+    except ffmpeg.Error:
+        return 0.0
+    audio = [s for s in probe.get("streams", []) if s.get("codec_type") == "audio"]
+    if not 0 <= audio_track < len(audio):
+        return 0.0
+    start = float(audio[audio_track].get("start_time") or 0)
+    origin = float(probe.get("format", {}).get("start_time") or 0)
+    return max(0.0, start - origin)
 
 
 # Lists the audio streams of a video file so the user can pick which one to transcribe

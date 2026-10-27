@@ -43,6 +43,7 @@ Drag an image onto another image to put them together: the image dragged becomes
 The text of each page is read by OCR the first time the page is shown (and the next pages while you read), then kept. On macOS it's Apple Live Text, which reads vertical text; elsewhere EasyOCR, horizontal text only. The lines read are grouped into speech bubbles and drawn over the page, where they were read.
 
 - **Click a word** to look it up. The sentence around it (cut at 。！？ and . ! ?) is the card's sentence, the one lit when the mouse is over it, and the page its picture (sentence audio: the voice of the card creator).
+- **A sentence split across bubbles** (or paragraphs): select them with the ⊕ at the corner of each bubble (shown on hover), on this page or the next ones, then click a word in one of them. The card's sentence is then the text of all of them, one after the other. `Esc` (or **Clear**, at the bottom) clears the selection; making a card does too.
 - **Text** (`T`, or 文): shown on hover (default), outlined, or always shown.
 - **Pages**: one, two (side by side), or automatic (two when the window is wide); the cover can stand alone so that facing pages match the printed book. A double page scanned as one image always stands alone.
 - **Reading direction**: right to left for Japanese and Chinese, left to right otherwise; change it per comic in **Aa**.

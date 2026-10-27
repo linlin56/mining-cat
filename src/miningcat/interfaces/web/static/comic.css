@@ -68,3 +68,16 @@ body.fullscreen .comic-stage { background: #000 !important; }
 :is(.mode-hover, .mode-boxes) .cb:has(.cs.lit) .cs:not(.lit)::highlight(mc-new-alt),
 :is(.mode-hover, .mode-boxes) .cb:has(.cs.lit) .cs:not(.lit)::highlight(mc-learning),
 :is(.mode-hover, .mode-boxes) .cb:has(.cs.lit) .cs:not(.lit)::highlight(mc-learning-alt) { background-color: transparent; }
+
+/* ---------- bubbles selected for a card (a sentence split across bubbles) ---------- */
+
+.cb-select {
+  position: absolute; top: -11px; right: -11px; z-index: 3; display: none; width: 22px; height: 22px; padding: 0;
+  border: 0; border-radius: 50%; background: #fff; color: var(--bs-secondary); font-size: 22px; line-height: 1; cursor: pointer;
+}
+.cb-select .bi { display: block; }
+.cb-select:hover { color: var(--bs-primary); }
+.cb:hover .cb-select, .cb.active .cb-select, .cb.selected .cb-select { display: block; }
+.cb.selected .cb-select { color: var(--bs-success); }
+.cb.selected:not(:hover):not(.active) { box-shadow: 0 0 0 3px rgba(var(--bs-success-rgb), .9); }
+.mode-always .cb.selected:not(:hover):not(.active) { box-shadow: 0 0 0 4px #fff, 0 0 0 7px rgba(var(--bs-success-rgb), .9); }

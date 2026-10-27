@@ -27,6 +27,7 @@ const C = {
   queue: Promise.resolve(),  // one OCR request at a time: the pages shown come before the ones prefetched
   saveTimer: null, osdTimer: null, wheelUntil: 0,
   zoom: 1,            // 1: the pages fit the stage
+  selection: [],      // the bubbles selected for the next card: [{page, index, text}], in reading order
   token: 0,
 };
 
@@ -359,12 +360,15 @@ function renderBlocks(box, blocks) {
   const layer = box.querySelector(".ocr-layer");
   const spaced = !NO_SPACE.test(effectiveLanguage());
   const pct = (v) => `${(v * 100).toFixed(3)}%`;
-  layer.replaceChildren(...blocks.map((block) => {
+  layer.replaceChildren(...blocks.map((block, index) => {
     const [bx, by, bw, bh] = block.box;
     const div = document.createElement("div");
     div.className = `cb${block.vertical ? " vertical" : ""}`;
     const sep = spaced ? " " : "";
-    const sentences = sentenceOfChars(block.lines.map((l) => l.text).join(sep));
+    const text = block.lines.map((l) => l.text).join(sep);
+    const sentences = sentenceOfChars(text);
+    div.dataset.index = String(index);
+    div.dataset.text = text;
     let offset = 0;
     div.lang = effectiveLanguage();
     Object.assign(div.style, { left: pct(bx), top: pct(by), width: pct(bw), height: pct(bh) });
@@ -386,9 +390,11 @@ function renderBlocks(box, blocks) {
       }
       div.append(span);
     });
+    div.append(selectButton());
     return div;
   }));
   fitLines(box);
+  renderSelection();
 }
 
 // Each line's font fills the box where it was read: its thickness gives the size, and the characters are spread
@@ -499,6 +505,7 @@ function flashRange(range) {
 
 async function readAgain() {
   const token = C.token;
+  C.selection = [];
   for (const n of C.views[C.view]) {
     C.texts.delete(n);
     await showText(n, token, true);
@@ -579,9 +586,89 @@ function getImage(node) {
 }
 
 function getSource(node) {
-  const box = blockOf(node)?.closest(".comic-page");
+  const block = blockOf(node);
+  const box = block?.closest(".comic-page");
   const n = box ? box.dataset.page : C.views[C.view][0];
-  return `${C.comic.title} (p. ${n})`;
+  const pages = block && inSelection(block) ? [...new Set(C.selection.map((b) => b.page))] : [];
+  return `${C.comic.title} (p. ${pages.length > 1 ? `${pages[0]}–${pages[pages.length - 1]}` : n})`;
+}
+
+// ---------------------------------------------------------------- bubbles selected for a card
+
+// A sentence split across speech bubbles (or paragraphs): select them (the button at the corner of each, on the pages
+// shown or on the next ones), then look up a word in one of them. Their text is read as one: the card's sentence goes
+// on from a bubble to the next.
+const bubbleOf = (block) => ({
+  page: Number(block.closest(".comic-page").dataset.page), index: Number(block.dataset.index), text: block.dataset.text,
+});
+const selectedAt = (block) => {
+  const b = bubbleOf(block);
+  return C.selection.findIndex((s) => s.page === b.page && s.index === b.index);
+};
+const inSelection = (block) => selectedAt(block) >= 0;
+
+function selectButton() {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "cb-select";
+  button.dataset.mcIgnore = "";
+  const icon = document.createElement("i");
+  icon.className = "bi";
+  icon.setAttribute("aria-hidden", "true");
+  button.append(icon);
+  // not a lookup, nor a page turned
+  button.addEventListener("pointerdown", (e) => e.stopPropagation());
+  button.addEventListener("click", (e) => { e.stopPropagation(); toggleSelect(button.closest(".cb")); });
+  return button;
+}
+
+function toggleSelect(block) {
+  const at = selectedAt(block);
+  if (at >= 0) C.selection.splice(at, 1);
+  else C.selection.push(bubbleOf(block));
+  C.selection.sort((a, b) => a.page - b.page || a.index - b.index);
+  renderSelection();
+}
+
+function clearSelection() {
+  if (!C.selection.length) return;
+  C.selection = [];
+  renderSelection();
+}
+
+function renderSelection() {
+  for (const block of $("spread").querySelectorAll(".cb")) {
+    const on = inSelection(block);
+    block.classList.toggle("selected", on);
+    const button = block.querySelector(".cb-select");
+    button.querySelector("i").className = `bi ${on ? "bi-check-circle-fill" : "bi-plus-circle-fill"}`;
+    button.title = on ? "Take this bubble out of the selection" : "Select this bubble for the card (with others, for a sentence split across bubbles)";
+    button.setAttribute("aria-label", button.title);
+  }
+  const count = C.selection.length;
+  $("bubble-selection").hidden = !count;
+  const pages = [...new Set(C.selection.map((b) => b.page))];
+  $("bubble-selection-text").textContent = `${count} bubble${count > 1 ? "s" : ""} for the next card`
+    + (pages.length ? ` · p. ${pages.length > 1 ? `${pages[0]}–${pages[pages.length - 1]}` : pages[0]}` : "");
+}
+
+// A lookup in a bubble selected: the card's sentence is the text of all the bubbles selected, one after the other
+// (a bubble that goes on in the next one often ends with …, which would cut the sentence there).
+function expandSentence(node, sentence) {
+  const block = blockOf(node);
+  const at = block ? selectedAt(block) : -1;
+  if (at < 0 || C.selection.length < 2) return sentence;
+  const own = block.dataset.text;
+  // where the word is in its bubble: in the sentence of the piece clicked (data-s), the same words being maybe elsewhere too
+  const piece = sentence.before + sentence.word + sentence.after;
+  const span = window.MiningCatMining && MiningCatMining.sentenceSpans(own)[Number(node.parentElement.dataset.s)];
+  let from = own.indexOf(piece, span ? span[0] : 0);
+  if (from < 0) from = own.indexOf(piece);
+  const start = from + sentence.before.length, end = start + sentence.word.length;
+  const sep = NO_SPACE.test(effectiveLanguage()) ? "" : " ";
+  const before = C.selection.slice(0, at).map((b) => b.text + sep).join("") + (from < 0 ? sentence.before : own.slice(0, start));
+  const after = (from < 0 ? sentence.after : own.slice(end)) + C.selection.slice(at + 1).map((b) => sep + b.text).join("");
+  return { text: `${before}${sentence.word}${after}`, before, word: sentence.word, after };
 }
 
 // ---------------------------------------------------------------- settings
@@ -664,9 +751,10 @@ function wireSettings() {
   $("set-colors").addEventListener("change", async (e) => { await saveSettings({ colors: e.target.value }); colourText(); });
   $("set-i1").addEventListener("change", async (e) => { await saveSettings({ i1: e.target.checked }); paintRecommended(); });
   // another script, or another reading order: the pages are read (or their blocks ordered) again
-  $("set-language").addEventListener("change", async (e) => { await savePrefs({ language: e.target.value }); C.texts.clear(); render(); });
-  $("set-direction").addEventListener("change", async (e) => { await savePrefs({ direction: e.target.value }); C.texts.clear(); render(); });
+  $("set-language").addEventListener("change", async (e) => { await savePrefs({ language: e.target.value }); C.texts.clear(); C.selection = []; render(); });
+  $("set-direction").addEventListener("change", async (e) => { await savePrefs({ direction: e.target.value }); C.texts.clear(); C.selection = []; render(); });
   $("read-again").addEventListener("click", readAgain);
+  $("bubble-selection-clear").addEventListener("click", clearSelection);
 }
 
 // ---------------------------------------------------------------- keyboard & wiring
@@ -694,7 +782,7 @@ function onKey(e) {
     f: toggleFullscreen, F: toggleFullscreen,
     "+": () => zoomBy(ZOOM_STEP), "=": () => zoomBy(ZOOM_STEP), "-": () => zoomBy(1 / ZOOM_STEP), 0: () => zoomBy(0),
     r: () => togglePanel(undefined, "i1-panel"), R: () => togglePanel(undefined, "i1-panel"),
-    Escape: closePanels,
+    Escape: () => (document.querySelector(".offcanvas.show") ? closePanels() : clearSelection()),
   };
   const action = actions[e.key];
   if (!action) return;
@@ -795,6 +883,8 @@ async function init() {
       isVertical: () => Boolean(lookedUp && lookedUp.classList.contains("vertical")),
       hasAudio: () => false,
       getImage,
+      expandSentence,
+      onCard: clearSelection,
     });
     MiningCatMining.onAnalysis(showComprehension);
   }

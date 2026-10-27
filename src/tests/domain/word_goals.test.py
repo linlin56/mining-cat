@@ -59,13 +59,16 @@ def test_plan():
     assert plan["remaining"] == 2000 and plan["eta"] == TODAY + timedelta(days=200)
     assert plan["needed_pace"] == round(2000 / 130, 2)
     # 0.8 x 200 learning words become known: 1840 to come from new cards, 2300 cards, over 130 - 30 days
-    assert plan["cards_needed"] == 2300 and plan["new_per_day"] == 23 and plan["mine_per_day"] == 20
+    assert plan["cards_needed"] == 2300 and plan["new_per_day"] == 23
+    # 1800 words not in the decks yet, over 130 days
+    assert plan["mine_per_day"] == 14
     assert plan["raise_limit"] is True and plan["backlog_days"] == 15
     assert plan["deck_eta"] == TODAY + timedelta(days=30 + 115)
 
 
 def test_plan_with_enough_cards_waiting():
-    pipeline = Pipeline(known=100, learning=0, backlog=1000, new_per_day=20, lag=30, success=1.0)
+    # 1000 words in learning, none of their cards seen yet
+    pipeline = Pipeline(known=100, learning=1000, backlog=1000, new_per_day=20, lag=30, success=1.0, learning_ages=())
     plan = goals.plan(Goal(500, TODAY + timedelta(days=100)), pipeline, 0.0, TODAY)
     assert plan["eta"] is None and plan["mine_per_day"] == 0 and plan["new_per_day"] == 6 and not plan["raise_limit"]
 
@@ -134,7 +137,7 @@ def test_combine_takes_the_most_demanding_goal():
     assert near["new_per_day"] == 0 and near["mine_per_day"] == 0
     needs = goals.combine([near, far])
     assert needs["new_per_day"] == far["new_per_day"] == 25 and needs["new_for"] == 1
-    assert needs["mine_per_day"] == far["mine_per_day"] == 25 and needs["mine_for"] == 1
+    assert needs["mine_per_day"] == far["mine_per_day"] == 20 and needs["mine_for"] == 1  # 2500 words in 130 days
     assert needs["needed_pace"] == far["needed_pace"] and needs["pace_for"] == 1 and needs["raise_limit"] is True
 
 
@@ -146,7 +149,7 @@ def test_combine_without_counts():
 
 
 def test_combine_leaves_out_the_goals_too_late():
-    pipeline = Pipeline(known=100, learning=0, backlog=1000, new_per_day=20, lag=30, success=1.0)
+    pipeline = Pipeline(known=100, learning=1000, backlog=1000, new_per_day=20, lag=30, success=1.0, learning_ages=())
     near = goals.plan(Goal(150, TODAY + timedelta(days=10)), pipeline, 5.0, TODAY)
     far = goals.plan(Goal(500, TODAY + timedelta(days=100)), pipeline, 5.0, TODAY)
     needs = goals.combine([near, far])

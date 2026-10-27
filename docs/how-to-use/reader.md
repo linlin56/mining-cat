@@ -26,9 +26,13 @@ Books are copied into the `library/` folder of the project, with their reading p
 
 Sort books, comics and images into folders, and folders into folders: **New folder** creates one in the folder you're in. Drag a cover (or a folder) onto a folder to put it in; to take it out, drag it onto a folder of the path above the books (**Library** / …). On a touch screen, use the folder button on the cover instead. What you import (or paste) while a folder is open goes into it. Deleting a folder doesn't delete what it holds: it goes up one level. Folders belong to the language you study.
 
+The library shows the last book read first; choose **Title** above the covers to sort by title instead (chapter 2 before chapter 10), and click the arrow next to it to reverse the order. Folders come first, by name.
+
+To import a whole folder of your computer, drop it in the library or use **Add a folder**: it becomes a folder of the library, with its books, comics and images, and its folders inside (other files are left out). A folder that holds only images (a manga chapter scanned) becomes an album instead, named after it, its pages in the order of their names (`2.jpg` before `10.jpg`).
+
 ## Comics and manga
 
-The library also takes comics and manga: drop their archive (or use **+ Add books**) (`.cbz`, `.zip`, and `.cbr`, `.cb7`, `.cbt` when your system's `bsdtar` reads them, as on macOS). A folder of images? Zip it first.
+The library also takes comics and manga: drop their archive (or use **+ Add books**) (`.cbz`, `.zip`, and `.cbr`, `.cb7`, `.cbt` when your system's `bsdtar` reads them, as on macOS). A folder of images? Drop it, or use **Add a folder**: it becomes an album (see below).
 
 A PDF is taken too, as a document read like a comic: each page is turned into a picture, at the resolution of its scans. A scanned book or manga has its text read by OCR; a PDF with selectable text (exported from a word processor or LaTeX) gives its own text, exact and ready at once, its formulas and layout kept on the page. **Read these pages again** reads such a page by OCR anyway.
 

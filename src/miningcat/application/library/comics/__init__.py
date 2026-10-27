@@ -5,6 +5,7 @@ from miningcat.application.library.comics.library import (
     IMAGE_EXTENSIONS,
     IMPORT_EXTENSIONS,
     append_image,
+    make_album,
     comic_folder,
     comics_dir,
     delete_comic,
@@ -34,7 +35,7 @@ from miningcat.application.library.comics.progress import (
 from miningcat.domain.library.errors import ComicError
 
 __all__ = [
-    "ARCHIVE_EXTENSIONS", "ComicError", "IMAGE_EXTENSIONS", "IMPORT_EXTENSIONS", "append_image", "DEFAULT_SETTINGS", "comic_folder", "comics_dir", "delete_comic", "get_meta", "get_prefs",
+    "ARCHIVE_EXTENSIONS", "ComicError", "IMAGE_EXTENSIONS", "IMPORT_EXTENSIONS", "append_image", "make_album", "DEFAULT_SETTINGS", "comic_folder", "comics_dir", "delete_comic", "get_meta", "get_prefs",
     "get_progress", "get_settings", "import_file", "import_stream", "is_archive", "list_comics", "ocr_language", "ocr_unavailable",
     "page_path", "page_text", "page_texts", "read_all_pages", "right_to_left", "save_prefs", "save_progress", "save_settings",
     "text_state", "thumb_path",

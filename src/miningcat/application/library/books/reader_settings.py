@@ -11,6 +11,8 @@ DEFAULT_SETTINGS = {
     "colors": "status",
     # Recommended (i+1) sentences underlined in the text.
     "i1": True,
+    # The library: books and comics by the last one read ("recent") or by "title"; reversed: oldest first, or Z to A.
+    "library_sort": "recent", "library_reversed": False,
 }
 
 
@@ -40,6 +42,8 @@ def save_settings(values: dict) -> dict:
         elif key == "lookup" and value in ("click", "shift", "off"):
             settings[key] = value
         elif key == "colors" and value in ("status", "off"):
+            settings[key] = value
+        elif key == "library_sort" and value in ("recent", "title"):
             settings[key] = value
     write_json(paths.reader_settings, settings)
     return settings

@@ -186,6 +186,13 @@ def test_progress_and_prefs(library):
         books.save_prefs(meta["id"], {"language": "<script>"})
 
 
+def test_the_library_order_is_a_setting(library):
+    assert books.get_settings()["library_sort"] == "recent" and not books.get_settings()["library_reversed"]
+    settings = books.save_settings({"library_sort": "title", "library_reversed": 1})
+    assert settings["library_sort"] == "title" and settings["library_reversed"] is True
+    assert books.save_settings({"library_sort": "size"})["library_sort"] == "title"
+
+
 def test_settings_are_clamped(library):
     settings = books.save_settings({"font_size": 500, "theme": "neon", "furigana": 0, "margin": "12"})
     assert settings["font_size"] == 48

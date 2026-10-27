@@ -17,10 +17,20 @@
     {% call navbar("Reader") %}
       <div class="d-flex gap-2">
         <button type="button" class="btn btn-outline-secondary text-nowrap" id="new-folder" title="New folder" aria-label="New folder"><i class="bi bi-folder-plus" aria-hidden="true"></i><span class="d-md-none d-xl-inline"> New folder</span></button>
+        <button type="button" class="btn btn-outline-secondary text-nowrap" id="add-folder" title="Add a folder: its books, comics and images, its folders too" aria-label="Add a folder"><i class="bi bi-folder-symlink" aria-hidden="true"></i><span class="d-md-none d-xl-inline"> Add a folder</span></button>
         <button type="button" class="btn btn-primary text-nowrap" id="add-books"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add books</button>
       </div>
     {% endcall %}
-    <p class="small text-body-secondary" id="lib-formats"></p>
+    <div class="d-flex align-items-start gap-2">
+      <p class="small text-body-secondary flex-grow-1" id="lib-formats"></p>
+      <div class="d-flex align-items-center gap-1 flex-shrink-0">
+        <select class="form-select form-select-sm w-auto" id="lib-sort" aria-label="Sort by">
+          <option value="recent">Last read</option>
+          <option value="title">Title</option>
+        </select>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="lib-order"><i class="bi" aria-hidden="true"></i></button>
+      </div>
+    </div>
     <!-- Inside a folder: where it is (each folder above it takes the books dropped on it), and its buttons -->
     <nav class="d-flex align-items-center gap-2 mb-2" id="folder-bar" aria-label="Folder" hidden>
       <ol class="breadcrumb m-0 flex-grow-1 flex-nowrap align-items-center overflow-hidden" id="folder-path"></ol>
@@ -32,7 +42,7 @@
       <div class="text-center py-5" id="lib-empty" hidden>
         <i class="bi bi-book display-4 text-body-secondary" aria-hidden="true"></i>
         <p class="fs-5 fw-semibold mt-2 mb-1">Your library is empty</p>
-        <p class="text-body-secondary">Drop EPUB or TXT files here, or use “Add books”. Comics, manga and scans too (.cbz, .cbr, .zip, .pdf…), and images (.png, .jpg…): paste one with Ctrl+V (⌘V).</p>
+        <p class="text-body-secondary">Drop EPUB or TXT files (or folders) here, or use “Add books”. Comics, manga and scans too (.cbz, .cbr, .zip, .pdf…), and images (.png, .jpg…): paste one with Ctrl+V (⌘V).</p>
       </div>
       <div class="text-center py-5 text-body-secondary" id="folder-empty" hidden>
         <i class="bi bi-folder2-open display-4" aria-hidden="true"></i>
@@ -41,6 +51,7 @@
     </div>
     <p class="small text-body-secondary mt-2" id="lib-status"></p>
     <input type="file" id="book-input" multiple hidden>
+    <input type="file" id="folder-files" webkitdirectory multiple hidden>
 
     <!-- Where a book or a folder goes, without dragging it (touch screens, keyboard) -->
     <div class="modal" id="move-modal" tabindex="-1" aria-labelledby="move-title">

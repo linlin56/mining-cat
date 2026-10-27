@@ -188,6 +188,29 @@ def test_an_album_reads_its_progress_out_of_its_new_number_of_pages(client):
     assert client.get("/reader/api/comics").json["comics"][0]["percent"] == 50
 
 
+def test_a_folder_of_pictures_makes_an_album_named_after_it(client):
+    first, second, third = import_image(client, "red"), import_image(client, "green"), import_image(client, "blue")
+    folder_id = folders.create_folder("Chapter 1", "ja")["id"]
+    folders.move([{"kind": "comic", "id": first}, {"kind": "comic", "id": third}], folder_id)
+    res = client.post("/reader/api/comics/album", json={"images": [first, second, second, third], "title": " Chapter 1 "},
+                      headers=HEADERS)
+    album = res.json["comic"]
+    assert album["album"] and album["title"] == "Chapter 1" and len(album["pages"]) == 3
+    assert [(c["id"], c["pages"]) for c in client.get("/reader/api/comics").json["comics"]] == [(album["id"], 3)]
+    # the album goes where the importer puts it: none of the pictures' folders is kept
+    assert client.get("/reader/api/folders").json["items"] == {}
+    page = client.get(f"/reader/api/comics/{album['id']}/pages/2")
+    with Image.open(io.BytesIO(page.data)) as img:
+        assert img.getpixel((5, 5))[1] > 100  # the green one
+
+
+def test_an_album_needs_two_pictures(client):
+    picture = import_image(client, "red")
+    res = client.post("/reader/api/comics/album", json={"images": [picture, picture], "title": "One"}, headers=HEADERS)
+    assert res.status_code == 400
+    assert client.get(f"/reader/api/comics/{picture}").json["comic"]["image"]
+
+
 def test_a_folder_without_an_id_is_refused(client):
     res = client.post("/reader/api/folders/move", json={"items": [{"kind": "folder"}], "folder": None}, headers=HEADERS)
     assert res.status_code == 400 and res.json["title"] == "Folders"

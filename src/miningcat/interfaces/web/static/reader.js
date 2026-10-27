@@ -31,6 +31,7 @@ const R = {
   folder: null,             // the folder of the library shown (null: the library itself)
   folders: {},              // the folders of the library, {id: {name}}
   imageExtensions: [],      // the pictures imported as comics of one page
+  bookExtensions: [],
   places: {},               // the folder of each book and comic sorted, {"book:<id>": folder id}
   items: {},                // the books and comics of the library, {"book:<id>": book}
   dragging: null,           // what is dragged in the library: {key, image}
@@ -95,21 +96,24 @@ async function showLibrary() {
   // pictures are imported as comics of one page
   R.comicExtensions = [...comics.extensions, ...comics.images];
   R.imageExtensions = comics.images;
+  R.bookExtensions = extensions;
   const upper = (list) => list.map((e) => e.toUpperCase()).join(", ");
   $("lib-formats").textContent = `Supported formats: ${upper(extensions)}; `
     + `comics and manga: ${upper(comics.extensions)}; images: ${upper(comics.images)} (their text is read by OCR). `
     + "Books are stored in the project's library/ folder.";
   $("book-input").accept = [...extensions, ...R.comicExtensions].map((e) => `.${e}`).join(",");
-  // books and comics together, the last opened first; the folders first, by name
-  const items = [...books.map((b) => ({ ...b, kind: "book" })), ...comics.comics.map((c) => ({ ...c, kind: "comic" }))]
-    .sort((a, b) => (b.opened || 0) - (a.opened || 0) || (b.added || 0) - (a.added || 0));
+  // books and comics together, in the order chosen; the folders first, by name
+  const items = sortItems([...books.map((b) => ({ ...b, kind: "book" })), ...comics.comics.map((c) => ({ ...c, kind: "comic" }))]);
+  syncSort();
   R.items = Object.fromEntries(items.map((item) => [itemKey(item), item]));
   const here = items.filter((item) => (R.places[itemKey(item)] || null) === R.folder);
   // what each folder holds: its books and comics, and its folders
   const counts = {};
   for (const item of items) { const f = R.places[itemKey(item)]; if (f) counts[f] = (counts[f] || 0) + 1; }
   for (const f of Object.values(R.folders)) if (f.parent) counts[f.parent] = (counts[f.parent] || 0) + 1;
-  const folderCards = subfolders(R.folder).map(([id, f]) => folderCard(id, f, counts[id] || 0));
+  const shownFolders = subfolders(R.folder);
+  if (R.settings.library_sort === "title" && R.settings.library_reversed) shownFolders.reverse();
+  const folderCards = shownFolders.map(([id, f]) => folderCard(id, f, counts[id] || 0));
   $("book-grid").replaceChildren(...folderCards, ...here.map((item) => (item.kind === "comic" ? comicCard(item) : bookCard(item))));
   document.title = R.folder ? `${R.folders[R.folder].name} · MiningCat Reader` : "MiningCat Reader";
   $("folder-bar").hidden = !R.folder;
@@ -117,6 +121,29 @@ async function showLibrary() {
   $("lib-empty").hidden = Boolean(R.folder) || items.length > 0 || folderCards.length > 0;
   $("folder-empty").hidden = !R.folder || here.length > 0 || folderCards.length > 0;
   loadComprehension(here.filter((item) => item.kind === "book" || item.kind === "comic"));
+}
+
+// The library's order: the last read first (then the last added), or by title (chapter 2 before chapter 10);
+// reversed: the oldest first, or Z to A.
+const SORT_ORDERS = {
+  recent: [["bi-sort-down", "Last read first"], ["bi-sort-up", "Last read last"]],
+  title: [["bi-sort-alpha-down", "A to Z"], ["bi-sort-alpha-down-alt", "Z to A"]],
+};
+
+function sortItems(items) {
+  const order = R.settings.library_sort === "title"
+    ? (a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" })
+    : (a, b) => (b.opened || 0) - (a.opened || 0) || (b.added || 0) - (a.added || 0);
+  return items.sort(R.settings.library_reversed ? (a, b) => order(b, a) : order);
+}
+
+function syncSort() {
+  const sort = R.settings.library_sort === "title" ? "title" : "recent";
+  const [icon, label] = SORT_ORDERS[sort][R.settings.library_reversed ? 1 : 0];
+  $("lib-sort").value = sort;
+  $("lib-order").querySelector("i").className = `bi ${icon}`;
+  $("lib-order").title = `${label} (click to reverse)`;
+  $("lib-order").setAttribute("aria-label", label);
 }
 
 // ---------------------------------------------------------------- folders
@@ -472,42 +499,181 @@ async function addComic(file, status) {
   return data.comic;
 }
 
+const extensionOf = (f) => f.name.split(".").pop().toLowerCase();
+const isComicFile = (f) => R.comicExtensions.includes(extensionOf(f));
+
+// What an import did: the items added ("comic:<id>"…), the titles already in the library, the errors, and the books of
+// another language.
+const importResult = () => ({ added: [], known: [], errors: [], elsewhere: [] });
+
+// Imports the files into `result`: the comics (and images) one by one, the books together.
+async function importFiles(fileList, status, result) {
+  for (const file of fileList.filter(isComicFile)) {
+    try {
+      const comic = await addComic(file, status);
+      if (comic.new) result.added.push(`comic:${comic.id}`); else result.known.push(comic.title);
+    } catch (err) { result.errors.push(err.message); }
+  }
+  fileList = fileList.filter((f) => !isComicFile(f));
+  if (!fileList.length) return;
+  const form = new FormData();
+  for (const f of fileList) form.append("files", f, f.name);
+  status.textContent = `Importing ${fileList.length} file${fileList.length > 1 ? "s" : ""}…`;
+  try {
+    const res = await fetch("/reader/api/books", { method: "POST", headers: { "X-MiningCat": "1" }, body: form });
+    const data = await res.json();
+    for (const b of data.added || []) { if (b.new) result.added.push(`book:${b.id}`); else result.known.push(b.title); }
+    result.errors.push(...(data.errors || []));
+    result.elsewhere.push(...(data.elsewhere || []));
+  } catch (err) {
+    result.errors.push(err.message);
+  }
+}
+
+function reportImport(result) {
+  if (result.errors.length) showDialog("Some files could not be imported", result.errors.join("\n"));
+  if (result.elsewhere.length) {
+    showDialog("Books of another language", `These books were imported into the library of another language: choose it on the home page to read them.\n\n${result.elsewhere.join("\n")}`);
+  }
+}
+
 // The files imported go into `folder` (null: the library).
 async function addBooks(fileList, folder = R.folder) {
   if (!fileList.length) return;
   const status = $("lib-status");
-  const isComic = (f) => (R.comicExtensions || []).includes(f.name.split(".").pop().toLowerCase());
-  const added = [], known = [];
-  const comicErrors = [];
-  for (const file of fileList.filter(isComic)) {
-    try {
-      const comic = await addComic(file, status);
-      if (comic.new) added.push(`comic:${comic.id}`); else known.push(comic.title);
-    } catch (err) { comicErrors.push(err.message); }
+  const result = importResult();
+  await importFiles(fileList, status, result);
+  status.textContent = "";
+  reportImport(result);
+  // a book imported again stays where it is (in its folder)
+  if (folder && result.known.length) MiningCatUI.toast(`Already in your library: ${result.known.join(", ")}`);
+  if (folder && result.added.length) await moveItems(result.added, folder);
+  else showLibrary();
+}
+
+// ---------------------------------------------------------------- importing folders
+
+// A folder of the computer: {name, files, dirs}, its hidden files (.DS_Store…) left out.
+const hidden = (name) => name.startsWith(".") || name === "__MACOSX";
+
+// The folders chosen with "Add a folder": their files' paths (webkitRelativePath) give the tree.
+function treeOfPaths(files) {
+  const root = { name: "", files: [], dirs: [] };
+  for (const file of files) {
+    const parts = file.webkitRelativePath.split("/");
+    if (parts.some(hidden)) continue;
+    let dir = root;
+    for (const name of parts.slice(0, -1)) {
+      let sub = dir.dirs.find((d) => d.name === name);
+      if (!sub) dir.dirs.push(sub = { name, files: [], dirs: [] });
+      dir = sub;
+    }
+    dir.files.push(file);
   }
-  if (comicErrors.length) showDialog("Some files could not be imported", comicErrors.join("\n"));
-  fileList = fileList.filter((f) => !isComic(f));
-  if (fileList.length) {
-    const form = new FormData();
-    for (const f of fileList) form.append("files", f, f.name);
-    status.textContent = `Importing ${fileList.length} file${fileList.length > 1 ? "s" : ""}…`;
-    try {
-      const res = await fetch("/reader/api/books", { method: "POST", headers: { "X-MiningCat": "1" }, body: form });
-      const data = await res.json();
-      for (const b of data.added || []) { if (b.new) added.push(`book:${b.id}`); else known.push(b.title); }
-      if (data.errors && data.errors.length) showDialog("Some files could not be imported", data.errors.join("\n"));
-      if (data.elsewhere && data.elsewhere.length) {
-        showDialog("Books of another language", `These books were imported into the library of another language: choose it on the home page to read them.\n\n${data.elsewhere.join("\n")}`);
-      }
-    } catch (err) {
-      showError(err);
+  return root;
+}
+
+// A folder dropped (a FileSystemDirectoryEntry), read with its folders.
+async function treeOfEntry(entry) {
+  const dir = { name: entry.name, files: [], dirs: [] };
+  const reader = entry.createReader();
+  for (;;) {
+    const batch = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));  // by batches of 100
+    if (!batch.length) return dir;
+    for (const e of batch.filter((e) => !hidden(e.name))) {
+      if (e.isDirectory) dir.dirs.push(await treeOfEntry(e));
+      else dir.files.push(await new Promise((resolve, reject) => e.file(resolve, reject)));
     }
   }
+}
+
+const importable = (f) => isComicFile(f) || R.bookExtensions.includes(extensionOf(f));
+const hasImportable = (dir) => dir.files.some(importable) || dir.dirs.some(hasImportable);
+const byName = (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+
+async function placeItems(keys, folder) {
+  if (!folder || !keys.length) return;
+  const items = keys.map((key) => { const [kind, id] = key.split(":"); return { kind, id }; });
+  await api("/reader/api/folders/move", { items, folder });
+}
+
+// A folder of the computer imported into `parent` (null: the library): it becomes a folder of the library, with its
+// books, comics and images (its other files left out), and its folders inside; a folder of images only (a chapter
+// of a manga scanned) becomes an album, its pages in the order of their names.
+async function importFolder(dir, parent, status, result) {
+  if (!hasImportable(dir)) return;
+  const files = dir.files.filter(importable).sort(byName);
+  if (!dir.dirs.length && files.length > 1 && files.every((f) => R.imageExtensions.includes(extensionOf(f)))) {
+    await importAlbum(dir.name, files, parent, status, result);
+    return;
+  }
+  let folder;
+  try {
+    ({ folder } = await api("/reader/api/folders", { name: dir.name, parent }));
+  } catch (err) {
+    result.errors.push(`${dir.name}: ${err.message}`);
+    return;
+  }
+  const before = result.added.length;
+  await importFiles(files, status, result);
+  try { await placeItems(result.added.slice(before), folder.id); } catch (err) { result.errors.push(err.message); }
+  for (const sub of [...dir.dirs].sort(byName)) await importFolder(sub, folder.id, status, result);
+}
+
+async function importAlbum(title, files, parent, status, result) {
+  const ids = [];
+  for (const file of files) {
+    try { ids.push((await addComic(file, status)).id); } catch (err) { result.errors.push(err.message); }
+  }
+  if (!ids.length) return;
+  let key = `comic:${ids[0]}`;
+  if (ids.length > 1) {
+    status.textContent = `Making the album ${title}…`;
+    try {
+      key = `comic:${(await api("/reader/api/comics/album", { images: ids, title })).comic.id}`;
+    } catch (err) {
+      result.errors.push(`${title}: ${err.message}`);
+      return;
+    }
+  }
+  result.added.push(key);
+  try { await placeItems([key], parent); } catch (err) { result.errors.push(err.message); }
+}
+
+// Folders (and files) of the computer, imported into `folder` (null: the library).
+async function addFolders(root, folder = R.folder) {
+  const status = $("lib-status");
+  const result = importResult();
+  if (root.files.length) {
+    await importFiles(root.files, status, result);
+    try { await placeItems(result.added, folder); } catch (err) { result.errors.push(err.message); }
+  }
+  for (const dir of [...root.dirs].sort(byName)) await importFolder(dir, folder, status, result);
+  if (!result.added.length && !result.known.length && !result.errors.length) {
+    result.errors.push("Nothing to import in this folder: no books, comics or images.");
+  }
   status.textContent = "";
-  // a book imported again stays where it is (in its folder)
-  if (folder && known.length) MiningCatUI.toast(`Already in your library: ${known.join(", ")}`);
-  if (folder && added.length) await moveItems(added, folder);
-  else showLibrary();
+  reportImport(result);
+  if (result.known.length) MiningCatUI.toast(`Already in your library: ${result.known.join(", ")}`);
+  showLibrary();
+}
+
+// What is dropped from the computer: files, or folders with them.
+async function addDropped(dataTransfer, folder) {
+  // the entries are read during the drop event: they're gone after it
+  const entries = [...dataTransfer.items].map((item) => item.webkitGetAsEntry?.()).filter(Boolean);
+  const files = [...dataTransfer.files];
+  if (!entries.some((e) => e.isDirectory)) {
+    addBooks(files, folder);
+    return;
+  }
+  const root = { name: "", files: [], dirs: [] };
+  for (const entry of entries) {
+    if (hidden(entry.name)) continue;
+    if (entry.isDirectory) root.dirs.push(await treeOfEntry(entry));
+    else root.files.push(await new Promise((resolve, reject) => entry.file(resolve, reject)));
+  }
+  addFolders(root, folder);
 }
 
 // A picture pasted (a screenshot, an image copied in the browser) gets a name of its own: browsers call them all
@@ -1140,6 +1306,13 @@ function wireLibrary() {
     input.value = "";
     addBooks(files);
   });
+  const folderInput = $("folder-files");
+  $("add-folder").addEventListener("click", () => folderInput.click());
+  folderInput.addEventListener("change", () => {
+    const files = [...folderInput.files];
+    folderInput.value = "";
+    if (files.length) addFolders(treeOfPaths(files));
+  });
   const drop = $("lib-drop");
   const over = ["border-primary", "bg-primary-subtle"];
   // files from outside the page only: a cover dragged in the library carries its picture as a file (Chrome), which
@@ -1178,8 +1351,8 @@ function wireLibrary() {
     drop.classList.remove(...over);
     if (outsideFiles(e)) {
       const target = folderOf(e);
-      if (target) addBooks([...e.dataTransfer.files], target.dataset.folder || null);
-      else if (drop.contains(e.target)) addBooks([...e.dataTransfer.files]);
+      if (target) addDropped(e.dataTransfer, target.dataset.folder || null);
+      else if (drop.contains(e.target)) addDropped(e.dataTransfer, R.folder);
       return;
     }
     const target = targetOf(e), drag = R.dragging;
@@ -1187,6 +1360,18 @@ function wireLibrary() {
     if (!accepts(target, drag)) return;
     if (target.dataset.folder !== undefined) moveItems([drag.key], target.dataset.folder || null);
     else addToAlbum(drag.key, target.dataset.merge);
+  });
+
+  // another order: from its natural direction (the last read first, A to Z)
+  $("lib-sort").addEventListener("change", (e) => {
+    Object.assign(R.settings, { library_sort: e.target.value, library_reversed: false });
+    saveSettings();
+    showLibrary();
+  });
+  $("lib-order").addEventListener("click", () => {
+    R.settings.library_reversed = !R.settings.library_reversed;
+    saveSettings();
+    showLibrary();
   });
 
   $("new-folder").addEventListener("click", newFolder);

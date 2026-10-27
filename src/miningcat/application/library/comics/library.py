@@ -180,6 +180,22 @@ def append_image(comic_id: str, image_id: str) -> dict:
     return meta
 
 
+def make_album(image_ids: list[str], title) -> dict:
+    """An album of the pictures `image_ids`, in that order, named `title` (a folder of pictures imported): the first
+    picture becomes the album, the others its pages (see append_image)."""
+    ids = list(dict.fromkeys(str(i) for i in image_ids))  # a picture twice in the folder: one page
+    if len(ids) < 2:
+        raise ComicError("An album needs two pictures or more.")
+    with lock:
+        meta = get_meta(ids[0])
+        for image_id in ids[1:]:
+            meta = append_image(meta["id"], image_id)
+        if isinstance(title, str) and title.strip():
+            meta["title"] = title.strip()[:200]
+            write_json(comic_folder(meta["id"]) / "meta.json", meta)
+    return meta
+
+
 def get_meta(comic_id: str) -> dict:
     meta = read_json(comic_folder(comic_id) / "meta.json", None)
     if meta is None:

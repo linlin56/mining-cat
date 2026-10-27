@@ -87,6 +87,17 @@ def api_append_image(comic_id: str):
     return jsonify(comic=meta)
 
 
+# A folder of pictures imported: an album of its pictures (already imported, in its order), named after it.
+@bp.post("/api/comics/album")
+def api_make_album():
+    body = json_body()
+    images = [str(i) for i in body.get("images")] if isinstance(body.get("images"), list) else []
+    meta = comics.make_album(images, body.get("title"))
+    for image_id in images:
+        folders.forget("comic", image_id)
+    return jsonify(comic=meta)
+
+
 @bp.post("/api/comics/<comic_id>/progress")
 def api_comic_progress(comic_id: str):
     return jsonify(comics.save_progress(comic_id, json_body().get("page")))

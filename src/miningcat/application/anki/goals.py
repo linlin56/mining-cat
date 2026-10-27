@@ -28,7 +28,7 @@ MAX_WORDS = 1_000_000
 # The last plan made for each language ({language: summary()}): the home page shows it at once, then the new one.
 _PLANS = "goal_plans"
 # The shape of a summary: a cached one of another version is made again (the home page reads this one).
-SUMMARY_VERSION = 5
+SUMMARY_VERSION = 6
 
 
 def _all_goals() -> dict[str, list[dict]]:

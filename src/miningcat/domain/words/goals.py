@@ -36,7 +36,8 @@ class Pipeline:
     """Where the user's words stand. `backlog`, `new_per_day`, `learning_ages` and `seen_per_day` are None when Anki
     doesn't tell them, `known_within` when there are too few cards to measure it."""
     known: int
-    learning: int                    # words in learning, without Anki: when they'll be known isn't told, all count
+    # words in learning, their cards seen or still new (without Anki: when they'll be known isn't told, all count)
+    learning: int
     backlog: int | None = None       # new cards not seen yet (in Anki, and made in MiningCat but not sent yet)
     new_per_day: int | None = None   # the decks' limit of new cards a day
     # The days since each word in learning was first reviewed. Only the words whose cards were seen: a word whose
@@ -213,6 +214,10 @@ def plan(goal: Goal, pipeline: Pipeline, current_pace: float, today: date) -> di
     }
     if remaining == 0:
         return result
+    if p.backlog is not None:
+        # The cards to make: the words of the goal not in the decks yet (known, or in learning: their cards seen or
+        # not), over the days left. Seeing them in time is the new cards a day, not mining.
+        result["mine_per_day"] = math.ceil(max(0, goal.words - p.known - p.learning) / max(1, days_left))
     if current_pace > 0:
         result["eta"] = _after(today, remaining / current_pace)
     if p.new_per_day:
@@ -223,8 +228,8 @@ def plan(goal: Goal, pipeline: Pipeline, current_pace: float, today: date) -> di
     # card a day from tomorrow on gives that many words by the goal's date.
     missing = remaining - learning
     if missing <= 0:
-        # the learning words are enough: no new card to see or mine
-        result.update(cards_needed=0, new_per_day=0, mine_per_day=0 if p.backlog is not None else None)
+        # the learning words are enough: no new card to see
+        result.update(cards_needed=0, new_per_day=0)
         return result
     per_card = _new_known(p, days_left)
     if per_card <= 0:
@@ -236,8 +241,6 @@ def plan(goal: Goal, pipeline: Pipeline, current_pace: float, today: date) -> di
     cards = math.ceil(missing * useful / per_card - 1e-9)
     new_per_day = math.ceil(cards / useful)
     result.update(cards_needed=cards, new_per_day=new_per_day)
-    if p.backlog is not None:
-        result["mine_per_day"] = math.ceil(max(0, cards - p.backlog) / useful)
     result["raise_limit"] = bool(p.new_per_day is not None and new_per_day > p.new_per_day)
     return result
 

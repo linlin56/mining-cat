@@ -16,7 +16,8 @@ def test_extract_audio_builds_expected_path(tmp_path):
     mock_stream.output.return_value = mock_stream
     mock_stream.overwrite_output.return_value = mock_stream
 
-    with patch("miningcat.infrastructure.media.video_file.ffmpeg.input", return_value=mock_stream) as mock_input:
+    with patch("miningcat.infrastructure.media.video_file.ffmpeg.probe", return_value={}), \
+         patch("miningcat.infrastructure.media.video_file.ffmpeg.input", return_value=mock_stream) as mock_input:
         result = video.extract_audio(video_file, output_dir)
 
     mock_input.assert_called_once_with(str(video_file))
@@ -33,11 +34,59 @@ def test_extract_audio_maps_requested_audio_track(tmp_path):
     mock_stream.output.return_value = mock_stream
     mock_stream.overwrite_output.return_value = mock_stream
 
-    with patch("miningcat.infrastructure.media.video_file.ffmpeg.input", return_value=mock_stream):
+    with patch("miningcat.infrastructure.media.video_file.ffmpeg.probe", return_value={}), \
+         patch("miningcat.infrastructure.media.video_file.ffmpeg.input", return_value=mock_stream):
         video.extract_audio(video_file, output_dir, audio_track=2)
 
     kwargs = mock_stream.output.call_args.kwargs
     assert kwargs["map"] == "0:a:2"
+
+
+def _extract_with_probe(tmp_path, probe_result, audio_track=None) -> dict:
+    mock_stream = MagicMock()
+    mock_stream.output.return_value = mock_stream
+    mock_stream.overwrite_output.return_value = mock_stream
+    with patch("miningcat.infrastructure.media.video_file.ffmpeg.probe", return_value=probe_result), \
+         patch("miningcat.infrastructure.media.video_file.ffmpeg.input", return_value=mock_stream):
+        video.extract_audio(tmp_path / "movie.mkv", tmp_path / "audio_out", audio_track=audio_track)
+    return mock_stream.output.call_args.kwargs
+
+
+def test_extract_audio_pads_a_delayed_track_with_silence(tmp_path):
+    probe_result = {
+        "format": {"start_time": "0.000000"},
+        "streams": [
+            {"codec_type": "video", "start_time": "0.000000"},
+            {"codec_type": "audio", "start_time": "4.960000"},
+            {"codec_type": "audio", "start_time": "0.000000"},
+        ],
+    }
+    kwargs = _extract_with_probe(tmp_path, probe_result, audio_track=0)
+
+    assert kwargs["map"] == "0:a:0"
+    assert kwargs["af"] == "adelay=4960:all=1"
+
+
+def test_extract_audio_leaves_an_undelayed_track_as_is(tmp_path):
+    probe_result = {
+        "format": {"start_time": "0.000000"},
+        "streams": [
+            {"codec_type": "audio", "start_time": "4.960000"},
+            {"codec_type": "audio", "start_time": "0.000000"},
+        ],
+    }
+    kwargs = _extract_with_probe(tmp_path, probe_result, audio_track=1)
+
+    assert kwargs["map"] == "0:a:1"
+    assert "af" not in kwargs
+
+
+def test_extract_audio_defaults_to_the_first_track(tmp_path):
+    probe_result = {"format": {}, "streams": [{"codec_type": "audio", "start_time": "1.500000"}]}
+    kwargs = _extract_with_probe(tmp_path, probe_result)
+
+    assert kwargs["map"] == "0:a:0"
+    assert kwargs["af"] == "adelay=1500:all=1"
 
 
 def test_extract_audio_reuses_existing_file(tmp_path, capsys):

@@ -40,12 +40,16 @@ def _nid_queries(note_ids: list[int]):
 class AnkiSync:
     """Sends the cards waiting for Anki (unless told not to), then updates word statuses from the intervals of the
     user's Anki cards: the cards of the decks chosen in the settings, and the cards sent from MiningCat. Anki is the
-    reference: a word whose note was deleted loses its status, unless the user set it by hand."""
+    reference: a word whose note was deleted loses its status, unless the user set it by hand, and a note counts once:
+    its word before an edit in Anki (another word, another reading) is removed."""
 
     def __init__(self, client: AnkiConnect, config: dict):
         self.client = client
         self.config = config
         self.known_interval = config["known_interval"]
+        # the notes this sync took the word of ({(language, note id)}) and the rows of their words
+        self._notes: set[tuple[str, int]] = set()
+        self._kept: set[int] = set()
 
     def run(self, send_cards: bool = True) -> dict:
         self.client.invoke("version", timeout=3)  # raises AnkiUnavailable when Anki is closed
@@ -54,7 +58,10 @@ class AnkiSync:
             if sources:
                 report["languages"][language] = self._sync_decks(language, sources)
         self._sync_sent_cards()
-        report["deleted"] = self._forget_deleted_notes()
+        with database.session() as conn:
+            linked = WordRepository(conn).anki_linked_words()
+        edited, asked = self._forget_edited_notes(linked)
+        report["deleted"] = asked + self._forget_deleted_notes([w for w in linked if w["id"] not in edited])
         today = anki_day(datetime.now())
         for language in words.counts():
             words.record_known(language, today)
@@ -87,6 +94,8 @@ class AnkiSync:
                     fields = note.get("fields", {})
                     expression = plain_field_text(fields.get(source["field"], {}).get("value", ""))
                     if not expression:
+                        if source["field"] in fields:  # emptied in Anki: the note has no word any more
+                            self._notes.add((language, note["noteId"]))
                         continue
                     reading = plain_field_text(fields.get(source["reading_field"], {}).get("value", "")) if source["reading_field"] else ""
                     updated["notes"] += 1
@@ -94,7 +103,7 @@ class AnkiSync:
                     if key not in longest or interval > longest[key][1]:
                         longest[key] = (note["noteId"], interval)
         for (expression, reading), (note_id, interval) in longest.items():
-            status = words.apply_anki_state(language, expression, reading, note_id, interval, self.known_interval)
+            status = self._apply(language, expression, reading, note_id, interval)
             updated[status if status in ("learning", "known") else "kept"] += 1
         return updated
 
@@ -109,8 +118,28 @@ class AnkiSync:
             intervals.update(self._intervals(self.client.invoke("findCards", query=query), skip_suspended=False))
         for r in rows:
             if r["anki_note_id"] in intervals:
-                words.apply_anki_state(r["language"], r["expression"], r["reading"], r["anki_note_id"],
-                                       intervals[r["anki_note_id"]], self.known_interval)
+                self._apply(r["language"], r["expression"], r["reading"], r["anki_note_id"], intervals[r["anki_note_id"]])
+
+    def _apply(self, language: str, expression: str, reading: str, note_id: int, interval: int) -> str:
+        self._notes.add((language, note_id))
+        return words.apply_anki_state(language, expression, reading, note_id, interval, self.known_interval, self._kept)
+
+    def _forget_edited_notes(self, linked: list[dict]) -> tuple[set[int], int]:
+        """Removes the other words of the notes this sync took the word of (of `linked`, the words linked to a note):
+        the ones a note doesn't say any more, e.g. a word saved twice before an edit in Anki was followed. The ones
+        whose expression no word has any more (not only their reading changed) are kept for the home page's question,
+        as for a deleted note. Returns the ids of the words removed, and the number of them kept for the question."""
+        edited = [w for w in linked if (w["language"], w["anki_note_id"]) in self._notes and w["id"] not in self._kept]
+        if not edited:
+            return set(), 0
+        with database.session() as conn:
+            repository = WordRepository(conn)
+            for word in edited:
+                repository.delete(word["id"])
+            left = {language: set(repository.tracked_expressions(language)) for language in {w["language"] for w in edited}}
+        gone = [w for w in edited if w["expression"] not in left[w["language"]]]
+        _remember_deleted(gone)
+        return {w["id"] for w in edited}, len(gone)
 
     def _profile(self) -> str | None:
         """The Anki profile open, or None with an AnkiConnect too old to tell."""
@@ -119,15 +148,14 @@ class AnkiSync:
         except AnkiError:
             return None
 
-    def _forget_deleted_notes(self) -> int:
-        """Removes the status of the words whose Anki note doesn't exist any more (not the ones set by hand), and keeps
-        them for the home page's question. Nothing is removed when another Anki profile is open than at the last sync
-        (or, when AnkiConnect can't tell the profile, when Anki has none of the notes)."""
+    def _forget_deleted_notes(self, linked: list[dict]) -> int:
+        """Removes the status of the words (of `linked`, the words linked to a note) whose Anki note doesn't exist any
+        more (not the ones set by hand), and keeps them for the home page's question. Nothing is removed when another
+        Anki profile is open than at the last sync (or, when AnkiConnect can't tell the profile, when Anki has none of
+        the notes)."""
         profile, last_profile = self._profile(), settings.get(PROFILE_SETTING)
         if profile is not None:
             settings.set(PROFILE_SETTING, profile)
-        with database.session() as conn:
-            linked = WordRepository(conn).anki_linked_words()
         existing: set[int] = set()
         for query in _nid_queries(list({w["anki_note_id"] for w in linked})):
             existing.update(self.client.invoke("findNotes", query=query))
@@ -141,13 +169,20 @@ class AnkiSync:
             repository = WordRepository(conn)
             for word in deleted:
                 repository.delete(word["id"])
-        waiting = settings.get(DELETED_SETTING, []) or []
-        known = {(w["language"], w["expression"], w["reading"]) for w in waiting}
-        # their own id: a word's row id is used again once the row is deleted
-        settings.set(DELETED_SETTING, waiting + [
-            {"id": uuid.uuid4().hex, "language": w["language"], "expression": w["expression"], "reading": w["reading"],
-             "status": w["status"]} for w in deleted if (w["language"], w["expression"], w["reading"]) not in known])
+        _remember_deleted(deleted)
         return len(deleted)
+
+
+def _remember_deleted(deleted: list[dict]) -> None:
+    """Keeps the words that lost their status for the home page's question (DELETED_SETTING)."""
+    if not deleted:
+        return
+    waiting = settings.get(DELETED_SETTING, []) or []
+    known = {(w["language"], w["expression"], w["reading"]) for w in waiting}
+    # their own id: a word's row id is used again once the row is deleted
+    settings.set(DELETED_SETTING, waiting + [
+        {"id": uuid.uuid4().hex, "language": w["language"], "expression": w["expression"], "reading": w["reading"],
+         "status": w["status"]} for w in deleted if (w["language"], w["expression"], w["reading"]) not in known])
 
 
 def sync(send_cards: bool = True) -> dict:

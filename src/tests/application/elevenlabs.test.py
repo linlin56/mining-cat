@@ -111,7 +111,8 @@ def test_chapter_read_sentence_by_sentence(api, monkeypatch, tmp_path):
     second = np.zeros(elevenlabs_tts.PCM_RATE, dtype="<i2").tobytes()  # one second of PCM
     api.answers[f"/v1/text-to-speech/{VIVIAN}"] = second
     timed = ElevenLabs("sk_x").synthesize_chapter(["你好。", "……", "再見。"], VIVIAN, "eleven_v4", tmp_path / "c.mp3")
-    assert timed == pytest.approx([(0.0, 1.0, "你好。……"), (1.3, 2.3, "再見。")])
+    assert [text for *_, text in timed] == ["你好。……", "再見。"]
+    assert [time for start, end, _ in timed for time in (start, end)] == pytest.approx([0.0, 1.0, 1.3, 2.3])
     assert "output_format=pcm_24000" in api.sent[0]["url"] and len(api.sent) == 2
     assert encoded == [(int(2.6 * elevenlabs_tts.PCM_RATE), elevenlabs_tts.PCM_RATE)]
 

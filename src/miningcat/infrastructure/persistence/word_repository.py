@@ -25,7 +25,7 @@ class WordRepository:
     def __init__(self, conn: sqlite3.Connection):
         self._conn = conn
 
-    def find(self, language: str, expression: str, reading: str = "") -> dict | None:
+    def find(self, language: str, expression: str, reading: str = "", anki_note_id: int | None = None) -> dict | None:
         reading = normalize_reading(reading, language)
         rows = self._conn.execute(
             "SELECT * FROM words WHERE language = ? AND expression = ?", (language, expression)
@@ -33,17 +33,22 @@ class WordRepository:
         exact = next((r for r in rows if r["reading"] == reading), None)
         if exact is not None:
             return _word(exact)
-        # A word saved without a reading, or looked up without one, matches any reading.
-        loose = next((r for r in rows if not r["reading"] or not reading), None)
-        return _word(loose) if loose is not None else None
+        # A word saved without a reading, or looked up without one, matches any reading. For an Anki note: its own
+        # word first, never another note's.
+        loose = [r for r in rows if not r["reading"] or not reading]
+        if anki_note_id is not None:
+            loose = sorted((r for r in loose if r["anki_note_id"] in (None, anki_note_id)),
+                           key=lambda r: r["anki_note_id"] != anki_note_id)
+        return _word(loose[0]) if loose else None
 
     def insert(self, language: str, expression: str, reading: str, status: str, source: str,
-               anki_note_id: int | None, anki_interval: int | None, now: float) -> None:
-        self._conn.execute(
+               anki_note_id: int | None, anki_interval: int | None, now: float) -> int:
+        """Returns the id of the new row."""
+        return self._conn.execute(
             "INSERT INTO words(language, expression, reading, status, source, anki_note_id, anki_interval, created, updated)"
             " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (language, expression, reading, status, source, anki_note_id, anki_interval, now, now),
-        )
+        ).lastrowid
 
     def update(self, word_id: int, status: str, source: str, reading: str,
                anki_note_id: int | None, anki_interval: int | None, now: float) -> None:
@@ -55,8 +60,17 @@ class WordRepository:
             (status, source, reading, anki_note_id, anki_interval, now, word_id),
         )
 
+    def rename(self, word_id: int, expression: str, reading: str) -> None:
+        self._conn.execute("UPDATE words SET expression = ?, reading = ? WHERE id = ?", (expression, reading, word_id))
+
     def delete(self, word_id: int) -> None:
         self._conn.execute("DELETE FROM words WHERE id = ?", (word_id,))
+
+    def note_words(self, language: str, anki_note_id: int) -> list[dict]:
+        """The words of an Anki note (not the ones set by hand)."""
+        return [as_dict(r) for r in self._conn.execute(
+            "SELECT * FROM words WHERE language = ? AND anki_note_id = ? AND source != 'manual' ORDER BY id",
+            (language, anki_note_id))]
 
     def search(self, language: str | None = None, status: str | None = None, limit: int = 500, offset: int = 0,
                order: str = "updated") -> list[dict]:

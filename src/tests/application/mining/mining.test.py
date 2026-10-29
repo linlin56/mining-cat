@@ -592,6 +592,122 @@ def test_sync_word_with_several_notes_takes_the_longest_interval(fake_anki):
     assert report == {"notes": 4, "known": 2, "learning": 0, "kept": 0}  # words, as the home page counts them
 
 
+ZHUYIN_SYNC = {"sync": {"zh": [{"deck": "Mining::Chinese", "field": "Hanzi", "reading_field": "Zhuyin"}]}}
+
+
+def zh_rows() -> list[tuple]:
+    return sorted((w["expression"], w["reading"], w["source"], w["status"]) for w in words.list_words("zh"))
+
+
+def zh_ids() -> list[int]:
+    return sorted(w["id"] for w in words.list_words("zh"))
+
+
+def test_sync_note_with_a_reading_edited_in_anki_counts_once(fake_anki):
+    anki.save_config(ZHUYIN_SYNC)
+    note = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "功夫", "Zhuyin": "ㄍㄨㄥ˙ㄈㄨ"}, interval=30)
+    anki.sync()
+    ids = zh_ids()
+    fake_anki.notes[note]["fields"]["Zhuyin"] = "ㄍㄨㄥㄈㄨ"
+    assert anki.sync()["deleted"] == 0  # the same word: nothing to ask
+    assert zh_rows() == [("功夫", "ㄍㄨㄥㄈㄨ", "anki", "known")] and anki.deleted_words() == []
+    assert zh_ids() == ids  # the same row, given the new reading
+
+
+def test_sync_card_in_a_deck_writing_its_reading_another_way_counts_once(fake_anki):
+    # a card sent with a pinyin reading, its note's deck field in zhuyin: the same pronunciation
+    anki.save_config(ZHUYIN_SYNC)
+    note = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "行", "Zhuyin": "ㄒㄧㄥˊ"}, interval=30)
+    words.set_status("zh", "行", "xíng", "learning", source="card", anki_note_id=note)
+    anki.sync()
+    anki.sync()
+    assert zh_rows() == [("行", "xíng", "anki", "known")]
+    assert words.status_of("zh", "行", "xíng")["status"] == "known"
+
+
+def test_sync_removes_the_words_a_note_was_saved_twice_under(fake_anki):
+    # saved before the edits in Anki were followed: the note's word in pinyin, and with another neutral tone
+    anki.save_config(ZHUYIN_SYNC)
+    note = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "功夫", "Zhuyin": "ㄍㄨㄥㄈㄨ"}, interval=30)
+    with database.session() as conn:
+        repository = WordRepository(conn)
+        for reading in ("gōngfu", "ㄍㄨㄥ˙ㄈㄨ", "ㄍㄨㄥㄈㄨ"):
+            repository.insert("zh", "功夫", reading, "known", "anki", note, 30, 1.0)
+    assert anki.sync()["deleted"] == 0
+    assert zh_rows() == [("功夫", "ㄍㄨㄥㄈㄨ", "anki", "known")]
+
+
+def test_sync_note_with_its_word_emptied_in_anki_asks_for_it(fake_anki):
+    anki.save_config(ZHUYIN_SYNC)
+    note = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "功夫", "Zhuyin": "ㄍㄨㄥㄈㄨ"}, interval=30)
+    anki.sync()
+    fake_anki.notes[note]["fields"]["Hanzi"] = ""
+    assert anki.sync()["deleted"] == 1 and zh_rows() == []
+    anki.save_config({"sync": {"zh": [{"deck": "Mining::Chinese", "field": "Word"}]}})  # a field the note hasn't
+    fake_anki.notes[note]["fields"]["Hanzi"] = "功夫"
+    anki.sync()
+    assert zh_rows() == []  # not a word removed in Anki: nothing changes
+
+
+def test_sync_note_with_a_word_edited_in_anki_asks_for_the_old_one(fake_anki):
+    anki.save_config(ZHUYIN_SYNC)
+    note = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "功夫", "Zhuyin": "ㄍㄨㄥㄈㄨ"}, interval=30)
+    anki.sync()
+    fake_anki.notes[note]["fields"].update(Hanzi="工夫")
+    words.set_status("zh", "工夫", "ㄍㄨㄥㄈㄨ", "known")  # set by hand: stays so, and the note counts once
+    assert anki.sync()["deleted"] == 1
+    assert zh_rows() == [("工夫", "ㄍㄨㄥㄈㄨ", "manual", "known")]
+    assert [w["expression"] for w in anki.deleted_words("zh")] == ["功夫"]
+
+
+def test_sync_note_read_twice_keeps_both_words(fake_anki):
+    # two sources reading the same note (a deck and its subdeck): both words stay, sync after sync
+    anki.save_config({"sync": {"zh": [{"deck": "Mining", "field": "Hanzi"}, {"deck": "Mining::Chinese", "field": "Simplified"}]}})
+    fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "學習", "Simplified": "学习"}, interval=30)
+    anki.sync()
+    ids = sorted(w["id"] for w in words.list_words("zh"))
+    anki.sync()
+    assert sorted(w["id"] for w in words.list_words("zh")) == ids and len(ids) == 2
+
+
+def test_sync_without_reading_keeps_the_note_of_each_reading(fake_anki):
+    first = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "行"}, interval=30)
+    other = fake_anki.add_existing("Other", "Chinese (MiningCat test)", {"Hanzi": "行"}, interval=3)  # not synced
+    with database.session() as conn:
+        repository = WordRepository(conn)
+        repository.insert("zh", "行", "ㄏㄤˊ", "learning", "anki", other, 3, 1.0)
+        repository.insert("zh", "行", "ㄒㄧㄥˊ", "learning", "anki", first, 3, 2.0)
+    anki.save_config({"sync": {"zh": [{"deck": "Mining::Chinese", "field": "Hanzi"}]}})
+    anki.sync()
+    assert zh_rows() == [("行", "ㄏㄤˊ", "anki", "learning"), ("行", "ㄒㄧㄥˊ", "anki", "known")]
+
+
+def test_sync_without_reading_keeps_each_note_of_the_word(fake_anki):
+    # two notes of 行, one for each reading, in a deck synced without its reading field: the longest interval is
+    # the word's, the other note's reading stays
+    first = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "行"}, interval=30)
+    second = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "行"}, interval=3)
+    with database.session() as conn:
+        repository = WordRepository(conn)
+        repository.insert("zh", "行", "ㄏㄤˊ", "learning", "anki", second, 3, 1.0)
+        repository.insert("zh", "行", "ㄒㄧㄥˊ", "learning", "anki", first, 3, 2.0)
+    anki.save_config({"sync": {"zh": [{"deck": "Mining::Chinese", "field": "Hanzi"}]}})
+    anki.sync()
+    anki.sync()
+    assert zh_rows() == [("行", "ㄏㄤˊ", "anki", "learning"), ("行", "ㄒㄧㄥˊ", "anki", "known")]
+
+
+def test_sync_word_without_reading_isnt_another_notes(fake_anki):
+    # a deck read with its readings, another one without: the second one's note doesn't take the first one's word
+    anki.save_config({"sync": {"zh": [{"deck": "Mining::Chinese", "field": "Hanzi", "reading_field": "Zhuyin"},
+                                      {"deck": "Other", "field": "Hanzi"}]}})
+    first = fake_anki.add_existing("Mining::Chinese", "Chinese (MiningCat test)", {"Hanzi": "行", "Zhuyin": "ㄏㄤˊ"}, interval=30)
+    fake_anki.add_existing("Other", "Chinese (MiningCat test)", {"Hanzi": "行"}, interval=3)
+    anki.sync()
+    rows = {w["reading"]: w for w in words.list_words("zh")}
+    assert sorted(rows) == ["", "ㄏㄤˊ"] and rows["ㄏㄤˊ"]["anki_note_id"] == first and rows["ㄏㄤˊ"]["status"] == "known"
+
+
 def test_plain_field_values():
     assert plain_field_text("<b>漢字</b>&nbsp;") == "漢字"
     assert plain_field_text("漢字[かんじ]") == "漢字"

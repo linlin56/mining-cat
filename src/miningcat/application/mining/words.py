@@ -4,7 +4,7 @@ from datetime import date
 from miningcat.application.mining import preferences
 from miningcat.domain.languages import CHINESE_LANGUAGES, LANGUAGES
 from miningcat.domain.text.chinese_script import chinese_counterpart
-from miningcat.domain.text.readings import normalize_reading
+from miningcat.domain.text.readings import normalize_reading, reading_key
 from miningcat.domain.words import forms
 from miningcat.domain.words.status import DEFAULT_KNOWN_INTERVAL, STATUSES, WordError, status_from_interval
 from miningcat.infrastructure.persistence.database import database
@@ -40,17 +40,22 @@ def status_of(language: str, expression: str, reading: str = "") -> dict:
     return result
 
 
-def set_status(language: str, expression: str, reading: str, status: str | None,
-               source: str = "manual", anki_note_id: int | None = None, anki_interval: int | None = None) -> dict:
-    """Sets (or with status=None, clears) the status of a word. Returns the new status."""
+def _word_key(language: str, expression: str, reading: str) -> tuple[str, str]:
+    """The expression and reading under which a word is saved."""
     if language not in LANGUAGES:
         raise WordError(f"Unknown language: {language}")
-    if status is not None and status not in STATUSES:
-        raise WordError(f"Unknown status: {status}")
     expression = (expression or "").strip()
     if not expression:
         raise WordError("Missing word.")
-    reading = normalize_reading(reading, language)
+    return expression, normalize_reading(reading, language)
+
+
+def set_status(language: str, expression: str, reading: str, status: str | None,
+               source: str = "manual", anki_note_id: int | None = None, anki_interval: int | None = None) -> dict:
+    """Sets (or with status=None, clears) the status of a word. Returns the new status."""
+    expression, reading = _word_key(language, expression, reading)
+    if status is not None and status not in STATUSES:
+        raise WordError(f"Unknown status: {status}")
     now = time.time()
     with database.session() as conn:
         repository = WordRepository(conn)
@@ -85,14 +90,28 @@ def statuses_for(language: str, expressions: list[str]) -> dict[str, str]:
 
 
 def apply_anki_state(language: str, expression: str, reading: str, note_id: int | None,
-                     interval: int, known_interval: int = DEFAULT_KNOWN_INTERVAL) -> str:
-    """Updates a word from its Anki cards. A word the user marked known or ignored stays as it is."""
-    status = status_from_interval(interval, known_interval)
+                     interval: int, known_interval: int = DEFAULT_KNOWN_INTERVAL, kept: set[int] | None = None) -> str:
+    """Updates a word from its Anki cards. A word the user marked known or ignored stays as it is. A note edited in
+    Anki takes its word along: the note's word not updated yet by this sync (`kept`: the ids of the rows it updated,
+    this one added) gets the new word or reading, its own reading kept when it's the same pronunciation written another
+    way (pinyin and zhuyin)."""
+    expression, reading = _word_key(language, expression, reading)
+    status, now = status_from_interval(interval, known_interval), time.time()
     with database.session() as conn:
-        word = WordRepository(conn).find(language, expression, reading)
-    if word and word["source"] == "manual" and word["status"] in ("known", "ignored"):
-        return word["status"]
-    set_status(language, expression, reading, status, source="anki", anki_note_id=note_id, anki_interval=interval)
+        repository = WordRepository(conn)
+        word = repository.find(language, expression, reading, anki_note_id=note_id)
+        if word is None and note_id is not None:
+            word = next((w for w in repository.note_words(language, note_id) if w["id"] not in (kept or ())), None)
+            if word and (word["expression"] != expression
+                         or reading_key(word["reading"], language) != reading_key(reading, language)):
+                repository.rename(word["id"], expression, reading)
+        if word and word["source"] == "manual" and word["status"] in ("known", "ignored"):
+            status = word["status"]
+        elif word:
+            repository.update(word["id"], status, "anki", reading, note_id, interval, now)
+        word_id = word["id"] if word else repository.insert(language, expression, reading, status, "anki", note_id, interval, now)
+    if kept is not None:
+        kept.add(word_id)
     return status
 
 

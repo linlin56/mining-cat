@@ -2,8 +2,8 @@
    字[zi4]  日本[にほん]  word[wɜːd]  台語[Tâi-gí]: the word is the run of Chinese characters before the bracket, else
    everything since the last space or punctuation mark. A space before a word in characters only separates it (Anki's
    furigana: 今日は 日本[にほん]). Mandarin readings with tone numbers are shown in pinyin or zhuyin, and colored by
-   tone like Cantonese ones. When the readings of a word in characters are as many as its characters, each character
-   gets its own. */
+   tone like Cantonese ones; Taiwanese Hokkien ones (Tâi-lô or POJ) by the tone their marks tell. When the readings
+   of a word in characters are as many as its characters, each character gets its own. */
 (function () {
   "use strict";
   const OPTIONS = __OPTIONS__;
@@ -114,25 +114,55 @@
     return { numbered: false, list: reading.split(/[\s\-‐]+/).filter(Boolean) };
   }
 
-  // A syllable as shown: {text, tone}, tone 0 when it isn't colored.
+  // A syllable as shown: {text, tone}, tone the class coloring it ("" when it isn't colored).
   function shown(syllable, language) {
     const match = /^(.*?)([1-6])$/.exec(syllable);
-    if (!match || !language) return { text: syllable, tone: 0 };
+    if (!match || !language) return { text: syllable, tone: "" };
     const tone = Number(match[2]);
     if (language === "zh") {
       const text = OPTIONS.readings.zh === "zhuyin" ? zhuyin(match[1], tone) : markedPinyin(match[1], tone);
-      return { text: text || syllable, tone };
+      return { text: text || syllable, tone: "mc-tone" + tone };
     }
-    return { text: syllable, tone };  // Cantonese: jyutping keeps its numbers
+    return { text: syllable, tone: "mc-tone" + tone };  // Cantonese: jyutping keeps its numbers
+  }
+
+  // ------------------------------------------------------------ Taiwanese Hokkien
+
+  // The tones of Tâi-lô's and POJ's marks: 6 is rare (merged with 7 in Taiwan), 9 left uncolored.
+  const TAIGI_MARKS = { "́": 2, "̀": 3, "̂": 5, "̌": 7, "̄": 7, "̍": 8 };
+
+  // The syllables of a Tâi-lô or POJ reading (ta̍k-ke hó, tsioh-mn̄g--tsi̍t-ē) as shown: the syllables after a "--"
+  // in a word have the neutral tone, else the tone of their mark; without one, 4 when they end in p, t, k or h (a
+  // checked syllable), else 1.
+  function taigiSyllables(reading) {
+    return Array.from(reading.matchAll(/[^\s\-‐]+/g), (match) => {
+      const syllable = match[0];
+      if (/[-‐]{2}[^\s]*$/.test(reading.slice(0, match.index))) return { text: syllable, tone: "mc-nan-tone0" };
+      const marks = syllable.normalize("NFD");
+      const mark = Array.from(marks).find((c) => c in TAIGI_MARKS);
+      if (!mark && /̋/.test(marks)) return { text: syllable, tone: "" };
+      const letters = marks.replace(/[^a-z]/gi, "");  // the marks, POJ's o͘ dot and ⁿ off
+      const tone = mark ? TAIGI_MARKS[mark] : /[ptkh]$/i.test(letters) ? 4 : 1;
+      return { text: syllable, tone: letters ? "mc-nan-tone" + tone : "" };
+    });
   }
 
   function rubyOf(base, reading, tone) {
     const ruby = document.createElement("ruby");
     ruby.appendChild(document.createTextNode(base));
     const rt = document.createElement("rt");
-    rt.textContent = reading;
+    if (/\p{M}/u.test(reading)) {
+      // Chromium (Anki desktop) spreads a ruby text over its base, a combining mark apart from its letter too (m̄
+      // drawn m¯): in a block of its own, the reading isn't spread.
+      const marked = document.createElement("span");
+      marked.className = "mc-marked";
+      marked.textContent = reading;
+      rt.appendChild(marked);
+    } else {
+      rt.textContent = reading;
+    }
     ruby.appendChild(rt);
-    if (tone && OPTIONS.toneColors) ruby.classList.add("mc-tone" + tone);
+    if (tone && OPTIONS.toneColors) ruby.classList.add(tone);
     return ruby;
   }
 
@@ -163,13 +193,13 @@
     let language = "";
     if (numbered && (lang === "zh" || lang === "yue")) language = lang;
     else if (numbered && !lang && inCharacters && list.every((s) => Number(s.slice(-1)) <= 5)) language = "zh";  // another note type's 字[zi4]
-    const syllables = list.map((s) => shown(s, language));
+    const syllables = !numbered && lang === "nan" ? taigiSyllables(reading) : list.map((s) => shown(s, language));
     const paired = inCharacters && pairs(chars, list, language);
     if (paired) {
       paired.forEach(([c, i]) => word.appendChild(i === null ? document.createTextNode(c) : rubyOf(c, syllables[i].text, syllables[i].tone)));
     } else {
       const joined = numbered ? syllables.map((s) => s.text).join(OPTIONS.readings.zh === "zhuyin" && language === "zh" ? "" : " ") : reading;
-      word.appendChild(rubyOf(base, joined, 0));
+      word.appendChild(rubyOf(base, joined, ""));
     }
     return word;
   }

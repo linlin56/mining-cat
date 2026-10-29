@@ -489,7 +489,6 @@ function goalStats(g) {
     ...g.plans.filter((plan) => plan !== next).map((plan) => [`${fmt(plan.goal.words)} words`,
       etaOf(plan) ? longDate(etaOf(plan)) : plan.reached ? "already known" : "not yet"]),
     ["Words known a day (last 30 days)", p.pace.toLocaleString(UI_LOCALE)],
-    [next ? `${fmt(next.goal.words)} words at that pace` : "", forecast && next && next.eta ? longDate(next.eta) : null],
     [`Words to know a day for ${shortName(g.plans[n.pace_for ?? 0])}`, n.needed_pace !== null ? n.needed_pace.toLocaleString(UI_LOCALE) : null],
   ];
   const assuming = forecast ? `If you see ${plural(p.deck_new_per_day, "new card")} a day, your decks' limit.` : "";

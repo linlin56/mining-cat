@@ -141,7 +141,7 @@ the three at once (your browser remembers it).
 
 - the **forecast**: the day you'll get there if you see your decks' limit of new cards a day, from the words you have
   in learning and the new cards to come. Its details: the forecast of your other goals, the words that became known
-  a day over the last 30 days and the day you'd get there at that pace, and the words to know a day the goal takes.
+  a day over the last 30 days, and the words to know a day the goal takes.
   Without Anki, the date at your current pace;
 - the **new cards a day** to see in Anki from tomorrow on, next to your decks' limit (raise it in Anki when it's
   lower) and the new cards you actually saw a day over the last 30 days. Its details: the count of each goal, and the

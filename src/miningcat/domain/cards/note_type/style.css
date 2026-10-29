@@ -14,6 +14,8 @@
   --mc-tone4: #9c36b5;
   --mc-tone5: #868e96;
   --mc-tone6: #e8590c;
+  --mc-teal: #0c8599;
+  --mc-pink: #d6336c;
   margin: 0;
   padding: 0;
   background: var(--mc-page);
@@ -35,6 +37,8 @@
   --mc-tone4: #da77f2;
   --mc-tone5: #adb5bd;
   --mc-tone6: #ffa94d;
+  --mc-teal: #3bc9db;
+  --mc-pink: #f783ac;
 }
 
 .mc-card {
@@ -55,8 +59,10 @@
 .mc-card:lang(zh-Hant), .mc-card:lang(zh-TW), .mc-card:lang(nan) { font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", "Noto Sans CJK TC", sans-serif; }
 .mc-card:lang(yue), .mc-card:lang(zh-HK) { font-family: "PingFang HK", "Microsoft JhengHei", "Noto Sans HK", "Noto Sans CJK HK", sans-serif; }
 .mc-card:lang(ko) { font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", "Noto Sans CJK KR", sans-serif; }
-/* Tâi-lô and POJ need fonts with their combining marks */
-.mc-card:lang(nan) rt, .mc-card:lang(nan) .mc-reading { font-family: system-ui, "Noto Sans", "Segoe UI", sans-serif; }
+/* Tâi-lô and POJ need fonts placing their combining marks: the system font and PingFang put m̄'s macron after the m */
+.mc-card:lang(nan) rt, .mc-card:lang(nan) .mc-reading, .mc-card:lang(nan) .mc-hint {
+  font-family: "Noto Sans", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+}
 
 .mc-card img { max-width: 100%; height: auto; border-radius: 8px; }
 
@@ -85,12 +91,22 @@
 .mc-readings { line-height: 2.1; }
 .mc-card ruby { ruby-position: over; ruby-align: center; }
 .mc-card rt { font-size: .48em; color: var(--mc-muted); letter-spacing: 0; }
+.mc-marked { display: inline-block; }
 .mc-tone1, .mc-tone1 rt { color: var(--mc-tone1); }
 .mc-tone2, .mc-tone2 rt { color: var(--mc-tone2); }
 .mc-tone3, .mc-tone3 rt { color: var(--mc-tone3); }
 .mc-tone4, .mc-tone4 rt { color: var(--mc-tone4); }
 .mc-tone5, .mc-tone5 rt { color: var(--mc-tone5); }
 .mc-tone6, .mc-tone6 rt { color: var(--mc-tone6); }
+/* Taiwanese Hokkien: the color of the Mandarin tone sounding alike (high level 1, rising 5, low 3, falling 2) */
+.mc-nan-tone1, .mc-nan-tone1 rt { color: var(--mc-tone1); }
+.mc-nan-tone5, .mc-nan-tone5 rt { color: var(--mc-tone2); }
+.mc-nan-tone3, .mc-nan-tone3 rt { color: var(--mc-tone3); }
+.mc-nan-tone2, .mc-nan-tone2 rt { color: var(--mc-tone4); }
+.mc-nan-tone7, .mc-nan-tone7 rt { color: var(--mc-tone6); }
+.mc-nan-tone4, .mc-nan-tone4 rt { color: var(--mc-teal); }
+.mc-nan-tone8, .mc-nan-tone8 rt { color: var(--mc-pink); }
+.mc-nan-tone0, .mc-nan-tone0 rt { color: var(--mc-tone5); }
 
 /* on the front, a word's reading (a hint above it, out of the line) and tones only show while it's hovered or tapped */
 .mc-hint { display: none; }

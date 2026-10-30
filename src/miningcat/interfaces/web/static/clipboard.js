@@ -1,5 +1,6 @@
 // MiningCat clipboard page: the user types or pastes a text, then clicks Read to look its words up with the
-// dictionary popup, the word colours and the card creator (mining.js). The text is kept in this browser.
+// dictionary popup, the word colours and the card creator (mining.js). 
+// The text is kept in this browser, one per study language
 // Long texts are cut into chunks (sections of paragraphs): the browser lays out only the ones near the screen,
 // and each chunk is coloured when it comes close to it, under its own key.
 "use strict";
@@ -7,6 +8,7 @@
 const $ = (id) => document.getElementById(id);
 
 const CHUNK_CHARS = 5000;
+// Followed by the study language's id. The unsuffixed keys are those of before, shared by all the languages.
 const STORE_TEXT = "miningcat-clipboard-text";
 const STORE_TAG = "miningcat-clipboard-tag";
 // A sentence and what closes it, to cut a paragraph too long for one chunk
@@ -20,11 +22,23 @@ const C = {
 };
 
 function load(key) {
-  try { return localStorage.getItem(key); } catch { return null; }
+  try { return localStorage.getItem(`${key}-${C.study.id}`); } catch { return null; }
 }
 
 function store(key, value) {
-  try { localStorage.setItem(key, value); } catch { /* full or blocked: the text just isn't kept */ }
+  try { localStorage.setItem(`${key}-${C.study.id}`, value); } catch { /* full or blocked: the text just isn't kept */ }
+}
+
+// The text of before, shared by all the languages, goes to the first language whose clipboard is opened.
+function adoptSharedText() {
+  for (const key of [STORE_TEXT, STORE_TAG]) {
+    try {
+      const shared = localStorage.getItem(key);
+      if (shared === null) continue;
+      if (load(key) === null) store(key, shared);
+      localStorage.removeItem(key);
+    } catch { /* blocked: nothing kept anyway */ }
+  }
 }
 
 function language() {
@@ -104,7 +118,8 @@ function setReading(reading) {
 }
 
 function init() {
-  C.study = JSON.parse(document.body.dataset.study || "null") || { tag: "und", tags: [] };
+  C.study = JSON.parse(document.body.dataset.study || "null") || { id: "und", tag: "und", tags: [] };
+  adoptSharedText();
 
   // Chinese: traditional or simplified characters
   const select = $("language");

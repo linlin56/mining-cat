@@ -118,6 +118,18 @@ make gui
 
 MiningCat starts a small local server and opens the GUI in your browser at <http://127.0.0.1:5050/>. Keep the terminal open while you use it, and press `Ctrl+C` there to stop it. Use `make gui PORT=8080` if the port is already taken.
 
+### Updates
+
+When it starts, MiningCat looks on GitHub for a newer version: the newest commit of `main` whose tests passed (a commit whose tests failed, or haven't run yet, waits for the next one). The home page then offers it, with what's new: **Update** brings the code up to date and installs the packages that changed (pip's output shows in the terminal, which can take a few minutes), then MiningCat starts again by itself and the page reloads. Wait for the converter's job to end first: no update runs during one. If installing the new packages fails, MiningCat stops (the new code would miss them): run `make install`, then `make gui`.
+
+In **Settings › User preferences › Updates**, choose **Update at launch** to update without being asked: `make gui` then updates MiningCat before opening it. You can also update from the terminal with `make update`.
+
+Your books, videos, dictionaries, words and settings (`sources/`, `output/`, `library/`, `user/`) are never touched by an update. Updates are off (`make update` tells why) when MiningCat can't update on its own:
+
+- it wasn't installed with `git clone` (downloaded as a ZIP), or `git` isn't in the PATH;
+- the clone is on another branch than `main`, or its `origin` isn't MiningCat's GitHub repository (a fork);
+- you changed files of the code (`git status`): update with git yourself.
+
 ### Choose the language you study
 
 The home page first asks which language you study. Every screen then only shows what belongs to it: the converter's variants, the books of the reader, the videos of the player, and in the settings the dictionaries, words, Anki decks and cards of that language. Change it at any time with the language badge in the header of every page, which brings you back to the home page.

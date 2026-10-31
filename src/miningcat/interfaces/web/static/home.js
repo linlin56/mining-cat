@@ -661,7 +661,79 @@ async function choose(id) {
   } catch (err) { showError(err); }
 }
 
+// ---------------------------------------------------------------- updates (blueprints/updates.py)
+const UPDATE_POLL_MS = 2000;
+const UPDATE_WAIT_MS = 15 * 60 * 1000;  // pip can take minutes; past that, something went wrong
+
+function showUpdateMessage(title, message) {
+  $("update").hidden = false;
+  $("update-title").textContent = title;
+  $("update-message").textContent = message;
+  $("update-details").hidden = true;
+  $("update-button").hidden = true;
+}
+
+function setUpdating(updating) {
+  const button = $("update-button");
+  button.disabled = updating;
+  button.querySelector(".spinner-border").hidden = !updating;
+  button.querySelector(".bi").hidden = updating;
+  button.querySelector("span:last-child").textContent = updating ? "Updating…" : "Update";
+}
+
+function showUpdate(update) {
+  $("update-title").textContent = "A new version of MiningCat is available";
+  $("update-message").textContent = update.commits === 1 ? "1 change since your version." : `${update.commits} changes since your version.`;
+  $("update-changes").replaceChildren(...update.changes.map((subject) => Object.assign(document.createElement("li"), { textContent: subject })));
+  if (update.changes.length < update.commits) {
+    $("update-changes").append(Object.assign(document.createElement("li"), { textContent: "…", className: "list-unstyled" }));
+  }
+  $("update-details").hidden = false;
+  $("update-button").hidden = false;
+  setUpdating(false);
+  $("update").hidden = false;
+}
+
+// Asks how the update goes until it's over: the server stops, then another one answers with the new code (the page
+// then reloads with it). `server`: the id of the server updating.
+async function followUpdate(server) {
+  $("update").hidden = false;
+  $("update-title").textContent = "Updating MiningCat…";
+  $("update-message").textContent = "MiningCat then starts again (installing new packages can take a few minutes: see the terminal).";
+  setUpdating(true);
+  const until = Date.now() + UPDATE_WAIT_MS;
+  while (Date.now() < until) {
+    await new Promise((resolve) => setTimeout(resolve, UPDATE_POLL_MS));
+    let update;
+    try { update = await api("/api/update"); } catch { continue; /* stopped: starting again */ }
+    if (update.server !== server) { location.reload(); return; }
+    if (update.status === "updating" || update.status === "restarting") continue;
+    if (update.status === "failed") showError({ title: "Update failed", message: update.error });
+    loadUpdate();  // failed, or over and told elsewhere (another tab)
+    return;
+  }
+  showUpdateMessage("MiningCat doesn't answer", "The update takes too long, or MiningCat didn't start again (installing its packages failed?): see its terminal.");
+}
+
+async function loadUpdate() {
+  let update;
+  try { update = await api("/api/update"); } catch { return; /* no banner */ }
+  if (update.status === "updating" || update.status === "restarting") followUpdate(update.server);
+  else if (update.status === "failed") { showError({ title: "Update failed", message: update.error }); loadUpdate(); }
+  else if (update.available) showUpdate(update);
+  else $("update").hidden = true;
+}
+
+async function runUpdate() {
+  try {
+    const answer = await api("/api/update", {});
+    followUpdate(answer.server);
+  } catch (err) { showError(err); }
+}
+
 async function init() {
+  $("update-button").addEventListener("click", runUpdate);
+  loadUpdate();
   $("deleted-save").addEventListener("click", saveDeletedWords);
   $("deleted-all").addEventListener("change", (e) => {
     for (const box of $("deleted-list").querySelectorAll("input")) box.checked = e.target.checked;

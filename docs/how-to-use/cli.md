@@ -144,6 +144,18 @@ python -m miningcat install-translation [--model nllb-600m|nllb-1.3b|qwen3-4b]
 
 Then choose it in Settings › **Translation**.
 
+## `update`
+
+Updates MiningCat to the newest commit of `main` whose tests passed on GitHub (see [Updates](index.md#updates)), then installs again the packages whose requirements changed: MiningCat's, and those of the optional engines you installed.
+
+```bash
+python -m miningcat update [--check]
+```
+
+| Option    | Description                                                        |
+| --------- | ------------------------------------------------------------------ |
+| `--check` | Only tell whether an update is available, and what it changes      |
+
 ## `game`
 
 Video game / screen share OCR: captures a window (or a webcam / capture card), reads its text area with OCR, and pushes the screenshot + text to a local web page. See [Video games & screen share](video-game.md) for the details.
@@ -220,6 +232,7 @@ The Makefile wraps the most common commands. Variables can be overridden on the 
 | `make video URL=...`             | `video --url ...`                                |
 | `make video FILE=...`            | `video --file ...`                               |
 | `make install-translation [TRANSLATION=qwen3-4b]` | `install-translation [--model qwen3-4b]` |
+| `make update`                    | `update`                                         |
 | `make game-setup`                | `game setup`                                     |
 | `make game [HOTKEY=F9]`          | `game serve --language ... --hotkey F9`          |
 | `make clean`                     | Delete generated files in `output/` and `temp/`  |

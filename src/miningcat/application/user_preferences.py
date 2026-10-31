@@ -8,6 +8,7 @@ CHOICES = {
     "highlights": ("default", "deutan", "tritan"),  # the highlight colours of the text, for colour blindness
     "heatmap": ("orange", "green", "blue", "purple", "pink", "rainbow"),  # the colour of the home page's heatmap of reviews
     "discord": ("on", "off"),                       # the Discord status: what the user does in MiningCat
+    "updates": ("ask", "launch"),                   # the updates: offered by the home page, or done at launch
 }
 
 

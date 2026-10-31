@@ -1,14 +1,18 @@
 """The job the converter page runs (one at a time), and the server's state."""
 import threading
+import uuid
 from dataclasses import dataclass, field
+from enum import StrEnum
 from pathlib import Path
 from typing import Callable
 
 from miningcat.application.converter.jobs import Job, run_job
 from miningcat.application.game_ocr.capture_process import GameCaptureProcess
+from miningcat.infrastructure.system.updates import UpdateCheck
 from miningcat.interfaces.web.discord_status import DiscordStatus
 from miningcat.interfaces.web.event_bus import EventBus
 from miningcat.interfaces.web.lan import LanListener
+from miningcat.interfaces.web.process import ServerEnd
 
 
 @dataclass
@@ -17,6 +21,20 @@ class JobSnapshot:
     kind: str | None = None
     status: str = ""
     pct: float = 0.0
+
+
+class UpdateStatus(StrEnum):
+    """How the home page's update goes (blueprints/updates.py; the same strings in home.js)."""
+
+    NONE = ""
+    UPDATING = "updating"
+    RESTARTING = "restarting"
+    FAILED = "failed"                  # the code didn't move: told once
+
+    @property
+    def busy(self) -> bool:
+        """Whether no other update can start."""
+        return self in (UpdateStatus.UPDATING, UpdateStatus.RESTARTING)
 
 
 class JobBusyError(RuntimeError):
@@ -38,6 +56,18 @@ class AppState:
     discord: DiscordStatus | None = None
     # The e-reader's door (see lan.py), made with the app
     lan: LanListener | None = None
+    # The updates (see blueprints/updates.py): the last look for one and when (looked for under update_check_lock,
+    # git and GitHub taking seconds), how the update goes (update_error: why it failed), under update_lock.
+    update_check: UpdateCheck | None = None
+    update_checked_at: float = 0.0
+    update_check_lock: threading.Lock = field(default_factory=threading.Lock)
+    update_status: UpdateStatus = UpdateStatus.NONE
+    update_error: str = ""
+    update_lock: threading.Lock = field(default_factory=threading.Lock)
+    # Stops the server, saying why (to start again with the new code...). Set by app.main.
+    stop_server: Callable[[ServerEnd], None] | None = None
+    # This server's: the home page reloads once another one answers (started again after an update)
+    server_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     _lock: threading.Lock = field(default_factory=threading.Lock)
     _job: JobSnapshot = field(default_factory=JobSnapshot)
 
@@ -81,6 +111,9 @@ class AppState:
         with self._lock:
             if self._job.running:
                 raise JobBusyError("A job is already running.")
+            # Updated: the server stops in a moment, a job started now would be cut off
+            if self.update_status is UpdateStatus.RESTARTING:
+                raise JobBusyError("MiningCat is updated and starts again: wait for it.")
             self._job = JobSnapshot(running=True, kind=kind, status="Preparing…", pct=0)
         self.bus.reset()
         self.bus.publish({"type": "start", "kind": kind, "page": job.page})

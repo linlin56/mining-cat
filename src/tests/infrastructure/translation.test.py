@@ -120,7 +120,7 @@ def test_missing_packages_tell_how_to_install(fake_hub, monkeypatch):
 def test_install_runs_the_engines_pip_then_downloads(fake_hub, monkeypatch):
     ran = []
     returncode = [0]
-    monkeypatch.setattr(install.subprocess, "run",
+    monkeypatch.setattr(install.pip.subprocess, "run",
                         lambda command, check: ran.append(command[3:]) or types.SimpleNamespace(returncode=returncode[0]))
     assert install.install("nllb-1.3b") == 0
     assert ran == [["install", "-r", str(install.PROJECT_ROOT / "requirements-nllb.txt")]]

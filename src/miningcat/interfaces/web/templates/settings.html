@@ -556,6 +556,19 @@
           <a class="btn btn-primary align-self-start" href="https://discord.com/invite/w7kRrq6BVS" target="_blank" rel="noopener"><i class="bi bi-discord" aria-hidden="true"></i> Join the Discord Server!</a>
         </div>
       </div>
+      <div class="card">
+        <h2 class="card-header h6">Updates</h2>
+        <div class="card-body vstack gap-3">
+          <p class="small text-body-secondary m-0">MiningCat looks for a new version when it starts: the newest one on
+            GitHub whose tests passed. The home page offers it, or MiningCat updates at launch, before opening (the
+            packages that changed are installed too). Only for a clone of MiningCat made with <code>git clone</code>,
+            without changes to its code. Also with <code>make update</code>. Kept in <code>user/user-config.json</code>.</p>
+          <div class="btn-group align-self-start" role="group" aria-label="Updates">
+            <button type="button" class="btn btn-outline-primary" data-mc-updates-choice="ask"><i class="bi bi-bell" aria-hidden="true"></i> Offer them on the home page</button>
+            <button type="button" class="btn btn-outline-primary" data-mc-updates-choice="launch"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Update at launch</button>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 {% endblock %}

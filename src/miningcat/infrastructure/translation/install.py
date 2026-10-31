@@ -2,11 +2,10 @@
 NLLB-200 needs CTranslate2 (which faster-whisper brings already) and SentencePiece (requirements-nllb.txt); Qwen3
 needs transformers, like Qwen3-ASR (requirements-qwen.txt). With `make install-translation`
 (python -m miningcat install-translation), or from the settings."""
-import subprocess
 from typing import Callable
 
 from miningcat.config.paths import PROJECT_ROOT
-from miningcat.config.runtime import PYTHON
+from miningcat.infrastructure.system import pip
 from miningcat.infrastructure.translation.nllb import Nllb
 from miningcat.infrastructure.translation.qwen3 import Qwen3
 
@@ -23,17 +22,13 @@ def engine_of(name: str) -> type:
 
 def commands(name: str) -> list[list[str]]:
     """The pip commands installing the packages of a model's engine. Same as the Makefile's."""
-    return [[PYTHON, "-m", "pip", "install", "-r", str(PROJECT_ROOT / ENGINES[engine_of(name)])]]
+    return [pip.install("-r", str(PROJECT_ROOT / ENGINES[engine_of(name)]))]
 
 
 def install_packages(name: str) -> int:
     """Installs the packages of a model's engine, pip's output going to this process's. Returns the exit code of the
     first command that fails, else 0."""
-    for command in commands(name):
-        returncode = subprocess.run(command, check=False).returncode
-        if returncode != 0:
-            return returncode
-    return 0
+    return pip.run(commands(name))
 
 
 def install(name: str, progress: Callable[[int, int], None] | None = None) -> int:

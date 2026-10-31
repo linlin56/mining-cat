@@ -361,6 +361,7 @@ def test_miningcat_packages_are_installed_before_the_engines_are_imported(repos,
     old = git(clone, "rev-parse", "HEAD")
     commit(origin, "requirements.txt", "flask\nnumpy\n")
     git(clone, "pull", "--quiet")
+    monkeypatch.setattr(updates.pip, "cpu_pytorch", lambda: False)  # not Linux without a GPU: 2 commands
     order = []
     monkeypatch.setattr(updates, "engine_commands", lambda changed: order.append("engines") or [])
     calls, _ = processes

@@ -1,4 +1,4 @@
-.PHONY: help venv gui reader player install install-translation install-qwen install-taigi install-omnivoice test coverage screenshots audio epub align export chapter1 chapter run clean video game-setup game
+.PHONY: help venv gui reader player install update install-translation install-qwen install-taigi install-omnivoice test coverage screenshots audio epub align export chapter1 chapter run clean video game-setup game
 
 # Defaults
 CHAPTER  ?= 1
@@ -60,6 +60,7 @@ help:
 	@echo ""
 	@echo "Usage:"
 	@echo "  make install                    Install dependencies"
+	@echo "  make update                     Update MiningCat (the newest version whose tests passed)"
 	@echo "  make install-qwen               Install Qwen3-ASR, optional instead of Whisper (MODEL=qwen3-0.6b|qwen3-1.7b)"
 	@echo "  make install-translation [TRANSLATION=nllb-1.3b|qwen3-4b] Install a translation model (nllb-600m by default)"
 	@echo "  make install-taigi              Install Taigi's local speech engines (Qwen3-ASR and Meta's MMS)"
@@ -100,6 +101,11 @@ endif
 	$(PYTHON) -m pip install -r requirements.txt
 # Install separately with --no-deps to avoid the PyGObject build error on Linux.
 	$(PYTHON) -m pip install --no-deps "owocr>=1.26.8"
+
+# The newest commit of main whose tests passed (the CI's), then the packages that changed.
+# Same as the home page's update (infrastructure/system/updates.py).
+update:
+	$(MAIN) update
 
 # The model translating sentences and subtitles (optional, large): the packages of its engine (requirements-nllb.txt or
 # requirements-qwen.txt), then the model. Same as the settings' install (infrastructure/translation/install.py).

@@ -911,21 +911,26 @@ async function renewEreaderToken() {
   try { renderEreader(await api("/api/ereader/token", {})); } catch (err) { showError(err); }
 }
 
-// ---------------------------------------------------------------- user preferences: Discord (the colours: theme.js)
-function markDiscord(choice) {
-  for (const button of document.querySelectorAll("[data-mc-discord-choice]")) {
-    const on = button.dataset.mcDiscordChoice === choice;
+// ---------------------------------------------------------------- user preferences: Discord and the updates (the colours: theme.js)
+// The buttons of a preference (data-mc-<key>-choice), the chosen one pressed.
+function markChoice(key, choice) {
+  for (const button of document.querySelectorAll(`[data-mc-${key}-choice]`)) {
+    const on = button.getAttribute(`data-mc-${key}-choice`) === choice;
     button.classList.toggle("active", on);
     button.setAttribute("aria-pressed", String(on));
   }
 }
 
-async function loadDiscord() {
-  markDiscord((await api("/api/preferences")).discord);
-  for (const button of document.querySelectorAll("[data-mc-discord-choice]")) {
-    button.addEventListener("click", async () => {
-      try { markDiscord((await api("/api/preferences", { discord: button.dataset.mcDiscordChoice })).discord); } catch (err) { showError(err); }
-    });
+async function loadChoices() {
+  const preferences = await api("/api/preferences");
+  for (const key of ["discord", "updates"]) {
+    markChoice(key, preferences[key]);
+    for (const button of document.querySelectorAll(`[data-mc-${key}-choice]`)) {
+      button.addEventListener("click", async () => {
+        const value = button.getAttribute(`data-mc-${key}-choice`);
+        try { markChoice(key, (await api("/api/preferences", { [key]: value }))[key]); } catch (err) { showError(err); }
+      });
+    }
   }
 }
 
@@ -984,7 +989,7 @@ async function loadGoals() {
 
 async function init() {
   try {
-    loadDiscord().catch(showError);
+    loadChoices().catch(showError);
     await loadLanguages();
     if (STUDY) loadGoals().catch(showError);
     await loadDictionaries();

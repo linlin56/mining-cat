@@ -319,7 +319,7 @@ def test_qwen3_asr_transcribes_in_the_language(monkeypatch):
 def test_engine_install_commands(monkeypatch):
     from miningcat.infrastructure.speech import engine_install
     ran = []
-    monkeypatch.setattr(engine_install.subprocess, "run",
+    monkeypatch.setattr(engine_install.pip.subprocess, "run",
                         lambda command, check: ran.append(command[4:]) or types.SimpleNamespace(returncode=0))
     assert engine_install.install(engine_install.QWEN) == 0
     qwen = [["-r", str(engine_install.PROJECT_ROOT / "requirements-qwen.txt")],
@@ -333,7 +333,7 @@ def test_engine_install_commands(monkeypatch):
 def test_engine_install_stops_at_the_first_failure(monkeypatch):
     from miningcat.infrastructure.speech import engine_install
     ran = []
-    monkeypatch.setattr(engine_install.subprocess, "run",
+    monkeypatch.setattr(engine_install.pip.subprocess, "run",
                         lambda command, check: ran.append(command) or types.SimpleNamespace(returncode=1))
     assert engine_install.install(engine_install.TAIGI) == 1 and len(ran) == 1
 
@@ -350,17 +350,17 @@ def test_engines_installed(monkeypatch):
 
 def test_omnivoice_install_commands(monkeypatch):
     from miningcat.infrastructure.speech import engine_install
-    monkeypatch.setattr(engine_install.platform, "system", lambda: "Linux")
-    monkeypatch.setattr(engine_install.shutil, "which", lambda name: None)  # no NVIDIA GPU
+    monkeypatch.setattr(engine_install.pip.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(engine_install.pip.shutil, "which", lambda name: None)  # no NVIDIA GPU
     venv, pip = str(omnivoice_tts.VENV), [str(omnivoice_tts.PYTHON), "-m", "pip", "install"]
     assert engine_install.commands(engine_install.OMNIVOICE) == [
         [engine_install.PYTHON, "-m", "venv", venv],  # its own environment: it needs transformers 5
-        [*pip, "torch", "torchaudio", "--index-url", engine_install.PYTORCH_CPU_INDEX],
+        [*pip, "torch", "torchaudio", "--index-url", engine_install.pip.PYTORCH_CPU_INDEX],
         [*pip, "-r", str(engine_install.PROJECT_ROOT / "requirements-omnivoice.txt")],
         [*pip, "--no-deps", engine_install.OMNIVOICE_REQUIREMENT],
         [str(omnivoice_tts.PYTHON), "-c", "from huggingface_hub import snapshot_download; snapshot_download('k2-fsa/OmniVoice')"],
     ]
-    monkeypatch.setattr(engine_install.shutil, "which", lambda name: "/usr/bin/nvidia-smi")
+    monkeypatch.setattr(engine_install.pip.shutil, "which", lambda name: "/usr/bin/nvidia-smi")
     assert engine_install.commands(engine_install.OMNIVOICE)[1] == [*pip, "torch", "torchaudio"]
     assert not engine_install.installed(engine_install.OMNIVOICE)  # conftest: never the real one
     monkeypatch.setattr(omnivoice_tts, "installed", lambda: True)

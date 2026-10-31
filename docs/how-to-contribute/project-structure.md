@@ -26,7 +26,9 @@ flowchart TB
 ## Running it
 
 - `python -m miningcat <command>`: the CLI (`interfaces/cli/`). Each subcommand is a `Command` object.
-- `python -m miningcat.interfaces.web`: the web GUI, a Flask server on `127.0.0.1` that opens the browser.
+- `python -m miningcat.interfaces.web`: the web GUI, a Flask server on `127.0.0.1` that opens the browser. The
+  server runs in a child process (`interfaces/web/serve.py`): the first one updates MiningCat (at launch, or between
+  two servers after an update from the home page), loading no package that pip may have to replace.
 - The `Makefile` runs both from the project root (`make gui`, `make epub`...), with `PYTHONPATH=src`.
 - `koreader/miningcat.koplugin/`: the KOReader plugin (Lua), outside the package. It sends the words looked up on an
   e-reader to `POST /api/inbox`, through the door `interfaces/web/lan.py` opens on the local network.

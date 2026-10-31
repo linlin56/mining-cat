@@ -6,8 +6,9 @@ from miningcat.interfaces.cli.command import Command
 from miningcat.interfaces.cli.converter_commands import CONVERTER_COMMANDS
 from miningcat.interfaces.cli.game_command import GameCommand
 from miningcat.interfaces.cli.translation_command import TranslationInstallCommand
+from miningcat.interfaces.cli.update_command import UpdateCommand
 
-COMMANDS: list[Command] = [*CONVERTER_COMMANDS, GameCommand(), TranslationInstallCommand()]
+COMMANDS: list[Command] = [*CONVERTER_COMMANDS, GameCommand(), TranslationInstallCommand(), UpdateCommand()]
 
 
 def build_parser(commands: list[Command] = COMMANDS) -> argparse.ArgumentParser:

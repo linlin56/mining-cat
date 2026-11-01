@@ -103,7 +103,7 @@ class AnkiSync:
                     if key not in longest or interval > longest[key][1]:
                         longest[key] = (note["noteId"], interval)
         for (expression, reading), (note_id, interval) in longest.items():
-            status = self._apply(language, expression, reading, note_id, interval)
+            status = self._apply(language, expression, reading, note_id, interval)  # reading: normalized
             updated[status if status in ("learning", "known") else "kept"] += 1
         return updated
 
@@ -121,8 +121,10 @@ class AnkiSync:
                 self._apply(r["language"], r["expression"], r["reading"], r["anki_note_id"], intervals[r["anki_note_id"]])
 
     def _apply(self, language: str, expression: str, reading: str, note_id: int, interval: int) -> str:
+        """`reading`: normalized (a word's key, or a saved word's)."""
         self._notes.add((language, note_id))
-        return words.apply_anki_state(language, expression, reading, note_id, interval, self.known_interval, self._kept)
+        return words.apply_anki_state(language, expression, reading, note_id, interval, self.known_interval, self._kept,
+                                      normalized=True)
 
     def _forget_edited_notes(self, linked: list[dict]) -> tuple[set[int], int]:
         """Removes the other words of the notes this sync took the word of (of `linked`, the words linked to a note):
@@ -217,5 +219,5 @@ def settle_deleted_words(language: str, shown_ids: list[str], known_ids: list[st
         known = set(known_ids) & answered
         for word in deleted_words(language):
             if word["id"] in known:
-                words.set_status(word["language"], word["expression"], word["reading"], "known")
+                words.set_status(word["language"], word["expression"], word["reading"], "known", normalized=True)
         settings.set(DELETED_SETTING, [w for w in deleted_words() if w["language"] != language or w["id"] not in answered])

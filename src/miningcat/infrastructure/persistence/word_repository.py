@@ -1,6 +1,5 @@
 import sqlite3
 
-from miningcat.domain.text.readings import normalize_reading
 from miningcat.infrastructure.persistence.database import as_dict
 
 # SQLite limits the number of parameters of a query.
@@ -26,7 +25,8 @@ class WordRepository:
         self._conn = conn
 
     def find(self, language: str, expression: str, reading: str = "", anki_note_id: int | None = None) -> dict | None:
-        reading = normalize_reading(reading, language)
+        """The saved word, `reading` being normalized already (normalize_reading): like the one stored, it isn't
+        normalized again, a Taigi reading not being the same once normalized twice (hó--ah: hóah, then huáh)."""
         rows = self._conn.execute(
             "SELECT * FROM words WHERE language = ? AND expression = ?", (language, expression)
         ).fetchall()

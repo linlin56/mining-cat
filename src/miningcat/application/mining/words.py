@@ -26,6 +26,7 @@ def display_reading(language: str, expression: str, reading: str) -> str:
 
 def status_of(language: str, expression: str, reading: str = "") -> dict:
     """Status of a word, and for Chinese the status of the same word in the other script."""
+    reading = normalize_reading(reading, language)
     with database.session() as conn:
         repository = WordRepository(conn)
         word = repository.find(language, expression, reading)
@@ -40,20 +41,23 @@ def status_of(language: str, expression: str, reading: str = "") -> dict:
     return result
 
 
-def _word_key(language: str, expression: str, reading: str) -> tuple[str, str]:
-    """The expression and reading under which a word is saved."""
+def _word_key(language: str, expression: str, reading: str, normalized: bool = False) -> tuple[str, str]:
+    """The expression and reading under which a word is saved (`normalized`: the reading is one already, e.g. a saved
+    word's: a Taigi reading normalized twice isn't the same any more)."""
     if language not in LANGUAGES:
         raise WordError(f"Unknown language: {language}")
     expression = (expression or "").strip()
     if not expression:
         raise WordError("Missing word.")
-    return expression, normalize_reading(reading, language)
+    return expression, reading if normalized else normalize_reading(reading, language)
 
 
 def set_status(language: str, expression: str, reading: str, status: str | None,
-               source: str = "manual", anki_note_id: int | None = None, anki_interval: int | None = None) -> dict:
-    """Sets (or with status=None, clears) the status of a word. Returns the new status."""
-    expression, reading = _word_key(language, expression, reading)
+               source: str = "manual", anki_note_id: int | None = None, anki_interval: int | None = None,
+               normalized: bool = False) -> dict:
+    """Sets (or with status=None, clears) the status of a word. Returns the new status. `normalized`: the reading is
+    a saved word's (see _word_key)."""
+    expression, reading = _word_key(language, expression, reading, normalized)
     if status is not None and status not in STATUSES:
         raise WordError(f"Unknown status: {status}")
     now = time.time()
@@ -90,12 +94,13 @@ def statuses_for(language: str, expressions: list[str]) -> dict[str, str]:
 
 
 def apply_anki_state(language: str, expression: str, reading: str, note_id: int | None,
-                     interval: int, known_interval: int = DEFAULT_KNOWN_INTERVAL, kept: set[int] | None = None) -> str:
+                     interval: int, known_interval: int = DEFAULT_KNOWN_INTERVAL, kept: set[int] | None = None,
+                     normalized: bool = False) -> str:
     """Updates a word from its Anki cards. A word the user marked known or ignored stays as it is. A note edited in
     Anki takes its word along: the note's word not updated yet by this sync (`kept`: the ids of the rows it updated,
     this one added) gets the new word or reading, its own reading kept when it's the same pronunciation written another
-    way (pinyin and zhuyin)."""
-    expression, reading = _word_key(language, expression, reading)
+    way (pinyin and zhuyin). `normalized`: the reading is normalized already (see _word_key)."""
+    expression, reading = _word_key(language, expression, reading, normalized)
     status, now = status_from_interval(interval, known_interval), time.time()
     with database.session() as conn:
         repository = WordRepository(conn)

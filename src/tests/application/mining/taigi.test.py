@@ -137,3 +137,17 @@ def test_convert_api(client):
 def test_reading_setting_api(client):
     assert client.post("/api/mining/reading", json={"language": "nan", "system": "poj"}, headers=HEADERS).status_code == 200
     assert client.get("/api/mining/languages").get_json()["readings"]["nan"] == "poj"
+
+
+def test_a_taigi_reading_is_normalized_once():
+    # hó--ah is saved as hóah, which normalized again would read as a POJ syllable (huáh): a saved word must be found
+    # from its saved reading, or it would be added a second time.
+    assert normalize_reading("hó--ah", "nan") == "hóah"
+    words.set_status("nan", "好矣", "hó--ah", "learning", source="card")
+    words.set_status("nan", "好矣", "hó--ah", "learning", source="card", anki_note_id=1_700_000_000_000)
+    assert words.status_of("nan", "好矣", "hó--ah")["status"] == "learning"
+    words.set_status("nan", "好矣", "hóah", "known", normalized=True)
+    assert words.status_of("nan", "好矣", "hó--ah")["status"] == "known"
+    assert len([w for w in words.list_words("nan") if w["expression"] == "好矣"]) == 1
+    assert words.apply_anki_state("nan", "好矣", "hóah", 1_700_000_000_000, 30, normalized=True) == "known"
+    assert len([w for w in words.list_words("nan") if w["expression"] == "好矣"]) == 1

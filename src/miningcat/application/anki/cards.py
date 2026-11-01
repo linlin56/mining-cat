@@ -9,6 +9,7 @@ from miningcat.domain.cards.errors import AnkiError, AnkiUnavailable, MediaUnava
 from miningcat.domain.cards.field_text import plain_field_text
 from miningcat.domain.cards.fields import CARD_FIELDS, MEDIA_FIELDS
 from miningcat.domain.languages import LANGUAGES
+from miningcat.domain.text.readings import normalize_reading
 from miningcat.infrastructure.persistence.card_repository import CardRepository
 from miningcat.infrastructure.persistence.database import database
 from miningcat.infrastructure.persistence.word_repository import WordRepository
@@ -40,7 +41,7 @@ def _mark_learning(language: str, expression: str, reading: str, note_id: int | 
     """Marks a card's word as learning (linked to its note once sent), unless it is known or already linked to another
     Anki note: a word's other card (another meaning, another example) leaves its status to its first one."""
     with database.session() as conn:
-        word = WordRepository(conn).find(language, expression, reading)
+        word = WordRepository(conn).find(language, expression, normalize_reading(reading, language))
     if word and (word["status"] == "known" or word["anki_note_id"]):
         return
     words.set_status(language, expression, reading, "learning", source="card", anki_note_id=note_id)

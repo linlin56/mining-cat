@@ -747,7 +747,7 @@ async function init() {
     const { current, languages } = await api("/api/profile");
     if (current) renderHub(current);
     else renderPicker(languages, null);
-    $("change-language").addEventListener("click", () => renderPicker(languages, current));
+    $("change-language").addEventListener("click", () => renderPicker(languages, study));
   } catch (err) { showError(err); }
 }
 

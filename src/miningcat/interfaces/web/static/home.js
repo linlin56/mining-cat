@@ -566,6 +566,58 @@ function goalBanner(g, known) {
   return null;
 }
 
+// Confetti on the day a goal is reached: once per page and goal, not with reduced motion. From the new plan only: the
+// cached one's today may be another day's.
+const celebrated = new Set();
+
+function celebrate(g) {
+  const reached = g.goals.filter((goal) => goal.reached_on === g.today && !celebrated.has(`${study.id}/${goal.id}`));
+  if (!reached.length) return;
+  reached.forEach((goal) => celebrated.add(`${study.id}/${goal.id}`));
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const canvas = document.createElement("canvas");
+  canvas.setAttribute("aria-hidden", "true");
+  canvas.style.cssText = "position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2000";
+  document.body.append(canvas);
+  const ctx = canvas.getContext("2d");
+  const fit = () => {  // sharp on Retina screens, and the whole window even when it's resized
+    canvas.width = Math.round(innerWidth * devicePixelRatio);
+    canvas.height = Math.round(innerHeight * devicePixelRatio);
+  };
+  fit();
+  addEventListener("resize", fit);
+  const colors = ["#f94144", "#f8961e", "#f9c74f", "#90be6d", "#43aa8b", "#577590", "#c77dff"];
+  const pieces = Array.from({ length: 180 }, () => ({
+    x: innerWidth * (0.2 + Math.random() * 0.6), y: innerHeight * 0.3, vx: (Math.random() - 0.5) * 14,
+    vy: -6 - Math.random() * 12, size: 6 + Math.random() * 6, angle: Math.random() * Math.PI, spin: (Math.random() - 0.5) * 0.3,
+    color: colors[Math.floor(Math.random() * colors.length)],
+  }));
+  // timed from the first frame (a tab in the background has none) and moved by the time elapsed (in 60 Hz frames,
+  // at most 3: after a pause, the pieces don't jump), whatever the screen's refresh rate
+  const DURATION = 5000;
+  let start, last;
+  const frame = (now) => {
+    start ??= now;
+    const t = now - start, step = Math.min(3, (now - (last ?? now - 1000 / 60)) / (1000 / 60));
+    last = now;
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    ctx.globalAlpha = Math.max(0, Math.min(1, (DURATION - t) / 1000));
+    for (const p of pieces) {
+      p.vy += 0.3 * step; p.vx *= 0.99 ** step; p.x += p.vx * step; p.y += p.vy * step; p.angle += p.spin * step;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+      ctx.restore();
+    }
+    if (t < DURATION) requestAnimationFrame(frame);
+    else { canvas.remove(); removeEventListener("resize", fit); }
+  };
+  requestAnimationFrame(frame);
+}
+
 // The figures under the goal's counts: folded or not, for all three at once, remembered in the browser.
 const DETAILS_KEY = "miningcat.goal-details";
 
@@ -629,6 +681,7 @@ async function loadGoal(cached = false) {
         + (p.measured ? "measured on your Anki cards." : "usual values, until you've reviewed enough cards in Anki."))
       + " Known words are counted from your words and your Anki reviews.";
   }
+  if (!cached) celebrate(g);
 }
 
 function renderPicker(languages, current) {

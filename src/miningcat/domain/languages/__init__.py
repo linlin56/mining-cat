@@ -7,12 +7,13 @@ from miningcat.domain.languages.study_language import (
     NATIVE_NAMES,
     NO_SPACE_LANGUAGES,
     STUDY_LANGUAGES,
+    TWO_SCRIPT_LANGUAGES,
     StudyLanguage,
 )
 from miningcat.domain.languages.tags import is_no_space, language_key, same_family
 
 __all__ = [
     "Language", "LanguageProfile", "SpeechEngine", "Voice", "WordSegmentation", "StudyLanguage", "STUDY_LANGUAGES",
-    "LANGUAGES", "NATIVE_NAMES", "NO_SPACE_LANGUAGES", "CHINESE_LANGUAGES", "language_key", "is_no_space",
+    "LANGUAGES", "NATIVE_NAMES", "NO_SPACE_LANGUAGES", "CHINESE_LANGUAGES", "TWO_SCRIPT_LANGUAGES", "language_key", "is_no_space",
     "same_family",
 ]

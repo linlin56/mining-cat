@@ -1,6 +1,6 @@
 """The language the user studies, chosen on the home page: the pages only show its books, videos and words."""
 from miningcat.application.mining import dictionaries, preferences, words
-from miningcat.domain.languages import CHINESE_LANGUAGES, LANGUAGES, NATIVE_NAMES, Language
+from miningcat.domain.languages import CHINESE_LANGUAGES, LANGUAGES, NATIVE_NAMES, TWO_SCRIPT_LANGUAGES, Language
 from miningcat.infrastructure.persistence.settings_store import settings
 
 SETTING = "study_language"
@@ -54,6 +54,7 @@ def describe(language: str | None) -> dict | None:
         "name": LANGUAGES[language],
         "native": NATIVE_NAMES.get(language, ""),
         "chinese": language in CHINESE_LANGUAGES,
+        "two_scripts": language in TWO_SCRIPT_LANGUAGES,
         "tag": default_tag(language),
         "tags": [{"tag": t, "label": label} for t, label in tags(language)],
         "converter": bool(converter_languages(language)),

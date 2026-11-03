@@ -11,11 +11,13 @@ class StudyLanguage:
     # Written without spaces between words: a lookup tries every substring from the cursor.
     without_spaces: bool = False
     chinese: bool = False
+    # Written in traditional or simplified characters, one converted to the other (OpenCC): not Taigi's Hanji.
+    two_scripts: bool = False
 
 
 STUDY_LANGUAGES: tuple[StudyLanguage, ...] = (
-    StudyLanguage("zh", "Mandarin", "中文", without_spaces=True, chinese=True),
-    StudyLanguage("yue", "Cantonese", "粵語", without_spaces=True, chinese=True),
+    StudyLanguage("zh", "Mandarin", "中文", without_spaces=True, chinese=True, two_scripts=True),
+    StudyLanguage("yue", "Cantonese", "粵語", without_spaces=True, chinese=True, two_scripts=True),
     StudyLanguage("ja", "Japanese", "日本語", without_spaces=True),
     StudyLanguage("ko", "Korean", "한국어"),
     StudyLanguage("en", "English", "English"),
@@ -35,3 +37,4 @@ LANGUAGES: dict[str, str] = {language.key: language.name for language in STUDY_L
 NATIVE_NAMES: dict[str, str] = {language.key: language.native_name for language in STUDY_LANGUAGES}
 NO_SPACE_LANGUAGES: frozenset[str] = frozenset(language.key for language in STUDY_LANGUAGES if language.without_spaces)
 CHINESE_LANGUAGES: frozenset[str] = frozenset(language.key for language in STUDY_LANGUAGES if language.chinese)
+TWO_SCRIPT_LANGUAGES: frozenset[str] = frozenset(language.key for language in STUDY_LANGUAGES if language.two_scripts)

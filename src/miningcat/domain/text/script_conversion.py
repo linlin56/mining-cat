@@ -1,6 +1,7 @@
 """Subtitles and OCR text converted to another script: simplified / traditional Chinese characters (OpenCC), or
 Taigi's writing systems (Hanji, Tâi-lô, POJ)."""
 import re
+from itertools import groupby
 
 from miningcat.domain.languages import Language
 from miningcat.domain.text import chinese_script, taigi
@@ -66,6 +67,35 @@ def convert_text(text: str, source_script: str, target_script: str) -> str:
     if converter is None:
         raise ConversionError("Converting Chinese characters needs OpenCC (pip install opencc-python-reimplemented).")
     return converter.convert(text).translate(str.maketrans(_QUOTES[(source_script, target_script)]))
+
+
+def convert_chinese(text: str, language: str, target: str) -> str:
+    """A text of a Chinese language (zh, yue) in "traditional" or "simplified" characters, quotation marks included,
+    with the app's forms (chinese_script: Taiwan's for Mandarin, Hong Kong's for Cantonese). Its lines already
+    traditional, or in characters of both only, keep their characters to traditional: OpenCC would also rewrite those
+    valid in both (台北 → 臺北, 里面 → 裡面). A line mixing both scripts is converted whole: its 里 may stand for 裡.
+    To simplified, only the lines already simplified keep theirs: hk2s also simplifies Hong Kong forms the character
+    tables call both (衞 → 卫)."""
+    if target not in ("traditional", "simplified"):
+        raise ConversionError(f"Unknown script: {target!r}")
+    scripts = chinese_script.chinese_scripts
+    converter = scripts.converter.converter(scripts.config(target, language))
+    if converter is None:
+        raise ConversionError("Converting Chinese characters needs OpenCC (pip install opencc-python-reimplemented).")
+    kept = (target, "both") if target == "traditional" else (target,)
+    quotes = str.maketrans(_TO_TRADITIONAL_QUOTES if target == "traditional" else _TO_SIMPLIFIED_QUOTES)
+    # the lines to convert, a run of them at once (OpenCC's calls cost)
+    runs = groupby(text.splitlines(keepends=True), key=lambda line: scripts.script(line) not in kept)
+    return "".join(converter.convert(run) if convert else run
+                   for convert, run in ((convert, "".join(lines)) for convert, lines in runs)).translate(quotes)
+
+
+def sample(text: str, size: int = 20_000, pieces: int = 20) -> str:
+    """Up to `size` characters of a text, from all over it: `pieces` stretches spread from its start to its end."""
+    if len(text) <= size:
+        return text
+    step, length = len(text) // pieces, size // pieces
+    return "\n".join(text[start:start + length] for start in range(0, step * pieces, step))
 
 
 # Index and timecode lines of an SRT file: Taigi's conversion leaves them as they are.

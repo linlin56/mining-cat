@@ -538,20 +538,18 @@ function goalStats(g) {
   return [eta, cards, mine];
 }
 
-// The news of the goals: one reached or missed in the last two weeks, or none in progress any more.
-const RECENT_DAYS = 14;
-
+// The news of the goals, on the day only (like the confetti: the chart and Settings keep the past goals): one reached
+// today, or missed yesterday (its last day), or none in progress any more.
 function goalBanner(g, known) {
   const today = dayMs(g.today), c = currentGoal(g);
-  const settledOn = (goal) => dayMs(goal.status === "reached" ? goal.reached_on : goal.by);
-  const recent = g.goals.filter((goal) => goal.status !== "active" && today - settledOn(goal) <= RECENT_DAYS * DAY_MS)
-    .sort((a, b) => settledOn(b) - settledOn(a))[0];
+  const news = (goal) => goal.status === "reached" ? goal.reached_on === g.today : goal.status === "missed" && today - dayMs(goal.by) === DAY_MS;
+  const recent = g.goals.filter(news).sort((a, b) => (b.status === "reached") - (a.status === "reached"))[0];
   const next = c ? ` Next: ${plural(c.words, "word")} by ${longDate(c.by)}.` : null;
   const link = (text) => Object.assign(document.createElement("a"), { href: "/settings/#preferences", className: "alert-link", textContent: text });
   if (recent && recent.status === "reached") {
     const early = Math.round((dayMs(recent.by) - dayMs(recent.reached_on)) / DAY_MS);
     return ["alert-success", "trophy",
-      [`You reached your goal of ${plural(recent.words, "word")} on ${longDate(recent.reached_on)}${early > 0 ? `, ${plural(early, "day")} early` : ""}! `,
+      [`You reached your goal of ${plural(recent.words, "word")} today${early > 0 ? `, ${plural(early, "day")} early` : ""}! `,
         next || link("Set your next goal")]];
   }
   if (recent) {

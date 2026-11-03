@@ -1,3 +1,4 @@
+from collections import Counter
 from pathlib import Path
 
 
@@ -53,12 +54,18 @@ class ChineseScripts:
     def __init__(self, converter: OpenCcConverter | None = None):
         self.converter = converter or OpenCcConverter()
 
+    @staticmethod
+    def config(script: str, language: str = "zh") -> str:
+        """OpenCC's configuration to "traditional" or "simplified" characters: Taiwan forms for Mandarin (裡, 台), Hong
+        Kong forms for Cantonese, both ways (hk2s also simplifies 衞, which t2s leaves)."""
+        region = "hk" if language == "yue" else "tw"
+        return f"s2{region}" if script == "traditional" else f"{region}2s"
+
     def to_traditional(self, text: str, language: str = "zh") -> str:
-        # Taiwan forms for Mandarin (裡, 台), Hong Kong forms for Cantonese.
-        return self.converter.convert(text, "s2hk" if language == "yue" else "s2tw")
+        return self.converter.convert(text, self.config("traditional", language))
 
     def to_simplified(self, text: str, language: str = "zh") -> str:
-        return self.converter.convert(text, "t2s")
+        return self.converter.convert(text, self.config("simplified", language))
 
     def char_script(self, char: str) -> str:
         simplified_only, traditional_only = self.converter.tables()
@@ -78,6 +85,14 @@ class ChineseScripts:
         if not found:
             return "both"
         return found.pop() if len(found) == 1 else "mixed"
+
+    def main_script(self, text: str) -> str:
+        """The script of most of the characters written in only one: 'traditional' or 'simplified', 'both' when
+        neither has more (none of them, or a tie)."""
+        counts = Counter(self.char_script(c) for c in text)
+        if counts["traditional"] == counts["simplified"]:
+            return "both"
+        return "traditional" if counts["traditional"] > counts["simplified"] else "simplified"
 
     def counterpart(self, text: str, language: str = "zh") -> tuple[str, str] | None:
         """The same word in the other script, e.g. 說 -> ('simplified', '说'); None if identical."""
@@ -103,6 +118,10 @@ def to_simplified(text: str, language: str = "zh") -> str:
 
 def chinese_script(text: str) -> str:
     return chinese_scripts.script(text)
+
+
+def chinese_main_script(text: str) -> str:
+    return chinese_scripts.main_script(text)
 
 
 def chinese_counterpart(text: str, language: str = "zh") -> tuple[str, str] | None:

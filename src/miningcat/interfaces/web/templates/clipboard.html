@@ -15,7 +15,11 @@
     </a>
     <span class="small text-body-secondary" id="count"></span>
     <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
-      <select class="form-select form-select-sm w-auto" id="language" title="Characters" aria-label="Characters" hidden></select>
+      <select class="form-select form-select-sm w-auto" id="chinese-convert" title="The characters the text is read in (the text you typed stays as it is)" aria-label="Characters" hidden>
+        <option value="none">Don't convert</option>
+        <option value="traditional">Convert to traditional</option>
+        <option value="simplified">Convert to simplified</option>
+      </select>
       <select class="form-select form-select-sm w-auto" id="taigi-convert" title="Write the text in another writing system" aria-label="Write in" hidden>
         <option value="">Write in…</option>
         <option value="hanji">Hanji (漢字)</option>

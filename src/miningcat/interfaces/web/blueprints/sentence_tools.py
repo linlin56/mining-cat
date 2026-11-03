@@ -1,5 +1,5 @@
 """Tools of the card creator: readings of a sentence's words, word recordings, sentence audio and translation; and
-Taigi's writing systems, for the Clipboard page."""
+the scripts of Chinese and Taigi, for the Clipboard page."""
 import base64
 
 from flask import Blueprint, jsonify, request
@@ -7,6 +7,9 @@ from flask import Blueprint, jsonify, request
 from miningcat.application import elevenlabs
 from miningcat.application.mining import sentence_readings, sentence_tts, translation, word_audio
 from miningcat.domain.text import taigi
+from miningcat.domain.languages import TWO_SCRIPT_LANGUAGES
+from miningcat.domain.text.chinese_script import chinese_main_script
+from miningcat.domain.text.script_conversion import ConversionError, convert_chinese, sample
 from miningcat.interfaces.web.errors import UserError
 from miningcat.interfaces.web.requests import json_body, study_language
 
@@ -31,6 +34,29 @@ def api_taigi_convert():
         return jsonify(text=taigi.convert(text, target, numbers=bool(body.get("numbers"))))
     except (ValueError, RuntimeError) as exc:
         raise UserError("Error", str(exc))
+
+
+# A Chinese text as the Clipboard page shows it to read: in traditional or simplified characters, or as it is ("none").
+# With the script of most of its characters, as read and as typed, for their language tags: told from a sample of it,
+# a text of any length is read without delay.
+@bp.post("/api/chinese/convert")
+def api_chinese_convert():
+    body = json_body()
+    text, target = str(body.get("text") or ""), str(body.get("target") or "none")
+    language = study_language(body.get("language"))
+    if language not in TWO_SCRIPT_LANGUAGES:
+        raise UserError("Error", f"{language!r} isn't written in traditional and simplified characters.")
+    converted = text
+    if target != "none":
+        if len(text) > 200_000:
+            raise UserError("Error", "The text is too long to convert (200,000 characters at most).")
+        try:
+            converted = convert_chinese(text, language, target)
+        except ConversionError as exc:
+            raise UserError("Error", str(exc))
+    source = chinese_main_script(sample(text))
+    return jsonify(text=converted, script=source if converted == text else chinese_main_script(sample(converted)),
+                   source=source)
 
 
 @bp.get("/api/dict/audio")

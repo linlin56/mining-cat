@@ -1,4 +1,4 @@
-"""Where the user stopped in each video, and its preferences (language, subtitle tracks, offset, audio track)."""
+"""Where the user stopped in each video, and its preferences (language, subtitle tracks, their timings, audio track)."""
 import re
 import time
 
@@ -7,6 +7,7 @@ from miningcat.domain.library.errors import VideoError
 from miningcat.infrastructure.files.json_files import read_json, write_json
 
 OFFSET_LIMIT_S = 600
+SCALE_LIMITS = (0.9, 1.1)
 
 
 def get_progress(video_id: str) -> dict:
@@ -27,7 +28,29 @@ def save_progress(video_id: str, position) -> dict:
 
 
 def get_prefs(video_id: str) -> dict:
-    return read_json(store.video_folder(video_id) / "prefs.json", {})
+    """The video's preferences. "timings": {track id: {"offset", "scale"}} of the tracks moved, video = scale ×
+    track + offset."""
+    prefs = read_json(store.video_folder(video_id) / "prefs.json", {})
+    if "offset" in prefs:  # one offset for both tracks shown, before each track had its timing
+        offset = prefs.pop("offset")
+        tracks = store.read_meta(video_id).get("tracks", [])
+        primary = prefs["primary"] if "primary" in prefs else next((t["id"] for t in tracks), "")
+        timings = prefs.setdefault("timings", {})
+        for track in {primary, prefs.get("secondary", "")} - {""}:
+            if offset:
+                timings.setdefault(track, {"offset": offset, "scale": 1.0})
+    return prefs
+
+
+def _timing(value) -> dict:
+    try:
+        offset = round(max(-OFFSET_LIMIT_S, min(OFFSET_LIMIT_S, float(value.get("offset", 0)))), 3)
+        scale = float(value.get("scale", 1))
+    except (AttributeError, TypeError, ValueError):
+        raise VideoError("Invalid subtitle timing.")
+    if not SCALE_LIMITS[0] <= scale <= SCALE_LIMITS[1]:
+        raise VideoError("Invalid subtitle timing.")
+    return {"offset": offset, "scale": scale}
 
 
 def save_prefs(video_id: str, values: dict) -> dict:
@@ -45,11 +68,18 @@ def save_prefs(video_id: str, values: dict) -> dict:
             if track and track not in track_ids:
                 raise VideoError("No such subtitle track.")
             prefs[key] = track
-    if "offset" in values:
-        try:
-            prefs["offset"] = round(max(-OFFSET_LIMIT_S, min(OFFSET_LIMIT_S, float(values["offset"]))), 3)
-        except (TypeError, ValueError):
-            raise VideoError("Invalid subtitle offset.")
+    if "timings" in values:  # only the tracks given change; {"offset": 0, "scale": 1} is the track as is
+        if not isinstance(values["timings"], dict):
+            raise VideoError("Invalid subtitle timing.")
+        timings = prefs.setdefault("timings", {})
+        for track, value in values["timings"].items():
+            if track not in track_ids:
+                raise VideoError("No such subtitle track.")
+            value = _timing(value)
+            if value == {"offset": 0.0, "scale": 1.0}:
+                timings.pop(track, None)
+            else:
+                timings[track] = value
     if "audio_track" in values:
         track = values["audio_track"]
         if not isinstance(track, int) or not 0 <= track < max(1, len(meta.get("audio", []))):

@@ -15,11 +15,13 @@ from miningcat.application.library.videos.subtitles import (
     parse_subtitles,
     remove_subtitles,
 )
+from miningcat.application.library.videos.timing import align_track
 from miningcat.domain.library.errors import VideoError
 from miningcat.infrastructure.media.browser_video import play_plan
 
 __all__ = [
-    "DEFAULT_SETTINGS", "SUBTITLE_EXTENSIONS", "VIDEO_EXTENSIONS", "VideoError", "add_subtitles", "audio_tracks",
+    "DEFAULT_SETTINGS", "SUBTITLE_EXTENSIONS", "VIDEO_EXTENSIONS", "VideoError", "add_subtitles", "align_track",
+    "audio_tracks",
     "clip", "cues", "delete_video", "dismiss_download", "downloads", "file_path", "fingerprint", "frame", "get_meta",
     "get_prefs", "get_progress", "get_settings", "import_file", "import_stream", "list_videos", "parse_subtitles",
     "play_plan", "remove_subtitles", "save_prefs", "save_progress", "save_settings", "start_download",

@@ -323,14 +323,59 @@ def test_progress_and_prefs(client, library):
     assert progress["time"] == 50 and progress["percent"] == 25
     assert client.post(f"/player/api/videos/{video_id}/progress", json={"time": "a"}, headers=HEADERS).status_code == 400
 
-    prefs = client.post(f"/player/api/videos/{video_id}/prefs", json={"language": "ja", "primary": "1", "offset": 9999},
-                        headers=HEADERS).get_json()
-    assert prefs == {"language": "ja", "primary": "1", "offset": 600}
+    prefs = client.post(f"/player/api/videos/{video_id}/prefs",
+                        json={"language": "ja", "primary": "1", "timings": {"1": {"offset": 9999}}}, headers=HEADERS).get_json()
+    assert prefs == {"language": "ja", "primary": "1", "timings": {"1": {"offset": 600, "scale": 1.0}}}
+    for timing in ({"offset": "a"}, {"scale": 2}, "x"):
+        res = client.post(f"/player/api/videos/{video_id}/prefs", json={"timings": {"1": timing}}, headers=HEADERS)
+        assert res.status_code == 400
+    assert client.post(f"/player/api/videos/{video_id}/prefs", json={"timings": {"7": {}}}, headers=HEADERS).status_code == 400
+    prefs = client.post(f"/player/api/videos/{video_id}/prefs", json={"timings": {"1": {"offset": 0}}}, headers=HEADERS).get_json()
+    assert prefs["timings"] == {}  # back to the file's timing
     assert client.post(f"/player/api/videos/{video_id}/prefs", json={"primary": "7"}, headers=HEADERS).status_code == 400
     assert client.post(f"/player/api/videos/{video_id}/prefs", json={"language": "<x>"}, headers=HEADERS).status_code == 400
 
     data = client.get(f"/player/api/videos/{video_id}").get_json()
     assert data["prefs"]["primary"] == "1" and data["progress"]["time"] == 50
+
+
+def test_old_offset_goes_to_both_tracks_shown(client, library):
+    video_id = make_entry(library, tracks=[{"id": "1", "label": "ja"}, {"id": "2", "label": "en"}, {"id": "3", "label": "fr"}])
+    write_json(library / "videos" / video_id / "prefs.json", {"secondary": "2", "offset": -1.5})
+    prefs = client.get(f"/player/api/videos/{video_id}").get_json()["prefs"]
+    assert prefs == {"secondary": "2", "timings": {"1": {"offset": -1.5, "scale": 1.0}, "2": {"offset": -1.5, "scale": 1.0}}}
+
+
+def srt(starts, text="line"):
+    return "".join(f"{i}\n00:{int(s // 60):02d}:{s % 60:06.3f} --> 00:{int((s + 1) // 60):02d}:{(s + 1) % 60:06.3f}\n{text} {i}\n\n"
+                   .replace(".", ",") for i, s in enumerate(starts, 1))
+
+
+def test_auto_align(client, library):
+    starts = [3.0, 5.5, 9.2, 12.0, 15.8, 20.1, 24.4, 27.0, 31.3, 36.0, 40.2, 44.9]
+    video_id = make_entry(library, tracks=[{"id": "1", "label": "English", "origin": "embedded"},
+                                           {"id": "2", "label": "French", "origin": "embedded"},
+                                           {"id": "3", "label": "zh-TW", "origin": "file"}])
+    subs = library / "videos" / video_id / "subs"
+    subs.mkdir()
+    (subs / "001.srt").write_text(srt(starts), encoding="utf-8")
+    (subs / "002.srt").write_text(srt([s + 0.7 for s in starts[::2]]), encoding="utf-8")  # a little late, fewer lines
+    (subs / "003.srt").write_text(srt([s - 8.02 for s in starts if s > 8.02][1:]), encoding="utf-8")  # 8 s early, one line missing
+
+    data = client.post(f"/player/api/videos/{video_id}/subtitles/3/align", json={}, headers=HEADERS).get_json()
+    assert data["reference"] == "English" and data["timing"] == {"offset": 8.02, "scale": 1.0}
+    assert (data["matched"], data["lines"]) == (9, 9)
+    assert data["prefs"]["timings"] == {"3": {"offset": 8.02, "scale": 1.0}}
+    data = client.post(f"/player/api/videos/{video_id}/subtitles/3/align", json={"reference": "2"}, headers=HEADERS).get_json()
+    assert data["reference"] == "French" and data["timing"]["offset"] == 8.72
+
+    (subs / "002.srt").write_text(srt([s * 3 for s in starts]), encoding="utf-8")  # nothing alike
+    res = client.post(f"/player/api/videos/{video_id}/subtitles/2/align", json={"reference": "1"}, headers=HEADERS)
+    assert res.status_code == 400 and "don't match" in res.get_json()["error"]
+    assert client.post(f"/player/api/videos/{video_id}/subtitles/7/align", json={}, headers=HEADERS).status_code == 400
+
+    client.post(f"/player/api/videos/{video_id}/subtitles/3/delete", headers=HEADERS)
+    assert client.get(f"/player/api/videos/{video_id}").get_json()["prefs"]["timings"] == {}
 
 
 def test_second_subtitles(client, library, monkeypatch):
@@ -364,7 +409,11 @@ def test_settings(client):
     saved = client.post("/player/api/settings", json={"sub_size": 500, "sub_display": "blur", "auto_pause": 1,
                                                       "colors": "nope"}, headers=HEADERS).get_json()
     assert saved["sub_size"] == 80 and saved["sub_display"] == "blur" and saved["auto_pause"] is True
-    assert saved["colors"] == "status"
+    assert saved["colors"] == "status" and saved["second_display"] == "shown"
+    saved = client.post("/player/api/settings", json={"second_display": "hidden"}, headers=HEADERS).get_json()
+    assert saved["second_display"] == "hidden" and saved["sub_display"] == "blur"
+    saved = client.post("/player/api/settings", json={"second_display": "nope"}, headers=HEADERS).get_json()
+    assert saved["second_display"] == "hidden"
     saved = client.post("/player/api/settings", json={"audio_before": -5, "audio_after": "350"}, headers=HEADERS).get_json()
     assert saved["audio_before"] == 0 and saved["audio_after"] == 350
     assert saved["secondary_translation"] is True

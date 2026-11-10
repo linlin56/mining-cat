@@ -90,6 +90,7 @@ def remove_subtitles(video_id: str, track_id: str) -> list[dict]:
         for key in ("primary", "secondary"):
             if prefs.get(key) == track_id:
                 prefs[key] = ""
+        prefs.get("timings", {}).pop(track_id, None)
         write_file(video_id, "prefs.json", prefs)
         return tracks
 

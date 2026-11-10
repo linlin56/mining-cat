@@ -111,12 +111,26 @@
           <p class="small text-body-secondary mc-pre-line m-0" id="second-generate-status" role="status"></p>
         </div>
         <div class="mb-3">
-          <span class="form-label small d-flex justify-content-between" id="offset-label">Subtitle timing <output id="out-offset"></output></span>
-          <div class="btn-group btn-group-sm" role="group" aria-labelledby="offset-label">
-            <button type="button" class="btn btn-outline-secondary" data-offset="-0.1" title="Subtitles earlier ([)">−0.1 s</button>
-            <button type="button" class="btn btn-outline-secondary" data-offset="0.1" title="Subtitles later (])">+0.1 s</button>
-            <button type="button" class="btn btn-outline-secondary" data-offset="0" title="Reset">Reset</button>
+          <span class="form-label small d-block">Subtitle timing</span>
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-2" id="timing-primary" role="group" aria-labelledby="timing-primary-label">
+            <span class="small flex-grow-1" id="timing-primary-label">Subtitles <output class="text-body-secondary" id="out-timing-primary"></output></span>
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-outline-secondary" data-timing="primary" data-offset="-0.1" title="Earlier ([)">−0.1 s</button>
+              <button type="button" class="btn btn-outline-secondary" data-timing="primary" data-offset="0.1" title="Later (])">+0.1 s</button>
+              <button type="button" class="btn btn-outline-secondary" data-timing="primary" data-offset="0" title="Back to the file's timing">Reset</button>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-align="primary" title="Time these subtitles on the video's own subtitles"><i class="bi bi-magic" aria-hidden="true"></i> Auto-align</button>
           </div>
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-2" id="timing-secondary" role="group" aria-labelledby="timing-secondary-label">
+            <span class="small flex-grow-1" id="timing-secondary-label">Second subtitles <output class="text-body-secondary" id="out-timing-secondary"></output></span>
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-outline-secondary" data-timing="secondary" data-offset="-0.1" title="Earlier ({)">−0.1 s</button>
+              <button type="button" class="btn btn-outline-secondary" data-timing="secondary" data-offset="0.1" title="Later (})">+0.1 s</button>
+              <button type="button" class="btn btn-outline-secondary" data-timing="secondary" data-offset="0" title="Back to the file's timing">Reset</button>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-align="secondary" title="Time these subtitles on the video's own subtitles"><i class="bi bi-magic" aria-hidden="true"></i> Auto-align</button>
+          </div>
+          <p class="small text-body-secondary mc-pre-line m-0" id="timing-status" role="status"></p>
         </div>
         <div class="mb-3" id="audio-setting" hidden>
           <label class="form-label small" for="set-audio">Audio track</label>
@@ -134,8 +148,16 @@
           <input type="range" class="form-range" id="set-sub-size" min="14" max="80" step="1">
         </div>
         <div class="mb-3">
-          <span class="form-label small d-block" id="set-display-label">Show (S)</span>
+          <span class="form-label small d-block" id="set-display-label">Subtitles (S)</span>
           <div class="btn-group btn-group-sm w-100" id="set-display" role="group" aria-labelledby="set-display-label">
+            <button type="button" class="btn btn-outline-secondary" data-value="shown"><i class="bi bi-eye" aria-hidden="true"></i> Shown</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="blur"><i class="bi bi-droplet-half" aria-hidden="true"></i> Blurred</button>
+            <button type="button" class="btn btn-outline-secondary" data-value="hidden"><i class="bi bi-eye-slash" aria-hidden="true"></i> Hidden</button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <span class="form-label small d-block" id="set-second-display-label">Second subtitles (Shift + S)</span>
+          <div class="btn-group btn-group-sm w-100" id="set-second-display" role="group" aria-labelledby="set-second-display-label">
             <button type="button" class="btn btn-outline-secondary" data-value="shown"><i class="bi bi-eye" aria-hidden="true"></i> Shown</button>
             <button type="button" class="btn btn-outline-secondary" data-value="blur"><i class="bi bi-droplet-half" aria-hidden="true"></i> Blurred</button>
             <button type="button" class="btn btn-outline-secondary" data-value="hidden"><i class="bi bi-eye-slash" aria-hidden="true"></i> Hidden</button>

@@ -20,7 +20,7 @@
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 0 4%; pointer-events: none;
 }
-.subs.hidden { display: none; }
+.subs .hidden { display: none; }
 .subs p {
   pointer-events: auto; margin: 0; padding: .08em .45em; max-width: 100%;
   background: rgba(0, 0, 0, .62); color: #fff; border-radius: 6px;
@@ -36,8 +36,8 @@
 .subs ::highlight(mc-new-alt) { background-color: var(--mc-hl-new-alt-strong); }
 .subs ::highlight(mc-learning) { background-color: var(--mc-hl-learning-strong); }
 .subs ::highlight(mc-learning-alt) { background-color: var(--mc-hl-learning-alt-strong); }
-.subs.blur p { filter: blur(.32em); transition: filter .15s; }
-.subs.blur p:hover { filter: none; }
+.subs .blur p { filter: blur(.32em); transition: filter .15s; }
+.subs .blur p:hover { filter: none; }
 
 .subs :lang(ja), .cue-text:lang(ja) { font-family: "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; }
 .subs :lang(zh-Hant), .subs :lang(zh-TW), .subs :lang(yue), .cue-text:lang(zh-Hant), .cue-text:lang(zh-TW), .cue-text:lang(yue) {

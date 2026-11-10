@@ -148,6 +148,12 @@ def api_translation(video_id: str):
                    prefs=videos.get_prefs(video_id))
 
 
+# Auto-align: the track timed on the video's own subtitles (or on `reference`), saved in the prefs.
+@bp.post("/api/videos/<video_id>/subtitles/<track_id>/align")
+def api_align_subtitles(video_id: str, track_id: str):
+    return jsonify(videos.align_track(video_id, track_id, str(json_body().get("reference") or "")))
+
+
 @bp.post("/api/videos/<video_id>/subtitles/<track_id>/delete")
 def api_remove_subtitles(video_id: str, track_id: str):
     return jsonify(tracks=videos.remove_subtitles(video_id, track_id), prefs=videos.get_prefs(video_id))

@@ -60,8 +60,10 @@ Click a line's time in the list to jump to it. The list follows the video; scrol
 | `↓` | Play the current subtitle again, and stop at its end |
 | `Shift` + `←` `→` | 5 seconds back / forward |
 | `[` `]` | Subtitles 0.1 s earlier / later |
+| `{` `}` (`Shift` + `[` `]`) | Second subtitles 0.1 s earlier / later |
 | `-` `+` | Slower / faster |
 | `S` | Subtitles shown, blurred (hover to read) or hidden |
+| `Shift` + `S` | The same for the second subtitles |
 | `P` | Pause at the end of each subtitle |
 | `L` | Show / hide the subtitle list |
 | `N` | Go to the next recommended line (i+1, see [comprehension and recommended sentences](mining.md#comprehension-and-recommended-sentences)) |
@@ -77,11 +79,11 @@ Click **Aa**. For this video:
 The library only shows the videos of the language you study: the videos you add are filed under it.
 - **Subtitles** and **Second subtitles**: the second track (a translation, for example) is shown smaller, under the first one, and isn't looked up. With **Use secondary subtitles as translation** (on by default), a card's sentence translation is the second track's lines at the same time; off, or without a second track, the sentence is translated offline.
 - **Generate second subtitles**: translates a track (**From track:**) to the language chosen in **Settings › Translation**, with the model chosen there (shown under the button), offline, with the same timings and formatting. The new track (e.g. **English (translated)**) becomes the second subtitles. It runs in the background: you can keep watching.
-- **Subtitle timing**: when the subtitles are early or late (`[` `]`).
+- **Subtitle timing**: when the subtitles or the second subtitles are early or late, each on their own (`[` `]`, `{` `}`). Subtitles found online often don't have the timing of your video: **Auto-align** times them on the video's own subtitles (those inside the file, which are timed for it, in any language), in a moment, without listening to the audio. It compares when the lines start, and also corrects subtitles made for another frame rate (25 fps against 23.976 fps). If no track matches (another cut or another episode), set the timing by hand.
 - **Audio track**, for videos with several (e.g. dubs). A browser can only play the first audio track of a file, so MiningCat makes a copy with the chosen one.
 - **Add subtitles…** (or drop a subtitle file on the page) and **Remove these subtitles**.
 
-For every video: subtitle size, shown / blurred / hidden, auto-pause, [word colours](mining.md#word-colours), and the audio margin kept before and after the lines on cards (200 ms by default).
+For every video: subtitle size, shown / blurred / hidden (the subtitles and the second subtitles each on their own), auto-pause, [word colours](mining.md#word-colours), and the audio margin kept before and after the lines on cards (200 ms by default).
 
 **Chinese / Japanese punctuation** (on by default): in the subtitles studied, ASCII punctuation after Chinese or Japanese characters is shown as the language's own (`,` → `，`, `.` → `。`, `"…"` → `「…」`, or `“…”` in simplified characters, `、` in Japanese). Numbers, English words and romanized Taigi keep theirs. The subtitle file itself isn't changed.
 

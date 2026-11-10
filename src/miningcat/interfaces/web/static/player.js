@@ -16,6 +16,8 @@ const P = {
   extensions: [], subtitleExtensions: [],
   video: null, prefs: {}, progress: {}, audioTracks: [],
   cues: [], second: [],
+  raw: { cues: [], second: [] },
+  primaryId: "", secondaryId: "",
   active: null, activeSecond: null,
   pauseAt: null,
   selection: null,      // {first, last}: subtitle lines selected in the list, for the next card
@@ -311,7 +313,17 @@ function wireLibrary() {
 function effectiveLanguage() {
   return P.prefs.language || (P.video && P.video.language) || STUDY.tag;
 }
-const offset = () => Number(P.prefs.offset) || 0;
+// Each track's timing, video = scale × track + offset: P.cues and P.second are in the video's time, P.raw in the
+// tracks' own.
+const NO_TIMING = { offset: 0, scale: 1 };
+const timingOf = (trackId) => (P.prefs.timings || {})[trackId] || NO_TIMING;
+const timed = (cues, t) => cues.map((c) => ({ ...c, start: t.scale * c.start + t.offset, end: t.scale * c.end + t.offset }));
+
+function applyTimings() {
+  P.cues = timed(P.raw.cues, timingOf(P.primaryId));
+  P.second = timed(P.raw.second, timingOf(P.secondaryId));
+  P.active = P.activeSecond = null;
+}
 
 function screenMessage(text, action) {
   $("screen-msg").hidden = !text;
@@ -354,6 +366,7 @@ function closeVideo() {
   P.video = null;
   P.cues = [];
   P.second = [];
+  P.raw = { cues: [], second: [] };
   clearTimeout(P.translationTimer);
   if (window.MiningCatMining) { MiningCatMining.hide(); MiningCatMining.clearColours(); }
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
@@ -482,14 +495,16 @@ async function loadTracks() {
   const primary = ids.has(P.prefs.primary) ? P.prefs.primary : (P.prefs.primary === undefined && tracks[0] ? tracks[0].id : "");
   const secondary = ids.has(P.prefs.secondary) && P.prefs.secondary !== primary ? P.prefs.secondary : "";
   const [cues, second] = await Promise.all([fetchCues(primary, true), fetchCues(secondary)]);
-  P.cues = cues;
-  P.second = second;
+  P.raw = { cues, second };
   P.primaryId = primary;
-  P.active = P.activeSecond = null;
+  P.secondaryId = secondary;
+  applyTimings();
   P.selection = null;
   $("set-primary").value = primary;
   $("set-secondary").value = secondary;
   $("remove-subs").disabled = !primary;
+  $("timing-status").textContent = "";
+  syncTimings();
   renderList();
   update();
 }
@@ -617,7 +632,7 @@ function update() {
     P.pauseAt = null;
     video.pause();
   }
-  const t = video.currentTime - offset();
+  const t = video.currentTime;
   const idx = activeAt(P.cues, t);
   const key = idx.join(",");
   if (key !== P.active) {
@@ -635,7 +650,7 @@ function update() {
   }
 }
 
-const cueEnd = (indices) => Math.max(...indices.map((i) => P.cues[i].end)) + offset() - AUTO_PAUSE_EARLY_S;
+const cueEnd = (indices) => Math.max(...indices.map((i) => P.cues[i].end)) - AUTO_PAUSE_EARLY_S;
 
 function markCurrent(indices) {
   for (const el of $("cues").querySelectorAll(".cue.current")) el.classList.remove("current");
@@ -672,14 +687,14 @@ function seekTo(time) {
 
 function seekToCue(i) {
   if (i < 0 || i >= P.cues.length) return;
-  seekTo(P.cues[i].start + offset());
+  seekTo(P.cues[i].start);
 }
 
 // Plays one subtitle and stops at its end (the popup's ▶ Sentence, ↓).
 function playCue(i) {
   if (i < 0 || i >= P.cues.length) return;
   seekToCue(i);
-  P.pauseAt = P.cues[i].end + offset();
+  P.pauseAt = P.cues[i].end;
   $("video").play().catch(() => {});
 }
 
@@ -713,11 +728,11 @@ function getImage(node) {
   const video = $("video");
   if (!P.video || !P.video.video_codec) return null;
   const i = cueIndexOf(node);
-  const t = video.currentTime - offset();
+  const t = video.currentTime;
   if (video.videoWidth && (i === null || (P.cues[i].start - 0.5 <= t && t <= P.cues[i].end + 0.5))) {
     try { return snapshot(video); } catch { /* e.g. the frame isn't decoded yet: ask the server */ }
   }
-  const time = i === null ? video.currentTime : (P.cues[i].start + P.cues[i].end) / 2 + offset();
+  const time = i === null ? video.currentTime : (P.cues[i].start + P.cues[i].end) / 2;
   return frameAt(time);
 }
 
@@ -795,14 +810,14 @@ function getTranslation(node) {
 function getSource(node) {
   if (!P.video) return "";
   const r = rangeOf(node);
-  const time = r ? P.cues[r.first].start : $("video").currentTime - offset();
+  const time = r ? P.cues[r.first].start : $("video").currentTime;
   return `${P.video.title} (${formatTime(time, true)})`;
 }
 
 async function sentenceClip(text, node) {
   const r = rangeOf(node);
   if (!r) return null;
-  const data = await api(`/player/api/videos/${P.video.id}/clip`, { start: P.cues[r.first].start + offset(), end: rangeEnd(r) + offset() });
+  const data = await api(`/player/api/videos/${P.video.id}/clip`, { start: P.cues[r.first].start, end: rangeEnd(r) });
   return { data: data.data, name: data.name };
 }
 
@@ -810,7 +825,7 @@ async function sentenceClip(text, node) {
 function sentenceRange(text, node) {
   const r = rangeOf(node);
   if (!r) return null;
-  return { start: P.cues[r.first].start + offset(), end: rangeEnd(r) + offset(),
+  return { start: P.cues[r.first].start, end: rangeEnd(r),
     before: P.settings.audio_before / 1000, after: P.settings.audio_after / 1000 };
 }
 
@@ -824,7 +839,7 @@ function playSentence(text, node) {
   const r = rangeOf(node);
   if (!r) return;
   seekToCue(r.first);
-  P.pauseAt = rangeEnd(r) + offset();
+  P.pauseAt = rangeEnd(r);
   $("video").play().catch(() => {});
 }
 
@@ -841,12 +856,15 @@ function syncSettingsForm() {
   document.documentElement.style.setProperty("--sub-size", `${s.sub_size}px`);
   $("set-sub-size").value = s.sub_size;
   $("out-sub-size").textContent = `${s.sub_size}px`;
-  for (const b of $("set-display").children) {
-    b.setAttribute("aria-pressed", String(b.dataset.value === s.sub_display));
-    b.classList.toggle("active", b.dataset.value === s.sub_display);
+  for (const [group, lines, display] of [["set-display", "sub-primary", s.sub_display],
+                                         ["set-second-display", "sub-secondary", s.second_display]]) {
+    for (const b of $(group).children) {
+      b.setAttribute("aria-pressed", String(b.dataset.value === display));
+      b.classList.toggle("active", b.dataset.value === display);
+    }
+    $(lines).classList.toggle("blur", display === "blur");
+    $(lines).classList.toggle("hidden", display === "hidden");
   }
-  $("subs").classList.toggle("blur", s.sub_display === "blur");
-  $("subs").classList.toggle("hidden", s.sub_display === "hidden");
   $("set-auto-pause").checked = s.auto_pause;
   $("set-secondary-translation").checked = s.secondary_translation;
   $("set-fullwidth-punctuation").checked = s.fullwidth_punctuation;
@@ -877,7 +895,6 @@ function syncVideoSettings() {
   $("second-from").replaceChildren(...options("None").slice(1));
   $("second-from").value = (v.tracks || []).some((t) => t.id === from) ? from : (P.prefs.primary || ((v.tracks || [])[0] || {}).id || "");
   syncSecondGenerate();
-  $("out-offset").textContent = `${offset() >= 0 ? "+" : ""}${offset().toFixed(1)} s`;
   $("audio-setting").hidden = P.audioTracks.length < 2;
   $("set-audio").replaceChildren(...P.audioTracks.map((t) => new Option(t.label, String(t.index))));
   $("set-audio").value = String(P.prefs.audio_track || 0);
@@ -971,25 +988,75 @@ function osd(text) {
   P.osdTimer = setTimeout(() => box.classList.remove("show"), 1400);
 }
 
-const offsetTimer = { id: null };
-function shiftOffset(delta) {
-  const value = delta === 0 ? 0 : Math.round((offset() + delta) * 10) / 10;
-  P.prefs.offset = value;
-  $("out-offset").textContent = `${value >= 0 ? "+" : ""}${value.toFixed(1)} s`;
-  osd(`Subtitle timing ${value >= 0 ? "+" : ""}${value.toFixed(1)} s`);
-  P.active = P.activeSecond = null;
+// ---------------------------------------------------------------- timing of each track
+
+const TRACK_NAMES = { primary: "Subtitles", secondary: "Second subtitles" };
+const trackOf = (which) => (which === "primary" ? P.primaryId : P.secondaryId);
+
+function timingText(t) {
+  const text = `${t.offset >= 0 ? "+" : "−"}${Math.abs(t.offset).toFixed(2)} s`;
+  return t.scale === 1 ? text : `${text}, speed ×${t.scale.toFixed(4)}`;
+}
+
+function syncTimings() {
+  for (const which of ["primary", "secondary"]) {
+    const id = trackOf(which);
+    $(`out-timing-${which}`).textContent = id ? timingText(timingOf(id)) : "";
+    for (const b of $(`timing-${which}`).querySelectorAll("button")) b.disabled = !id;
+  }
+  $("timing-secondary").hidden = !P.secondaryId;
+}
+
+function setTiming(which, timing) {
+  const id = trackOf(which);
+  P.prefs.timings = { ...(P.prefs.timings || {}), [id]: timing };
+  applyTimings();
+  syncTimings();
+  if (which === "primary") {  // the list shows the video's times
+    for (const li of $("cues").children) li.querySelector(".cue-time").textContent = formatTime(P.cues[Number(li.dataset.i)].start);
+    renderSelection();
+  }
   update();
-  clearTimeout(offsetTimer.id);
-  offsetTimer.id = setTimeout(() => savePrefs({ offset: value }), 500);
+}
+
+const timingTimers = {};
+function shiftOffset(which, delta) {
+  const id = trackOf(which);
+  if (!id) return;
+  const current = timingOf(id);
+  // to the millisecond: an auto-aligned +8.02 s stays on its hundredths
+  const timing = delta === 0 ? NO_TIMING : { ...current, offset: Math.round((current.offset + delta) * 1000) / 1000 };
+  setTiming(which, timing);
+  $("timing-status").textContent = "";
+  osd(`${TRACK_NAMES[which]} ${timingText(timing)}`);
+  clearTimeout(timingTimers[which]);
+  timingTimers[which] = setTimeout(() => savePrefs({ timings: { [id]: timing } }), 500);
+}
+
+// On the video's own subtitles, which are timed for it (the server picks the one that matches best).
+async function autoAlign(which) {
+  const id = trackOf(which);
+  if (!id) return;
+  const status = $("timing-status");
+  status.textContent = "Aligning…";
+  try {
+    const data = await api(`/player/api/videos/${P.video.id}/subtitles/${id}/align`, {});
+    if (trackOf(which) !== id) return;  // another track was chosen meanwhile
+    P.prefs = data.prefs;
+    setTiming(which, data.timing);
+    status.textContent = `${TRACK_NAMES[which]} aligned on ${data.reference}: ${timingText(data.timing)} `
+      + `(${data.matched} of ${data.lines} lines start together).`;
+    osd(`${TRACK_NAMES[which]} ${timingText(data.timing)}`);
+  } catch (err) { status.textContent = err.message; }
 }
 
 const DISPLAYS = ["shown", "blur", "hidden"];
-const DISPLAY_LABELS = { shown: "Subtitles shown", blur: "Subtitles blurred (hover to read)", hidden: "Subtitles hidden" };
+const DISPLAY_LABELS = { shown: "shown", blur: "blurred (hover to read)", hidden: "hidden" };
 
-function cycleDisplay() {
-  const next = DISPLAYS[(DISPLAYS.indexOf(P.settings.sub_display) + 1) % DISPLAYS.length];
-  saveSettings({ sub_display: next });
-  osd(DISPLAY_LABELS[next]);
+function cycleDisplay(key, name) {
+  const next = DISPLAYS[(DISPLAYS.indexOf(P.settings[key]) + 1) % DISPLAYS.length];
+  saveSettings({ [key]: next });
+  osd(`${name} ${DISPLAY_LABELS[next]}`);
 }
 
 function toggleAutoPause() {
@@ -1034,6 +1101,7 @@ function wireSettings() {
   });
   $("set-sub-size").addEventListener("change", (e) => saveSettings({ sub_size: Number(e.target.value) }));
   for (const b of $("set-display").children) b.addEventListener("click", () => saveSettings({ sub_display: b.dataset.value }));
+  for (const b of $("set-second-display").children) b.addEventListener("click", () => saveSettings({ second_display: b.dataset.value }));
   $("set-auto-pause").addEventListener("change", (e) => { saveSettings({ auto_pause: e.target.checked }); P.pauseAt = null; });
   $("set-colors").addEventListener("change", async (e) => {
     await saveSettings({ colors: e.target.value });
@@ -1069,7 +1137,10 @@ function wireSettings() {
   for (const [id, key] of [["set-audio-before", "audio_before"], ["set-audio-after", "audio_after"]]) {
     $(id).addEventListener("change", (e) => saveSettings({ [key]: Number(e.target.value) }));
   }
-  for (const b of document.querySelectorAll("[data-offset]")) b.addEventListener("click", () => shiftOffset(Number(b.dataset.offset)));
+  for (const b of document.querySelectorAll("[data-offset]")) {
+    b.addEventListener("click", () => shiftOffset(b.dataset.timing, Number(b.dataset.offset)));
+  }
+  for (const b of document.querySelectorAll("[data-align]")) b.addEventListener("click", () => autoAlign(b.dataset.align));
   $("set-audio").addEventListener("change", async (e) => {
     await savePrefs({ audio_track: Number(e.target.value) });
     prepareAgain(null);
@@ -1120,7 +1191,7 @@ function onKey(e) {
   const video = $("video");
   const popupOpen = window.MiningCatMining && MiningCatMining.isOpen();
   if (popupOpen && e.key !== " ") return;  // the popup's own keys (mining.js)
-  const t = video.currentTime - offset();
+  const t = video.currentTime;
   const cur = lastStarted(t);
   const inside = cur >= 0 && P.cues[cur].end > t;
   const actions = {
@@ -1131,12 +1202,15 @@ function onKey(e) {
     ArrowLeft: () => (e.shiftKey ? seekTo(video.currentTime - SEEK_STEP_S) : seekToCue(inside ? cur - 1 : cur)),
     ArrowRight: () => (e.shiftKey ? seekTo(video.currentTime + SEEK_STEP_S) : seekToCue(cur + 1)),
     ArrowDown: () => playCue(Math.max(0, cur)),
-    "[": () => shiftOffset(-0.1),
-    "]": () => shiftOffset(0.1),
+    "[": () => shiftOffset("primary", -0.1),
+    "]": () => shiftOffset("primary", 0.1),
+    "{": () => shiftOffset("secondary", -0.1),  // Shift + [ ]
+    "}": () => shiftOffset("secondary", 0.1),
     "-": () => changeSpeed(-0.1),
     "+": () => changeSpeed(0.1),
     "=": () => changeSpeed(0.1),
-    s: cycleDisplay, S: cycleDisplay,
+    s: () => cycleDisplay("sub_display", "Subtitles"),
+    S: () => cycleDisplay("second_display", "Second subtitles"),  // Shift + S
     p: toggleAutoPause, P: toggleAutoPause,
     l: toggleList, L: toggleList,
     n: () => nextRecommended(cur), N: () => nextRecommended(cur),

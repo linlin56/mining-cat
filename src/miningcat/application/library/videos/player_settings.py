@@ -4,7 +4,8 @@ from miningcat.infrastructure.files.json_files import read_json, write_json
 
 DEFAULT_SETTINGS = {
     "sub_size": 34,            # px, subtitles over the video
-    "sub_display": "shown",    # "shown", "blur" (until hovered) or "hidden"
+    "sub_display": "shown",    # main subtitles: "shown", "blur" (until hovered) or "hidden"
+    "second_display": "shown",  # second subtitles, the same choices
     "auto_pause": False,       # pause at the end of every subtitle
     "colors": "status",        # words coloured by status, or "off"
     "list": True,              # subtitle list next to the video
@@ -16,7 +17,8 @@ DEFAULT_SETTINGS = {
 
 AUDIO_MARGIN_MAX_MS = 3000
 
-_CHOICES = {"sub_display": ("shown", "blur", "hidden"), "colors": ("status", "off")}
+_DISPLAYS = ("shown", "blur", "hidden")
+_CHOICES = {"sub_display": _DISPLAYS, "second_display": _DISPLAYS, "colors": ("status", "off")}
 
 
 def get_settings() -> dict:

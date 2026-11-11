@@ -1077,6 +1077,14 @@ function togglePanel(force) {
   else panel.hide();
 }
 
+// The top bar shows when the mouse moves and hides again after a moment of inactivity (windowed and fullscreen).
+let barTimer = null;
+function showBarForAWhile() {
+  clearTimeout(barTimer);
+  document.body.classList.add("bar-shown");
+  barTimer = setTimeout(() => document.body.classList.remove("bar-shown"), 2500);
+}
+
 // The whole page goes fullscreen (not the <video>), so that the subtitles and the popup stay visible.
 function toggleFullscreen() {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
@@ -1242,7 +1250,10 @@ function wireWatch() {
       osd("Press F (or the fullscreen button) for fullscreen with the subtitles");
     }
     document.body.classList.toggle("fullscreen", document.fullscreenElement === document.documentElement);
+    showBarForAWhile();
   });
+  $("watch").addEventListener("pointermove", showBarForAWhile);
+  showBarForAWhile();
   // the clicked subtitle mustn't move on while it's looked up
   $("sub-primary").addEventListener("pointerdown", (e) => { if (e.button === 0) pauseForLookup(); });
   $("cues").addEventListener("click", (e) => {

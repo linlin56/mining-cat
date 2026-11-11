@@ -68,7 +68,19 @@
 .cues.i1-only .cue:not(.i1) { display: none !important; }
 
 body.no-list .cue-panel { display: none; }
-body.fullscreen .mc-watch-bar, body.fullscreen .cue-panel { display: none; }
+/* The top bar (windowed and fullscreen) unfolds over the top of the video (into the letterbox bars, so the picture doesn't move)
+   when the mouse moves, and folds away after a few seconds without moving (player.js adds .bar-shown).
+   It stays beside the subtitle list, never over it, and stays unfolded while the pointer is on it. */
+body .mc-watch-bar {
+  position: absolute; top: 0; left: 0; right: min(400px, 34vw); z-index: 10;
+  background: var(--bs-body-bg);
+  overflow: hidden; min-height: 0; max-height: 0; border-bottom-width: 0 !important;
+  transition: max-height .25s, border-bottom-width .25s;
+}
+body.no-list .mc-watch-bar { right: 0; }
+body.bar-shown .mc-watch-bar, .mc-watch-bar:hover {
+  max-height: 64px; border-bottom-width: var(--bs-border-width) !important;
+}
 body.fullscreen .subs { bottom: 72px; }
 
 @media (max-width: 800px) {
@@ -76,5 +88,6 @@ body.fullscreen .subs { bottom: 72px; }
   .screen { flex: none; aspect-ratio: 16 / 9; max-height: 56vh; }
   .cue-panel { flex: 1; width: auto; border-left: 0; border-top: var(--bs-border-width) solid var(--bs-border-color); }
   .subs { bottom: 48px; }
+  body .mc-watch-bar { right: 0; }
   .sub-primary p { font-size: min(var(--sub-size), 6vw); }
 }

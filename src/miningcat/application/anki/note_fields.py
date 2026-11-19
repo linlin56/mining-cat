@@ -5,7 +5,7 @@ from miningcat.application.mining import preferences, sentence_readings
 from miningcat.domain.cards.fields import render_template
 from miningcat.domain.sentence_readings.card_sentence import word_field
 from miningcat.domain.text import taigi
-from miningcat.domain.text.zhuyin import pinyin_to_zhuyin
+from zhuyin_converter import pinyin_to_zhuyin
 
 
 # Fields computed from the card's: the zhuyin of a Mandarin word, from its pinyin reading (CC-CEDICT has no zhuyin),

@@ -4,7 +4,7 @@ from miningcat.domain.segmentation.lexicon import match
 from miningcat.domain.sentence_readings.card_sentence import bracketed, display_pinyin, han_readings, plain_sentence
 from miningcat.domain.sentence_readings.context_rules import Context, choose_reading
 from miningcat.domain.sentence_readings.senses import reading_weight
-from miningcat.domain.text.zhuyin import numbered_pinyin
+from zhuyin_converter import numbered_pinyin
 from miningcat.infrastructure.persistence.database import database
 from miningcat.infrastructure.persistence.dictionary_queries import DictionaryQueries
 

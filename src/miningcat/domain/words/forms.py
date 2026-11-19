@@ -1,7 +1,7 @@
 from miningcat.domain.languages import CHINESE_LANGUAGES
 from miningcat.domain.text import taigi
 from miningcat.domain.text.chinese_script import chinese_script, to_simplified, to_traditional
-from miningcat.domain.text.zhuyin import is_zhuyin, pinyin_to_zhuyin, zhuyin_to_pinyin
+from zhuyin_converter import is_zhuyin, pinyin_to_zhuyin, zhuyin_to_pinyin
 
 # The Chinese script a user learns.
 SCRIPTS = ("traditional", "simplified", "both")

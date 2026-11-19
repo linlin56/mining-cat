@@ -33,6 +33,7 @@ MiningCat relies on great open source projects:
 | [owocr](https://github.com/AuroraWright/owocr) and [EasyOCR](https://github.com/JaidedAI/EasyOCR) | Reading burned-in subtitles                |
 | [EbookLib](https://github.com/aerkalov/ebooklib)                          | Reading `.epub` files                                 |
 | [OpenCC](https://github.com/BYVoid/OpenCC)                                | Simplified / traditional Chinese conversion           |
+| [zhuyin-converter](https://github.com/linlin56/zhuyin-converter)         | Pinyin / zhuyin conversion                            |
 | [jieba](https://github.com/fxsjy/jieba) and [Janome](https://github.com/mocobeta/janome) | Word segmentation for Chinese and Japanese frequency lists |
 | [Zensical](https://zensical.org/)                                         | This documentation                                    |
 

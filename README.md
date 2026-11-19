@@ -37,6 +37,7 @@ MiningCat chains several speech and NLP components into one local, multilingual 
 | Morphology | Deconjugation (Japanese, Korean, French, Spanish...), Mandarin readings chosen from the context |
 | Learner modelling | Word statuses synced from Anki (card maturity), comprehension rate, i+1 recommendation bounded by a frequency list |
 | Chinese script conversion | [OpenCC](https://github.com/BYVoid/OpenCC) |
+| pinyin / zhuyin conversion | [zhuyin-converter](https://github.com/linlin56/zhuyin-converter) |
 | Taigi writing systems | Hanji readings with [taibun](https://github.com/andreihar/taibun), Tâi-lô ⇄ Pe̍h-ōe-jī syllable by syllable |
 
 It is a Python project with a local web interface, tested on Linux, macOS and Windows, with a test suite and a CI that requires at least 80% coverage.

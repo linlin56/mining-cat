@@ -4,7 +4,7 @@ import unicodedata
 from miningcat.domain.languages.study_language import CHINESE_LANGUAGES
 from miningcat.domain.text import taigi
 from miningcat.domain.text.kana import katakana_to_hiragana
-from miningcat.domain.text.zhuyin import pinyin_to_zhuyin
+from zhuyin_converter import pinyin_to_zhuyin
 
 _LATIN = re.compile(r"[A-Za-z]")
 

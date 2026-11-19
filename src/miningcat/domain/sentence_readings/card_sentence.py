@@ -2,7 +2,7 @@
 import html
 import re
 
-from miningcat.domain.text.zhuyin import numbered_pinyin, pinyin_to_zhuyin, zhuyin_to_pinyin
+from zhuyin_converter import numbered_pinyin, pinyin_to_zhuyin, zhuyin_to_pinyin
 
 _TAG = re.compile(r"<(/?)([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>")
 _HAN = "\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U0003134f〇"

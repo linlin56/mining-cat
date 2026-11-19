@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from miningcat.domain.languages import CHINESE_LANGUAGES
 from miningcat.domain.text.chinese_script import chinese_counterpart
 from miningcat.domain.text.readings import reading_match
-from miningcat.domain.text.zhuyin import pinyin_to_zhuyin
+from zhuyin_converter import pinyin_to_zhuyin
 from miningcat.infrastructure import http
 from miningcat.infrastructure.word_audio.japanesepod101 import JapanesePod101Source
 from miningcat.infrastructure.word_audio.source import MAX_SOURCES, AudioSource, HttpGet

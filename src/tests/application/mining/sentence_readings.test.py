@@ -7,7 +7,6 @@ from miningcat.application import anki
 from miningcat.application.mining import dictionaries, segmentation
 from miningcat.application.mining.sentence_readings import annotate
 from miningcat.domain.sentence_readings.card_sentence import word_field
-from miningcat.domain.text.zhuyin import numbered_pinyin
 
 
 def cedict_entry(senses):
@@ -79,14 +78,6 @@ def cedict(tmp_path):
     segmentation.clear_cache()
     yield
     segmentation.clear_cache()
-
-
-@pytest.mark.parametrize("reading, numbered", [
-    ("ㄈㄢˊㄊㄧˇㄗˋ", "fan2 ti3 zi4"), ("˙ㄇㄚ", "ma5"), ("ㄍㄠ", "gao1"), ("fántǐzì", "fan2 ti3 zi4"),
-    ("fan2 ti3 zi4", "fan2 ti3 zi4"), ("lǜ", "lü4"), ("ㄓㄜˋㄦ", "zher4"), ("not a reading", ""),
-])
-def test_numbered_pinyin(reading, numbered):
-    assert numbered_pinyin(reading) == numbered
 
 
 def test_sentence_with_one_bracketed_reading_per_word(cedict):

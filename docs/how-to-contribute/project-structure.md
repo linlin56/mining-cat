@@ -45,7 +45,7 @@ src/miningcat/
 │   └── runtime.py            # the Python interpreter, and `python -m` command lines of the package
 ├── domain/
 │   ├── languages/            # Language (the converter's variants, built with LanguageProfileBuilder), study languages
-│   ├── text/                 # writing systems, kana, readings, Chinese scripts (ChineseScripts), zhuyin, Hangul,
+│   ├── text/                 # writing systems, kana, readings, Chinese scripts (ChineseScripts), Hangul,
 │   │                         #   taigi/ (Hanji, Tâi-lô, Pe̍h-ōe-jī and the conversions between them)
 │   ├── subtitles/            # Segment, SRT, punctuation fixes, finding a sentence in subtitles
 │   ├── dictionary/           # deinflection (+ Yomitan's transforms/), glossaries, definition merging, frequency ranks

@@ -7,7 +7,9 @@ from miningcat.application.mining import dictionaries, lookup, preferences, segm
 from miningcat.application.mining.sentence_readings import annotate
 from miningcat.domain.text import taiwan_readings
 from miningcat.domain.text.readings import reading_key
+from miningcat.domain.sentence_readings.card_sentence import display_pinyin
 from miningcat.domain.text.scripts import HAN_CHARACTER
+from zhuyin_converter import pinyin_to_zhuyin
 
 
 def make_dictionary(path, title, terms):
@@ -55,12 +57,32 @@ def taiwan():
     preferences.set_taiwan_readings(False)
 
 
+def listed(word):
+    """The reading taiwan_readings.toml gives a word these tests use (時候, 垃圾, 喜歡)."""
+    reading = taiwan_readings.taiwan_reading(word)
+    assert reading, f"the tests need {word} in taiwan_readings.toml"
+    return reading
+
+
+def accented(word):
+    return display_pinyin(listed(word), "pinyin").replace(" ", "")
+
+
 def test_every_reading_of_the_list_reads_its_word():
-    readings = taiwan_readings.all_readings()
-    assert readings["時候"] == "shi2 hou4"
+    readings = taiwan_readings.all_readings()  # parse() refuses a word listed twice or an unreadable reading
+    assert len(readings) > 100
     for word, pinyin in readings.items():
-        assert pinyin, word
         assert len(pinyin.split()) == len(HAN_CHARACTER.findall(word)), word
+
+
+def test_the_list_format():
+    assert taiwan_readings.parse('["days"]\n"星期一" = "xing1 qi2 yi1"  # a comment\n') == {"星期一": "xing1 qi2 yi1"}
+    assert taiwan_readings.parse('["a"]\n"時候" = "shíhòu"') == {"時候": "shi2 hou4"}  # tone marks work too
+    for wrong in ('["a"]\n"時候" = "shi2 hou4"\n["b"]\n"時候" = "shi2 hou4"',  # listed twice
+                  '["a"]\n"時候" = "not a reading"',
+                  '"時候" = "shi2 hou4"'):  # outside a section
+        with pytest.raises(ValueError):
+            taiwan_readings.parse(wrong)
 
 
 def test_taiwan_readings_setting():
@@ -82,23 +104,24 @@ def test_without_it_the_dictionary_order_stays(both):
 
 def test_taiwan_reading_comes_first(both, taiwan):
     found = readings_of("時候")
-    assert reading_key(found[0], "zh") == reading_key("shi2 hou4", "zh")
+    assert reading_key(found[0], "zh") == reading_key(listed("時候"), "zh")
     assert len(found) == 2  # the reading of China is still there
     first = lookup.lookup("zh", "時候")["entries"][0]
     assert first["taiwan_reading"] == {"replaced": ""}  # a dictionary already reads it that way
 
 
 def test_taiwan_reading_replaces_the_only_one(cedict, taiwan):
-    assert readings_of("時候") == ["shíhòu"]
+    assert readings_of("時候") == [accented("時候")]
     assert lookup.lookup("zh", "時候")["entries"][0]["taiwan_reading"] == {"replaced": "ㄕˊ˙ㄏㄡ"}
     assert "taiwan_reading" not in lookup.lookup("zh", "說話")["entries"][0]
-    assert readings_of("垃圾") == ["lèsè"]  # other syllables too
+    assert readings_of("垃圾") == [accented("垃圾")]  # other syllables too
     assert readings_of("說話") == ["ㄕㄨㄛㄏㄨㄚˋ"]  # not in the list
 
 
 def test_sentence_readings(both, taiwan):
-    tokens = {t["text"]: t["pinyin"] for t in annotate("zh", "我喜歡的時候")["tokens"]}
-    assert tokens["喜歡"] == "xi3 huan1" and tokens["時候"] == "shi2 hou4"
+    tokens = {t["text"]: t["pinyin"] for t in annotate("zh", "我喜歡說話的時候")["tokens"]}
+    assert tokens["喜歡"] == listed("喜歡") and tokens["時候"] == listed("時候")  # in the list
+    assert tokens["說話"] == "shuo1 hua4"  # not in it: the dictionary's reading
     # the card's own reading still wins
     target = [t for t in annotate("zh", "<b>時候</b>", "shi2 hou5")["tokens"] if t["target"]]
     assert target[0]["pinyin"] == "shi2 hou5"
@@ -126,5 +149,5 @@ def test_the_popup_gets_the_struck_reading_in_the_chosen_system(client, cedict, 
                             headers={"X-MiningCat": "1"}).get_json()["entries"][0]
     finally:
         preferences.set_reading_system("zh", "pinyin")
-    assert entry["display_reading"] == "ㄕˊ ㄏㄡˋ"
+    assert entry["display_reading"] == pinyin_to_zhuyin(listed("時候"))
     assert entry["taiwan_reading"]["display_replaced"].replace(" ", "") == "ㄕˊ˙ㄏㄡ"

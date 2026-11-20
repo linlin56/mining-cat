@@ -86,7 +86,7 @@ Once installed, **Qwen3-ASR 0.6B** and **Qwen3-ASR 1.7B** (more accurate, slower
 
 ## Character conversion
 
-For Mandarin and Cantonese, **Convert to** converts the subtitles between simplified and traditional scripts with [OpenCC](https://github.com/BYVoid/OpenCC), including punctuation (e.g. `“”` or `「」`). Useful if you're learning traditional characters but only found a mainland edition, or the other way around.
+For Mandarin and Cantonese, **Convert to** converts the subtitles between simplified and traditional scripts with [OpenCC](https://github.com/BYVoid/OpenCC), including punctuation (e.g. `“”` or `「」`). Useful if you're learning traditional characters but only found an edition from China, or the other way around.
 
 ## Next steps
 

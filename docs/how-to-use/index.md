@@ -202,7 +202,7 @@ The converter's header has three settings shared by every workflow:
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | **Source**     | `Audiobook / Ebook`, `Video` or `Video game / Screen share`. Picks which screen you're working with.                                |
 | **Variant**    | Only when the language studied has several (Mandarin: Taiwan or China, English: US or UK). It drives transcription, punctuation fixes, TTS voices and subtitle metadata. |
-| **Convert to** | Only for Chinese variants: converts subtitles between simplified and traditional characters (e.g. read a mainland book in traditional). |
+| **Convert to** | Only for Chinese variants: converts subtitles between simplified and traditional characters (e.g. read a book from China in traditional). |
 
 Then pick your workflow:
 

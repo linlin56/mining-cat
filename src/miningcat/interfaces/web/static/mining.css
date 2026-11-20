@@ -27,6 +27,21 @@
   font-size: .9rem;
   writing-mode: horizontal-tb;
 }
+/* A reading forced to the Taiwan one ("Force Taiwanese pronunciation"): coloured, the dictionaries' one struck
+   through after it, and a "TW reading" badge whose "?" explains it on hover. */
+.mc-tw-reading { color: var(--bs-info-text-emphasis); font-weight: 600; }
+.mc-tw-replaced { font-size: .8rem; color: var(--bs-secondary-color); text-decoration-thickness: 1px; }
+.mc-tw-chip { display: inline-flex; align-items: center; gap: .3em; background-color: var(--bs-info-bg-subtle);
+  color: var(--bs-info-text-emphasis); font-weight: 600 !important; }
+.mc-tw-help { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 1.35em;
+  height: 1.35em; border: 1.5px solid currentColor; border-radius: 50%; font-size: .9em; font-weight: 700; line-height: 1;
+  cursor: help; }
+.mc-tw-tip { display: none; position: absolute; top: calc(100% + 7px); left: -1rem; z-index: 5; width: 16rem;
+  padding: .5rem .65rem; border-radius: .375rem; background: var(--bs-emphasis-color); color: var(--bs-body-bg);
+  font-size: .8rem; font-weight: 400; line-height: 1.45; white-space: normal; text-align: left; }
+.mc-tw-tip::before { content: ""; position: absolute; top: -6px; left: 1.1rem; border: 6px solid transparent;
+  border-top: 0; border-bottom-color: var(--bs-emphasis-color); }
+.mc-tw-help:hover .mc-tw-tip, .mc-tw-help:focus .mc-tw-tip { display: block; }
 /* Taigi in the popup and the card creator: its word, its reading (see --mc-taigi-sans in theme.css) */
 .mc-popup :lang(nan), .mc-creator :lang(nan) {
   font-family: var(--mc-taigi-sans), "Noto Sans TC", "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }

@@ -22,6 +22,7 @@ def api_languages():
         languages=[{"id": k, "name": v, "chinese": k in CHINESE_LANGUAGES, "studied": k in studied} for k, v in LANGUAGES.items()],
         scripts={lang: preferences.chinese_script_preference(lang) for lang in CHINESE_LANGUAGES},
         readings={language: preferences.reading_system(language) for language in READING_SYSTEMS},
+        taiwan_readings=preferences.taiwan_readings(),
         counts=counts,
     )
 
@@ -30,6 +31,12 @@ def api_languages():
 def api_script():
     body = json_body()
     preferences.set_chinese_script_preference(study_language(body.get("language")), str(body.get("script")))
+    return jsonify(ok=True)
+
+
+@bp.post("/api/mining/taiwan-readings")
+def api_taiwan_readings():
+    preferences.set_taiwan_readings(json_body().get("enabled") is True)
     return jsonify(ok=True)
 
 

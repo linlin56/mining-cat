@@ -9,10 +9,10 @@ _EXAMPLE_SEPARATOR = re.compile(r"\s*[︱│∣｜|]\s*")
 _TONE_MARK = re.compile(r"[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]")
 _READING_LINE = re.compile(r"^[a-zA-Züāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜɡ' ]{1,30}$")
 # A part of speech or register written before a sense: "連詞。", "〈書〉", and the 兩岸詞典 marks of Taiwan (▲) and
-# mainland China (★) usage.
+# China (★) usage.
 _PART_OF_SPEECH = re.compile(r"^(名詞|動詞|形容詞|副詞|連詞|介詞|量詞|助詞|嘆詞|歎詞|代詞|數詞|助動詞|擬聲詞)[。：:]\s*")
 _REGISTER = re.compile(r"^〈([^〉]{1,4})〉\s*")
-_REGION_MARKS = {"▲": "Taiwan", "★": "Mainland"}
+_REGION_MARKS = {"▲": "Taiwan", "★": "China"}
 
 
 def looks_structured(text: str) -> bool:

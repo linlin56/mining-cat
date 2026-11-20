@@ -1,0 +1,304 @@
+# The Taiwan readings that "Force Taiwanese pronunciation" imposes on Mandarin words whatever the dictionaries say.
+# MiningCat's own list, written by hand... Please report any mistake!
+# Format:
+# One word per line: "word" = "reading"
+# in numbered pinyin (shi2 hou4, neutral tone 5) because it's easier to type
+# 一 stays yi1 and 不 bu4 just like in most dictionaries.
+# Sections only group the words: a word should only appear once in the whole file.
+# Rare meanings are left out.
+
+["垃圾 is le4 se4"]
+# 垃圾 is le4 se4 in Taiwan (la1 ji1 in China).
+"垃圾" = "le4 se4"
+"垃圾桶" = "le4 se4 tong3"
+"垃圾車" = "le4 se4 che1"
+"垃圾袋" = "le4 se4 dai4"
+
+["neutral tone in Taiwan"]
+# Taiwan keeps the neutral tone that some dictionaries give in full.
+"告訴" = "gao4 su5"  # to tell; gao4 su4 is the legal 'to sue'
+"意思" = "yi4 si5"
+"熱鬧" = "re4 nao5"
+
+["full tone in Taiwan"]
+# China reads a syllable in the neutral tone, Taiwan in its full tone.
+# Note that in some cases some of them can still be pronounced with a neutral tone in speech.
+# For learning purposes, full tones are kept here.
+"喜歡" = "xi3 huan1"
+"時候" = "shi2 hou4"
+"小時候" = "xiao3 shi2 hou4"
+"朋友" = "peng2 you3"
+"眼睛" = "yan3 jing1"
+"清楚" = "qing1 chu3"
+"頭髮" = "tou2 fa3"
+"精神" = "jing1 shen2"
+"知識" = "zhi1 shi4"
+"消息" = "xiao1 xi2"
+"月亮" = "yue4 liang4"
+"鄉下" = "xiang1 xia4"
+"咳嗽" = "ke2 sou4"
+"女人" = "nv3 ren2"
+"糊塗" = "hu2 tu2"
+"煙火" = "yan1 huo3"
+"欺負" = "qi1 fu4"
+"反正" = "fan3 zheng4"
+"裡邊" = "li3 bian1"
+"相聲" = "xiang4 sheng1"
+"早晨" = "zao3 chen2"
+"打扮" = "da3 ban4"
+"師傅" = "shi1 fu4"
+"師父" = "shi1 fu4"
+"收拾" = "shou1 shi2"
+"疏忽" = "shu1 hu1"
+"冤枉" = "yuan1 wang3"
+"耽誤" = "dan1 wu4"
+"起火" = "qi3 huo3"
+"女婿" = "nv3 xu4"
+"見識" = "jian4 shi4"
+"先生" = "xian1 sheng1"
+"還是" = "hai2 shi4"
+"多少" = "duo1 shao3"
+"左邊" = "zuo3 bian1"
+"休息" = "xiu1 xi2"
+"事情" = "shi4 qing2"
+"想法" = "xiang3 fa3"
+"大人" = "da4 ren2"
+"聰明" = "cong1 ming2"
+"要是" = "yao4 shi4"
+"打算" = "da3 suan4"
+"比方說" = "bi3 fang1 shuo1"
+"護士" = "hu4 shi4"
+"點心" = "dian3 xin1"
+"關係" = "guan1 xi4"
+"口袋" = "kou3 dai4"
+"行李" = "xing2 li3"
+"壞處" = "huai4 chu4"
+"涼快" = "liang2 kuai4"
+"土地" = "tu3 di4"
+"態度" = "tai4 du4"
+"厲害" = "li4 hai4"
+"說法" = "shuo1 fa3"
+"答應" = "da1 ying4"
+"配合" = "pei4 he2"
+"親戚" = "qin1 qi1"
+"活潑" = "huo2 po1"
+"打招呼" = "da3 zhao1 hu1"
+"主意" = "zhu3 yi4"
+"月餅" = "yue4 bing3"
+"規矩" = "gui1 ju3"
+"笑話" = "xiao4 hua4"
+"丈夫" = "zhang4 fu1"
+"打聽" = "da3 ting1"
+
+["cases where 子 is read as zi3"]
+# In general it's read as zi5, esp. in final position, but in these words it's zi3
+"種子" = "zhong3 zi3"
+"瓜子" = "gua1 zi3"
+
+["績 ji1"]
+# 績 is ji1 in Taiwan (ji4 in China).
+"成績" = "cheng2 ji1"
+"績效" = "ji1 xiao4"
+
+["叔 shu2"]
+# 叔 is shu2 in Taiwan (shu1 in China).
+# 叔叔 shu2 shu5: in "repeated characters".
+"叔父" = "shu2 fu4"
+
+["究 jiu4"]
+# 究 is jiu4 in Taiwan (jiu1 in China).
+"研究" = "yan2 jiu4"
+"研究所" = "yan2 jiu4 suo3"
+"究竟" = "jiu4 jing4"
+
+["危 wei2"]
+# 危 is wei2 in Taiwan (wei1 in China).
+"危險" = "wei2 xian3"
+"危機" = "wei2 ji1"
+
+["期 qi2"]
+# 期 is qi2 in Taiwan (qi1 in China).
+"星期" = "xing1 qi2"
+"星期一" = "xing1 qi2 yi1"
+"星期二" = "xing1 qi2 er4"
+"星期三" = "xing1 qi2 san1"
+"星期四" = "xing1 qi2 si4"
+"星期五" = "xing1 qi2 wu3"
+"星期六" = "xing1 qi2 liu4"
+"星期日" = "xing1 qi2 ri4"
+"星期天" = "xing1 qi2 tian1"
+"學期" = "xue2 qi2"
+"期間" = "qi2 jian1"
+"日期" = "ri4 qi2"
+"假期" = "jia4 qi2"
+"過期" = "guo4 qi2"
+"到期" = "dao4 qi2"
+"時期" = "shi2 qi2"
+"期待" = "qi2 dai4"
+"期望" = "qi2 wang4"
+"預期" = "yu4 qi2"
+"定期" = "ding4 qi2"
+"期限" = "qi2 xian4"
+"暑期" = "shu3 qi2"
+"期刊" = "qi2 kan1"
+
+["惜 xi2"]
+# 惜 is xi2 in Taiwan (xi1 in China).
+"可惜" = "ke3 xi2"
+"愛惜" = "ai4 xi2"
+"珍惜" = "zhen1 xi2"
+
+["髮 fa3"]
+# 髮 is fa3 in Taiwan (fa4 in China).
+"洗髮精" = "xi3 fa3 jing1"
+"髮型" = "fa3 xing2"
+"理髮" = "li3 fa3"
+
+["突 tu2"]
+# 突 is tu2 in Taiwan (tu1 in China).
+"突然" = "tu2 ran2"
+"衝突" = "chong1 tu2"
+"突破" = "tu2 po4"
+"突出" = "tu2 chu1"
+
+["企 qi4"]
+# 企 is qi4 in Taiwan (qi3 in China).
+"企業" = "qi4 ye4"
+"企圖" = "qi4 tu2"
+
+["質 zhi2"]
+# 質 is zhi2 in Taiwan (zhi4 in China).
+"品質" = "pin3 zhi2"
+"物質" = "wu4 zhi2"
+"蛋白質" = "dan4 bai2 zhi2"
+"特質" = "te4 zhi2"
+"性質" = "xing4 zhi2"
+"材質" = "cai2 zhi2"
+"氣質" = "qi4 zhi2"
+
+["微 wei2"]
+# 微 is wei2 in Taiwan (wei1 in China).
+"微笑" = "wei2 xiao4"
+"稍微" = "shao1 wei2"
+"輕微" = "qing1 wei2"
+"微妙" = "wei2 miao4"
+
+["暫 zhan4"]
+# 暫 is zhan4 in Taiwan (zan4 in China).
+"暫時" = "zhan4 shi2"
+"短暫" = "duan3 zhan4"
+
+["血 xie3"]
+# 血 is xie3 in Taiwan (xue4 in China).
+"流血" = "liu2 xie3"
+"血型" = "xie3 xing2"
+"血液" = "xie3 ye4"
+"血管" = "xie3 guan3"
+"鮮血" = "xian1 xie3"
+
+["寧 ning2"]
+# 寧 is ning2 in Taiwan (ning4 in China).
+"寧可" = "ning2 ke3"
+"寧願" = "ning2 yuan4"
+
+["識 shi4"]
+# 識 is shi4 in Taiwan (shi2 in China).
+"常識" = "chang2 shi4"
+"意識" = "yi4 shi4"
+"辨識" = "bian4 shi4"
+
+["檔 dang3"]
+# 檔 is dang3 in Taiwan (dang4 in China).
+"存檔" = "cun2 dang3"
+"檔案" = "dang3 an4"
+
+["擊 ji2"]
+# 擊 is ji2 in Taiwan (ji1 in China).
+"攻擊" = "gong1 ji2"
+"打擊" = "da3 ji2"
+"擊敗" = "ji2 bai4"
+
+["息 xi2"]
+# 息 is xi2 in Taiwan (xi1 in China).
+"訊息" = "xun4 xi2"
+"氣息" = "qi4 xi2"
+"利息" = "li4 xi2"
+
+["儲 chu2"]
+# 儲 is chu2 in Taiwan (chu3 in China).
+"儲存" = "chu2 cun2"
+"儲蓄" = "chu2 xu4"
+
+["other characters"]
+# comment format: "Taiwan reading", "China reading"
+"除夕" = "chu2 xi4"  # 夕 xi4, xi1
+"著急" = "zhao1 ji2"  # 著 zhao1, zhao2
+"建築" = "jian4 zhu2"  # 築 zhu2, zhu4
+"記載" = "ji4 zai4"  # 載 zai4, zai3
+"骨頭" = "gu2 tou5"  # 骨 gu2, gu3
+"細菌" = "xi4 jun4"  # 菌 jun4, jun1
+"舞蹈" = "wu3 dao4"  # 蹈 dao4, dao3
+"步驟" = "bu4 zou4"  # 驟 zou4, zhou4
+"痕跡" = "hen2 ji1"  # 跡 ji1, ji4
+"寂寞" = "ji2 mo4"  # 寂 ji2, ji4
+"傍晚" = "bang1 wan3"  # 傍 bang1, bang4
+"跌倒" = "die2 dao3"  # 跌 die2, die1
+"綜合" = "zong4 he2"  # 綜 zong4, zong1
+"諷刺" = "feng4 ci4"  # 諷 feng4, feng3
+"攜帶" = "xi1 dai4"  # 攜 xi1, xie2
+"鞠躬" = "ju2 gong1"  # 鞠 ju2, ju1
+"削減" = "xue4 jian3"  # 削 xue4, xue1
+"擁有" = "yong3 you3"  # 擁 yong3, yong1
+"廣播" = "guang3 bo4"  # 播 bo4, bo1
+"古蹟" = "gu3 ji1"  # 蹟 ji1, ji4
+
+["repeated characters"]
+# Most of these are the same in China, but some dictionaries may not neutralize the second tone.
+"爸爸" = "ba4 ba5"
+"媽媽" = "ma1 ma5"
+"哥哥" = "ge1 ge5"
+"姊姊" = "jie3 jie5"  # the spoken reading, zi3 zi3 exists but it's literary, China writes 姐姐
+"姐姐" = "jie3 jie5"
+"弟弟" = "di4 di5"
+"妹妹" = "mei4 mei5"
+"爺爺" = "ye2 ye5"
+"奶奶" = "nai3 nai5"
+"叔叔" = "shu2 shu5"  # 叔 shu2 in Taiwan, shu1 in China
+"伯伯" = "bo2 bo5"
+"舅舅" = "jiu4 jiu5"
+"姑姑" = "gu1 gu5"
+"嬸嬸" = "shen3 shen5"
+"公公" = "gong1 gong5"
+"婆婆" = "po2 po5"
+"太太" = "tai4 tai5"
+"寶寶" = "bao3 bao5"
+"娃娃" = "wa2 wa5"
+"謝謝" = "xie4 xie5"
+# repeated characters with full tones on both syllabes
+"悄悄" = "qiao3 qiao3"  # qiao1 qiao1 in China
+"常常" = "chang2 chang2"
+"剛剛" = "gang1 gang1"
+"往往" = "wang3 wang3"
+"偏偏" = "pian1 pian1"
+"慢慢" = "man4 man4"
+"漸漸" = "jian4 jian4"
+"輕輕" = "qing1 qing1"
+"好好" = "hao3 hao3"
+"天天" = "tian1 tian1"
+
+["same as China today"]
+#  some dictionaries give an old or colloquial reading, that is not the main one in Taiwan nowadays
+"教室" = "jiao4 shi4"
+"辦公室" = "ban4 gong1 shi4"
+"浴室" = "yu4 shi4"
+"臥室" = "wo4 shi4"
+"比較" = "bi3 jiao4"
+"結束" = "jie2 shu4"
+"結果" = "jie2 guo3"
+
+["single characters"]
+# As single characters, they're pronounced like this most of the time.
+"會" = "hui4"  # can, will, a meeting
+"和" = "han4"  # he2 can be heard too, but most of the time Taiwanese say han4.
+"那" = "na4"
+"呢" = "ne5"  # the particle

@@ -228,7 +228,10 @@ async function loadLanguages() {
     const taiwan = $("taiwan-readings");
     if (taiwan) {
       taiwan.checked = data.taiwan_readings;
-      taiwan.onchange = () => api("/api/mining/taiwan-readings", { enabled: taiwan.checked }).catch(showError);
+      taiwan.onchange = () => api("/api/mining/taiwan-readings", { enabled: taiwan.checked }).catch((err) => {
+        taiwan.checked = !taiwan.checked;  // the setting didn't change
+        showError(err);
+      });
     }
   }
 

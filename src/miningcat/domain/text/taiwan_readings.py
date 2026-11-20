@@ -7,6 +7,7 @@ import tomllib
 from functools import cache
 from pathlib import Path
 
+from miningcat.domain.text.chinese_script import to_simplified
 from zhuyin_converter import numbered_pinyin
 
 READINGS_FILE = Path(__file__).parent / "taiwan_readings.toml"
@@ -33,9 +34,16 @@ def _readings() -> dict[str, str]:
     return parse(READINGS_FILE.read_text(encoding="utf-8"))
 
 
+@cache
+def _simplified_readings() -> dict[str, str]:
+    """The words of the list in simplified characters (时候), converted once."""
+    return {to_simplified(word, "zh"): reading for word, reading in _readings().items()}
+
+
 def taiwan_reading(word: str) -> str:
-    """The Taiwan reading of a word of the list in numbered pinyin (shi2 hou4), "" for the other words."""
-    return _readings().get(word, "")
+    """The Taiwan reading of a word of the list in numbered pinyin (shi2 hou4), "" for the other words. A word in
+    simplified characters (时候) is found under its traditional form."""
+    return _readings().get(word) or _simplified_readings().get(word, "")
 
 
 def all_readings() -> dict[str, str]:

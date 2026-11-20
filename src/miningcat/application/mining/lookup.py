@@ -69,25 +69,49 @@ def _convert_senses(entries: list[dict], language: str) -> None:
                         convert(example)
 
 
-def _prefer_taiwan_readings(groups: dict[tuple, dict]) -> None:
-    """Words of MiningCat's list of Taiwan readings: the entry read the Taiwan way comes first. When no dictionary
-    reads it that way (CC-CEDICT's 時候 shí hou), the entry with the closest reading takes the Taiwan one.
-    These entries get "taiwan_reading": {"replaced": the dictionaries' reading it took the place of, or ""}."""
+def _taiwan_targets(groups: dict[tuple, dict]) -> list[tuple[dict, str, bool]]:
+    """(entry, Taiwan reading, whether a dictionary reads it that way) of the words of MiningCat's list of Taiwan
+    readings: the entries read the Taiwan way, else the one with the closest reading (CC-CEDICT's 時候 shí hou): the
+    same syllables first, else the dictionaries' first and best entry of the word (its main reading: 和 hé "and", not
+    huò "to mix")."""
     by_expression: dict[str, list[dict]] = {}
     for g in groups.values():
         by_expression.setdefault(g["expression"], []).append(g)
+    targets = []
     for expression, found in by_expression.items():
         pinyin = taiwan_reading(expression)
         if not pinyin:
             continue
         key = reading_key(pinyin, "zh")
         matching = [g for g in found if reading_key(g["reading"], "zh") == key]
-        for g in matching:
-            g["taiwan_reading"] = {"replaced": ""}
-        if not matching:
-            closest = max(found, key=lambda g: (reading_match(g["reading"], pinyin, "zh"), g["rank"], g["score"]))
-            closest["taiwan_reading"] = {"replaced": closest["reading"]}
-            closest["reading"] = display_pinyin(pinyin, "pinyin").replace(" ", "")
+        if matching:
+            targets += [(g, pinyin, True) for g in matching]
+        else:
+            closest = max(found, key=lambda g: (reading_match(g["reading"], pinyin, "zh"), g["rank"],
+                                                -min(d["priority"] for d in g["definitions"]), g["score"],
+                                                -min(d["row"] for d in g["definitions"])))
+            targets.append((closest, pinyin, False))
+    return targets
+
+
+def _accented(pinyin: str) -> str:
+    return display_pinyin(pinyin, "pinyin").replace(" ", "")
+
+
+def _prefer_taiwan_readings(groups: dict[tuple, dict]) -> None:
+    """With "Force Taiwanese pronunciation": the entries of _taiwan_targets() read the Taiwan way and come first.
+    They get "taiwan_reading": {"replaced": the dictionaries' reading the Taiwan one took the place of, or ""}."""
+    for g, pinyin, matched in _taiwan_targets(groups):
+        g["taiwan_reading"] = {"replaced": "" if matched else g["reading"]}
+        if not matched:
+            g["reading"] = _accented(pinyin)
+
+
+def _mark_taiwan_aliases(groups: dict[tuple, dict]) -> None:
+    """Without it: the Taiwan reading a word of the list may have been saved under while it was on."""
+    for g, pinyin, matched in _taiwan_targets(groups):
+        if not matched:
+            g["_taiwan_alias"] = _accented(pinyin)
 
 
 def _taigi_readings(entries: list[dict]) -> None:
@@ -120,9 +144,12 @@ class DictionaryLookup:
             groups = self._group(self._best_matches(queries, dicts, candidates), dicts)
             if self.language in CHINESE_LANGUAGES:
                 move_other_readings(groups, self.language)
+            # frequencies and pronunciations first: they go with the dictionaries' readings
+            self._add_frequencies_and_pronunciations(queries, dicts, groups)
             if preferences.taiwan_readings_apply(self.language):
                 _prefer_taiwan_readings(groups)
-            self._add_frequencies_and_pronunciations(queries, dicts, groups)
+            elif self.language == "zh":
+                _mark_taiwan_aliases(groups)
             ordered = self._order(groups)
             self._finish_definitions(queries, ordered)
             self._add_characters(queries, dicts, ordered)
@@ -250,6 +277,20 @@ class DictionaryLookup:
             g["characters"] = [{"character": c, "entries": found[c]}
                                for c in dict.fromkeys(HAN_CHARACTER.findall(g["expression"])) if c in found]
 
+    @staticmethod
+    def _other_saved_readings(g: dict, ordered: list[dict]) -> list[str]:
+        """The other readings a word of the list of Taiwan readings may have been saved under: with the Taiwan reading
+        forced, the dictionaries' (the one it replaced, and for a word of several characters the other entries': 垃圾
+        lājī for lèsè); without it, the Taiwan one it would get."""
+        taiwan = g.get("taiwan_reading")
+        if taiwan:
+            readings = [taiwan["replaced"]] if taiwan["replaced"] else []
+            if len(g["expression"]) > 1:
+                readings += [o["reading"] for o in ordered if o is not g and o["expression"] == g["expression"]]
+            return readings
+        alias = g.pop("_taiwan_alias", None)
+        return [alias] if alias else []
+
     def _add_statuses(self, ordered: list[dict]) -> None:
         """The form the word is saved under, its status, and for Chinese its script and its other form."""
         language = self.language
@@ -257,6 +298,14 @@ class DictionaryLookup:
             form = words.preferred_form(language, g["expression"])
             g["form"] = form
             g["status"] = words.status_of(language, form, g["reading"])
+            # a word of the list of Taiwan readings saved under another reading of it, before "Force Taiwanese
+            # pronunciation" was turned on or off: it keeps its status, under that reading (status_reading)
+            others = self._other_saved_readings(g, ordered)  # always: it takes the private _taiwan_alias out
+            for reading in others if g["status"]["status"] == "new" else ():
+                saved = words.status_of(language, form, reading)
+                if saved["status"] != "new":
+                    g["status"], g["status_reading"] = saved, reading
+                    break
             if language in CHINESE_LANGUAGES:
                 g["script"] = chinese_script(g["expression"])
                 other = chinese_counterpart(g["expression"], language)

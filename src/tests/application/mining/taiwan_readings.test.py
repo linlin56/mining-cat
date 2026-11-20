@@ -3,7 +3,7 @@ import zipfile
 
 import pytest
 
-from miningcat.application.mining import dictionaries, lookup, preferences, segmentation
+from miningcat.application.mining import dictionaries, lookup, preferences, segmentation, words
 from miningcat.application.mining.sentence_readings import annotate
 from miningcat.domain.text import taiwan_readings
 from miningcat.domain.text.readings import reading_key
@@ -28,11 +28,18 @@ CEDICT = [
     ("我", "ㄨㄛˇ", ["I; me"]),
     ("的", "˙ㄉㄜ", ["of"]),
     ("說話", "ㄕㄨㄛㄏㄨㄚˋ", ["to speak"]),
+    # 和 without the Taiwan han4: its first entry is its main reading
+    ("和", "ㄏㄜˊ", ["and", "together with", "with", "harmonious"]),
+    ("和", "ㄏㄨㄛˋ", ["to mix together"]),
+    ("和", "ㄏㄜˋ", ["to compose a poem in reply"]),
+    # a simplified dictionary entry
+    ("时候", "ㄕˊ˙ㄏㄡ", ["time (simplified)"]),
 ]
 # Like 兩岸詞典: Taiwan readings, written with its "ɡ".
 LIANGAN = [
     ("時候", "shíhòu", ["時間"]),
     ("星期", "xīnɡqí", ["週"]),
+    ("垃圾", "lèsè", ["廢棄物"]),
 ]
 
 
@@ -151,3 +158,47 @@ def test_the_popup_gets_the_struck_reading_in_the_chosen_system(client, cedict, 
         preferences.set_reading_system("zh", "pinyin")
     assert entry["display_reading"] == pinyin_to_zhuyin(listed("時候"))
     assert entry["taiwan_reading"]["display_replaced"].replace(" ", "") == "ㄕˊ˙ㄏㄡ"
+
+
+def test_the_taiwan_reading_goes_to_the_main_entry(cedict, taiwan):
+    entries = [e for e in lookup.lookup("zh", "和")["entries"] if e["expression"] == "和"]
+    forced = [e for e in entries if "taiwan_reading" in e]
+    assert len(forced) == 1 and forced[0]["taiwan_reading"]["replaced"] == "ㄏㄜˊ"  # "and", not "to mix"
+    assert reading_key(forced[0]["reading"], "zh") == reading_key(listed("和"), "zh")
+
+
+def test_a_simplified_word_gets_the_reading_of_its_traditional_form(cedict, taiwan):
+    entry = lookup.lookup("zh", "时候")["entries"][0]
+    assert entry["expression"] == "时候" and reading_key(entry["reading"], "zh") == reading_key(listed("時候"), "zh")
+
+
+def test_a_word_saved_under_the_dictionary_reading_keeps_its_status(cedict, taiwan):
+    words.set_status("zh", "時候", "ㄕˊ˙ㄏㄡ", "learning")
+    entry = lookup.lookup("zh", "時候")["entries"][0]
+    assert entry["status"]["status"] == "learning"
+    assert entry["status_reading"] == "ㄕˊ˙ㄏㄡ"  # where the popup saves a new status
+
+
+def test_frequencies_follow_the_dictionary_reading(tmp_path, cedict, taiwan):
+    path = tmp_path / "freq.zip"
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("index.json", json.dumps({"title": "Freq test", "revision": "1", "format": 3}))
+        z.writestr("term_meta_bank_1.json", json.dumps(
+            [["時候", "freq", {"reading": "shi2 hou5", "frequency": 41}]], ensure_ascii=False))
+    dictionaries.import_dictionary(path, "zh")
+    entry = lookup.lookup("zh", "時候")["entries"][0]
+    assert [f["value"] for f in entry["frequencies"]] == [41]
+
+
+def test_a_word_saved_under_another_entry_keeps_its_status(both, taiwan):
+    words.set_status("zh", "垃圾", "ㄌㄚㄐㄧ", "known")  # saved under CC-CEDICT's lājī; 兩岸 reads it lèsè
+    entry = lookup.lookup("zh", "垃圾")["entries"][0]
+    assert reading_key(entry["reading"], "zh") == reading_key(listed("垃圾"), "zh")
+    assert entry["status"]["status"] == "known" and entry["status_reading"] == "ㄌㄚㄐㄧ"
+
+
+def test_turned_off_a_word_saved_under_the_taiwan_reading_keeps_its_status(cedict):
+    words.set_status("zh", "時候", accented("時候"), "learning")  # saved while it was on
+    entry = lookup.lookup("zh", "時候")["entries"][0]
+    assert entry["reading"] == "ㄕˊ˙ㄏㄡ" and entry["status"]["status"] == "learning"
+    assert entry["status_reading"] == accented("時候") and "_taiwan_alias" not in entry

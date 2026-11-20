@@ -765,7 +765,9 @@
         type: "button", role: "radio", "data-value": value, class: `btn btn-outline-${STATUS_COLOURS[value]} mc-status-${value}`, text,
         onclick: async () => {
           try {
-            await api("/api/words/status", { language, expression: entry.form, reading: entry.reading, status: value });
+            // a word saved under the dictionary's reading before its Taiwan one was forced keeps it (status_reading)
+            await api("/api/words/status", { language, expression: entry.form, reading: entry.status_reading || entry.reading, status: value });
+            if (value === "new") delete entry.status_reading;  // that record is gone: the next status takes the reading shown
             entry.status.status = value;
             render();
             updateColour(entry.form, value);
@@ -1677,7 +1679,7 @@
       }
       try {
         const { card } = await api("/api/cards", {
-          language, send: sendNow, tags: tags.value, key_reading: entry.reading !== entry.expression ? entry.reading : "",
+          language, send: sendNow, tags: tags.value, key_reading: entry.status_reading || (entry.reading !== entry.expression ? entry.reading : ""),
           fields: {
             word: word.value.trim(), reading: reading.value.trim(), definition: definition.innerHTML,
             sentence: sentenceBox.innerHTML, sentence_translation: translation.value, notes: notes.value, source: source.value,

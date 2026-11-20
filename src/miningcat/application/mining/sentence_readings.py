@@ -1,9 +1,10 @@
 from miningcat.application.mining import segmentation
-from miningcat.application.mining.preferences import reading_system
+from miningcat.application.mining.preferences import reading_system, taiwan_readings_apply
 from miningcat.domain.segmentation.lexicon import match
 from miningcat.domain.sentence_readings.card_sentence import bracketed, display_pinyin, han_readings, plain_sentence
 from miningcat.domain.sentence_readings.context_rules import Context, choose_reading
 from miningcat.domain.sentence_readings.senses import reading_weight
+from miningcat.domain.text.taiwan_readings import taiwan_reading
 from zhuyin_converter import numbered_pinyin
 from miningcat.infrastructure.persistence.database import database
 from miningcat.infrastructure.persistence.dictionary_queries import DictionaryQueries
@@ -52,13 +53,16 @@ def annotate(language: str, sentence_html: str, word_reading: str = "") -> dict:
 
     candidates = _candidates(language, [t["headword"] for t in tokens])
     system = reading_system(language)
+    taiwan = taiwan_readings_apply(language)
     target_pinyin = numbered_pinyin(word_reading)
     for i, token in enumerate(tokens):
         options = candidates.get(token["headword"], [])
-        if token["target"] and target_pinyin:
-            token["pinyin"] = target_pinyin
-            if target_pinyin not in [o["pinyin"] for o in options]:
-                options = [{"pinyin": target_pinyin, "weight": 0}, *options]
+        # the card's reading, else the forced Taiwan reading of MiningCat's list, else the dictionaries'
+        forced = target_pinyin if token["target"] and target_pinyin else taiwan_reading(token["headword"]) if taiwan else ""
+        if forced:
+            token["pinyin"] = forced
+            if forced not in [o["pinyin"] for o in options]:
+                options = [{"pinyin": forced, "weight": 0}, *options]
         elif options:
             token["pinyin"] = choose_reading(options, token["headword"], Context(tokens, i))
         else:

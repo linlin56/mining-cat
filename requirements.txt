@@ -19,7 +19,7 @@ opencv-python-headless
 pyobjc; platform_system == "Darwin"
 opencc-python-reimplemented>=0.1.7
 # pinyin <-> zhuyin conversion
-zhuyin-converter>=0.1.1
+zhuyin-converter>=0.1.2
 taibun>=1.1.8
 edge-tts>=7.3.1
 flask>=3.0

@@ -26,6 +26,9 @@ def api_lookup():
     ranker = frequency.Ranker(language)
     for entry in result["entries"]:
         entry["display_reading"] = words.display_reading(language, entry["expression"], entry.get("reading") or "")
+        taiwan = entry.get("taiwan_reading")
+        if taiwan and taiwan["replaced"]:  # the dictionaries' reading, struck through in the popup
+            taiwan["display_replaced"] = words.display_reading(language, entry["expression"], taiwan["replaced"])
         # rank in the frequency lists of the language (combined), shown in the popup and the card creator
         entry["frequency_rank"] = ranker.rank(entry["expression"], entry.get("form") or "")
         if wanted:

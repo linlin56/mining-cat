@@ -792,7 +792,12 @@
       word.append(entry.expression);
     }
     const parts = [word];
-    if (language !== "ja" && entry.reading && entry.reading !== entry.expression) parts.push(el("span", { class: "fs-6 text-body-secondary", lang: `${language}-Latn`, text: entry.display_reading || entry.reading }));
+    if (language !== "ja" && entry.reading && entry.reading !== entry.expression) {
+      const taiwan = entry.taiwan_reading;
+      // a reading forced by "Force Taiwanese pronunciation": coloured, the dictionaries' one struck through after it
+      parts.push(el("span", { class: `fs-6 ${taiwan ? "mc-tw-reading" : "text-body-secondary"}`, lang: `${language}-Latn`, text: entry.display_reading || entry.reading }));
+      if (taiwan && taiwan.replaced) parts.push(el("s", { class: "mc-tw-replaced", lang: `${language}-Latn`, text: taiwan.display_replaced || taiwan.replaced }));
+    }
     return el("div", { class: "d-flex flex-wrap align-items-baseline column-gap-2" }, ...parts);
   }
 
@@ -819,6 +824,18 @@
     return f.frequent
       ? el("span", { class: `${CHIP} bg-success-subtle text-success-emphasis fw-semibold`, title: f.title }, ...withIcon("star-fill", f.text))
       : el("span", { class: `${CHIP} bg-body-secondary text-body`, title: f.title, text: f.text });
+  }
+
+  // The "TW reading" badge of a reading forced to the Taiwan one, its "?" explaining it on hover.
+  function taiwanChip(entry) {
+    const taiwan = entry.taiwan_reading;
+    if (!taiwan) return null;
+    const tip = taiwan.replaced
+      ? ["Taiwanese pronunciation forced. The struck one is your dictionaries' reading.", el("br"), "Settings → Words to turn it off."]
+      : ["Taiwanese pronunciation forced.", el("br"), "Settings → Words to turn it off."];
+    return el("span", { class: `${CHIP} mc-tw-chip` }, "TW reading ",
+      el("span", { class: "mc-tw-help", tabindex: "0", role: "note", "aria-label": "Taiwanese pronunciation forced" }, "?",
+        el("span", { class: "mc-tw-tip" }, ...tip)));
   }
 
   function renderEntries(data, language) {
@@ -854,6 +871,9 @@
       entry.frequency_list = data.frequency || null;
       const chip = frequencyChip(entry);
       if (chip) meta.append(chip);
+      // second, right after the main frequency: whatever other badges follow
+      const taiwan = taiwanChip(entry);
+      if (taiwan) meta.append(taiwan);
       // (a single list's rank is the chip: the lists combined still show their own ranks)
       const used = data.frequency && data.frequency.dictionaries.length === 1 ? data.frequency.title : null;
       const others = entry.frequencies.filter((f) => f.dictionary !== used);

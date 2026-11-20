@@ -11,8 +11,9 @@ from miningcat.domain.languages import CHINESE_LANGUAGES, is_no_space
 from miningcat.domain.sentence_readings.card_sentence import display_pinyin
 from miningcat.domain.text import taigi
 from miningcat.domain.text.chinese_script import chinese_counterpart, chinese_script
-from miningcat.domain.text.readings import reading_key
+from miningcat.domain.text.readings import reading_key, reading_match
 from miningcat.domain.text.scripts import HAN_CHARACTER
+from miningcat.domain.text.taiwan_readings import taiwan_reading
 from miningcat.domain.text.variants import text_variants
 from miningcat.infrastructure.persistence.database import database
 from miningcat.infrastructure.persistence.dictionary_queries import DictionaryQueries
@@ -68,6 +69,27 @@ def _convert_senses(entries: list[dict], language: str) -> None:
                         convert(example)
 
 
+def _prefer_taiwan_readings(groups: dict[tuple, dict]) -> None:
+    """Words of MiningCat's list of Taiwan readings: the entry read the Taiwan way comes first. When no dictionary
+    reads it that way (CC-CEDICT's 時候 shí hou), the entry with the closest reading takes the Taiwan one.
+    These entries get "taiwan_reading": {"replaced": the dictionaries' reading it took the place of, or ""}."""
+    by_expression: dict[str, list[dict]] = {}
+    for g in groups.values():
+        by_expression.setdefault(g["expression"], []).append(g)
+    for expression, found in by_expression.items():
+        pinyin = taiwan_reading(expression)
+        if not pinyin:
+            continue
+        key = reading_key(pinyin, "zh")
+        matching = [g for g in found if reading_key(g["reading"], "zh") == key]
+        for g in matching:
+            g["taiwan_reading"] = {"replaced": ""}
+        if not matching:
+            closest = max(found, key=lambda g: (reading_match(g["reading"], pinyin, "zh"), g["rank"], g["score"]))
+            closest["taiwan_reading"] = {"replaced": closest["reading"]}
+            closest["reading"] = display_pinyin(pinyin, "pinyin").replace(" ", "")
+
+
 def _taigi_readings(entries: list[dict]) -> None:
     """Taigi dictionaries in Hanji only (no reading): taibun's Tâi-lô reading."""
     for g in entries:
@@ -98,6 +120,8 @@ class DictionaryLookup:
             groups = self._group(self._best_matches(queries, dicts, candidates), dicts)
             if self.language in CHINESE_LANGUAGES:
                 move_other_readings(groups, self.language)
+            if preferences.taiwan_readings_apply(self.language):
+                _prefer_taiwan_readings(groups)
             self._add_frequencies_and_pronunciations(queries, dicts, groups)
             ordered = self._order(groups)
             self._finish_definitions(queries, ordered)
@@ -196,11 +220,11 @@ class DictionaryLookup:
 
     @staticmethod
     def _order(groups: dict[tuple, dict]) -> list[dict]:
-        """Longest match first, then the least inflected, the headword over the reading, the most frequent, the
-        first dictionary, the best score."""
+        """Longest match first, then the least inflected, the headword over the reading, the Taiwan reading (when
+        Taiwanese pronunciation is forced), the most frequent, the first dictionary, the best score."""
         return sorted(
             groups.values(),
-            key=lambda g: (-g["rank"][0], -g["rank"][1], not g["rank"][2], g["frequency_rank"],
+            key=lambda g: (-g["rank"][0], -g["rank"][1], not g["rank"][2], "taiwan_reading" not in g, g["frequency_rank"],
                            min(x["priority"] for x in g["definitions"]), -g["score"]),
         )[:MAX_RESULTS]
 

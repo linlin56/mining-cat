@@ -15,7 +15,7 @@ _CONFIGS: dict[tuple[str, str], str] = {
     ("hk", "s"): "hk2s",
 }
 
-# OpenCC doesn't convert quotation marks: simplified mainland text uses “ ” ‘ ’, traditional text 「 」 『 』.
+# OpenCC doesn't convert quotation marks: simplified text from China uses “ ” ‘ ’, traditional text 「 」 『 』.
 _TO_TRADITIONAL_QUOTES = {"“": "「", "”": "」", "‘": "『", "’": "』"}
 _TO_SIMPLIFIED_QUOTES = {"「": "“", "」": "”", "『": "‘", "』": "’"}
 _QUOTES: dict[tuple[str, str], dict[str, str]] = {

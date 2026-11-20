@@ -109,6 +109,14 @@
           <p class="small text-body-secondary m-0">Readings: how Mandarin pronunciation is shown in the popup and written in the cards' reading
             field. Your words keep the same status whichever you choose.</p>
           <div id="reading-settings"></div>
+          <div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="taiwan-readings">
+              <label class="form-check-label" for="taiwan-readings">Force Taiwanese pronunciation</label>
+            </div>
+            <p class="small text-body-secondary m-0">Enabling this will force common Taiwanese readings (時候 shí hòu, 垃圾 lè sè,
+              星期 xīng qí…) on the generated cards. This is optional, but recommended.</p>
+          </div>
           {% elif study.id == "nan" %}
           <p class="small text-body-secondary m-0">Readings: the romanization the popup shows and the cards' reading field gets (a dictionary
             in either one works). Your words keep the same status whichever you choose. The {tailo} and {poj} card

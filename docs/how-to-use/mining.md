@@ -162,7 +162,7 @@ Click **Create MiningCat's note type in Anki**: MiningCat adds a note type calle
 Once it is in Anki, the same button **updates** it: after a new MiningCat version, or after switching between pinyin and zhuyin. Changes you made to its templates in Anki are then replaced; your notes and the fields you added are kept.
 
 !!! tip "Zhuyin"
-    CC-CEDICT only gives pinyin. A *Zhuyin* or *Bopomofo* field gets **Zhuyin (Mandarin, from the reading)**: MiningCat converts the pinyin (說話 shuōhuà → ㄕㄨㄛ ㄏㄨㄚˋ). The pronunciation is the dictionary's: for the few words read differently in Taiwan (垃圾...), check the card.
+    CC-CEDICT only gives pinyin. A *Zhuyin* or *Bopomofo* field gets **Zhuyin (Mandarin, from the reading)**: MiningCat converts the pinyin (說話 shuōhuà → ㄕㄨㄛ ㄏㄨㄚˋ). The pronunciation is the dictionary's, unless **Force Taiwanese pronunciation** is on (see below).
 
 !!! tip "Readings of the whole sentence"
     For Mandarin, two markers write the reading of every word in brackets after it, a format many Anki note types read: **Sentence with the reading of every word** (`{sentence_readings}`: `<b>繁體字[fan2 ti3 zi4]</b>你[ni3]都[dou1]看[kan4]得[de5]懂[dong3]嗎[ma5]？`) and **Word with its reading** (`{word_readings}`: `繁體字[fan2 ti3 zi4]`). Put them in the fields of your note type that hold the sentence and the word. The readings are those of the card creator's *Readings*: one per word, with tone numbers (5 for the neutral tone).
@@ -197,6 +197,8 @@ When you study a Chinese language, choose the characters you learn: **Traditiona
 For Taigi, choose the romanization of readings: **Tâi-lô** or **Pe̍h-ōe-jī** (see [Taigi](taigi.md)).
 
 For Mandarin, also choose how readings are shown: **Pinyin** or **Zhuyin**. With Zhuyin, the popup and the card's *Reading* field show ㄕㄨㄛ ㄏㄨㄚˋ instead of shuōhuà, and with Pinyin a dictionary written in zhuyin is shown in pinyin. Words keep their status whichever you choose.
+
+**Force Taiwanese pronunciation** (Mandarin): dictionaries often give the reading of China, with its neutral tones (時候 shíhou, 垃圾 lājī). Checked, the words of MiningCat's own list of Taiwan readings are read the Taiwan way (時候 shíhòu, 垃圾 lèsè) in the popup, the cards and their sentences, whatever your dictionaries say. In the popup, such a reading is colored, the dictionaries' one struck through after it, with a **TW reading** badge. Optional, but recommended if you learn the Mandarin of Taiwan.
 
 ## Current limits
 

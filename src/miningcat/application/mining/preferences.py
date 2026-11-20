@@ -5,6 +5,20 @@ from miningcat.infrastructure.persistence.settings_store import settings
 
 _SCRIPTS_SETTING = "chinese_scripts"            # {language: traditional, simplified or both}
 _READING_SYSTEMS_SETTING = "reading_systems"    # {"zh": pinyin or zhuyin, "nan": tailo or poj}
+_TAIWAN_READINGS_SETTING = "taiwan_readings"    # True: MiningCat's Taiwan readings win over the dictionaries'
+
+
+def taiwan_readings() -> bool:
+    """Whether the Mandarin readings are forced to the Taiwan ones of MiningCat's list."""
+    return bool(settings.get(_TAIWAN_READINGS_SETTING, False))
+
+
+def set_taiwan_readings(enabled: bool) -> None:
+    settings.set(_TAIWAN_READINGS_SETTING, bool(enabled))
+
+
+def taiwan_readings_apply(language: str) -> bool:
+    return language == "zh" and taiwan_readings()
 
 
 def chinese_script_preference(language: str) -> str:

@@ -224,6 +224,13 @@ async function loadLanguages() {
   if (readingSystems[STUDY]) {
     $("reading-settings")?.replaceChildren(radios(study, readingSystems[STUDY], data.readings[STUDY], "/api/mining/reading", "system"));
   }
+  if (STUDY === "zh") {
+    const taiwan = $("taiwan-readings");
+    if (taiwan) {
+      taiwan.checked = data.taiwan_readings;
+      taiwan.onchange = () => api("/api/mining/taiwan-readings", { enabled: taiwan.checked }).catch(showError);
+    }
+  }
 
   const c = data.counts[STUDY];
   $("word-counts").replaceChildren(c
